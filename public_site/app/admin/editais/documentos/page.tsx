@@ -1,4 +1,10 @@
 "use client";
+import dynamic from "next/dynamic";
+
+export default dynamic(
+  () => Promise.resolve(DocumentosPage),
+  { ssr: false }
+);
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
