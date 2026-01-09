@@ -1,0 +1,16 @@
+# robots.txt — APECC - Associação Paulista de Educação, Cultura e Cidadania
+# Controla o acesso dos mecanismos de busca ao site público.
+
+User-agent: *
+Allow: /
+
+# Impede que áreas administrativas e privadas sejam indexadas
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /login/
+Disallow: /painel/
+Disallow: /api/
+Disallow: /_next/
+
+# Indica o sitemap principal do site
+Sitemap: https://apecc.ong.br/sitemap.xml
