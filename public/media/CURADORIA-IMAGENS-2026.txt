@@ -1,0 +1,22 @@
+Curadoria de imagens aplicada com base nos novos acervos enviados.
+Regra usada: substituir apenas onde a foto nova agregava mais autenticidade/qualidade ao site; onde não agregava, a imagem original foi mantida.
+
+Substituições realizadas:
+- home/cards/projetos.jpg <= newimgs2/In#U00edcio _ Impec_files/cdb2f1_b82f7deba3394e8d817a604221fd8bc8~mv2.jpg
+- home/destaques/evento-cultural.jpg <= newimgs2/In#U00edcio _ Impec_files/cdb2f1_4396f890988c46c3b3a05b00e4a68c7f~mv2.jpg
+- home/destaques/oficina-educacao.jpg <= newimgs1/media_ipecc_cinema/image1.jpeg
+- home/destaques/acao-social.jpg <= newimgs1/media_ipecc_portifolio/image17.jpeg
+- home/impacto/impacto-social.jpg <= newimgs2/In#U00edcio _ Impec_files/cdb2f1_e9219f42adeb41ccbe9f7e35986859ac~mv2.jpg
+- quem-somos/institucional/institucional-quem-somos.jpg <= newimgs1/media_ipecc_portifolio/image4.jpeg
+- quem-somos/atuacao/rede-apecc.jpg <= newimgs1/media_ipecc_portifolio/image17.jpeg
+- projetos/destaques/projetos-escolas.jpg <= newimgs1/media_ipecc_portifolio/image20.jpg
+- projetos/destaques/projetos-circuito-cultural.jpg <= newimgs2/In#U00edcio _ Impec_files/cdb2f1_cb81a3470fa4446494a06129b9d7dd85~mv2.jpg
+- projetos/destaques/projetos-parcerias.jpg <= newimgs2/In#U00edcio _ Impec_files/cdb2f1_a6585f6199e24b4c9d48b630a7623901~mv2.jpg
+- projetos/eixos/eixo-esporte.jpg <= newimgs2/In#U00edcio _ Impec_files/cdb2f1_72ab8b0eb57d4174beb563a4ff5dd9d2~mv2.jpg
+- projetos/eixos/eixo-educacao.jpg <= newimgs1/media_ipecc_cinema/image1.jpeg
+- projetos/eixos/eixo-cultura.jpg <= newimgs2/In#U00edcio _ Impec_files/cdb2f1_92a863843b734aacb2585f1acd94accd~mv2.jpg
+- projetos/eixos/eixo-gestao.jpg <= newimgs2/In#U00edcio _ Impec_files/cdb2f1_58cfada06d0a470286ac65f6dac73d26~mv2.jpg
+- eventos/eventos.jpg <= newimgs2/In#U00edcio _ Impec_files/cdb2f1_e56d60036e5a4bd9be85eb9a3c709c08~mv2.jpg
+- noticias/news-1.jpg <= newimgs2/In#U00edcio _ Impec_files/cdb2f1_3a6e4acf4aa547ab8d703fcb087dd118~mv2.jpg
+- noticias/news-2.jpg <= newimgs2/In#U00edcio _ Impec_files/cdb2f1_9e862078ce30401f9328b8069db9550b~mv2.jpg
+- noticias/news-3.jpg <= newimgs2/In#U00edcio _ Impec_files/cdb2f1_92a863843b734aacb2585f1acd94accd~mv2.jpg

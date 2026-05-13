@@ -1,0 +1,82 @@
+import { createClient } from "@supabase/supabase-js";
+import type { Convenio } from "./types";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+export async function getConvenios(): Promise<Convenio[]> {
+  const { data, error } = await supabase
+    .from("transparencia_convenios")
+    .select("*")
+    .order("ordem", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
+}
+
+export async function saveConvenio(convenio: Convenio): Promise<Convenio> {
+  const payload = {
+    edital_id: convenio.edital_id || null,
+    titulo: convenio.titulo || null,
+    numero_instrumento: convenio.numero_instrumento || null,
+    tipo_instrumento: convenio.tipo_instrumento || null,
+    categoria: convenio.categoria || null,
+    objeto: convenio.objeto || null,
+    contratado: convenio.contratado || null,
+    cnpj: convenio.cnpj || null,
+    data_assinatura: convenio.data_assinatura || null,
+    vigencia_inicio: convenio.vigencia_inicio || null,
+    vigencia_fim: convenio.vigencia_fim || null,
+    status: convenio.status || null,
+    plano_trabalho_url: convenio.plano_trabalho_url || null,
+    documento_principal_url: convenio.documento_principal_url || null,
+    relatorio_parcial_url: convenio.relatorio_parcial_url || null,
+    relatorio_final_url: convenio.relatorio_final_url || null,
+    observacoes: convenio.observacoes || null,
+    ordem: convenio.ordem ?? 0,
+    publicado: convenio.publicado ?? true,
+  };
+
+  if (convenio.id) {
+    const { data, error } = await supabase
+      .from("transparencia_convenios")
+      .update(payload)
+      .eq("id", convenio.id)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } else {
+    const { data, error } = await supabase
+      .from("transparencia_convenios")
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  }
+}
+
+export async function deleteConvenio(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("transparencia_convenios")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+}

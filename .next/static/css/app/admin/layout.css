@@ -1,0 +1,419 @@
+/*!*******************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[3]!./app/admin/globals.css ***!
+  \*******************************************************************************************************************************************************************************************************************************************************************/
+/* ===== Reset básico só para o admin ===== */
+.admin-body,
+.admin-body *,
+.admin-body *::before,
+.admin-body *::after {
+  box-sizing: border-box;
+}
+
+.admin-body {
+  margin: 0;
+  padding: 0;
+}
+
+/* ===== Layout geral do admin ===== */
+
+.admin-body {
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #041a3b 0%, #020617 55%, #020617 100%);
+  color: #e5e7eb;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.admin-wrapper {
+  min-height: auto;
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+}
+
+/* ===== Sidebar ===== */
+
+.admin-sidebar {
+  background: linear-gradient(150deg, #020617 0%, #020617 45%, #041a3b 100%);
+  padding: 20px 14px 22px;
+  box-shadow: 10px 0 40px rgba(0, 0, 0, 0.7);
+  position: relative;
+  z-index: 10;
+}
+
+/* Logo do painel */
+.admin-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.admin-logo-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.96);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1rem;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.7);
+}
+
+.admin-logo-text {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+}
+
+.admin-logo-title {
+  font-weight: 700;
+}
+
+.admin-logo-sub {
+  font-size: 0.78rem;
+  opacity: 0.7;
+}
+
+/* Menu lateral */
+.admin-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-nav-section-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  opacity: 0.6;
+  margin: 12px 4px 6px;
+}
+
+.admin-nav-separator {
+  height: 1px;
+  margin: 12px 4px;
+  background: linear-gradient(90deg, transparent, #4b5563, transparent);
+}
+
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  margin: 2px 0;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  text-decoration: none;
+  color: #e5e7eb;
+  opacity: 0.9;
+  transition: background 0.15s ease, transform 0.12s ease, opacity 0.15s ease;
+}
+
+.admin-nav-item:hover {
+  background: rgba(15, 23, 42, 0.96);
+  transform: translateX(2px);
+  opacity: 1;
+}
+
+.admin-nav-icon {
+  width: 20px;
+  text-align: center;
+}
+
+/* ===== Área principal ===== */
+
+.admin-main {
+  padding: 4px 6px 8px;
+}
+
+/* Barra degradê no topo (por trás do conteúdo) */
+.admin-topbar {
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(90deg, #0b4b8d, #0ea5e9, #22c55e);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 14px;
+  box-shadow: 0 10px 22px rgba(15, 118, 212, 0.34);
+  margin-bottom: 10px;
+}
+
+.admin-chip {
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: #10b981;
+  color: #022c22;
+  font-weight: 600;
+  font-size: 0.85rem;
+  box-shadow: 0 8px 22px rgba(16, 185, 129, 0.7);
+}
+
+/* Container com o quadro azul escuro */
+.admin-content-shell {
+  border-radius: 20px;
+  background: radial-gradient(circle at top, #0b4b8d 0%, #020617 60%);
+  padding: 10px 10px 12px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.56);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+}
+
+/* ===== Tipografia / títulos ===== */
+
+.admin-h1 {
+  margin: 0 0 4px;
+  font-size: 1.7rem;
+}
+
+.admin-h2 {
+  margin: 16px 0 8px;
+  font-size: 1.05rem;
+}
+
+.admin-h2.spaced {
+  margin-top: 22px;
+}
+
+.admin-subtitle {
+  margin: 0 0 10px;
+  font-size: 0.92rem;
+  color: #cbd5f5;
+}
+
+/* ===== Grid de cards ===== */
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  grid-gap: 12px;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+/* ===== CARD ===== */
+
+.admin-card {
+  display: block;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.8));
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.5);
+  text-decoration: none;
+  color: inherit;
+}
+
+.admin-card-link {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.admin-card h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* Botão verde de ação */
+.admin-button {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 7px 18px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 600;
+  background: linear-gradient(90deg, #10b981, #22c55e);
+  color: #022c22;
+  box-shadow: 0 10px 26px rgba(16, 185, 129, 0.7);
+}
+
+.admin-button:hover {
+  filter: brightness(1.04);
+}
+
+/* Caixa grande */
+.admin-box {
+  border-radius: 18px;
+  padding: 14px 16px 16px;
+  background: radial-gradient(circle at top, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.9));
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.56);
+}
+
+/* ===== FORM ===== */
+
+.admin-form {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.admin-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.admin-form-row label {
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.admin-input,
+.admin-textarea {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  background: rgba(15, 23, 42, 0.95);
+  color: #e5e7eb;
+  padding: 8px 10px;
+  font-size: 0.88rem;
+}
+
+.admin-textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.admin-content-shell input,
+.admin-content-shell textarea,
+.admin-content-shell select {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  background: rgba(15, 23, 42, 0.95);
+  color: #e5e7eb;
+  padding: 7px 10px;
+  font-size: 0.9rem;
+}
+
+.admin-content-shell textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* Botão salvar */
+.admin-save-row {
+  margin-top: 18px;
+}
+
+.admin-save-button {
+  padding: 8px 24px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: linear-gradient(90deg, #10b981, #22c55e);
+  color: #022c22;
+  box-shadow: 0 10px 26px rgba(16, 185, 129, 0.7);
+}
+
+/* ===== Responsivo ===== */
+
+@media (max-width: 900px) {
+  .admin-wrapper {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-sidebar {
+    display: none;
+  }
+
+  .admin-main {
+    padding: 14px 12px 18px;
+  }
+
+  .admin-content-shell {
+    padding: 14px 12px 16px;
+  }
+}
+/* ================= BOTÕES ADMIN PADRÃO ================= */
+
+/* base */
+button {
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+/* hover padrão */
+button:hover {
+  opacity: 0.85;
+}
+
+/* botão principal (Salvar) */
+button[type="submit"],
+button.primary {
+  background: #22c55e;
+  color: #022c22;
+}
+
+/* botão secundário (Voltar / Cancelar) */
+button.secondary {
+  background: transparent;
+  color: #e5e7eb;
+  border: 1px solid #334155;
+}
+
+button.secondary:hover {
+  background: #1e293b;
+}
+
+/* botão perigo (Excluir) */
+button.danger {
+  background: #dc2626;
+  color: #fff;
+}
+
+/* botão neutro (Editar / ações) */
+button.neutral {
+  background: #2563eb;
+  color: #fff;
+}
+/* ===== Feedback padrão do admin ===== */
+
+.admin-msg,
+.admin-message,
+.success-msg,
+.error-msg,
+.form-message,
+p[role="alert"] {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.success-msg,
+.admin-msg.success,
+.admin-message.success {
+  background: rgba(34, 197, 94, 0.14);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.error-msg,
+.admin-msg.error,
+.admin-message.error,
+p[role="alert"] {
+  background: rgba(239, 68, 68, 0.14);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}

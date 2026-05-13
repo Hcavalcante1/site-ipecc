@@ -1,0 +1,22 @@
+export type Convenio = {
+  id?: string;
+  edital_id?: string | null;
+  titulo?: string | null;
+  numero_instrumento?: string | null;
+  tipo_instrumento?: string | null;
+  categoria?: string | null;
+  objeto?: string | null;
+  contratado?: string | null;
+  cnpj?: string | null;
+  data_assinatura?: string | null;
+  vigencia_inicio?: string | null;
+  vigencia_fim?: string | null;
+  status?: string | null;
+  plano_trabalho_url?: string | null;
+  documento_principal_url?: string | null;
+  relatorio_parcial_url?: string | null;
+  relatorio_final_url?: string | null;
+  observacoes?: string | null;
+  ordem?: number | null;
+  publicado?: boolean | null;
+};

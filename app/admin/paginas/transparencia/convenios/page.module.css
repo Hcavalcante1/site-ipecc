@@ -1,0 +1,114 @@
+.page {
+  display: grid;
+  gap: 24px;
+}
+
+.sectionCard {
+  background: linear-gradient(135deg, rgba(9, 18, 40, 0.96), rgba(6, 23, 63, 0.92));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 22px;
+  padding: 22px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
+}
+
+.toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  margin-bottom: 6px;
+  position: relative;
+  z-index: 30;
+  pointer-events: auto;
+}
+
+.greenBtn {
+  background: #22c55e;
+  color: #052814;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.18);
+}
+
+.redBtn {
+  background: #ef4444;
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.22);
+}
+
+.recordCard {
+  margin-top: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.input {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  padding: 10px 12px;
+  outline: none;
+  font-size: 0.95rem;
+}
+
+.select {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1px solid rgba(34, 197, 94, 0.38);
+  background: #0b1220;
+  color: #f8fafc;
+  padding: 10px 12px;
+  outline: none;
+  font-size: 0.95rem;
+  cursor: pointer;
+  appearance: auto;
+  box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.1);
+}
+
+.textarea {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  padding: 10px 12px;
+  outline: none;
+  font-size: 0.95rem;
+  resize: vertical;
+  min-height: 96px;
+}

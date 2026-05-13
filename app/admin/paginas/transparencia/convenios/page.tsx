@@ -1,0 +1,434 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import type { Convenio } from "./types";
+import { TIPO_INSTRUMENTO_OPTIONS, CATEGORIA_OPTIONS, STATUS_CONVENIO_OPTIONS } from "./constants";
+import { getConvenios, saveConvenio, deleteConvenio } from "./conveniosService";
+import classes from "./page.module.css";
+import ConvenioCard from "./components/ConvenioCard";
+import { AdminButton, AdminLoadingButton, AdminMessage, AdminSectionHeader } from "@/components/admin";
+
+function novoConvenio(): Convenio {
+  return {
+    edital_id: "",
+    titulo: "",
+    numero_instrumento: "",
+    tipo_instrumento: "",
+    categoria: "",
+    objeto: "",
+    contratado: "",
+    cnpj: "",
+    data_assinatura: "",
+    vigencia_inicio: "",
+    vigencia_fim: "",
+    status: "",
+    plano_trabalho_url: "",
+    documento_principal_url: "",
+    relatorio_parcial_url: "",
+    relatorio_final_url: "",
+    observacoes: "",
+    ordem: 0,
+    publicado: true,
+  };
+}
+
+const styles = {
+  page: {
+    display: "grid",
+    gap: 24,
+  } as React.CSSProperties,
+
+  sectionCard: {
+    background: "linear-gradient(135deg, rgba(9,18,40,0.96), rgba(6,23,63,0.92))",
+    border: "1px solid rgba(255,255,255,0.10)",
+    borderRadius: 22,
+    padding: 22,
+    boxShadow: "0 14px 34px rgba(0,0,0,0.30)",
+  } as React.CSSProperties,
+
+  title: {
+    margin: 0,
+    fontSize: "2rem",
+    lineHeight: 1.1,
+    fontWeight: 800,
+    color: "#f8fafc",
+  } as React.CSSProperties,
+
+  toolbar: {
+    display: "flex",
+    gap: 10,
+    flexWrap: "wrap",
+    marginTop: 12,
+    marginBottom: 6,
+    position: "relative",
+    zIndex: 30,
+    pointerEvents: "auto",
+  } as React.CSSProperties,
+
+  greenBtn: {
+    background: "#22c55e",
+    color: "#052814",
+    padding: "10px 18px",
+    borderRadius: 999,
+    border: "none",
+    cursor: "pointer",
+    fontWeight: 700,
+    fontSize: 14,
+    lineHeight: 1.2,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    boxShadow: "0 8px 24px rgba(34,197,94,0.18)",
+  } as React.CSSProperties,
+
+  redBtn: {
+    background: "#ef4444",
+    color: "#fff",
+    padding: "10px 18px",
+    borderRadius: 999,
+    border: "none",
+    cursor: "pointer",
+    fontWeight: 700,
+    fontSize: 14,
+    lineHeight: 1.2,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    boxShadow: "0 8px 24px rgba(239,68,68,0.22)",
+  } as React.CSSProperties,
+
+  recordCard: {
+    marginTop: 14,
+    background: "rgba(255,255,255,0.03)",
+    border: "1px solid rgba(255,255,255,0.10)",
+    borderRadius: 18,
+    padding: 18,
+  } as React.CSSProperties,
+
+  recordHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 14,
+    flexWrap: "wrap",
+  } as React.CSSProperties,
+
+  recordTitle: {
+    margin: 0,
+    fontSize: "1.15rem",
+    fontWeight: 800,
+    color: "#f8fafc",
+  } as React.CSSProperties,
+
+  badge: {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "6px 10px",
+    borderRadius: 999,
+    background: "rgba(34,197,94,0.14)",
+    color: "#86efac",
+    border: "1px solid rgba(34,197,94,0.28)",
+    fontSize: "0.84rem",
+    fontWeight: 700,
+  } as React.CSSProperties,
+
+  badgeMuted: {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "6px 10px",
+    borderRadius: 999,
+    background: "rgba(255,255,255,0.06)",
+    color: "#cbd5e1",
+    border: "1px solid rgba(255,255,255,0.10)",
+    fontSize: "0.84rem",
+    fontWeight: 700,
+  } as React.CSSProperties,
+
+  grid2: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 14,
+  } as React.CSSProperties,
+
+  full: {
+    gridColumn: "1 / -1",
+  } as React.CSSProperties,
+
+  fieldWrap: {
+    display: "grid",
+    gap: 6,
+  } as React.CSSProperties,
+
+  label: {
+    fontSize: "0.93rem",
+    fontWeight: 700,
+    color: "#e2e8f0",
+  } as React.CSSProperties,
+
+  input: {
+    width: "100%",
+    minHeight: 44,
+    borderRadius: 12,
+    border: "1px solid rgba(255,255,255,0.12)",
+    background: "rgba(255,255,255,0.05)",
+    color: "#fff",
+    padding: "10px 12px",
+    outline: "none",
+    fontSize: "0.95rem",
+  } as React.CSSProperties,
+
+  select: {
+    width: "100%",
+    minHeight: 44,
+    borderRadius: 12,
+    border: "1px solid rgba(34,197,94,0.38)",
+    background: "#0b1220",
+    color: "#f8fafc",
+    padding: "10px 12px",
+    outline: "none",
+    fontSize: "0.95rem",
+    cursor: "pointer",
+    appearance: "auto",
+    boxShadow: "0 0 0 1px rgba(34,197,94,0.10) inset",
+  } as React.CSSProperties,
+
+  textarea: {
+    width: "100%",
+    borderRadius: 12,
+    border: "1px solid rgba(255,255,255,0.12)",
+    background: "rgba(255,255,255,0.05)",
+    color: "#fff",
+    padding: "10px 12px",
+    outline: "none",
+    fontSize: "0.95rem",
+    resize: "vertical",
+    minHeight: 96,
+  } as React.CSSProperties,
+
+  footer: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 10,
+    flexWrap: "wrap",
+    marginTop: 14,
+    paddingTop: 12,
+    borderTop: "1px solid rgba(255,255,255,0.08)",
+  } as React.CSSProperties,
+
+  switchRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    color: "#e5e7eb",
+    fontWeight: 700,
+  } as React.CSSProperties,
+
+  msg: {
+    marginTop: 10,
+    color: "#cbd5e1",
+    fontWeight: 700,
+    fontSize: "0.95rem",
+  } as React.CSSProperties,
+
+  blockMsg: {
+    marginTop: 12,
+    padding: "10px 12px",
+    borderRadius: 12,
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    color: "#e2e8f0",
+    fontWeight: 700,
+    fontSize: "0.92rem",
+  } as React.CSSProperties,
+};
+
+function getMessageType(message: string): "success" | "error" | "info" {
+  if (message.includes("✔") || message.toLowerCase().includes("sucesso") || message.toLowerCase().includes("salvo")) {
+    return "success";
+  }
+  if (message.includes("✘") || message.toLowerCase().includes("erro") || message.toLowerCase().includes("falhou")) {
+    return "error";
+  }
+  return "info";
+}
+
+function emptyToNull(value?: string | null) {
+  if (value === undefined || value === null) return null;
+  const trimmed = value.trim();
+  return trimmed === "" ? null : trimmed;
+}
+
+function emptyNumberToNull(value?: number | null) {
+  if (value === undefined || value === null) return null;
+  return Number.isNaN(value) ? null : value;
+}
+
+function normalizeUuid(value?: string | null) {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (trimmed === "") return null;
+
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+  return uuidRegex.test(trimmed) ? trimmed : null;
+}
+
+export default function TransparenciaConveniosAdmin() {
+  const [loading, setLoading] = useState(true);
+  const [msg, setMsg] = useState("");
+  const [blockMsgs, setBlockMsgs] = useState<Record<number, string>>({});
+  const [convenios, setConvenios] = useState<Convenio[]>([]);
+
+  useEffect(() => {
+    carregar();
+  }, []);
+
+  async function carregar() {
+    setLoading(true);
+    try {
+      const data = await getConvenios();
+      setConvenios(data && data.length > 0 ? data : [novoConvenio()]);
+    } catch (error: any) {
+      console.error("Erro ao carregar convênios:", error);
+      setMsg(`Erro ao carregar convênios: ${error.message}`);
+      setConvenios([novoConvenio()]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function setBlockMsg(index: number, message: string) {
+    setBlockMsgs((prev) => ({ ...prev, [index]: message }));
+  }
+
+  function atualizarCampo<K extends keyof Convenio>(index: number, campo: K, valor: Convenio[K]) {
+    setConvenios((prev) => {
+      const copia = [...prev];
+      copia[index] = { ...copia[index], [campo]: valor };
+      return copia;
+    });
+  }
+
+  function adicionarBloco() {
+    setConvenios((prev) => [...prev, novoConvenio()]);
+    setMsg("Novo bloco de convênio adicionado.");
+  }
+
+  async function salvarTodos() {
+    setMsg("Salvando convênios...");
+
+    for (let i = 0; i < convenios.length; i++) {
+      const item = convenios[i];
+      try {
+        await saveConvenio(item);
+        setBlockMsg(i, "Bloco salvo com sucesso.");
+      } catch (error: any) {
+        console.error(error);
+        setMsg(`Erro ao salvar convênios: ${error.message}`);
+        setBlockMsg(i, `Erro ao salvar este bloco: ${error.message}`);
+        return;
+      }
+    }
+
+    await carregar();
+    setMsg("Convênios salvos com sucesso.");
+  }
+
+  async function salvarBloco(index: number) {
+    const item = convenios[index];
+    setBlockMsg(index, "Salvando este bloco...");
+
+    try {
+      await saveConvenio(item);
+      await carregar();
+      setBlockMsg(index, "Bloco salvo com sucesso.");
+      setMsg("Convênio salvo com sucesso.");
+    } catch (error: any) {
+      console.error(error);
+      setBlockMsg(index, `Erro ao salvar este bloco: ${error.message}`);
+      setMsg(`Erro ao salvar convênios: ${error.message}`);
+    }
+  }
+
+  async function excluirBloco(id?: string, index?: number) {
+    const idx = index ?? 0;
+    const confirmado = window.confirm("Tem certeza que deseja excluir este convênio? Esta ação não pode ser desfeita.");
+
+    if (!confirmado) {
+      setBlockMsg(idx, "Exclusão cancelada.");
+      setMsg("Exclusão cancelada.");
+      return;
+    }
+
+    if (!id) {
+      setConvenios((prev) => prev.filter((_, i) => i !== idx));
+      setBlockMsg(idx, "Bloco removido da tela.");
+      setMsg("Bloco removido da tela.");
+      return;
+    }
+
+    try {
+      await deleteConvenio(id);
+      await carregar();
+      setMsg("Convênio excluído com sucesso.");
+    } catch (error: any) {
+      console.error(error);
+      setBlockMsg(idx, `Erro ao excluir este bloco: ${error.message}`);
+      setMsg(`Erro ao excluir convênio: ${error.message}`);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className={classes.page}>
+        <section className={classes.sectionCard}>
+          <AdminSectionHeader level={1} style={styles.title}>Tabela de Convênios</AdminSectionHeader>
+          <p style={styles.msg}>Carregando...</p>
+        </section>
+      </div>
+    );
+  }
+
+  return (
+    <div className={classes.page}>
+      <section className={classes.sectionCard}>
+        <AdminSectionHeader level={1} style={styles.title}>Tabela de Convênios</AdminSectionHeader>
+
+        <div className={classes.toolbar}>
+          <AdminButton type="button" variant="primary" className={classes.greenBtn} onClick={adicionarBloco}>
+            + Adicionar convênio
+          </AdminButton>
+          <AdminLoadingButton
+            type="button"
+            variant="primary"
+            className={classes.greenBtn}
+            onClick={salvarTodos}
+            loading={false}
+            loadingText="Salvando..."
+          >
+            Salvar todos
+          </AdminLoadingButton>
+        </div>
+
+        {msg ? <AdminMessage message={msg} type={getMessageType(msg)} style={styles.msg} /> : null}
+
+        {convenios.map((item, index) => (
+          <ConvenioCard
+            key={item.id ?? `novo-${index}`}
+            item={item}
+            index={index}
+            blockMsgs={blockMsgs}
+            loadingIndex={null}
+            loadingOperationType={null}
+            updateConvenio={atualizarCampo}
+            salvarBloco={salvarBloco}
+            excluirBloco={excluirBloco}
+          />
+        ))}
+      </section>
+    </div>
+  );
+}
