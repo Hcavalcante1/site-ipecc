@@ -1,8 +1,21 @@
 "use client";
 export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useSearchParams, useRouter } from "next/navigation";
+import { adminTokens } from "@/components/admin";
+
+const publicadoRowStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: adminTokens.spacing.md,
+};
+
+const msgStyle: CSSProperties = {
+  marginTop: adminTokens.spacing.md,
+  fontWeight: 500,
+};
 
 export default function EventoForm() {
   const searchParams = useSearchParams();
@@ -177,7 +190,7 @@ export default function EventoForm() {
           />
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={publicadoRowStyle}>
           <input
             type="checkbox"
             checked={publicado}
@@ -188,7 +201,7 @@ export default function EventoForm() {
 
         {/* ✅ MENSAGEM PADRÃO */}
         {msg && (
-          <p style={{ marginTop: 10, fontWeight: 500 }}>
+          <p style={msgStyle}>
             {msg}
           </p>
         )}

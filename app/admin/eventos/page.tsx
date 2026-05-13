@@ -1,7 +1,52 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { adminTokens } from "@/components/admin";
+
+const wrapTopStyle: CSSProperties = {
+  marginTop: adminTokens.spacing.sm * 2,
+};
+
+const sectionTopStyle: CSSProperties = {
+  marginTop: adminTokens.spacing.base + adminTokens.spacing.sm,
+};
+
+const descricaoStyle: CSSProperties = {
+  fontSize: adminTokens.typography.fontSize.xs,
+  opacity: 0.8,
+};
+
+const metaLinhaStyle: CSSProperties = {
+  fontSize: adminTokens.typography.fontSize.xs,
+};
+
+const metaLinhaComTopStyle: CSSProperties = {
+  ...metaLinhaStyle,
+  marginTop: adminTokens.spacing.xs,
+};
+
+const statusLinhaStyle: CSSProperties = {
+  ...metaLinhaStyle,
+  marginTop: adminTokens.spacing.xs,
+};
+
+const acoesRowStyle: CSSProperties = {
+  marginTop: adminTokens.spacing.base,
+  display: "flex",
+  gap: adminTokens.spacing.sm,
+};
+
+const excluirBtnStyle: CSSProperties = {
+  background: adminTokens.colors.error.background,
+  color: adminTokens.colors.error.text,
+  border: "none",
+  borderRadius: adminTokens.borderRadius.full,
+  padding: `${adminTokens.spacing.xs}px ${adminTokens.spacing.base}px`,
+  cursor: "pointer",
+  fontWeight: 600,
+};
 
 type Evento = {
   id: string;
@@ -45,25 +90,25 @@ export default function EventosAdmin() {
       <h1 className="admin-h1">Eventos</h1>
       <p className="admin-subtitle">Gerencie os eventos do site.</p>
 
-      <div style={{ marginTop: 16 }}>
+      <div style={wrapTopStyle}>
         <a href="/admin/eventos/form">
           <button className="admin-button">+ Novo evento</button>
         </a>
       </div>
 
       {loading ? (
-        <p style={{ marginTop: 20 }}>Carregando...</p>
+        <p style={sectionTopStyle}>Carregando...</p>
       ) : (
-        <div className="admin-grid" style={{ marginTop: 20 }}>
+        <div className="admin-grid" style={sectionTopStyle}>
           {eventos.map((e) => (
             <div key={e.id} className="admin-card">
               <h3>{e.titulo}</h3>
 
-              <p style={{ fontSize: 13, opacity: 0.8 }}>
+              <p style={descricaoStyle}>
                 {e.descricao}
               </p>
 
-              <p style={{ fontSize: 12, marginTop: 6 }}>
+              <p style={metaLinhaComTopStyle}>
                 📅{" "}
                 {e.data_evento
                   ? new Date(e.data_evento).toLocaleDateString("pt-BR")
@@ -71,41 +116,33 @@ export default function EventosAdmin() {
               </p>
 
               {e.horario && (
-                <p style={{ fontSize: 12 }}>
+                <p style={metaLinhaStyle}>
                   ⏰ {e.horario}
                 </p>
               )}
 
-              <p style={{ fontSize: 12 }}>
+              <p style={metaLinhaStyle}>
                 📍 {e.local || "Sem local"}
               </p>
 
               {e.whatsapp && (
-                <p style={{ fontSize: 12 }}>
+                <p style={metaLinhaStyle}>
                   💬 {e.whatsapp}
                 </p>
               )}
 
-              <p style={{ fontSize: 12, marginTop: 6 }}>
+              <p style={statusLinhaStyle}>
                 {e.publicado ? "🟢 Publicado" : "🔴 Rascunho"}
               </p>
 
-              <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+              <div style={acoesRowStyle}>
                 <a href={`/admin/eventos/form?id=${e.id}`}>
                   <button className="admin-button">Editar</button>
                 </a>
 
                 <button
                   onClick={() => excluir(e.id)}
-                  style={{
-                    background: "#ef4444",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 999,
-                    padding: "6px 12px",
-                    cursor: "pointer",
-                    fontWeight: 600,
-                  }}
+                  style={excluirBtnStyle}
                 >
                   Excluir
                 </button>
