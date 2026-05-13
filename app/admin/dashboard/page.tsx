@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { spacing, borderRadius, typography, colors } from "@/components/admin";
 
 type Log = {
   id: string;
@@ -130,51 +131,51 @@ function Card({
 
 const styles: { [key: string]: React.CSSProperties } = {
   wrapper: {
-    padding: 24,
-    color: "#e5e7eb",
+    padding: spacing.xxl,
+    color: colors.text.secondary,
   },
 
   title: {
-    fontSize: 22,
-    fontWeight: 700,
-    marginBottom: 20,
+    fontSize: typography.fontSize.xl,
+    fontWeight: typography.fontWeight.bold,
+    marginBottom: spacing.xl,
   },
 
   subtitle: {
-    fontSize: 16,
-    marginBottom: 12,
+    fontSize: typography.fontSize.md,
+    marginBottom: spacing.base,
   },
 
   cards: {
     display: "grid",
     gridTemplateColumns: "repeat(4, 1fr)",
-    gap: 12,
-    marginBottom: 24,
+    gap: spacing.base,
+    marginBottom: spacing.xxl,
   },
 
   card: {
-    background: "#020617",
-    border: "1px solid #1e293b",
-    borderRadius: 12,
-    padding: 16,
+    background: colors.background.darkest,
+    border: `1px solid ${colors.border.medium}`,
+    borderRadius: borderRadius.sm,
+    padding: spacing.lg,
     textAlign: "center",
   },
 
   cardValue: {
-    fontSize: 22,
-    fontWeight: 700,
+    fontSize: typography.fontSize.xl,
+    fontWeight: typography.fontWeight.bold,
   },
 
   cardLabel: {
-    fontSize: 12,
+    fontSize: typography.fontSize.xs,
     color: "#94a3b8",
   },
 
   block: {
-    background: "#020617",
-    border: "1px solid #1e293b",
-    borderRadius: 12,
-    padding: 16,
+    background: colors.background.darkest,
+    border: `1px solid ${colors.border.medium}`,
+    borderRadius: borderRadius.sm,
+    padding: spacing.lg,
   },
 
   empty: {
@@ -184,25 +185,25 @@ const styles: { [key: string]: React.CSSProperties } = {
   bars: {
     display: "flex",
     flexDirection: "column",
-    gap: 10,
+    gap: spacing.md,
   },
 
   barRow: {
     display: "grid",
     gridTemplateColumns: "120px 1fr 40px",
     alignItems: "center",
-    gap: 10,
+    gap: spacing.md,
   },
 
   barLabel: {
-    fontSize: 12,
+    fontSize: typography.fontSize.xs,
     color: "#94a3b8",
   },
 
   barTrack: {
     height: 8,
-    background: "#1e293b",
-    borderRadius: 999,
+    background: colors.border.medium,
+    borderRadius: borderRadius.full,
     overflow: "hidden",
   },
 
@@ -212,7 +213,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
 
   barValue: {
-    fontSize: 12,
+    fontSize: typography.fontSize.xs,
     textAlign: "right",
   },
 };

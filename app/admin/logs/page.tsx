@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { spacing, borderRadius, typography, colors } from "@/components/admin";
 
 type Log = {
   id: string;
@@ -155,89 +156,89 @@ export default function LogsPage() {
 
 const styles: { [key: string]: React.CSSProperties } = {
   wrapper: {
-    padding: 24,
-    color: "#e5e7eb",
+    padding: spacing.xxxl,
+    color: colors.text.light,
   },
 
   title: {
-    fontSize: 22,
-    fontWeight: 700,
-    marginBottom: 12,
+    fontSize: typography.fontSize.xl,
+    fontWeight: typography.fontWeight.bold,
+    marginBottom: spacing.md,
   },
 
   exportBtn: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
     padding: "8px 16px",
-    borderRadius: 999,
+    borderRadius: borderRadius.full,
     border: "none",
-    background: "#22c55e",
-    color: "#022c22",
-    fontWeight: 600,
+    background: colors.success.background,
+    color: colors.success.text,
+    fontWeight: typography.fontWeight.normal,
     cursor: "pointer",
   },
 
   filters: {
     display: "flex",
-    gap: 10,
-    marginBottom: 20,
+    gap: spacing.md,
+    marginBottom: spacing.xl,
   },
 
   loading: {
-    color: "#94a3b8",
+    color: colors.text.secondary,
   },
 
   empty: {
-    color: "#64748b",
+    color: colors.text.muted,
   },
 
   table: {
     display: "flex",
     flexDirection: "column",
-    gap: 14,
+    gap: spacing.lg,
   },
 
   row: {
-    background: "#020617",
-    border: "1px solid #1e293b",
-    borderRadius: 12,
-    padding: 14,
+    background: colors.background.darkest,
+    border: `1px solid ${colors.border.medium}`,
+    borderRadius: borderRadius.sm,
+    padding: spacing.lg,
   },
 
   header: {
     display: "flex",
     alignItems: "center",
-    gap: 10,
-    marginBottom: 6,
+    gap: spacing.md,
+    marginBottom: spacing.xs,
   },
 
   badge: {
     padding: "4px 10px",
-    borderRadius: 999,
-    fontSize: 11,
-    fontWeight: 700,
-    color: "#fff",
+    borderRadius: borderRadius.full,
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.text.primary,
   },
 
   tabela: {
-    color: "#94a3b8",
-    fontSize: 13,
+    color: colors.text.secondary,
+    fontSize: typography.fontSize.sm,
   },
 
   info: {
     display: "flex",
     justifyContent: "space-between",
-    fontSize: 12,
-    color: "#64748b",
-    marginBottom: 8,
+    fontSize: typography.fontSize.xs,
+    color: colors.text.muted,
+    marginBottom: spacing.sm,
   },
 
   details: {
-    background: "#020617",
-    border: "1px solid #334155",
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 11,
-    color: "#38bdf8",
+    background: colors.background.darkest,
+    border: `1px solid ${colors.border.light}`,
+    borderRadius: borderRadius.sm,
+    padding: spacing.md,
+    fontSize: typography.fontSize.xs,
+    color: colors.text.secondary,
     overflowX: "auto",
   },
 };
