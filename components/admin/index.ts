@@ -7,3 +7,15 @@ export { default as AdminTextarea } from "./AdminTextarea";
 export { default as AdminSelect } from "./AdminSelect";
 export { default as AdminFileInput } from "./AdminFileInput";
 export { default as AdminSectionHeader } from "./AdminSectionHeader";
+
+// Design Tokens
+export {
+  spacing,
+  borderRadius,
+  shadows,
+  colors,
+  typography,
+  sizes,
+  presets,
+  default as adminTokens,
+} from "./adminTokens";
