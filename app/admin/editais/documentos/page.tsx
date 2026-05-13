@@ -6,6 +6,7 @@ export const revalidate = 0;
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { adminTokens } from "@/components/admin";
 
 type Documento = {
   id?: string;
@@ -17,7 +18,7 @@ type Documento = {
 };
 
 const sWrap: React.CSSProperties = {
-  padding: 24,
+  padding: adminTokens.spacing.xxxl,
   maxWidth: 1100,
   margin: "0 auto",
 };
@@ -26,33 +27,33 @@ const sHeader: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
-  gap: 12,
-  marginBottom: 18,
+  gap: adminTokens.spacing.base,
+  marginBottom: adminTokens.spacing.xl,
 };
 
 const sTitle: React.CSSProperties = {
   fontSize: 22,
-  fontWeight: 700,
+  fontWeight: adminTokens.typography.fontWeight.bold,
 };
 
 const sHint: React.CSSProperties = {
   fontSize: 13,
   opacity: 0.8,
-  marginTop: 6,
+  marginTop: adminTokens.spacing.xs,
 };
 
 const sBar: React.CSSProperties = {
   display: "flex",
-  gap: 10,
+  gap: adminTokens.spacing.md,
   alignItems: "center",
   flexWrap: "wrap",
 };
 
 const sBtn: React.CSSProperties = {
-  padding: "10px 14px",
+  padding: `${adminTokens.spacing.md}px ${adminTokens.spacing.lg}px`,
   borderRadius: 10,
   border: "1px solid rgba(255,255,255,0.15)",
-  background: "rgba(255,255,255,0.06)",
+  background: adminTokens.colors.surface.medium,
   color: "inherit",
   cursor: "pointer",
   fontWeight: 600,
@@ -66,7 +67,7 @@ const sBtnPrimary: React.CSSProperties = {
 
 const sCard: React.CSSProperties = {
   borderRadius: 14,
-  border: "1px solid rgba(255,255,255,0.12)",
+  border: `1px solid ${adminTokens.colors.border.strong}`,
   background: "rgba(0,0,0,0.18)",
   overflow: "hidden",
 };
@@ -81,39 +82,39 @@ const sTh: React.CSSProperties = {
   fontSize: 12,
   letterSpacing: 0.3,
   opacity: 0.85,
-  padding: "12px",
-  borderBottom: "1px solid rgba(255,255,255,0.12)",
+  padding: adminTokens.spacing.base,
+  borderBottom: `1px solid ${adminTokens.colors.border.strong}`,
 };
 
 const sTd: React.CSSProperties = {
-  padding: "10px 12px",
-  borderBottom: "1px solid rgba(255,255,255,0.08)",
+  padding: adminTokens.sizes.input.padding,
+  borderBottom: `1px solid ${adminTokens.colors.border.light}`,
   verticalAlign: "top",
 };
 
 const sInput: React.CSSProperties = {
   width: "100%",
-  padding: "10px",
+  padding: `${adminTokens.spacing.md}px`,
   borderRadius: 10,
   border: "1px solid rgba(255,255,255,0.14)",
-  background: "rgba(255,255,255,0.06)",
+  background: adminTokens.colors.surface.medium,
   color: "inherit",
 };
 
 const sError: React.CSSProperties = {
-  padding: 14,
-  borderRadius: 12,
+  padding: adminTokens.spacing.lg,
+  borderRadius: adminTokens.borderRadius.sm,
   border: "1px solid rgba(239,68,68,0.35)",
   background: "rgba(239,68,68,0.10)",
-  marginBottom: 14,
+  marginBottom: adminTokens.spacing.lg,
 };
 
 const sOk: React.CSSProperties = {
-  padding: 14,
-  borderRadius: 12,
+  padding: adminTokens.spacing.lg,
+  borderRadius: adminTokens.borderRadius.sm,
   border: "1px solid rgba(34,197,94,0.35)",
   background: "rgba(34,197,94,0.10)",
-  marginBottom: 14,
+  marginBottom: adminTokens.spacing.lg,
 };
 
 export default function DocumentosAdminPage() {
