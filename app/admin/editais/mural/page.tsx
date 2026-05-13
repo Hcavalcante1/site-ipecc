@@ -1,27 +1,29 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import { createClient } from "@supabase/supabase-js";
+import { adminTokens } from "@/components/admin";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// BOTÕES
-const base = {
+// BOTÕES (cores fixas do mural — sem alteração semântica)
+const base: CSSProperties = {
   border: "none",
-  borderRadius: 999,
-  padding: "8px 16px",
+  borderRadius: adminTokens.borderRadius.full,
+  padding: `${adminTokens.spacing.sm}px ${adminTokens.spacing.sm * 2}px`,
   cursor: "pointer",
   fontWeight: 600,
   fontSize: 13,
 };
 
-const btnGreen = { ...base, background: "#22c55e", color: "#062e1b" };
-const btnGray = { ...base, background: "#e5e7eb", color: "#111827" };
-const btnRed = { ...base, background: "#dc2626", color: "#fff" };
-const btnBlue = { ...base, background: "#2563eb", color: "#fff" };
+const btnGreen: CSSProperties = { ...base, background: "#22c55e", color: "#062e1b" };
+const btnGray: CSSProperties = { ...base, background: "#e5e7eb", color: "#111827" };
+const btnRed: CSSProperties = { ...base, background: "#dc2626", color: "#fff" };
+const btnBlue: CSSProperties = { ...base, background: "#2563eb", color: "#fff" };
 
 type Edital = {
   id: string;
@@ -115,11 +117,20 @@ export default function Page() {
   }
 
   return (
-    <div style={{ padding: 20 }}>
+    <div
+      style={{
+        padding: adminTokens.spacing.base + adminTokens.spacing.sm,
+      }}
+    >
       <h1>Mural de Editais</h1>
 
       {/* FORM */}
-      <form onSubmit={salvar} style={{ marginBottom: 20 }}>
+      <form
+        onSubmit={salvar}
+        style={{
+          marginBottom: adminTokens.spacing.base + adminTokens.spacing.sm,
+        }}
+      >
         <input
           placeholder="Título"
           value={titulo}
@@ -160,7 +171,7 @@ export default function Page() {
           style={{
             border: "1px solid #333",
             padding: 15,
-            marginBottom: 10,
+            marginBottom: adminTokens.spacing.md,
             display: "flex",
             justifyContent: "space-between",
           }}
@@ -174,7 +185,7 @@ export default function Page() {
           <div
             style={{
               display: "flex",
-              gap: 10,
+              gap: adminTokens.spacing.md,
               minWidth: 250,
               justifyContent: "flex-end",
             }}
