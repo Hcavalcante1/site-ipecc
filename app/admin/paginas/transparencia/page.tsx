@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import type { CSSProperties } from "react";
+import { adminTokens } from "@/components/admin";
 
-const btnGreen = {
-  background: "#22c55e",
-  color: "#062e1b",
+const btnGreen: CSSProperties = {
+  background: adminTokens.colors.success.background,
+  color: adminTokens.colors.success.text,
   border: "none",
-  borderRadius: 999,
-  padding: "8px 18px",
+  borderRadius: adminTokens.borderRadius.full,
+  padding: `${adminTokens.spacing.sm}px ${adminTokens.spacing.xl}px`,
   cursor: "pointer",
   fontWeight: 600,
 };
@@ -25,8 +27,8 @@ export default function TransparenciaAdminIndex() {
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-          gap: 16,
-          marginTop: 24,
+          gap: adminTokens.spacing.sm * 2,
+          marginTop: adminTokens.spacing.xxxl,
         }}
       >
         {/* HERO */}
@@ -34,7 +36,7 @@ export default function TransparenciaAdminIndex() {
           <h3>Hero da página</h3>
           <p>Título e texto principal do topo da página.</p>
           <Link href="/admin/paginas/transparencia/hero">
-            <button style={{ ...btnGreen, marginTop: 14 }}>Editar</button>
+            <button style={{ ...btnGreen, marginTop: adminTokens.spacing.lg }}>Editar</button>
           </Link>
         </div>
 
@@ -43,7 +45,7 @@ export default function TransparenciaAdminIndex() {
           <h3>Compromissos e princípios</h3>
           <p>Texto institucional sobre ética, transparência e governança.</p>
           <Link href="/admin/paginas/transparencia/compromissos">
-            <button style={{ ...btnGreen, marginTop: 14 }}>Editar</button>
+            <button style={{ ...btnGreen, marginTop: adminTokens.spacing.lg }}>Editar</button>
           </Link>
         </div>
 
@@ -54,7 +56,7 @@ export default function TransparenciaAdminIndex() {
             Estatuto, atas, CNDs, políticas e demais documentos públicos.
           </p>
           <Link href="/admin/paginas/transparencia/documentos">
-            <button style={{ ...btnGreen, marginTop: 14 }}>Editar</button>
+            <button style={{ ...btnGreen, marginTop: adminTokens.spacing.lg }}>Editar</button>
           </Link>
         </div>
 
@@ -63,7 +65,7 @@ export default function TransparenciaAdminIndex() {
           <h3>Termos e Convênios</h3>
           <p>Cadastro e edição da tabela pública de convênios e instrumentos.</p>
           <Link href="/admin/paginas/transparencia/convenios">
-            <button style={{ ...btnGreen, marginTop: 14 }}>Editar</button>
+            <button style={{ ...btnGreen, marginTop: adminTokens.spacing.lg }}>Editar</button>
           </Link>
         </div>
 
@@ -72,7 +74,7 @@ export default function TransparenciaAdminIndex() {
           <h3>Editais e Chamamentos</h3>
           <p>Cadastro e edição da tabela pública de editais e chamamentos.</p>
           <Link href="/admin/paginas/transparencia/editais">
-            <button style={{ ...btnGreen, marginTop: 14 }}>Editar</button>
+            <button style={{ ...btnGreen, marginTop: adminTokens.spacing.lg }}>Editar</button>
           </Link>
         </div>
 
@@ -81,7 +83,7 @@ export default function TransparenciaAdminIndex() {
           <h3>Prestação de contas</h3>
           <p>Relatórios técnicos e financeiros.</p>
           <Link href="/admin/paginas/transparencia/prestacao">
-            <button style={{ ...btnGreen, marginTop: 14 }}>Editar</button>
+            <button style={{ ...btnGreen, marginTop: adminTokens.spacing.lg }}>Editar</button>
           </Link>
         </div>
 
@@ -90,7 +92,7 @@ export default function TransparenciaAdminIndex() {
           <h3>LGPD</h3>
           <p>Política de privacidade, contatos e proteção de dados.</p>
           <Link href="/admin/paginas/transparencia/lgpd">
-            <button style={{ ...btnGreen, marginTop: 14 }}>Editar</button>
+            <button style={{ ...btnGreen, marginTop: adminTokens.spacing.lg }}>Editar</button>
           </Link>
         </div>
 
@@ -99,7 +101,7 @@ export default function TransparenciaAdminIndex() {
           <h3>CTA / Acesso rápido</h3>
           <p>Bloco final com botão de acesso a documentos.</p>
           <Link href="/admin/paginas/transparencia/cta">
-            <button style={{ ...btnGreen, marginTop: 14 }}>Editar</button>
+            <button style={{ ...btnGreen, marginTop: adminTokens.spacing.lg }}>Editar</button>
           </Link>
         </div>
       </div>
