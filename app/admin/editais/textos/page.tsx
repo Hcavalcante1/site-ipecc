@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
+import { adminTokens } from "@/components/admin";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -386,20 +387,22 @@ const MODELOS_DOCUMENTOS: Record<
   },
 };
 
-const pageStyle: React.CSSProperties = { padding: 24 };
+const pageStyle: React.CSSProperties = {
+  padding: adminTokens.spacing.xxxl,
+};
 const containerStyle: React.CSSProperties = { maxWidth: 1280, margin: "0 auto" };
 
 const cardStyle: React.CSSProperties = {
   background: "#ffffff",
   border: "1px solid #dbe7dc",
-  borderRadius: 18,
-  padding: 18,
+  borderRadius: adminTokens.borderRadius.md,
+  padding: adminTokens.spacing.xl,
   boxShadow: "0 10px 24px rgba(16,24,40,0.06)",
 };
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
-  padding: "10px 12px",
+  padding: adminTokens.sizes.input.padding,
   borderRadius: 10,
   border: "1px solid #cbd5e1",
   outline: "none",
@@ -411,40 +414,40 @@ const btnGreen: React.CSSProperties = {
   background: "#22c55e",
   color: "#062e1b",
   border: "none",
-  borderRadius: 999,
-  padding: "10px 16px",
+  borderRadius: adminTokens.borderRadius.full,
+  padding: `${adminTokens.spacing.md}px ${adminTokens.spacing.sm * 2}px`,
   cursor: "pointer",
-  fontWeight: 700,
+  fontWeight: adminTokens.typography.fontWeight.bold,
 };
 
 const btnDark: React.CSSProperties = {
   background: "#14532d",
   color: "#ffffff",
   border: "none",
-  borderRadius: 999,
-  padding: "10px 16px",
+  borderRadius: adminTokens.borderRadius.full,
+  padding: `${adminTokens.spacing.md}px ${adminTokens.spacing.sm * 2}px`,
   cursor: "pointer",
-  fontWeight: 700,
+  fontWeight: adminTokens.typography.fontWeight.bold,
 };
 
 const btnRed: React.CSSProperties = {
   background: "#dc2626",
   color: "#ffffff",
   border: "none",
-  borderRadius: 999,
-  padding: "10px 16px",
+  borderRadius: adminTokens.borderRadius.full,
+  padding: `${adminTokens.spacing.md}px ${adminTokens.spacing.sm * 2}px`,
   cursor: "pointer",
-  fontWeight: 700,
+  fontWeight: adminTokens.typography.fontWeight.bold,
 };
 
 const ghostBtn: React.CSSProperties = {
   background: "#f8fafc",
   color: "#14532d",
   border: "1px solid #dbe7dc",
-  borderRadius: 999,
+  borderRadius: adminTokens.borderRadius.full,
   padding: "9px 14px",
   cursor: "pointer",
-  fontWeight: 700,
+  fontWeight: adminTokens.typography.fontWeight.bold,
 };
 
 export default function EditaisDocumentosAdminPage() {
@@ -682,12 +685,18 @@ export default function EditaisDocumentosAdminPage() {
 
   function renderListaPorTipo(tipo: TipoPessoa, itens: Documento[]) {
     return (
-      <div style={{ ...cardStyle, marginTop: 18 }}>
+      <div style={{ ...cardStyle, marginTop: adminTokens.spacing.xl }}>
         <h3 style={{ margin: 0, color: "#14532d", fontSize: 20 }}>
           {LABEL_TIPO_PESSOA[tipo]}
         </h3>
 
-        <div style={{ display: "grid", gap: 12, marginTop: 14 }}>
+        <div
+          style={{
+            display: "grid",
+            gap: adminTokens.spacing.base,
+            marginTop: adminTokens.spacing.lg,
+          }}
+        >
          {CATEGORIAS.map((cat) => {
   const filtrados = itens.filter((item) => item.categoria === cat.value);
   const key = `${tipo}_${cat.value}`;
@@ -712,8 +721,8 @@ export default function EditaisDocumentosAdminPage() {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    padding: "14px 16px",
-                    fontWeight: 700,
+                    padding: `${adminTokens.spacing.lg}px ${adminTokens.spacing.sm * 2}px`,
+                    fontWeight: adminTokens.typography.fontWeight.bold,
                     color: "#0f172a",
                     textAlign: "left",
                   }}
@@ -725,24 +734,28 @@ export default function EditaisDocumentosAdminPage() {
                 </button>
 
                 {isOpen && (
-                  <div style={{ padding: "0 16px 16px" }}>
+                  <div
+                    style={{
+                      padding: `0 ${adminTokens.spacing.sm * 2}px ${adminTokens.spacing.sm * 2}px`,
+                    }}
+                  >
                     {!filtrados.length ? (
                       <p style={{ margin: 0, color: "#64748b" }}>
                         Nenhum item nesta categoria.
                       </p>
                     ) : (
-                      <div style={{ display: "grid", gap: 10 }}>
+                      <div style={{ display: "grid", gap: adminTokens.spacing.md }}>
                         {filtrados.map((item) => (
                           <div
                             key={item.id}
                             style={{
                               background: "#ffffff",
                               border: "1px solid #dbe7dc",
-                              borderRadius: 12,
-                              padding: 12,
+                              borderRadius: adminTokens.borderRadius.sm,
+                              padding: adminTokens.spacing.base,
                               display: "flex",
                               justifyContent: "space-between",
-                              gap: 12,
+                              gap: adminTokens.spacing.base,
                               alignItems: "flex-start",
                               flexWrap: "wrap",
                             }}
@@ -753,7 +766,7 @@ export default function EditaisDocumentosAdminPage() {
                               </strong>
                               <div
                                 style={{
-                                  marginTop: 6,
+                                  marginTop: adminTokens.spacing.xs,
                                   fontSize: 12,
                                   color: "#64748b",
                                 }}
@@ -762,7 +775,13 @@ export default function EditaisDocumentosAdminPage() {
                               </div>
                             </div>
 
-                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: adminTokens.spacing.sm,
+                                flexWrap: "wrap",
+                              }}
+                            >
                               <button
                                 type="button"
                                 onClick={() => abrirEdicao(item)}
@@ -795,11 +814,11 @@ export default function EditaisDocumentosAdminPage() {
   return (
     <main style={pageStyle}>
       <div style={containerStyle}>
-        <div style={{ marginBottom: 18 }}>
+        <div style={{ marginBottom: adminTokens.spacing.xl }}>
           <h1 style={{ margin: 0, color: "#14532d", fontSize: 30 }}>
             Editais — Documentação
           </h1>
-          <p style={{ marginTop: 8, color: "#475569" }}>
+          <p style={{ marginTop: adminTokens.spacing.sm, color: "#475569" }}>
             Selecione os documentos oficiais por categoria e grave. A listagem abaixo permanece compacta.
           </p>
         </div>
@@ -807,12 +826,12 @@ export default function EditaisDocumentosAdminPage() {
         {msg ? (
           <div
             style={{
-              marginBottom: 16,
+              marginBottom: adminTokens.spacing.sm * 2,
               background: "#ecfdf5",
               color: "#166534",
               border: "1px solid #bbf7d0",
-              borderRadius: 12,
-              padding: "12px 14px",
+              borderRadius: adminTokens.borderRadius.sm,
+              padding: `${adminTokens.spacing.base}px ${adminTokens.spacing.lg}px`,
               fontWeight: 600,
             }}
           >
@@ -825,7 +844,7 @@ export default function EditaisDocumentosAdminPage() {
             style={{
               display: "grid",
               gridTemplateColumns: "1fr 1fr auto auto",
-              gap: 10,
+              gap: adminTokens.spacing.md,
               alignItems: "center",
             }}
           >
@@ -866,7 +885,7 @@ export default function EditaisDocumentosAdminPage() {
                 <div
                   style={{
                     position: "absolute",
-                    top: "calc(100% + 8px)",
+                    top: `calc(100% + ${adminTokens.spacing.sm}px)`,
                     left: 0,
                     width: 520,
                     maxWidth: "min(520px, calc(100vw - 80px))",
@@ -874,7 +893,7 @@ export default function EditaisDocumentosAdminPage() {
                     border: "1px solid #dbe7dc",
                     borderRadius: 16,
                     boxShadow: "0 18px 40px rgba(15,23,42,0.18)",
-                    padding: 12,
+                    padding: adminTokens.spacing.base,
                     zIndex: 40,
                   }}
                 >
@@ -883,8 +902,8 @@ export default function EditaisDocumentosAdminPage() {
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
-                      gap: 12,
-                      marginBottom: 10,
+                      gap: adminTokens.spacing.base,
+                      marginBottom: adminTokens.spacing.md,
                     }}
                   >
                     <strong style={{ color: "#14532d", fontSize: 14 }}>
@@ -898,7 +917,7 @@ export default function EditaisDocumentosAdminPage() {
                         border: "none",
                         cursor: "pointer",
                         color: "#64748b",
-                        fontWeight: 700,
+                        fontWeight: adminTokens.typography.fontWeight.bold,
                       }}
                     >
                       Fechar
@@ -909,10 +928,17 @@ export default function EditaisDocumentosAdminPage() {
                     value={buscaModelo}
                     onChange={(e) => setBuscaModelo(e.target.value)}
                     placeholder="Buscar documento"
-                    style={{ ...inputStyle, marginBottom: 10 }}
+                    style={{ ...inputStyle, marginBottom: adminTokens.spacing.md }}
                   />
 
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: adminTokens.spacing.sm,
+                      flexWrap: "wrap",
+                      marginBottom: adminTokens.spacing.md,
+                    }}
+                  >
                     <button type="button" onClick={selecionarTodos} style={ghostBtn}>
                       Selecionar todos
                     </button>
@@ -925,14 +951,20 @@ export default function EditaisDocumentosAdminPage() {
                     style={{
                       maxHeight: 260,
                       overflowY: "auto",
-                      border: "1px solid #e2e8f0",
-                      borderRadius: 12,
+                      border: `1px solid ${adminTokens.colors.text.secondary}`,
+                      borderRadius: adminTokens.borderRadius.sm,
                       background: "#f8fafc",
-                      padding: 8,
+                      padding: adminTokens.spacing.sm,
                     }}
                   >
                     {!modelosAtuais.length ? (
-                      <p style={{ margin: 0, color: "#64748b", padding: 8 }}>
+                      <p
+                        style={{
+                          margin: 0,
+                          color: "#64748b",
+                          padding: adminTokens.spacing.sm,
+                        }}
+                      >
                         Nenhum modelo encontrado.
                       </p>
                     ) : (
@@ -942,8 +974,8 @@ export default function EditaisDocumentosAdminPage() {
                           style={{
                             display: "flex",
                             alignItems: "flex-start",
-                            gap: 10,
-                            padding: "8px 6px",
+                            gap: adminTokens.spacing.md,
+                            padding: `${adminTokens.spacing.sm}px ${adminTokens.spacing.xs}px`,
                             cursor: "pointer",
                             borderBottom: "1px solid #e5e7eb",
                             fontSize: 14,
@@ -986,7 +1018,7 @@ export default function EditaisDocumentosAdminPage() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              padding: 24,
+              padding: adminTokens.spacing.xxxl,
             }}
           >
             <div
@@ -995,10 +1027,10 @@ export default function EditaisDocumentosAdminPage() {
                 width: 720,
                 maxWidth: "100%",
                 background: "#fff",
-                borderRadius: 18,
+                borderRadius: adminTokens.borderRadius.md,
                 border: "1px solid #dbe7dc",
                 boxShadow: "0 20px 40px rgba(15,23,42,0.2)",
-                padding: 20,
+                padding: adminTokens.spacing.base + adminTokens.spacing.sm,
               }}
             >
               <div
@@ -1006,8 +1038,8 @@ export default function EditaisDocumentosAdminPage() {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  gap: 12,
-                  marginBottom: 14,
+                  gap: adminTokens.spacing.base,
+                  marginBottom: adminTokens.spacing.lg,
                 }}
               >
                 <h2 style={{ margin: 0, color: "#14532d", fontSize: 22 }}>
@@ -1021,7 +1053,7 @@ export default function EditaisDocumentosAdminPage() {
                     border: "none",
                     cursor: "pointer",
                     color: "#64748b",
-                    fontWeight: 700,
+                    fontWeight: adminTokens.typography.fontWeight.bold,
                   }}
                 >
                   Fechar
@@ -1033,8 +1065,8 @@ export default function EditaisDocumentosAdminPage() {
                   style={{
                     display: "grid",
                     gridTemplateColumns: "1fr 1fr",
-                    gap: 14,
-                    marginBottom: 14,
+                    gap: adminTokens.spacing.lg,
+                    marginBottom: adminTokens.spacing.lg,
                   }}
                 >
                   <select
@@ -1064,7 +1096,7 @@ export default function EditaisDocumentosAdminPage() {
                   </select>
                 </div>
 
-                <div style={{ marginBottom: 14 }}>
+                <div style={{ marginBottom: adminTokens.spacing.lg }}>
                   <input
                     value={titulo}
                     onChange={(e) => setTitulo(e.target.value)}
@@ -1073,7 +1105,7 @@ export default function EditaisDocumentosAdminPage() {
                   />
                 </div>
 
-                <div style={{ marginBottom: 14 }}>
+                <div style={{ marginBottom: adminTokens.spacing.lg }}>
                   <textarea
                     value={descricao}
                     onChange={(e) => setDescricao(e.target.value)}
@@ -1086,8 +1118,8 @@ export default function EditaisDocumentosAdminPage() {
                   style={{
                     display: "grid",
                     gridTemplateColumns: "140px 160px",
-                    gap: 14,
-                    marginBottom: 16,
+                    gap: adminTokens.spacing.lg,
+                    marginBottom: adminTokens.spacing.sm * 2,
                     alignItems: "center",
                   }}
                 >
@@ -1104,8 +1136,8 @@ export default function EditaisDocumentosAdminPage() {
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 10,
-                      fontWeight: 700,
+                      gap: adminTokens.spacing.md,
+                      fontWeight: adminTokens.typography.fontWeight.bold,
                       color: "#14532d",
                     }}
                   >
@@ -1118,7 +1150,7 @@ export default function EditaisDocumentosAdminPage() {
                   </label>
                 </div>
 
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: adminTokens.spacing.md, flexWrap: "wrap" }}>
                   <button type="submit" style={btnGreen} disabled={saving}>
                     Salvar alterações
                   </button>
@@ -1139,7 +1171,7 @@ export default function EditaisDocumentosAdminPage() {
         )}
 
         {loading ? (
-          <div style={{ ...cardStyle, marginTop: 18 }}>
+          <div style={{ ...cardStyle, marginTop: adminTokens.spacing.xl }}>
             <p style={{ margin: 0, color: "#475569" }}>Carregando documentos...</p>
           </div>
         ) : (
