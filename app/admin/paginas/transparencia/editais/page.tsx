@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { AdminButton, AdminLoadingButton, AdminInput, AdminTextarea, AdminSelect, AdminFileInput, AdminSectionHeader } from "@/components/admin";
+import { AdminButton, AdminLoadingButton, AdminInput, AdminTextarea, AdminSelect, AdminFileInput, AdminSectionHeader, spacing, borderRadius, shadows, sizes, typography } from "@/components/admin";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -51,15 +51,15 @@ const STATUS_FASE_OPTIONS = ["", "Seleção", "Recursos", "Homologação", "Cont
 const styles = {
   page: {
     display: "grid",
-    gap: 24,
+    gap: spacing.xxxl,
   } as React.CSSProperties,
 
   sectionCard: {
     background: "linear-gradient(135deg, rgba(9,18,40,0.96), rgba(6,23,63,0.92))",
     border: "1px solid rgba(255,255,255,0.10)",
-    borderRadius: 22,
-    padding: 22,
-    boxShadow: "0 14px 34px rgba(0,0,0,0.30)",
+    borderRadius: borderRadius.lg,
+    padding: spacing.xxl,
+    boxShadow: shadows.card,
   } as React.CSSProperties,
 
   title: {
@@ -72,58 +72,58 @@ const styles = {
 
   toolbar: {
     display: "flex",
-    gap: 10,
+    gap: spacing.md,
     flexWrap: "wrap",
-    marginTop: 12,
-    marginBottom: 6,
+    marginTop: spacing.base,
+    marginBottom: spacing.sm,
   } as React.CSSProperties,
 
   greenBtn: {
     background: "#22c55e",
     color: "#052814",
-    padding: "10px 18px",
-    borderRadius: 999,
+    padding: sizes.button.medium.padding,
+    borderRadius: borderRadius.full,
     border: "none",
     cursor: "pointer",
     fontWeight: 700,
-    fontSize: 14,
-    lineHeight: 1.2,
+    fontSize: sizes.button.medium.fontSize,
+    lineHeight: typography.lineHeight.normal,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    boxShadow: "0 8px 24px rgba(34,197,94,0.18)",
+    boxShadow: shadows.buttonGreen,
   } as React.CSSProperties,
 
   redBtn: {
     background: "#ef4444",
     color: "#fff",
-    padding: "10px 18px",
-    borderRadius: 999,
+    padding: sizes.button.medium.padding,
+    borderRadius: borderRadius.full,
     border: "none",
     cursor: "pointer",
     fontWeight: 700,
-    fontSize: 14,
-    lineHeight: 1.2,
+    fontSize: sizes.button.medium.fontSize,
+    lineHeight: typography.lineHeight.normal,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    boxShadow: "0 8px 24px rgba(239,68,68,0.22)",
+    boxShadow: shadows.buttonRed,
   } as React.CSSProperties,
 
   recordCard: {
-    marginTop: 14,
+    marginTop: spacing.lg,
     background: "rgba(255,255,255,0.03)",
     border: "1px solid rgba(255,255,255,0.10)",
-    borderRadius: 18,
-    padding: 18,
+    borderRadius: borderRadius.md,
+    padding: spacing.xl,
   } as React.CSSProperties,
 
   recordHeader: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    gap: 12,
-    marginBottom: 14,
+    gap: spacing.base,
+    marginBottom: spacing.lg,
     flexWrap: "wrap",
   } as React.CSSProperties,
 
@@ -137,31 +137,31 @@ const styles = {
   badge: {
     display: "inline-flex",
     alignItems: "center",
-    padding: "6px 10px",
-    borderRadius: 999,
+    padding: `${spacing.xs}px ${spacing.md}px`,
+    borderRadius: borderRadius.full,
     background: "rgba(34,197,94,0.14)",
     color: "#86efac",
     border: "1px solid rgba(34,197,94,0.28)",
-    fontSize: "0.84rem",
-    fontWeight: 700,
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.bold,
   } as React.CSSProperties,
 
   badgeMuted: {
     display: "inline-flex",
     alignItems: "center",
-    padding: "6px 10px",
-    borderRadius: 999,
+    padding: `${spacing.xs}px ${spacing.md}px`,
+    borderRadius: borderRadius.full,
     background: "rgba(255,255,255,0.06)",
     color: "#cbd5e1",
     border: "1px solid rgba(255,255,255,0.10)",
-    fontSize: "0.84rem",
-    fontWeight: 700,
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.bold,
   } as React.CSSProperties,
 
   grid2: {
     display: "grid",
     gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    gap: 14,
+    gap: sizes.grid.gap,
   } as React.CSSProperties,
 
   full: {
@@ -170,40 +170,40 @@ const styles = {
 
   fieldWrap: {
     display: "grid",
-    gap: 6,
+    gap: spacing.xs,
   } as React.CSSProperties,
 
   label: {
-    fontSize: "0.93rem",
-    fontWeight: 700,
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.bold,
     color: "#e2e8f0",
   } as React.CSSProperties,
 
   input: {
     width: "100%",
-    minHeight: 44,
-    borderRadius: 12,
+    minHeight: sizes.input.height,
+    borderRadius: borderRadius.sm,
     border: "1px solid rgba(255,255,255,0.12)",
     background: "rgba(255,255,255,0.05)",
     color: "#fff",
-    padding: "10px 12px",
+    padding: sizes.input.padding,
     outline: "none",
-    fontSize: "0.95rem",
+    fontSize: sizes.input.fontSize,
   } as React.CSSProperties,
 
   select: {
     width: "100%",
-    minHeight: 44,
-    borderRadius: 12,
+    minHeight: sizes.input.height,
+    borderRadius: borderRadius.sm,
     border: "1px solid rgba(34,197,94,0.38)",
     background: "#0b1220",
     color: "#f8fafc",
-    padding: "10px 12px",
+    padding: sizes.input.padding,
     outline: "none",
-    fontSize: "0.95rem",
+    fontSize: sizes.input.fontSize,
     cursor: "pointer",
     appearance: "auto",
-    boxShadow: "0 0 0 1px rgba(34,197,94,0.10) inset",
+    boxShadow: shadows.inset,
   } as React.CSSProperties,
 
   textarea: {
