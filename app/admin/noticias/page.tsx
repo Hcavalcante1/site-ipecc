@@ -1,7 +1,43 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { adminTokens } from "@/components/admin";
+
+const wrapTopStyle: CSSProperties = {
+  marginTop: adminTokens.spacing.sm * 2,
+};
+
+const sectionTopStyle: CSSProperties = {
+  marginTop: adminTokens.spacing.base + adminTokens.spacing.sm,
+};
+
+const descricaoStyle: CSSProperties = {
+  fontSize: adminTokens.typography.fontSize.xs,
+  opacity: 0.8,
+};
+
+const statusLinhaStyle: CSSProperties = {
+  fontSize: adminTokens.typography.fontSize.xs,
+  marginTop: adminTokens.spacing.sm,
+};
+
+const acoesRowStyle: CSSProperties = {
+  marginTop: adminTokens.spacing.base,
+  display: "flex",
+  gap: adminTokens.spacing.sm,
+};
+
+const excluirBtnStyle: CSSProperties = {
+  background: adminTokens.colors.error.background,
+  color: adminTokens.colors.error.text,
+  border: "none",
+  borderRadius: adminTokens.borderRadius.full,
+  padding: `${adminTokens.spacing.xs}px ${adminTokens.spacing.base}px`,
+  cursor: "pointer",
+  fontWeight: 600,
+};
 
 type Noticia = {
   id: string;
@@ -42,43 +78,35 @@ export default function NoticiasAdmin() {
       <h1 className="admin-h1">Notícias</h1>
       <p className="admin-subtitle">Gerencie as notícias do site.</p>
 
-      <div style={{ marginTop: 16 }}>
+      <div style={wrapTopStyle}>
         <a href="/admin/noticias/form">
           <button className="admin-button">+ Nova notícia</button>
         </a>
       </div>
 
       {loading ? (
-        <p style={{ marginTop: 20 }}>Carregando...</p>
+        <p style={sectionTopStyle}>Carregando...</p>
       ) : (
-        <div className="admin-grid" style={{ marginTop: 20 }}>
+        <div className="admin-grid" style={sectionTopStyle}>
           {noticias.map((n) => (
             <div key={n.id} className="admin-card">
               <h3>{n.titulo}</h3>
-              <p style={{ fontSize: 13, opacity: 0.8 }}>
+              <p style={descricaoStyle}>
                 {n.resumo}
               </p>
 
-              <p style={{ fontSize: 12, marginTop: 8 }}>
+              <p style={statusLinhaStyle}>
                 {n.publicado ? "🟢 Publicado" : "🔴 Rascunho"}
               </p>
 
-              <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+              <div style={acoesRowStyle}>
                 <a href={`/admin/noticias/form?id=${n.id}`}>
                   <button className="admin-button">Editar</button>
                 </a>
 
                 <button
                   onClick={() => excluir(n.id)}
-                  style={{
-                    background: "#ef4444",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 999,
-                    padding: "6px 12px",
-                    cursor: "pointer",
-                    fontWeight: 600,
-                  }}
+                  style={excluirBtnStyle}
                 >
                   Excluir
                 </button>
