@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import type { CSSProperties } from "react";
 import { createBrowserClient } from "@supabase/ssr";
+import { adminTokens } from "@/components/admin";
 
 // Cliente Supabase autenticado (admin)
 const supabase = createBrowserClient(
@@ -18,6 +20,25 @@ function normalizarNomeArquivo(nome: string) {
     .replace(/-+/g, "-")
     .toLowerCase();
 }
+
+const h2CadastradosStyle: CSSProperties = {
+  marginTop: adminTokens.spacing.base + adminTokens.spacing.xl,
+};
+
+const cardListaStyle: CSSProperties = {
+  marginTop: adminTokens.spacing.md,
+};
+
+const acoesRowStyle: CSSProperties = {
+  display: "flex",
+  gap: adminTokens.spacing.md,
+  marginTop: adminTokens.spacing.md,
+};
+
+const excluirBtnStyle: CSSProperties = {
+  background: adminTokens.colors.error.background,
+  color: adminTokens.colors.error.text,
+};
 
 export default function AdminEditais() {
   const [titulo, setTitulo] = useState("");
@@ -187,12 +208,12 @@ export default function AdminEditais() {
         </button>
       </form>
 
-      <h2 className="admin-h2" style={{ marginTop: 30 }}>
+      <h2 className="admin-h2" style={h2CadastradosStyle}>
         Editais cadastrados
       </h2>
 
       {editais.map((e) => (
-        <div key={e.id} className="admin-card" style={{ marginTop: 10 }}>
+        <div key={e.id} className="admin-card" style={cardListaStyle}>
           <strong>{e.titulo}</strong>
 
           {e.descricao && <p>{e.descricao}</p>}
@@ -201,7 +222,7 @@ export default function AdminEditais() {
           <p><strong>Período:</strong> {e.periodo || "-"}</p>
           <p><strong>Status:</strong> {e.status}</p>
 
-          <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
+          <div style={acoesRowStyle}>
             
             {/* 🟡 EDITAR */}
             <button
@@ -217,7 +238,7 @@ export default function AdminEditais() {
             {/* 🔴 EXCLUIR */}
             <button
               className="admin-button"
-              style={{ background: "#ef4444", color: "#fff" }}
+              style={excluirBtnStyle}
               onClick={() => excluir(e.id)}
             >
               Excluir
