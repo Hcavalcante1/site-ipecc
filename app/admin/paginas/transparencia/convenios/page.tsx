@@ -6,7 +6,7 @@ import { TIPO_INSTRUMENTO_OPTIONS, CATEGORIA_OPTIONS, STATUS_CONVENIO_OPTIONS } 
 import { getConvenios, saveConvenio, deleteConvenio } from "./conveniosService";
 import classes from "./page.module.css";
 import ConvenioCard from "./components/ConvenioCard";
-import { AdminButton, AdminLoadingButton, AdminMessage, AdminSectionHeader } from "@/components/admin";
+import { AdminButton, AdminLoadingButton, AdminMessage, AdminSectionHeader, spacing, borderRadius, shadows, sizes, typography } from "@/components/admin";
 
 function novoConvenio(): Convenio {
   return {
@@ -56,10 +56,10 @@ const styles = {
 
   toolbar: {
     display: "flex",
-    gap: 10,
+    gap: spacing.md,
     flexWrap: "wrap",
-    marginTop: 12,
-    marginBottom: 6,
+    marginTop: spacing.base,
+    marginBottom: spacing.sm,
     position: "relative",
     zIndex: 30,
     pointerEvents: "auto",
@@ -68,87 +68,87 @@ const styles = {
   greenBtn: {
     background: "#22c55e",
     color: "#052814",
-    padding: "10px 18px",
-    borderRadius: 999,
+    padding: sizes.button.medium.padding,
+    borderRadius: borderRadius.full,
     border: "none",
     cursor: "pointer",
     fontWeight: 700,
-    fontSize: 14,
-    lineHeight: 1.2,
+    fontSize: sizes.button.medium.fontSize,
+    lineHeight: typography.lineHeight.normal,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    boxShadow: "0 8px 24px rgba(34,197,94,0.18)",
+    boxShadow: shadows.buttonGreen,
   } as React.CSSProperties,
 
   redBtn: {
     background: "#ef4444",
     color: "#fff",
-    padding: "10px 18px",
-    borderRadius: 999,
+    padding: sizes.button.medium.padding,
+    borderRadius: borderRadius.full,
     border: "none",
     cursor: "pointer",
     fontWeight: 700,
-    fontSize: 14,
-    lineHeight: 1.2,
+    fontSize: sizes.button.medium.fontSize,
+    lineHeight: typography.lineHeight.normal,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    boxShadow: "0 8px 24px rgba(239,68,68,0.22)",
+    boxShadow: shadows.buttonRed,
   } as React.CSSProperties,
 
   recordCard: {
-    marginTop: 14,
+    marginTop: spacing.lg,
     background: "rgba(255,255,255,0.03)",
     border: "1px solid rgba(255,255,255,0.10)",
-    borderRadius: 18,
-    padding: 18,
+    borderRadius: borderRadius.md,
+    padding: spacing.xl,
   } as React.CSSProperties,
 
   recordHeader: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    gap: 12,
-    marginBottom: 14,
+    gap: spacing.base,
+    marginBottom: spacing.lg,
     flexWrap: "wrap",
   } as React.CSSProperties,
 
   recordTitle: {
     margin: 0,
-    fontSize: "1.15rem",
-    fontWeight: 800,
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.extrabold,
     color: "#f8fafc",
   } as React.CSSProperties,
 
   badge: {
     display: "inline-flex",
     alignItems: "center",
-    padding: "6px 10px",
-    borderRadius: 999,
+    padding: `${spacing.xs}px ${spacing.md}px`,
+    borderRadius: borderRadius.full,
     background: "rgba(34,197,94,0.14)",
     color: "#86efac",
     border: "1px solid rgba(34,197,94,0.28)",
-    fontSize: "0.84rem",
-    fontWeight: 700,
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.bold,
   } as React.CSSProperties,
 
   badgeMuted: {
     display: "inline-flex",
     alignItems: "center",
-    padding: "6px 10px",
-    borderRadius: 999,
+    padding: `${spacing.xs}px ${spacing.md}px`,
+    borderRadius: borderRadius.full,
     background: "rgba(255,255,255,0.06)",
     color: "#cbd5e1",
     border: "1px solid rgba(255,255,255,0.10)",
-    fontSize: "0.84rem",
-    fontWeight: 700,
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.bold,
   } as React.CSSProperties,
 
   grid2: {
     display: "grid",
     gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    gap: 14,
+    gap: sizes.grid.gap,
   } as React.CSSProperties,
 
   full: {
@@ -157,90 +157,90 @@ const styles = {
 
   fieldWrap: {
     display: "grid",
-    gap: 6,
+    gap: spacing.xs,
   } as React.CSSProperties,
 
   label: {
-    fontSize: "0.93rem",
-    fontWeight: 700,
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.bold,
     color: "#e2e8f0",
   } as React.CSSProperties,
 
   input: {
     width: "100%",
-    minHeight: 44,
-    borderRadius: 12,
+    minHeight: sizes.input.height,
+    borderRadius: borderRadius.sm,
     border: "1px solid rgba(255,255,255,0.12)",
     background: "rgba(255,255,255,0.05)",
     color: "#fff",
-    padding: "10px 12px",
+    padding: sizes.input.padding,
     outline: "none",
-    fontSize: "0.95rem",
+    fontSize: sizes.input.fontSize,
   } as React.CSSProperties,
 
   select: {
     width: "100%",
-    minHeight: 44,
-    borderRadius: 12,
+    minHeight: sizes.input.height,
+    borderRadius: borderRadius.sm,
     border: "1px solid rgba(34,197,94,0.38)",
     background: "#0b1220",
     color: "#f8fafc",
-    padding: "10px 12px",
+    padding: sizes.input.padding,
     outline: "none",
-    fontSize: "0.95rem",
+    fontSize: sizes.input.fontSize,
     cursor: "pointer",
     appearance: "auto",
-    boxShadow: "0 0 0 1px rgba(34,197,94,0.10) inset",
+    boxShadow: shadows.inset,
   } as React.CSSProperties,
 
   textarea: {
     width: "100%",
-    borderRadius: 12,
+    borderRadius: borderRadius.sm,
     border: "1px solid rgba(255,255,255,0.12)",
     background: "rgba(255,255,255,0.05)",
     color: "#fff",
-    padding: "10px 12px",
+    padding: sizes.textarea.padding,
     outline: "none",
-    fontSize: "0.95rem",
+    fontSize: sizes.textarea.fontSize,
     resize: "vertical",
-    minHeight: 96,
+    minHeight: sizes.textarea.minHeight,
   } as React.CSSProperties,
 
   footer: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    gap: 10,
+    gap: spacing.md,
     flexWrap: "wrap",
-    marginTop: 14,
-    paddingTop: 12,
+    marginTop: spacing.lg,
+    paddingTop: spacing.base,
     borderTop: "1px solid rgba(255,255,255,0.08)",
   } as React.CSSProperties,
 
   switchRow: {
     display: "flex",
     alignItems: "center",
-    gap: 8,
+    gap: spacing.xs,
     color: "#e5e7eb",
-    fontWeight: 700,
+    fontWeight: typography.fontWeight.bold,
   } as React.CSSProperties,
 
   msg: {
-    marginTop: 10,
+    marginTop: spacing.md,
     color: "#cbd5e1",
-    fontWeight: 700,
-    fontSize: "0.95rem",
+    fontWeight: typography.fontWeight.bold,
+    fontSize: typography.fontSize.md,
   } as React.CSSProperties,
 
   blockMsg: {
-    marginTop: 12,
-    padding: "10px 12px",
-    borderRadius: 12,
+    marginTop: spacing.base,
+    padding: `${spacing.md}px ${spacing.base}px`,
+    borderRadius: borderRadius.sm,
     background: "rgba(255,255,255,0.04)",
     border: "1px solid rgba(255,255,255,0.08)",
     color: "#e2e8f0",
-    fontWeight: 700,
-    fontSize: "0.92rem",
+    fontWeight: typography.fontWeight.bold,
+    fontSize: typography.fontSize.sm,
   } as React.CSSProperties,
 };
 

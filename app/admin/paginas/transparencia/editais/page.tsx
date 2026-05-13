@@ -208,53 +208,52 @@ const styles = {
 
   textarea: {
     width: "100%",
-    borderRadius: 12,
+    borderRadius: borderRadius.sm,
     border: "1px solid rgba(255,255,255,0.12)",
     background: "rgba(255,255,255,0.05)",
     color: "#fff",
-    padding: "10px 12px",
+    padding: sizes.textarea.padding,
     outline: "none",
-    fontSize: "0.95rem",
+    fontSize: sizes.textarea.fontSize,
     resize: "vertical",
-    minHeight: 96,
+    minHeight: sizes.textarea.minHeight,
   } as React.CSSProperties,
 
   footer: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    gap: 10,
+    gap: spacing.md,
     flexWrap: "wrap",
-    marginTop: 14,
-    paddingTop: 12,
+    marginTop: spacing.lg,
+    paddingTop: spacing.base,
     borderTop: "1px solid rgba(255,255,255,0.08)",
   } as React.CSSProperties,
 
   switchRow: {
     display: "flex",
     alignItems: "center",
-    gap: 8,
+    gap: spacing.xs,
     color: "#e5e7eb",
-    fontWeight: 700,
+    fontWeight: typography.fontWeight.bold,
   } as React.CSSProperties,
 
   msg: {
-    marginTop: 10,
+    marginTop: spacing.md,
     color: "#cbd5e1",
-    fontWeight: 700,
-    fontSize: "0.95rem",
+    fontWeight: typography.fontWeight.bold,
+    fontSize: typography.fontSize.md,
   } as React.CSSProperties,
 
   blockMsg: {
-    marginTop: 12,
-    padding: "10px 12px",
-    borderRadius: 12,
+    marginTop: spacing.base,
+    padding: `${spacing.md}px ${spacing.base}px`,
+    borderRadius: borderRadius.sm,
     background: "rgba(255,255,255,0.04)",
     border: "1px solid rgba(255,255,255,0.08)",
     color: "#e2e8f0",
-    fontWeight: 700,
-
-    fontSize: "0.92rem",
+    fontWeight: typography.fontWeight.bold,
+    fontSize: typography.fontSize.sm,
   } as React.CSSProperties,
 };
 
