@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import { adminTokens } from "@/components/admin";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -87,22 +89,25 @@ function extrairResumoAnexos(mensagem?: string) {
     });
 }
 
+const gap20 = adminTokens.spacing.base + adminTokens.spacing.sm;
+const borderLight = `1px solid ${adminTokens.colors.border.light}`;
+
 function btn(bg: string, color: string) {
   return {
     background: bg,
     color,
-    padding: "10px 18px",
-    borderRadius: 999,
+    padding: adminTokens.sizes.button.medium.padding,
+    borderRadius: adminTokens.sizes.button.medium.borderRadius,
     textDecoration: "none",
-    fontWeight: 700,
-    fontSize: 14,
+    fontWeight: adminTokens.typography.fontWeight.bold,
+    fontSize: adminTokens.sizes.button.medium.fontSize,
     cursor: "pointer",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
     border: "none",
     boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
-    lineHeight: 1.2,
+    lineHeight: adminTokens.typography.lineHeight.normal,
   } as React.CSSProperties;
 }
 
@@ -118,17 +123,17 @@ function InfoCard({
       style={{
         background: "rgba(15, 23, 42, 0.78)",
         border: "1px solid rgba(148, 163, 184, 0.14)",
-        borderRadius: 18,
-        padding: 22,
+        borderRadius: adminTokens.borderRadius.md,
+        padding: adminTokens.sizes.card.mainPadding,
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)",
       }}
     >
       <h3
         style={{
           marginTop: 0,
-          marginBottom: 16,
+          marginBottom: adminTokens.spacing.sm * 2,
           fontSize: 18,
-          fontWeight: 700,
+          fontWeight: adminTokens.typography.fontWeight.bold,
           color: "#ffffff",
           lineHeight: 1.2,
           letterSpacing: "-0.01em",
@@ -154,10 +159,17 @@ function LabelValue({
         margin: 0,
         fontSize: 15,
         lineHeight: 1.55,
-        color: "#e2e8f0",
+        color: adminTokens.colors.text.secondary,
       }}
     >
-      <strong style={{ color: "#ffffff", fontWeight: 700 }}>{label}</strong>{" "}
+      <strong
+        style={{
+          color: adminTokens.colors.text.primary,
+          fontWeight: adminTokens.typography.fontWeight.bold,
+        }}
+      >
+        {label}
+      </strong>{" "}
       {value}
     </p>
   );
@@ -191,7 +203,7 @@ function BadgeCard({
         background: palette.bg,
         border: palette.border,
         borderRadius: 16,
-        padding: 14,
+        padding: adminTokens.spacing.lg,
       }}
     >
       <div
@@ -200,8 +212,8 @@ function BadgeCard({
           textTransform: "uppercase",
           letterSpacing: "0.08em",
           color: palette.label,
-          marginBottom: 8,
-          fontWeight: 700,
+          marginBottom: adminTokens.spacing.sm,
+          fontWeight: adminTokens.typography.fontWeight.bold,
         }}
       >
         {label}
@@ -209,7 +221,7 @@ function BadgeCard({
       <div
         style={{
           fontSize: 18,
-          fontWeight: 700,
+          fontWeight: adminTokens.typography.fontWeight.bold,
           color: "#ffffff",
           lineHeight: 1.25,
         }}
@@ -306,11 +318,21 @@ export default function Page() {
     ].filter((item) => !!item.path);
   }, [proposta]);
 
-  if (loading) return <p style={{ padding: 24 }}>Carregando...</p>;
-  if (!proposta) return <p style={{ padding: 24 }}>Proposta não encontrada</p>;
+  if (loading)
+    return (
+      <p style={{ padding: adminTokens.spacing.xxxl }}>Carregando...</p>
+    );
+  if (!proposta)
+    return (
+      <p style={{ padding: adminTokens.spacing.xxxl }}>Proposta não encontrada</p>
+    );
 
   return (
-    <div style={{ padding: 30 }}>
+    <div
+      style={{
+        padding: adminTokens.spacing.base + adminTokens.spacing.xl,
+      }}
+    >
       <div
         style={{
           maxWidth: 1280,
@@ -318,24 +340,24 @@ export default function Page() {
           background:
             "linear-gradient(180deg, rgba(16,63,124,0.92) 0%, rgba(2,6,23,0.98) 100%)",
           borderRadius: 28,
-          padding: 36,
+          padding: adminTokens.spacing.xxxl + adminTokens.spacing.base,
           color: "#e5e7eb",
-          border: "1px solid rgba(255,255,255,0.08)",
+          border: borderLight,
           boxShadow: "0 20px 60px rgba(0,0,0,0.30)",
         }}
       >
         <div
           style={{
-            marginBottom: 28,
-            paddingBottom: 18,
-            borderBottom: "1px solid rgba(255,255,255,0.08)",
+            marginBottom: adminTokens.spacing.xl + adminTokens.spacing.md,
+            paddingBottom: adminTokens.spacing.xl,
+            borderBottom: borderLight,
           }}
         >
           <h1
             style={{
               fontSize: 30,
               margin: 0,
-              fontWeight: 700,
+              fontWeight: adminTokens.typography.fontWeight.bold,
               color: "#ffffff",
               lineHeight: 1.15,
               letterSpacing: "-0.02em",
@@ -346,9 +368,9 @@ export default function Page() {
 
           <p
             style={{
-              marginTop: 10,
+              marginTop: adminTokens.spacing.md,
               marginBottom: 0,
-              color: "#cbd5e1",
+              color: adminTokens.colors.text.muted,
               fontSize: 15,
               lineHeight: 1.55,
             }}
@@ -362,12 +384,12 @@ export default function Page() {
           style={{
             display: "grid",
             gridTemplateColumns: "1.2fr 1fr",
-            gap: 20,
+            gap: gap20,
             alignItems: "start",
           }}
         >
           <InfoCard title="Dados da Proponente">
-            <div style={{ display: "grid", gap: 12 }}>
+            <div style={{ display: "grid", gap: adminTokens.spacing.base }}>
               <LabelValue label="Nome:" value={proposta.nome || "—"} />
               <LabelValue label="Email:" value={proposta.email || "—"} />
               <LabelValue label="Telefone:" value={proposta.telefone || "—"} />
@@ -376,7 +398,7 @@ export default function Page() {
           </InfoCard>
 
           <InfoCard title="Classificação da Proposta">
-            <div style={{ display: "grid", gap: 14 }}>
+            <div style={{ display: "grid", gap: adminTokens.spacing.lg }}>
               <BadgeCard
                 label="Tipo de Pessoa"
                 value={tipoPessoa}
@@ -395,8 +417,8 @@ export default function Page() {
           style={{
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
-            gap: 20,
-            marginTop: 20,
+            gap: gap20,
+            marginTop: gap20,
           }}
         >
           <InfoCard title="Mensagem Principal">
@@ -404,7 +426,7 @@ export default function Page() {
               style={{
                 whiteSpace: "pre-line",
                 lineHeight: 1.65,
-                color: "#e2e8f0",
+                color: adminTokens.colors.text.secondary,
                 fontSize: 15,
               }}
             >
@@ -414,23 +436,25 @@ export default function Page() {
 
           <InfoCard title="Resumo dos Anexos Informados">
             {resumoAnexos.length === 0 ? (
-              <span style={{ color: "#cbd5e1", fontSize: 14 }}>—</span>
+              <span style={{ color: adminTokens.colors.text.muted, fontSize: 14 }}>
+                —
+              </span>
             ) : (
-              <div style={{ display: "grid", gap: 10 }}>
+              <div style={{ display: "grid", gap: adminTokens.spacing.md }}>
                 {resumoAnexos.map((item, index) => (
                   <div
                     key={`${item.chave}-${index}`}
                     style={{
-                      padding: "10px 12px",
-                      borderRadius: 12,
-                      background: "rgba(255,255,255,0.03)",
+                      padding: adminTokens.sizes.input.padding,
+                      borderRadius: adminTokens.borderRadius.sm,
+                      background: adminTokens.colors.surface.subtle,
                       border: "1px solid rgba(148,163,184,0.10)",
                     }}
                   >
                     <div
                       style={{
                         fontSize: 12,
-                        fontWeight: 700,
+                        fontWeight: adminTokens.typography.fontWeight.bold,
                         textTransform: "uppercase",
                         letterSpacing: "0.06em",
                         color: "#93c5fd",
@@ -444,7 +468,7 @@ export default function Page() {
                       style={{
                         fontSize: 14,
                         lineHeight: 1.55,
-                        color: "#e2e8f0",
+                        color: adminTokens.colors.text.secondary,
                         wordBreak: "break-word",
                       }}
                     >
@@ -457,11 +481,11 @@ export default function Page() {
           </InfoCard>
         </div>
 
-        <div style={{ marginTop: 20 }}>
+        <div style={{ marginTop: gap20 }}>
           <InfoCard title="Documentos Disponíveis para Download">
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: adminTokens.spacing.base, flexWrap: "wrap" }}>
               {downloads.length === 0 ? (
-                <span style={{ color: "#cbd5e1", fontSize: 14 }}>
+                <span style={{ color: adminTokens.colors.text.muted, fontSize: 14 }}>
                   Nenhum documento disponível para download.
                 </span>
               ) : (
@@ -483,9 +507,9 @@ export default function Page() {
 
         <div
           style={{
-            marginTop: 24,
-            paddingTop: 20,
-            borderTop: "1px solid rgba(255,255,255,0.08)",
+            marginTop: adminTokens.spacing.xxxl,
+            paddingTop: gap20,
+            borderTop: borderLight,
             display: "flex",
             justifyContent: "flex-start",
           }}
@@ -493,15 +517,15 @@ export default function Page() {
           <button
             onClick={excluirProposta}
             style={{
-              background: "#ef4444",
-              color: "#fff",
-              padding: "12px 22px",
-              borderRadius: 999,
+              background: adminTokens.colors.error.background,
+              color: adminTokens.colors.error.text,
+              padding: `${adminTokens.spacing.base}px ${adminTokens.spacing.xxl}px`,
+              borderRadius: adminTokens.borderRadius.full,
               border: "none",
               cursor: "pointer",
-              fontWeight: 700,
-              fontSize: 14,
-              boxShadow: "0 8px 24px rgba(239,68,68,0.25)",
+              fontWeight: adminTokens.typography.fontWeight.bold,
+              fontSize: adminTokens.sizes.button.medium.fontSize,
+              boxShadow: adminTokens.shadows.buttonRed,
             }}
           >
             Excluir Proposta

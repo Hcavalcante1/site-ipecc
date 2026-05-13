@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 import { createClient } from "@supabase/supabase-js";
+import { adminTokens } from "@/components/admin";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -44,6 +46,42 @@ function formatarCategoria(categoria?: string | null, mensagem?: string) {
   return linha.replace(/^categoria:\s*/i, "").trim() || "—";
 }
 
+const loadingStyle: CSSProperties = {
+  padding: adminTokens.spacing.xxxl,
+};
+
+const shellStyle: CSSProperties = {
+  padding: adminTokens.spacing.base + adminTokens.spacing.xl,
+};
+
+const cardStyle: CSSProperties = {
+  background: "#0f172a",
+  padding: adminTokens.spacing.base + adminTokens.spacing.sm,
+  marginTop: adminTokens.spacing.md,
+  borderRadius: 10,
+  color: "#fff",
+};
+
+const blockParaStyle: CSSProperties = {
+  marginTop: adminTokens.spacing.md,
+  marginBottom: 0,
+};
+
+const tightParaStyle: CSSProperties = {
+  marginTop: adminTokens.spacing.xs,
+  marginBottom: 0,
+};
+
+const acoesRowStyle: CSSProperties = {
+  display: "flex",
+  gap: adminTokens.spacing.md,
+  marginTop: adminTokens.spacing.lg,
+};
+
+const btnPad: Pick<CSSProperties, "padding"> = {
+  padding: `${adminTokens.spacing.xs}px ${adminTokens.spacing.base}px`,
+};
+
 export default function Page() {
   const [propostas, setPropostas] = useState<Proposta[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,59 +116,42 @@ export default function Page() {
     carregar();
   }
 
-  if (loading) return <p style={{ padding: 24 }}>Carregando...</p>;
+  if (loading) return <p style={loadingStyle}>Carregando...</p>;
 
   return (
-    <div style={{ padding: 30 }}>
+    <div style={shellStyle}>
       <h1>Propostas Recebidas</h1>
 
       {propostas.length === 0 ? (
-        <div
-          style={{
-            background: "#0f172a",
-            padding: 20,
-            marginTop: 10,
-            borderRadius: 10,
-            color: "#fff",
-          }}
-        >
+        <div style={cardStyle}>
           Nenhuma proposta recebida até o momento.
         </div>
       ) : (
         propostas.map((p) => (
-          <div
-            key={p.id}
-            style={{
-              background: "#0f172a",
-              padding: 20,
-              marginTop: 10,
-              borderRadius: 10,
-              color: "#fff",
-            }}
-          >
+          <div key={p.id} style={cardStyle}>
             <strong style={{ fontSize: 18 }}>{p.nome}</strong>
 
-            <p style={{ marginTop: 10, marginBottom: 0 }}>
+            <p style={blockParaStyle}>
               <strong>Email:</strong> {p.email || "—"}
             </p>
 
-            <p style={{ marginTop: 6, marginBottom: 0 }}>
+            <p style={tightParaStyle}>
               <strong>Telefone:</strong> {p.telefone || "—"}
             </p>
 
-            <p style={{ marginTop: 6, marginBottom: 0 }}>
+            <p style={tightParaStyle}>
               <strong>CPF/CNPJ:</strong> {p.cnpj || "—"}
             </p>
 
-            <p style={{ marginTop: 6, marginBottom: 0 }}>
+            <p style={tightParaStyle}>
               <strong>Tipo de Pessoa:</strong> {formatarTipoPessoa(p.tipo)}
             </p>
 
-            <p style={{ marginTop: 6, marginBottom: 0 }}>
+            <p style={tightParaStyle}>
               <strong>Categoria:</strong> {formatarCategoria(p.categoria, p.mensagem)}
             </p>
 
-            <p style={{ marginTop: 6, marginBottom: 0 }}>
+            <p style={tightParaStyle}>
               <strong>Status:</strong>{" "}
               <span
                 style={{
@@ -140,20 +161,20 @@ export default function Page() {
                       : p.status === "rejeitado"
                       ? "#ef4444"
                       : "#facc15",
-                  fontWeight: 700,
+                  fontWeight: adminTokens.typography.fontWeight.bold,
                 }}
               >
                 {p.status || "pendente"}
               </span>
             </p>
 
-            <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+            <div style={acoesRowStyle}>
               <button
                 onClick={() => (window.location.href = `/admin/propostas/${p.id}`)}
                 style={{
                   background: "#2563eb",
                   color: "#fff",
-                  padding: "6px 12px",
+                  ...btnPad,
                   borderRadius: 6,
                   border: "none",
                   cursor: "pointer",
@@ -168,7 +189,7 @@ export default function Page() {
                 style={{
                   background: "#22c55e",
                   color: "#022c22",
-                  padding: "6px 12px",
+                  ...btnPad,
                   borderRadius: 6,
                   border: "none",
                   cursor: "pointer",
@@ -183,7 +204,7 @@ export default function Page() {
                 style={{
                   background: "#ef4444",
                   color: "#fff",
-                  padding: "6px 12px",
+                  ...btnPad,
                   borderRadius: 6,
                   border: "none",
                   cursor: "pointer",
