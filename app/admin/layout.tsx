@@ -17,11 +17,20 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     async function checkAuth() {
       const {
-        data: { session },
-      } = await supabase.auth.getSession();
+        data: { user },
+      } = await supabase.auth.getUser();
 
-      if (!session) {
+      if (!user) {
         router.replace("/login");
+        return;
+      }
+
+      const { data: isAdmin, error } = await supabase.rpc("is_admin", {
+        user_id: user.id,
+      });
+
+      if (error || !isAdmin) {
+        router.replace("/");
         return;
       }
 
@@ -73,6 +82,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <Link href="/admin/paginas" className="admin-nav-item">📄 Páginas</Link>
             <Link href="/admin/editais" className="admin-nav-item">📑 Editais</Link>
             <Link href="/admin/propostas" className="admin-nav-item">📨 Propostas</Link>
+            <Link href="/admin/certidoes" className="admin-nav-item">📋 Certidões</Link>
             <Link href="/admin/noticias" className="admin-nav-item">📰 Notícias</Link>
             <Link href="/admin/eventos" className="admin-nav-item">📅 Eventos</Link>
 	    <Link href="/admin/logs" className="admin-nav-item">
