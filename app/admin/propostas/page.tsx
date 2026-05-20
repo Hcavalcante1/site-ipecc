@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { adminTokens } from "@/components/admin";
+import { formatarCategoria, formatarTipoPessoa } from "@/lib/documental";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,30 +22,6 @@ type Proposta = {
   status?: string;
   categoria?: string | null;
 };
-
-function formatarTipoPessoa(tipo?: string) {
-  if (tipo === "pessoa_juridica") return "Pessoa Jurídica";
-  if (tipo === "osc") return "OSC";
-  if (tipo === "pessoa_fisica") return "Pessoa Física";
-  return "—";
-}
-
-function formatarCategoria(categoria?: string | null, mensagem?: string) {
-  if (categoria === "habilitacao_juridica") return "Habilitação Jurídica";
-  if (categoria === "regularidade_fiscal_trabalhista")
-    return "Regularidade Fiscal e Trabalhista";
-  if (categoria === "qualificacao_tecnica") return "Qualificação Técnica";
-
-  if (!mensagem) return "—";
-
-  const linha = mensagem
-    .split("\n")
-    .find((item) => item.trim().toLowerCase().startsWith("categoria:"));
-
-  if (!linha) return "—";
-
-  return linha.replace(/^categoria:\s*/i, "").trim() || "—";
-}
 
 const loadingStyle: CSSProperties = {
   padding: adminTokens.spacing.xxxl,

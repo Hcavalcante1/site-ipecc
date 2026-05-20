@@ -52,3 +52,5 @@ export {
 } from "./certidoes";
 
 export { calcularDiagnosticoDocumental } from "./diagnostico";
+
+export { formatarTipoPessoa, formatarCategoria } from "./display";
