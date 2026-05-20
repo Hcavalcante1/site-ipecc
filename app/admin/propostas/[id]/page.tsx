@@ -1,22 +1,27 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { CSSProperties } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { adminTokens } from "@/components/admin";
 import {
+  BadgeCard,
+  btn,
+  ChecklistDocumentalProposta,
+  gap20,
+  InfoCard,
+  LabelValue,
+  PainelStatusDocumental,
+  RegularidadeFiscalEntidade,
+  ResumoAnexosInformados,
+} from "@/components/admin/propostas/detail";
+import {
   type CertidaoEntidade,
   type CertidaoEntidadeLinha,
-  COLUNA_URL_POR_CHAVE,
-  CORES_STATUS_DOCUMENTAL,
   calcularDiagnosticoDocumental,
   extrairMensagemPrincipal,
   extrairResumoAnexos,
-  formatarDataCertidao,
-  labelCampoCertidao,
   montarChecklistDocumental,
-  situacaoValidadeCertidao,
   somenteDigitosCnpj,
 } from "@/lib/documental";
 
@@ -63,188 +68,13 @@ function formatarCategoria(categoria?: string | null, mensagem?: string) {
   return linha.replace(/^categoria:\s*/i, "").trim() || "—";
 }
 
-function ListaDiagnostico({
-  titulo,
-  itens,
-  cor,
-}: {
-  titulo: string;
-  itens: string[];
-  cor: string;
-}) {
-  if (itens.length === 0) return null;
-
-  return (
-    <div>
-      <p
-        style={{
-          margin: "0 0 8px",
-          fontSize: 13,
-          fontWeight: adminTokens.typography.fontWeight.bold,
-          color: cor,
-        }}
-      >
-        {titulo}
-      </p>
-      <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: cor, lineHeight: 1.5 }}>
-        {itens.map((item) => (
-          <li key={item} style={{ marginBottom: 4 }}>
-            {item}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
 type CertidaoTipo = {
   id: string;
   codigo: string;
   nome: string;
 };
 
-const gap20 = adminTokens.spacing.base + adminTokens.spacing.sm;
 const borderLight = `1px solid ${adminTokens.colors.border.light}`;
-
-function btn(bg: string, color: string) {
-  return {
-    background: bg,
-    color,
-    padding: adminTokens.sizes.button.medium.padding,
-    borderRadius: adminTokens.sizes.button.medium.borderRadius,
-    textDecoration: "none",
-    fontWeight: adminTokens.typography.fontWeight.bold,
-    fontSize: adminTokens.sizes.button.medium.fontSize,
-    cursor: "pointer",
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    border: "none",
-    boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
-    lineHeight: adminTokens.typography.lineHeight.normal,
-  } as React.CSSProperties;
-}
-
-function InfoCard({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      style={{
-        background: "rgba(15, 23, 42, 0.78)",
-        border: "1px solid rgba(148, 163, 184, 0.14)",
-        borderRadius: adminTokens.borderRadius.md,
-        padding: adminTokens.sizes.card.mainPadding,
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)",
-      }}
-    >
-      <h3
-        style={{
-          marginTop: 0,
-          marginBottom: adminTokens.spacing.sm * 2,
-          fontSize: 18,
-          fontWeight: adminTokens.typography.fontWeight.bold,
-          color: "#ffffff",
-          lineHeight: 1.2,
-          letterSpacing: "-0.01em",
-        }}
-      >
-        {title}
-      </h3>
-      {children}
-    </div>
-  );
-}
-
-function LabelValue({
-  label,
-  value,
-}: {
-  label: string;
-  value: React.ReactNode;
-}) {
-  return (
-    <p
-      style={{
-        margin: 0,
-        fontSize: 15,
-        lineHeight: 1.55,
-        color: adminTokens.colors.text.secondary,
-      }}
-    >
-      <strong
-        style={{
-          color: adminTokens.colors.text.primary,
-          fontWeight: adminTokens.typography.fontWeight.bold,
-        }}
-      >
-        {label}
-      </strong>{" "}
-      {value}
-    </p>
-  );
-}
-
-function BadgeCard({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone: "green" | "blue";
-}) {
-  const palette =
-    tone === "green"
-      ? {
-          bg: "rgba(34,197,94,0.10)",
-          border: "1px solid rgba(34,197,94,0.22)",
-          label: "#86efac",
-        }
-      : {
-          bg: "rgba(59,130,246,0.10)",
-          border: "1px solid rgba(59,130,246,0.22)",
-          label: "#93c5fd",
-        };
-
-  return (
-    <div
-      style={{
-        background: palette.bg,
-        border: palette.border,
-        borderRadius: 16,
-        padding: adminTokens.spacing.lg,
-      }}
-    >
-      <div
-        style={{
-          fontSize: 12,
-          textTransform: "uppercase",
-          letterSpacing: "0.08em",
-          color: palette.label,
-          marginBottom: adminTokens.spacing.sm,
-          fontWeight: adminTokens.typography.fontWeight.bold,
-        }}
-      >
-        {label}
-      </div>
-      <div
-        style={{
-          fontSize: 18,
-          fontWeight: adminTokens.typography.fontWeight.bold,
-          color: "#ffffff",
-          lineHeight: 1.25,
-        }}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
 
 export default function Page() {
   const params = useParams();
@@ -538,339 +368,28 @@ export default function Page() {
             </div>
           </InfoCard>
 
-          <InfoCard title="Resumo dos Anexos Informados">
-            {resumoAnexos.length === 0 ? (
-              <span style={{ color: adminTokens.colors.text.muted, fontSize: 14 }}>
-                —
-              </span>
-            ) : (
-              <div style={{ display: "grid", gap: adminTokens.spacing.md }}>
-                {resumoAnexos.map((item, index) => (
-                  <div
-                    key={`${item.chave}-${index}`}
-                    style={{
-                      padding: adminTokens.sizes.input.padding,
-                      borderRadius: adminTokens.borderRadius.sm,
-                      background: adminTokens.colors.surface.subtle,
-                      border: "1px solid rgba(148,163,184,0.10)",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 12,
-                        fontWeight: adminTokens.typography.fontWeight.bold,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        color: "#93c5fd",
-                        marginBottom: 4,
-                      }}
-                    >
-                      {item.chave || "Anexo"}
-                    </div>
-
-                    <div
-                      style={{
-                        fontSize: 14,
-                        lineHeight: 1.55,
-                        color: adminTokens.colors.text.secondary,
-                        wordBreak: "break-word",
-                      }}
-                    >
-                      {item.valor || "—"}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </InfoCard>
+          <ResumoAnexosInformados itens={resumoAnexos} />
         </div>
 
         <div style={{ marginTop: gap20 }}>
-          <InfoCard title="Status documental (sugestão automática)">
-            <p
-              style={{
-                marginTop: 0,
-                marginBottom: adminTokens.spacing.base,
-                color: adminTokens.colors.text.muted,
-                fontSize: 14,
-                lineHeight: 1.55,
-              }}
-            >
-              Status sugerido automaticamente. A decisão final cabe ao analista
-              responsável.
-            </p>
-            <div
-              style={{
-                ...CORES_STATUS_DOCUMENTAL[diagnosticoDocumental.status],
-                borderRadius: 16,
-                padding: adminTokens.spacing.lg,
-                marginBottom: adminTokens.spacing.lg,
-                border: CORES_STATUS_DOCUMENTAL[diagnosticoDocumental.status].border,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 12,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  marginBottom: adminTokens.spacing.sm,
-                  opacity: 0.9,
-                }}
-              >
-                Status sugerido
-              </div>
-              <div
-                style={{
-                  fontSize: 22,
-                  fontWeight: adminTokens.typography.fontWeight.bold,
-                  lineHeight: 1.25,
-                }}
-              >
-                {diagnosticoDocumental.statusLabel}
-              </div>
-            </div>
-            <p
-              style={{
-                margin: "0 0 16px",
-                fontSize: 15,
-                color: adminTokens.colors.text.secondary,
-              }}
-            >
-              Núcleo documental: {diagnosticoDocumental.nucleoEncontrados}/
-              {diagnosticoDocumental.nucleoTotal}
-            </p>
-            <div style={{ display: "grid", gap: adminTokens.spacing.md }}>
-              <ListaDiagnostico
-                titulo="Documentos do núcleo encontrados"
-                itens={diagnosticoDocumental.listaVerde}
-                cor="#86efac"
-              />
-              <ListaDiagnostico
-                titulo="Documentos condicionais ausentes"
-                itens={diagnosticoDocumental.listaLaranja}
-                cor="#fbbf24"
-              />
-              <ListaDiagnostico
-                titulo="Pendências graves"
-                itens={diagnosticoDocumental.listaVermelha}
-                cor="#fca5a5"
-              />
-              <ListaDiagnostico
-                titulo="Alertas de certidões (cadastro institucional)"
-                itens={diagnosticoDocumental.alertasCertidoes}
-                cor="#fdba74"
-              />
-            </div>
-          </InfoCard>
+          <PainelStatusDocumental diagnostico={diagnosticoDocumental} />
         </div>
 
         <div style={{ marginTop: gap20 }}>
-          <InfoCard title="Checklist documental da proposta">
-            <p
-              style={{
-                marginTop: 0,
-                marginBottom: adminTokens.spacing.base,
-                color: adminTokens.colors.text.muted,
-                fontSize: 14,
-                lineHeight: 1.55,
-              }}
-            >
-              Checklist gerado a partir dos anexos informados no envio da proposta.
-            </p>
-            {totalItensChecklist === 0 ? (
-              <span style={{ color: adminTokens.colors.text.muted, fontSize: 14 }}>
-                Nenhum anexo identificado na mensagem ou nas colunas da proposta.
-              </span>
-            ) : (
-              <div style={{ display: "grid", gap: adminTokens.spacing.lg }}>
-                {checklistDocumental.map((grupo) =>
-                  grupo.itens.length === 0 ? null : (
-                    <div key={grupo.id} style={{ marginBottom: adminTokens.spacing.lg }}>
-                      <h4
-                        style={{
-                          margin: "0 0 10px",
-                          fontSize: 15,
-                          fontWeight: adminTokens.typography.fontWeight.bold,
-                          color: "#93c5fd",
-                        }}
-                      >
-                        {grupo.titulo}
-                      </h4>
-                      <div style={{ display: "grid", gap: adminTokens.spacing.sm }}>
-                        {grupo.itens.map((item) => {
-                          const href = item.path ? url(item.path) : null;
-                          const coluna = COLUNA_URL_POR_CHAVE[item.key];
-                          const temColuna =
-                            !!coluna &&
-                            typeof proposta?.[coluna] === "string" &&
-                            !!(proposta[coluna] as string).trim();
-
-                          return (
-                            <div
-                              key={item.key}
-                              style={{
-                                padding: adminTokens.sizes.input.padding,
-                                borderRadius: adminTokens.borderRadius.sm,
-                                background: adminTokens.colors.surface.subtle,
-                                border: "1px solid rgba(148,163,184,0.10)",
-                              }}
-                            >
-                              <div
-                                style={{
-                                  fontSize: 14,
-                                  fontWeight: adminTokens.typography.fontWeight.bold,
-                                  color: "#ffffff",
-                                  lineHeight: 1.4,
-                                }}
-                              >
-                                {item.label}
-                              </div>
-                              <div
-                                style={{
-                                  marginTop: 6,
-                                  fontSize: 13,
-                                  color: adminTokens.colors.text.muted,
-                                  wordBreak: "break-word",
-                                }}
-                              >
-                                {item.path ? (
-                                  <>
-                                    <span style={{ display: "block", marginBottom: 6 }}>
-                                      Arquivo: {item.path}
-                                    </span>
-                                    {href && temColuna ? (
-                                      <a
-                                        href={href}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        style={{
-                                          ...btn("#22c55e", "#052e16"),
-                                          fontSize: 13,
-                                          padding: "6px 12px",
-                                        }}
-                                      >
-                                        Baixar documento
-                                      </a>
-                                    ) : (
-                                      <span>
-                                        Registrado na mensagem do envio (sem coluna
-                                        dedicada para download automático).
-                                      </span>
-                                    )}
-                                  </>
-                                ) : (
-                                  <span>—</span>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )
-                )}
-              </div>
-            )}
-          </InfoCard>
+          <ChecklistDocumentalProposta
+            checklist={checklistDocumental}
+            totalItens={totalItensChecklist}
+            proposta={proposta}
+            url={url}
+          />
         </div>
 
         <div style={{ marginTop: gap20 }}>
-          <InfoCard title="Regularidade fiscal da entidade">
-            {carregandoCertidoes ? (
-              <span style={{ color: adminTokens.colors.text.muted, fontSize: 14 }}>
-                Carregando certidões...
-              </span>
-            ) : cnpjProposta.length !== 14 ? (
-              <span style={{ color: adminTokens.colors.text.muted, fontSize: 14 }}>
-                CNPJ da proposta inválido ou não informado.
-              </span>
-            ) : certidoesEntidade.length === 0 ? (
-              <span style={{ color: adminTokens.colors.text.muted, fontSize: 14 }}>
-                Nenhuma certidão cadastrada para esta entidade.
-              </span>
-            ) : (
-              <>
-                <p
-                  style={{
-                    marginTop: 0,
-                    marginBottom: adminTokens.spacing.base,
-                    color: adminTokens.colors.text.muted,
-                    fontSize: 14,
-                  }}
-                >
-                  CNPJ consultado: {cnpjProposta}
-                </p>
-                <div style={{ display: "grid", gap: adminTokens.spacing.md }}>
-                  {certidoesEntidade.map((item) => {
-                    const validade = situacaoValidadeCertidao(item.validade_ate);
-                    return (
-                      <div
-                        key={item.id}
-                        style={{
-                          padding: adminTokens.sizes.input.padding,
-                          borderRadius: adminTokens.borderRadius.sm,
-                          background: adminTokens.colors.surface.subtle,
-                          border: "1px solid rgba(148,163,184,0.10)",
-                        }}
-                      >
-                        <strong style={{ color: "#fff", fontSize: 15 }}>
-                          {item.tipo_nome}
-                        </strong>
-                        <div
-                          style={{
-                            display: "grid",
-                            gap: 6,
-                            marginTop: adminTokens.spacing.sm,
-                            fontSize: 14,
-                            color: adminTokens.colors.text.secondary,
-                          }}
-                        >
-                          <span>
-                            <strong style={{ color: adminTokens.colors.text.primary }}>
-                              Órgão emissor:
-                            </strong>{" "}
-                            {item.orgao_emissor}
-                          </span>
-                          <span>
-                            <strong style={{ color: adminTokens.colors.text.primary }}>
-                              Esfera:
-                            </strong>{" "}
-                            {labelCampoCertidao(item.esfera)}
-                          </span>
-                          <span>
-                            <strong style={{ color: adminTokens.colors.text.primary }}>
-                              Status:
-                            </strong>{" "}
-                            {labelCampoCertidao(item.status)}
-                          </span>
-                          <span>
-                            <strong style={{ color: adminTokens.colors.text.primary }}>
-                              Validade:
-                            </strong>{" "}
-                            {formatarDataCertidao(item.validade_ate)}
-                          </span>
-                          <span>
-                            <strong style={{ color: adminTokens.colors.text.primary }}>
-                              Versão:
-                            </strong>{" "}
-                            v{item.versao}
-                          </span>
-                          <span>
-                            <strong style={{ color: adminTokens.colors.text.primary }}>
-                              Situação:
-                            </strong>{" "}
-                            <span style={{ color: validade.cor, fontWeight: 600 }}>
-                              {validade.texto}
-                            </span>
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </InfoCard>
+          <RegularidadeFiscalEntidade
+            carregando={carregandoCertidoes}
+            cnpjDigitos={cnpjProposta}
+            certidoes={certidoesEntidade}
+          />
         </div>
 
         <div style={{ marginTop: gap20 }}>
