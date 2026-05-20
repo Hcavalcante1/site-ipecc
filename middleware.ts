@@ -24,11 +24,11 @@ export async function middleware(req: NextRequest) {
   );
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // 🔒 protege /admin
-  if (!session && req.nextUrl.pathname.startsWith("/admin")) {
+  if (!user && req.nextUrl.pathname.startsWith("/admin")) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 

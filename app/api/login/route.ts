@@ -22,13 +22,7 @@ export async function POST(req: Request) {
       );
     }
 
-    return NextResponse.json({
-      ok: true,
-      session: {
-        access_token: data.session.access_token,
-        refresh_token: data.session.refresh_token,
-      },
-    });
+    return NextResponse.json({ ok: true });
   } catch (err) {
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
