@@ -51,15 +51,31 @@ export async function GET(
     }
 
     if (bucket === "propostas") {
-      const { data, error } = await supabaseAdmin.storage
-        .from(bucket)
-        .download(filePath);
+      const candidatos = [
+        filePath,
+        filePath.startsWith("public/") ? null : `public/${filePath}`,
+      ].filter((p): p is string => !!p);
 
-      if (error || !data) {
+      let data: Blob | null = null;
+      let pathUsado = filePath;
+      let ultimoErro: string | null = null;
+
+      for (const candidato of candidatos) {
+        const res = await supabaseAdmin.storage.from(bucket).download(candidato);
+        if (res.data) {
+          data = res.data;
+          pathUsado = candidato;
+          break;
+        }
+        ultimoErro = res.error?.message || JSON.stringify(res.error) || null;
+      }
+
+      if (!data) {
         console.error("DOWNLOAD ERROR (propostas):", {
           bucket,
           filePath,
-          message: error?.message,
+          candidatos,
+          message: ultimoErro,
         });
 
         try {
@@ -67,12 +83,14 @@ export async function GET(
             bucket,
             file_path: filePath,
             status: 404,
-            status_text: error?.message || "Arquivo não encontrado",
+            status_text: ultimoErro || "Arquivo não encontrado no storage",
           });
         } catch {}
 
         return new Response("Arquivo não encontrado", { status: 404 });
       }
+
+      filePath = pathUsado;
 
       const buffer = await data.arrayBuffer();
       const contentType = contentTypeFromPath(filePath);

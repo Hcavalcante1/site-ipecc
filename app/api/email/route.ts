@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { verifyAdminSession } from "@/lib/auth/adminSession";
 
 type TipoEmail = "contato" | "orcamento" | "admin";
+
+const TIPOS_PUBLICOS: TipoEmail[] = ["contato", "orcamento"];
+const MAX_MENSAGEM = 5000;
+const MAX_NOME = 200;
+const MAX_ASSUNTO = 200;
 
 function getEnv(name: string) {
   const v = process.env[name];
@@ -23,15 +29,24 @@ function subjectPrefix(tipo: TipoEmail) {
   return "[SITE] Admin";
 }
 
+function emailValido(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
 
+    const honeypot = String(body?._hp || "").trim();
+    if (honeypot) {
+      return NextResponse.json({ ok: false, error: "Requisição inválida" }, { status: 400 });
+    }
+
     const tipo = (body?.tipo || "contato") as TipoEmail;
-    const nome = String(body?.nome || "").trim();
+    const nome = String(body?.nome || "").trim().slice(0, MAX_NOME);
     const email = String(body?.email || "").trim();
-    const assunto = String(body?.assunto || "").trim();
-    const mensagem = String(body?.mensagem || "").trim();
+    const assunto = String(body?.assunto || "").trim().slice(0, MAX_ASSUNTO);
+    const mensagem = String(body?.mensagem || "").trim().slice(0, MAX_MENSAGEM);
 
     if (!["contato", "orcamento", "admin"].includes(tipo)) {
       return NextResponse.json(
@@ -40,18 +55,30 @@ export async function POST(req: Request) {
       );
     }
 
-    // Para "admin", você pode mandar sem nome/email do usuário (ex: alertas do sistema)
-    if (tipo !== "admin") {
+    if (tipo === "admin") {
+      const auth = await verifyAdminSession();
+      if (auth.ok === false) {
+        return NextResponse.json(
+          { ok: false, error: auth.message },
+          { status: auth.status }
+        );
+      }
+      if (!mensagem) {
+        return NextResponse.json(
+          { ok: false, error: "Campo obrigatório: mensagem" },
+          { status: 400 }
+        );
+      }
+    } else {
       if (!nome || !email || !mensagem) {
         return NextResponse.json(
           { ok: false, error: "Campos obrigatórios: nome, email, mensagem" },
           { status: 400 }
         );
       }
-    } else {
-      if (!mensagem) {
+      if (!emailValido(email)) {
         return NextResponse.json(
-          { ok: false, error: "Campo obrigatório: mensagem" },
+          { ok: false, error: "E-mail inválido" },
           { status: 400 }
         );
       }
@@ -73,7 +100,6 @@ export async function POST(req: Request) {
       from,
       to,
       subject,
-      // replyTo só faz sentido quando é mensagem de usuário
       ...(tipo !== "admin" ? { replyTo: email } : {}),
       text,
     });
@@ -83,10 +109,8 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ ok: true });
-  } catch (e: any) {
-    return NextResponse.json(
-      { ok: false, error: e?.message || "Erro inesperado" },
-      { status: 500 }
-    );
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Erro inesperado";
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }
