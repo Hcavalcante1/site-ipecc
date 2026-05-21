@@ -16,6 +16,7 @@ import {
   ResumoAnexosInformados,
 } from "@/components/admin/propostas/detail";
 import { usePropostaDocumental } from "@/components/admin/propostas/usePropostaDocumental";
+import { usePropostaDownloadsVerificados } from "@/components/admin/propostas/usePropostaDownloadsVerificados";
 import {
   type CertidaoEntidade,
   type CertidaoEntidadeLinha,
@@ -74,6 +75,9 @@ export default function Page() {
     diagnosticoDocumental,
     downloads,
   } = usePropostaDocumental(proposta, certidoesEntidade);
+
+  const { disponiveis: downloadsDisponiveis, orfaos: downloadsOrfaos, verificando: verificandoDownloads } =
+    usePropostaDownloadsVerificados(downloads);
 
   useEffect(() => {
     async function carregarCertidoesEntidade() {
@@ -284,12 +288,16 @@ export default function Page() {
         <div style={{ marginTop: gap20 }}>
           <InfoCard title="Documentos Disponíveis para Download">
             <div style={{ display: "flex", gap: adminTokens.spacing.base, flexWrap: "wrap" }}>
-              {downloads.length === 0 ? (
+              {verificandoDownloads && downloads.length > 0 ? (
+                <span style={{ color: adminTokens.colors.text.muted, fontSize: 14 }}>
+                  Verificando anexos no storage…
+                </span>
+              ) : downloadsDisponiveis.length === 0 ? (
                 <span style={{ color: adminTokens.colors.text.muted, fontSize: 14 }}>
                   Nenhum documento disponível para download.
                 </span>
               ) : (
-                downloads.map((item) => (
+                downloadsDisponiveis.map((item) => (
                   <a
                     key={item.label}
                     href={url(item.path)!}
@@ -302,6 +310,20 @@ export default function Page() {
                 ))
               )}
             </div>
+            {downloadsOrfaos.length > 0 && (
+              <p
+                style={{
+                  marginTop: adminTokens.spacing.base,
+                  marginBottom: 0,
+                  color: adminTokens.colors.text.muted,
+                  fontSize: 13,
+                  lineHeight: 1.5,
+                }}
+              >
+                Referências no banco sem arquivo no storage:{" "}
+                {downloadsOrfaos.map((o) => `${o.label} (${o.path})`).join("; ")}
+              </p>
+            )}
           </InfoCard>
         </div>
 

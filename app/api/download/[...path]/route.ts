@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { assertDownloadAllowed } from "@/lib/downloadAuth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { downloadArquivoProposta } from "@/lib/storage/propostasBucket";
 
 function contentTypeFromPath(filePath: string) {
   const ext = filePath.split(".").pop()?.toLowerCase();
@@ -51,31 +52,13 @@ export async function GET(
     }
 
     if (bucket === "propostas") {
-      const candidatos = [
-        filePath,
-        filePath.startsWith("public/") ? null : `public/${filePath}`,
-      ].filter((p): p is string => !!p);
+      const resultado = await downloadArquivoProposta(filePath);
 
-      let data: Blob | null = null;
-      let pathUsado = filePath;
-      let ultimoErro: string | null = null;
-
-      for (const candidato of candidatos) {
-        const res = await supabaseAdmin.storage.from(bucket).download(candidato);
-        if (res.data) {
-          data = res.data;
-          pathUsado = candidato;
-          break;
-        }
-        ultimoErro = res.error?.message || JSON.stringify(res.error) || null;
-      }
-
-      if (!data) {
+      if ("error" in resultado) {
         console.error("DOWNLOAD ERROR (propostas):", {
           bucket,
           filePath,
-          candidatos,
-          message: ultimoErro,
+          message: resultado.error,
         });
 
         try {
@@ -83,14 +66,15 @@ export async function GET(
             bucket,
             file_path: filePath,
             status: 404,
-            status_text: ultimoErro || "Arquivo não encontrado no storage",
+            status_text: resultado.error,
           });
         } catch {}
 
         return new Response("Arquivo não encontrado", { status: 404 });
       }
 
-      filePath = pathUsado;
+      const data = resultado.data;
+      filePath = resultado.pathUsado;
 
       const buffer = await data.arrayBuffer();
       const contentType = contentTypeFromPath(filePath);
