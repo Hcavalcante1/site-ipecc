@@ -5,6 +5,7 @@ import type { CSSProperties } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { adminTokens } from "@/components/admin";
 import { formatarCategoria, formatarTipoPessoa } from "@/lib/documental";
+import { useResumoAnexosListagem } from "@/components/admin/propostas/useResumoAnexosListagem";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,6 +22,7 @@ type Proposta = {
   tipo?: string;
   status?: string;
   categoria?: string | null;
+  [key: string]: unknown;
 };
 
 const loadingStyle: CSSProperties = {
@@ -62,6 +64,8 @@ const btnPad: Pick<CSSProperties, "padding"> = {
 export default function Page() {
   const [propostas, setPropostas] = useState<Proposta[]>([]);
   const [loading, setLoading] = useState(true);
+  const { resumo: resumoAnexos, carregando: carregandoResumoAnexos } =
+    useResumoAnexosListagem(propostas);
 
   useEffect(() => {
     carregar();
@@ -144,6 +148,27 @@ export default function Page() {
                 {p.status || "pendente"}
               </span>
             </p>
+
+            {carregandoResumoAnexos ? (
+              <p style={{ ...tightParaStyle, color: adminTokens.colors.text.muted, fontSize: 13 }}>
+                <strong>Anexos:</strong> verificando storage…
+              </p>
+            ) : resumoAnexos[p.id]?.orfaos ? (
+              <p style={{ ...tightParaStyle, fontSize: 13 }}>
+                <strong>Anexos:</strong>{" "}
+                <span style={{ color: "#f97316", fontWeight: adminTokens.typography.fontWeight.bold }}>
+                  {resumoAnexos[p.id].orfaos} sem arquivo no storage
+                </span>
+                <span style={{ color: adminTokens.colors.text.muted }}>
+                  {" "}
+                  ({resumoAnexos[p.id].disponiveis}/{resumoAnexos[p.id].total} disponíveis)
+                </span>
+              </p>
+            ) : resumoAnexos[p.id]?.total ? (
+              <p style={{ ...tightParaStyle, color: "#22c55e", fontSize: 13 }}>
+                <strong>Anexos:</strong> todos disponíveis no storage ({resumoAnexos[p.id].total})
+              </p>
+            ) : null}
 
             <div style={acoesRowStyle}>
               <button
