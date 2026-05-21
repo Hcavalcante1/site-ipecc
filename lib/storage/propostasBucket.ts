@@ -1,15 +1,7 @@
+import { candidatosPathProposta } from "@/lib/documental/propostaPaths";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 const BUCKET = "propostas";
-
-export function candidatosPathProposta(filePath: string): string[] {
-  const limpo = filePath.replace(/^public\//, "").trim();
-  const candidatos = [limpo, filePath.trim()];
-  if (limpo && !limpo.startsWith("public/")) {
-    candidatos.push(`public/${limpo}`);
-  }
-  return [...new Set(candidatos.filter(Boolean))];
-}
 
 export async function existeArquivoProposta(filePath: string) {
   for (const candidato of candidatosPathProposta(filePath)) {

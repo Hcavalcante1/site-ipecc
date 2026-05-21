@@ -54,3 +54,10 @@ export {
 export { calcularDiagnosticoDocumental } from "./diagnostico";
 
 export { formatarTipoPessoa, formatarCategoria } from "./display";
+
+export {
+  ANEXOS_URL_PROPOSTA,
+  extrairAnexosProposta,
+  extrairPathsAnexoProposta,
+} from "./propostaPaths";
+export type { AnexoPropostaRef, AnexoUrlPropostaKey } from "./propostaPaths";

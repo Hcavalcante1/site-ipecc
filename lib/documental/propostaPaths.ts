@@ -1,38 +1,68 @@
-const COLUNAS_URL_PROPOSTA = [
-  "arquivo_url",
-  "cnpj_url",
-  "contrato_social_url",
-  "estatuto_url",
-  "ata_posse_url",
-  "doc_pessoal_url",
-  "doc_representante_url",
-  "procuracao_url",
-  "certidao_federal_url",
-  "certidao_estadual_url",
-  "certidao_municipal_url",
-  "fgts_url",
-  "cndt_url",
-  "atestado_tecnico_url",
-  "qualificacao_tecnica_url",
-  "equipe_tecnica_url",
-  "portfolio_url",
-  "formacao_url",
-  "registro_profissional_url",
-  "comprovante_residencia_url",
-  "cpf_url",
+/** Metadados de anexos em colunas da tabela propostas (prepara futura proposta_anexos). */
+export const ANEXOS_URL_PROPOSTA = [
+  { key: "arquivo_url", label: "Proposta" },
+  { key: "cnpj_url", label: "CNPJ" },
+  { key: "contrato_social_url", label: "Contrato Social" },
+  { key: "estatuto_url", label: "Estatuto" },
+  { key: "ata_posse_url", label: "Ata e Posse" },
+  { key: "doc_pessoal_url", label: "Documento Pessoal" },
+  { key: "doc_representante_url", label: "Documento Representante" },
+  { key: "procuracao_url", label: "Procuração" },
+  { key: "certidao_federal_url", label: "Certidão Federal" },
+  { key: "certidao_estadual_url", label: "Certidão Estadual" },
+  { key: "certidao_municipal_url", label: "Certidão Municipal" },
+  { key: "fgts_url", label: "FGTS" },
+  { key: "cndt_url", label: "CNDT" },
+  { key: "atestado_tecnico_url", label: "Atestado Técnico" },
+  { key: "qualificacao_tecnica_url", label: "Qualificação Técnica" },
+  { key: "equipe_tecnica_url", label: "Equipe Técnica" },
+  { key: "portfolio_url", label: "Portfólio" },
+  { key: "formacao_url", label: "Formação" },
+  { key: "registro_profissional_url", label: "Registro Profissional" },
+  { key: "comprovante_residencia_url", label: "Comprovante de Residência" },
+  { key: "cpf_url", label: "CPF" },
 ] as const;
 
+export type AnexoUrlPropostaKey = (typeof ANEXOS_URL_PROPOSTA)[number]["key"];
+
+export type AnexoPropostaRef = {
+  key: AnexoUrlPropostaKey;
+  label: string;
+  path: string;
+};
+
+export function extrairAnexosProposta(
+  proposta: Record<string, unknown> | null | undefined
+): AnexoPropostaRef[] {
+  if (!proposta) return [];
+
+  const itens: AnexoPropostaRef[] = [];
+  for (const meta of ANEXOS_URL_PROPOSTA) {
+    const valor = proposta[meta.key];
+    if (typeof valor === "string" && valor.trim()) {
+      itens.push({
+        key: meta.key,
+        label: meta.label,
+        path: valor.trim(),
+      });
+    }
+  }
+  return itens;
+}
+
+/** Lista só os paths (listagem / APIs batch). */
 export function extrairPathsAnexoProposta(
   proposta: Record<string, unknown> | null | undefined
 ): string[] {
-  if (!proposta) return [];
+  return extrairAnexosProposta(proposta).map((item) => item.path);
+}
 
-  const paths: string[] = [];
-  for (const key of COLUNAS_URL_PROPOSTA) {
-    const valor = proposta[key];
-    if (typeof valor === "string" && valor.trim()) {
-      paths.push(valor.trim());
-    }
+/** Candidatos de path no bucket propostas (inclui legado public/). */
+export function candidatosPathProposta(filePath: string): string[] {
+  const limpo = filePath.replace(/^public\//, "").trim();
+  const candidatos = [limpo, filePath.trim()];
+  if (limpo && !limpo.startsWith("public/")) {
+    candidatos.push(`public/${limpo}`);
   }
-  return paths;
+  return [...new Set(candidatos.filter(Boolean))];
 }
