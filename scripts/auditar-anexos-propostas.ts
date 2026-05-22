@@ -9,7 +9,6 @@
 import fs from "fs";
 import path from "path";
 import { createClient } from "@supabase/supabase-js";
-import { gerarAuditoriaAnexos } from "@/lib/documental/auditoriaAnexos";
 
 function carregarEnvLocal() {
   const envPath = path.join(process.cwd(), ".env.local");
@@ -48,6 +47,7 @@ async function main() {
   }
 
   const admin = createClient(url, serviceKey);
+  const { gerarAuditoriaAnexos } = await import("@/lib/documental/auditoriaAnexos");
   const { linhas, resumo } = await gerarAuditoriaAnexos(admin);
 
   const header =
