@@ -9,10 +9,7 @@
 import fs from "fs";
 import path from "path";
 import { createClient } from "@supabase/supabase-js";
-import {
-  candidatosPathProposta,
-  extrairAnexosProposta,
-} from "@/lib/documental/propostaPaths";
+import { gerarAuditoriaAnexos } from "@/lib/documental/auditoriaAnexos";
 
 function carregarEnvLocal() {
   const envPath = path.join(process.cwd(), ".env.local");
@@ -35,8 +32,7 @@ function carregarEnvLocal() {
 }
 
 function csvEscape(valor: string) {
-  const v = valor.replace(/"/g, '""');
-  return `"${v}"`;
+  return `"${valor.replace(/"/g, '""')}"`;
 }
 
 async function main() {
@@ -52,64 +48,33 @@ async function main() {
   }
 
   const admin = createClient(url, serviceKey);
+  const { linhas, resumo } = await gerarAuditoriaAnexos(admin);
 
-  async function existeArquivo(pathArquivo: string) {
-    for (const candidato of candidatosPathProposta(pathArquivo)) {
-      const { data } = await admin.storage.from("propostas").download(candidato);
-      if (data) {
-        return { exists: true as const, resolvedPath: candidato };
-      }
-    }
-    return { exists: false as const };
-  }
-
-  const { data: propostas, error } = await admin
-    .from("propostas")
-    .select("*")
-    .order("criado_em", { ascending: false });
-
-  if (error) throw error;
-
-  const linhas: string[] = [
-    "proposta_id,nome,email,coluna_url,label,path,existe,resolved_path",
-  ];
-
-  let totalRefs = 0;
-  let totalOrfaos = 0;
-
-  for (const proposta of propostas || []) {
-    const anexos = extrairAnexosProposta(proposta as Record<string, unknown>);
-
-    for (const anexo of anexos) {
-      totalRefs += 1;
-      const check = await existeArquivo(anexo.path);
-      if (!check.exists) totalOrfaos += 1;
-
-      linhas.push(
-        [
-          csvEscape(String(proposta.id)),
-          csvEscape(String(proposta.nome || "")),
-          csvEscape(String(proposta.email || "")),
-          csvEscape(anexo.key),
-          csvEscape(anexo.label),
-          csvEscape(anexo.path),
-          check.exists ? "sim" : "nao",
-          csvEscape(check.exists ? check.resolvedPath : ""),
-        ].join(",")
-      );
-    }
-  }
+  const header =
+    "proposta_id,nome,email,coluna_url,label,path,existe,resolved_path";
+  const body = linhas.map((linha) =>
+    [
+      csvEscape(linha.proposta_id),
+      csvEscape(linha.nome),
+      csvEscape(linha.email),
+      csvEscape(linha.coluna_url),
+      csvEscape(linha.label),
+      csvEscape(linha.path),
+      linha.existe ? "sim" : "nao",
+      csvEscape(linha.resolved_path || ""),
+    ].join(",")
+  );
 
   const reportsDir = path.join(process.cwd(), "reports");
   if (!fs.existsSync(reportsDir)) fs.mkdirSync(reportsDir, { recursive: true });
 
   const stamp = new Date().toISOString().slice(0, 10);
   const outPath = path.join(reportsDir, `auditoria-anexos-${stamp}.csv`);
-  fs.writeFileSync(outPath, linhas.join("\n"), "utf8");
+  fs.writeFileSync(outPath, [header, ...body].join("\n"), "utf8");
 
-  console.log(`Propostas: ${(propostas || []).length}`);
-  console.log(`Referências de anexo: ${totalRefs}`);
-  console.log(`Órfãos (sem arquivo no storage): ${totalOrfaos}`);
+  console.log(`Propostas: ${resumo.propostas}`);
+  console.log(`Referências de anexo: ${resumo.referencias}`);
+  console.log(`Órfãos (sem arquivo no storage): ${resumo.orfaos}`);
   console.log(`CSV: ${outPath}`);
 }
 

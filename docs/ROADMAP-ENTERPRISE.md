@@ -1,6 +1,6 @@
 # Roadmap Enterprise — IPECC Public Site
 
-Documento vivo de planejamento. Atualizado após trilha documental + Fase 1 Segurança + integridade de anexos.
+Documento vivo de planejamento. Atualizado após Fase 2.1 (propostas), auditoria de anexos e matriz Fase 2.2.
 
 ## Visão
 
@@ -16,6 +16,9 @@ Evoluir o CMS institucional para uma plataforma **segura, auditável e modular**
 | Fase 1 Segurança (download, middleware, email, gitignore) | Concluída | `ba17827`, `117ff95` |
 | Verificação anexos (detalhe + listagem) | Concluída | `6ea77ca`, `9a50515` |
 | Fonte única paths (`propostaPaths`) + auditoria CSV | Concluída | `56d2ada` |
+| Fase 2.1 propostas → `supabaseClient` | Concluída | ver commits deste ciclo |
+| Página `/admin/propostas/auditoria` read-only | Concluída | ver commits deste ciclo |
+| Matriz Fase 2.2 + guia clients | Documentada | `docs/FASE-2-2-MIGRACAO-SUPABASE.md`, `docs/SUPABASE-CLIENTS.md` |
 
 ### Ferramentas operacionais
 
@@ -54,26 +57,27 @@ scripts/            → auditoria e automação read-only
 - [x] `.gitignore` env + tsbuildinfo
 - [ ] Checklist Dashboard 100% validado em produção
 
-### Fase 2 — Supabase / Auth 🔄 (próxima)
+### Fase 2 — Supabase / Auth 🔄 (~20% da fase)
 
 **Objetivo:** um client browser, um server, um admin; eliminar `createClient` solto em páginas.
 
 | Cliente hoje | Uso | Ação recomendada |
 |--------------|-----|------------------|
-| `lib/supabaseClient.ts` | Login, admin layout, logs | **Canônico browser** |
-| `lib/supabase-browser.ts` | Alguns admin páginas | Migrar → `supabaseClient` |
+| `lib/supabaseClient.ts` | Login, admin layout, propostas, ~24 páginas admin | **Canônico browser** |
+| `lib/supabase-browser.ts` | Legado | Migrar → `supabaseClient` |
 | `lib/supabaseServer.ts` | Server Components | **Canônico server** |
-| `lib/supabaseAdmin.ts` | API download, storage | **Canônico service role** |
-| `lib/getSupabase.ts` | Legado | Deprecar / migrar |
+| `lib/supabaseAdmin.ts` | API download, storage, auditoria | **Canônico service role** |
+| `lib/getSupabase.ts` | `lib/homeData.ts` | Deprecar / migrar |
 | `lib/supabasePublic.ts` | Público sem sessão | Manter se necessário |
-| `createClient` inline em `app/admin/propostas/*` | Propostas | Migrar para `supabaseClient` |
+| `createClient` inline | ~34 arquivos admin restantes | Ver `docs/FASE-2-2-MIGRACAO-SUPABASE.md` |
 
 **Microetapas (baixo risco, uma PR cada):**
 
-1. Migrar só módulo `app/admin/propostas` para `supabaseClient`
-2. Migrar `app/propostas/page.tsx` (público) — **exige validação de upload**
-3. Documentar matriz de clients em `docs/SUPABASE-CLIENTS.md`
-4. Remover `getSupabase.ts` quando sem referências
+1. [x] Migrar módulo `app/admin/propostas` para `supabaseClient`
+2. [ ] Fase 2.2 — migrar demais admin por PR (editais → transparência → projetos → …) — **matriz pronta**
+3. [ ] Migrar `app/propostas/page.tsx` (público) — **exige validação de upload**
+4. [x] Documentar clients: `docs/SUPABASE-CLIENTS.md` + `docs/FASE-2-2-MIGRACAO-SUPABASE.md`
+5. [ ] Remover `getSupabase.ts` quando sem referências
 
 **Não fazer ainda:** trocar auth helpers package, RLS em massa, service role no browser.
 
@@ -89,7 +93,7 @@ scripts/            → auditoria e automação read-only
 - [x] Detalhe: ocultar links órfãos + aviso
 - [x] Listagem: resumo anexos por card
 - [x] Script CSV global
-- [ ] Página admin read-only “Auditoria de anexos” (opcional)
+- [x] Página admin read-only `/admin/propostas/auditoria` + API `auditoria-anexos`
 - [ ] Modelo `proposta_anexos` (SQL + leitura paralela) — **decisão de produto**
 
 ### Fase 5 — Consolidação admin
@@ -127,9 +131,10 @@ scripts/            → auditoria e automação read-only
 
 | # | Etapa | Prioridade | Risco | Autorização |
 |---|--------|------------|-------|-------------|
-| 1 | **Fase 2.1** — `app/admin/propostas` usa `supabaseClient` (remove `createClient` duplicado) | Arquitetura | Baixo | Não |
-| 2 | **Operacional** — corrigir 4 órfãos do último `audit:anexos` (dados) | Integridade | Baixo | Não (dados) |
-| 3 | **Fase 4 opcional** — página `/admin/propostas/auditoria` read-only (tabela do CSV) | Observabilidade | Baixo | Não |
+| 1 | ~~**Fase 2.1** — `app/admin/propostas` usa `supabaseClient`~~ | ✅ Feito | — |
+| 2 | ~~**Página auditoria** `/admin/propostas/auditoria`~~ | ✅ Feito | — |
+| 3 | **Operacional** — corrigir órfãos do `audit:anexos` (dados) | Integridade | Baixo | Não (dados) |
+| 4 | **Fase 2.2** — migrar admin (PR por módulo; matriz em `docs/FASE-2-2-MIGRACAO-SUPABASE.md`) | Arquitetura | Médio | Não |
 
 **Parar e pedir autorização antes de:**
 
@@ -148,6 +153,16 @@ Fonte já pronta em `lib/documental/propostaPaths.ts`:
 - Migração futura: 1 linha por anexo com `proposta_id`, `chave`, `storage_path`, `status`
 
 Leitura híbrida sugerida: colunas legadas + tabela nova em paralelo (feature flag).
+
+---
+
+## Progresso resumido (plano mestre)
+
+| Escopo | Concluído |
+|--------|-----------|
+| Núcleo fases 1–4 (código) | ~65% |
+| Fase 2 admin browser | ~43% (26/60 arquivos) |
+| MVP enterprise (5 critérios) | ~58% |
 
 ---
 
