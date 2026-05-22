@@ -1,6 +1,6 @@
 # Correção operacional — anexos órfãos (Bloco A)
 
-Gerado a partir de `npm run audit:anexos` em 2026-05-22.
+Gerado a partir de `npm run audit:anexos` em 2026-05-22. **Última revalidação:** 2026-05-22 — ainda 4 órfãos.
 
 **Resumo:** 8 propostas · 20 referências · **4 órfãos** (sem arquivo no bucket `propostas`).
 

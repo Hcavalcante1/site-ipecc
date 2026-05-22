@@ -139,19 +139,25 @@ Legenda: ✅ canônico · ⏳ pendente · 🔒 requer autorização · ⚙️ ma
 | `lib/homeData.ts` | `supabaseServer` | ✅ |
 | `services/prestacaoContasService.ts` | `supabaseClient` | ✅ |
 | `lib/getSupabase.ts` | Removido | ✅ |
-| `supabase/client.ts` | Remover quando sem refs | ⏳ |
+| `supabase/client.ts` | Removido (sem refs) | ✅ |
 
 ---
 
-## Fora da Fase 2.2 (outras fases / autorização)
+## Fase 2.3 — Páginas públicas (leitura)
+
+| Arquivo | Client | Status |
+|---------|--------|--------|
+| `app/editais/page.tsx` | `supabasePublic` | ✅ |
+| `app/editais/[id]/page.tsx` | `supabasePublic` | ✅ |
+| `app/quem-somos/page.tsx` | `supabasePublic` | ✅ |
+| `app/projetos/page.tsx` | `supabasePublic` | ✅ |
+| `app/propostas/page.tsx` | inline anon | 🔒 requer autorização (upload) |
+
+## Fora da migração imediata
 
 | Arquivo | Client atual | Fase |
 |---------|--------------|------|
-| `app/propostas/page.tsx` | inline anon | 🔒 Fase 2.3 público |
-| `app/editais/page.tsx` | inline | Fase 2.3 / `supabasePublic` |
-| `app/editais/[id]/page.tsx` | inline | idem |
-| `app/quem-somos/page.tsx` | inline | idem |
-| `app/projetos/page.tsx` | inline | idem |
+| `app/propostas/page.tsx` | inline anon | 🔒 Fase 2.3 — upload |
 | `app/page.tsx` | `supabaseServer` | ✅ correto (RSC) |
 | `app/noticias/[id]/page.tsx` | `supabaseServer` | ✅ |
 | `app/transparencia/page.tsx` | `supabaseServer` | ✅ |

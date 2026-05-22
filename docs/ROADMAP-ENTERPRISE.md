@@ -76,6 +76,7 @@ scripts/            → auditoria e automação read-only
 1. [x] Migrar módulo `app/admin/propostas` para `supabaseClient`
 2. [x] Fase 2.2 — admin browser migrado (PR1–6)
 3. [ ] Migrar `app/propostas/page.tsx` (público) — **exige validação de upload** (Fase 2.3)
+3b. [x] Migrar editais, projetos, quem-somos públicos → `supabasePublic`
 4. [x] Documentar clients: `docs/SUPABASE-CLIENTS.md` + `docs/FASE-2-2-MIGRACAO-SUPABASE.md`
 5. [x] Remover `getSupabase.ts` (sem referências)
 

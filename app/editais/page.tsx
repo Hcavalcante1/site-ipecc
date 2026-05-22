@@ -1,22 +1,12 @@
 // app/editais/page.tsx
 
 import Link from "next/link";
-import { createClient } from "@supabase/supabase-js";
+import { supabasePublic as supabase } from "@/lib/supabasePublic";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
 export const runtime = "nodejs";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  {
-    auth: {
-      persistSession: false,
-    },
-  }
-);
 
 type EditalStatus = "aberto" | "encerrado" | "em_breve";
 
