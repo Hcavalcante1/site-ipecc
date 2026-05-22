@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
 import { adminTokens } from "@/components/admin";
+import { supabase } from "@/lib/supabaseClient";
 import {
   BadgeCard,
   btn,
@@ -21,11 +21,6 @@ import {
   type CertidaoEntidade,
   type CertidaoEntidadeLinha,
 } from "@/lib/documental";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 type CertidaoTipo = {
   id: string;

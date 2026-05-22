@@ -2,15 +2,10 @@
 
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
-import { createClient } from "@supabase/supabase-js";
 import { adminTokens } from "@/components/admin";
 import { formatarCategoria, formatarTipoPessoa } from "@/lib/documental";
 import { useResumoAnexosListagem } from "@/components/admin/propostas/useResumoAnexosListagem";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabase } from "@/lib/supabaseClient";
 
 type Proposta = {
   id: string;
@@ -101,7 +96,28 @@ export default function Page() {
 
   return (
     <div style={shellStyle}>
-      <h1>Propostas Recebidas</h1>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: adminTokens.spacing.md,
+        }}
+      >
+        <h1 style={{ margin: 0 }}>Propostas Recebidas</h1>
+        <a
+          href="/admin/propostas/auditoria"
+          style={{
+            color: "#93c5fd",
+            fontSize: 14,
+            textDecoration: "none",
+            fontWeight: adminTokens.typography.fontWeight.bold,
+          }}
+        >
+          Auditoria de anexos (read-only)
+        </a>
+      </div>
 
       {propostas.length === 0 ? (
         <div style={cardStyle}>
