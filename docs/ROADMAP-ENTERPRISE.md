@@ -19,6 +19,8 @@ Evoluir o CMS institucional para uma plataforma **segura, auditável e modular**
 | Fase 2.1 propostas → `supabaseClient` | Concluída | ver commits deste ciclo |
 | Página `/admin/propostas/auditoria` read-only | Concluída | ver commits deste ciclo |
 | Matriz Fase 2.2 + guia clients | Documentada | `docs/FASE-2-2-MIGRACAO-SUPABASE.md`, `docs/SUPABASE-CLIENTS.md` |
+| Fase 2.3 público → `supabasePublic` | Concluída (código) | inclui `app/propostas/page.tsx` |
+| Checklist upload Fase 3 | Documentado | `docs/fase3-validacao-upload-propostas.md` |
 
 ### Ferramentas operacionais
 
@@ -57,14 +59,14 @@ scripts/            → auditoria e automação read-only
 - [x] `.gitignore` env + tsbuildinfo
 - [ ] Checklist Dashboard 100% validado em produção
 
-### Fase 2 — Supabase / Auth 🔄 (~75% da fase — admin browser concluído)
+### Fase 2 — Supabase / Auth ✅ (código — falta smoke upload Fase 3)
 
 **Objetivo:** um client browser, um server, um admin; eliminar `createClient` solto em páginas.
 
 | Cliente hoje | Uso | Ação recomendada |
 |--------------|-----|------------------|
 | `lib/supabaseClient.ts` | Login, admin layout, propostas, ~24 páginas admin | **Canônico browser** |
-| `lib/supabase-browser.ts` | Legado | Migrar → `supabaseClient` |
+| ~~`lib/supabase-browser.ts`~~ | Removido | — |
 | `lib/supabaseServer.ts` | Server Components | **Canônico server** |
 | `lib/supabaseAdmin.ts` | API download, storage, auditoria | **Canônico service role** |
 | `lib/getSupabase.ts` | `lib/homeData.ts` | Deprecar / migrar |
@@ -75,7 +77,7 @@ scripts/            → auditoria e automação read-only
 
 1. [x] Migrar módulo `app/admin/propostas` para `supabaseClient`
 2. [x] Fase 2.2 — admin browser migrado (PR1–6)
-3. [ ] Migrar `app/propostas/page.tsx` (público) — **exige validação de upload** (Fase 2.3)
+3. [x] Migrar `app/propostas/page.tsx` → `supabasePublic` (validar upload: `docs/fase3-validacao-upload-propostas.md`)
 3b. [x] Migrar editais, projetos, quem-somos públicos → `supabasePublic`
 4. [x] Documentar clients: `docs/SUPABASE-CLIENTS.md` + `docs/FASE-2-2-MIGRACAO-SUPABASE.md`
 5. [x] Remover `getSupabase.ts` (sem referências)
@@ -85,7 +87,8 @@ scripts/            → auditoria e automação read-only
 ### Fase 3 — Storage / Uploads / Downloads
 
 - [x] Download propostas via proxy + bucket privado
-- [ ] Upload público: validar política INSERT após bucket privado
+- [ ] Upload público: validar política INSERT após bucket privado (`docs/fase3-validacao-upload-propostas.md`)
+- [x] Paths novos sem `public/` legado (já no `uploadArquivo` de `/propostas`)
 - [ ] Signed URLs com TTL (opcional, reduz service role no download)
 - [ ] Padronizar paths (sem pasta `public/` legada em novos uploads)
 
@@ -136,7 +139,9 @@ scripts/            → auditoria e automação read-only
 | 2 | ~~**Página auditoria** `/admin/propostas/auditoria`~~ | ✅ Feito | — |
 | 3 | **Operacional** — corrigir órfãos (4 hoje; plano em `docs/operacional-correcao-orfaos.md`) | Integridade | Baixo | Não (dados) |
 | 4 | ~~**Fase 2.2** — admin browser → `supabaseClient` (PR1–6)~~ | ✅ Feito | — |
-| 5 | **Fase 2.3** — páginas públicas (`app/propostas`, editais, etc.) | Arquitetura | Alto | **Sim** |
+| 5 | ~~**Fase 2.3** — páginas públicas → `supabasePublic`~~ | ✅ Código | — |
+| 6 | **Fase 3** — smoke test upload + checklist Dashboard | Operação | Médio | Não |
+| 7 | **Operacional** — 4 órfãos (`operacional-correcao-orfaos.md`) | Dados | Baixo | Não |
 
 **Parar e pedir autorização antes de:**
 

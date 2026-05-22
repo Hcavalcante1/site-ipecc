@@ -151,13 +151,13 @@ Legenda: ✅ canônico · ⏳ pendente · 🔒 requer autorização · ⚙️ ma
 | `app/editais/[id]/page.tsx` | `supabasePublic` | ✅ |
 | `app/quem-somos/page.tsx` | `supabasePublic` | ✅ |
 | `app/projetos/page.tsx` | `supabasePublic` | ✅ |
-| `app/propostas/page.tsx` | inline anon | 🔒 requer autorização (upload) |
+| `app/propostas/page.tsx` | `supabasePublic` | ✅ |
 
-## Fora da migração imediata
+## Legado removido
 
-| Arquivo | Client atual | Fase |
-|---------|--------------|------|
-| `app/propostas/page.tsx` | inline anon | 🔒 Fase 2.3 — upload |
+| Arquivo | Status |
+|---------|--------|
+| `lib/supabase-browser.ts` | Removido (sem imports) |
 | `app/page.tsx` | `supabaseServer` | ✅ correto (RSC) |
 | `app/noticias/[id]/page.tsx` | `supabaseServer` | ✅ |
 | `app/transparencia/page.tsx` | `supabaseServer` | ✅ |

@@ -12,7 +12,7 @@ Referência para Fase 2 do [ROADMAP-ENTERPRISE.md](./ROADMAP-ENTERPRISE.md). Mig
 | Público anônimo | `lib/supabasePublic.ts` | Leitura pública sem sessão | Usar quando migrar páginas públicas |
 | Legado | `lib/getSupabase.ts` | — | **Deprecar** → `supabaseServer` ou `supabasePublic` |
 | Duplicata | `supabase/client.ts` | — | **Deprecar** após zerar imports |
-| Legado | `lib/supabase-browser.ts` | — | Migrar → `supabaseClient` |
+| ~~`lib/supabase-browser.ts`~~ | — | Removido |
 
 ## Proibido em código novo
 
