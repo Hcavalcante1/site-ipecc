@@ -1,8 +1,8 @@
 # Correção operacional — anexos órfãos (Bloco A)
 
-Gerado a partir de `npm run audit:anexos` em 2026-05-22. **Última revalidação:** 2026-05-22 — **1 órfão** (após fix `candidatosPathProposta` para `propostas/public/`).
+Gerado a partir de `npm run audit:anexos` em 2026-05-22. **Última revalidação:** 2026-05-22 — **0 órfãos** (staging validado).
 
-**Resumo:** 8 propostas · 20 referências · **1 órfão** (sem arquivo no bucket `propostas`).
+**Resumo:** 9 propostas · 20 referências · **0 órfãos**.
 
 Não altera código. Ações no **Supabase Dashboard** (Storage + Table Editor `propostas`).
 
@@ -10,9 +10,14 @@ Não altera código. Ações no **Supabase Dashboard** (Storage + Table Editor `
 
 ## Órfãos atuais
 
-| Proposta ID | Nome / contexto | Coluna | Path no banco | Ação sugerida |
-|-------------|-----------------|--------|---------------|---------------|
-| `9e265fc7-3cca-4b51-8a20-e5e13ac8be73` | Teste validacao | `arquivo_url` | `1779231619365-proposta-teste-validacao.pdf` | Proposta de teste: **reupload** do PDF no path acima **ou** limpar `arquivo_url` / excluir proposta — ver SQL |
+Nenhum (`npm run audit:anexos` em staging local, 2026-05-22).
+
+### Histórico resolvido
+
+| Item | Resolução |
+|------|-----------|
+| `9e265fc7-…` (teste) | `arquivo_url` limpo (arquivo inexistente) — script `scripts/limpar-orfao-proposta-teste.ts` |
+| `e8b0b8b8-…` (3 paths `propostas/public/`) | Resolvido no código via `candidatosPathProposta` (arquivos em `public/…`) |
 
 ### Resolvidos automaticamente (paths `propostas/public/`)
 
