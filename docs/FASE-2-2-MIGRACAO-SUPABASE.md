@@ -62,21 +62,21 @@ Legenda: ✅ canônico · ⏳ pendente · 🔒 requer autorização · ⚙️ ma
 
 ---
 
-## PR 1 — Editais (`app/admin/editais` + `app/admin/paginas/editais`)
+## PR 1 — Editais (`app/admin/editais` + `app/admin/paginas/editais`) ✅
 
 | Arquivo | Tipo | Status |
 |---------|------|--------|
-| `app/admin/editais/mural/page.tsx` | top-level inline | ⏳ |
-| `app/admin/editais/hero/page.tsx` | top-level inline | ⏳ |
-| `app/admin/editais/textos/page.tsx` | top-level inline | ⏳ |
-| `app/admin/editais/textos/hero/page.tsx` | top-level inline | ⏳ |
-| `app/admin/editais/textos/nova-secao/page.tsx` | top-level inline | ⏳ |
-| `app/admin/paginas/editais/hero/page.tsx` | top-level inline | ⏳ |
-| `app/admin/paginas/editais/cta/page.tsx` | top-level inline | ⏳ |
-| `app/admin/paginas/editais/textos/page.tsx` | top-level inline | ⏳ |
-| `app/admin/paginas/editais/textos/hero/page.tsx` | top-level inline | ⏳ |
-| `app/admin/paginas/editais/textos/nova-secao/page.tsx` | top-level inline | ⏳ |
-| `app/admin/paginas/editais/[id]/page.tsx` | top-level inline | ⏳ |
+| `app/admin/editais/mural/page.tsx` | top-level inline | ✅ |
+| `app/admin/editais/hero/page.tsx` | top-level inline | ✅ |
+| `app/admin/editais/textos/page.tsx` | top-level inline | ✅ |
+| `app/admin/editais/textos/hero/page.tsx` | top-level inline | ✅ |
+| `app/admin/editais/textos/nova-secao/page.tsx` | top-level inline | ✅ |
+| `app/admin/paginas/editais/hero/page.tsx` | top-level inline | ✅ |
+| `app/admin/paginas/editais/cta/page.tsx` | top-level inline | ✅ |
+| `app/admin/paginas/editais/textos/page.tsx` | top-level inline | ✅ |
+| `app/admin/paginas/editais/textos/hero/page.tsx` | top-level inline | ✅ |
+| `app/admin/paginas/editais/textos/nova-secao/page.tsx` | top-level inline | ✅ |
+| `app/admin/paginas/editais/[id]/page.tsx` | top-level inline | ✅ |
 
 ---
 
@@ -168,8 +168,9 @@ Legenda: ✅ canônico · ⏳ pendente · 🔒 requer autorização · ⚙️ ma
 |--------|----|----|
 | Admin propostas (2.1) | 2 | 0 |
 | Admin já canônico | 24 | 0 |
-| Admin Fase 2.2 | 0 | 34 |
-| **Total admin browser** | **26** | **34** (~43% migrado) |
+| Admin Fase 2.2 PR1 editais | 11 | 0 |
+| Admin Fase 2.2 PR2–6 | 0 | 23 |
+| **Total admin browser** | **37** | **23** (~62% migrado) |
 
 ---
 

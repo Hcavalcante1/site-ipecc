@@ -133,8 +133,9 @@ scripts/            → auditoria e automação read-only
 |---|--------|------------|-------|-------------|
 | 1 | ~~**Fase 2.1** — `app/admin/propostas` usa `supabaseClient`~~ | ✅ Feito | — |
 | 2 | ~~**Página auditoria** `/admin/propostas/auditoria`~~ | ✅ Feito | — |
-| 3 | **Operacional** — corrigir órfãos do `audit:anexos` (dados) | Integridade | Baixo | Não (dados) |
-| 4 | **Fase 2.2** — migrar admin (PR por módulo; matriz em `docs/FASE-2-2-MIGRACAO-SUPABASE.md`) | Arquitetura | Médio | Não |
+| 3 | **Operacional** — corrigir órfãos (4 hoje; plano em `docs/operacional-correcao-orfaos.md`) | Integridade | Baixo | Não (dados) |
+| 4 | ~~**Fase 2.2 PR1** — editais → `supabaseClient`~~ | ✅ Feito | — |
+| 5 | **Fase 2.2 PR2** — transparência admin | Arquitetura | Médio | Não |
 
 **Parar e pedir autorização antes de:**
 
