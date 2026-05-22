@@ -57,12 +57,22 @@ export function extrairPathsAnexoProposta(
   return extrairAnexosProposta(proposta).map((item) => item.path);
 }
 
-/** Candidatos de path no bucket propostas (inclui legado public/). */
+/** Candidatos de path no bucket propostas (inclui legado public/ e propostas/public/). */
 export function candidatosPathProposta(filePath: string): string[] {
-  const limpo = filePath.replace(/^public\//, "").trim();
-  const candidatos = [limpo, filePath.trim()];
+  const original = filePath.trim();
+  const semPrefixoBucket = original
+    .replace(/^propostas\/public\//i, "")
+    .replace(/^propostas\//i, "");
+  const limpo = semPrefixoBucket.replace(/^public\//, "").trim();
+
+  const candidatos = [limpo, original, semPrefixoBucket];
+
   if (limpo && !limpo.startsWith("public/")) {
     candidatos.push(`public/${limpo}`);
   }
+  if (semPrefixoBucket.startsWith("public/") && semPrefixoBucket !== limpo) {
+    candidatos.push(semPrefixoBucket);
+  }
+
   return [...new Set(candidatos.filter(Boolean))];
 }

@@ -141,7 +141,8 @@ scripts/            → auditoria e automação read-only
 | 4 | ~~**Fase 2.2** — admin browser → `supabaseClient` (PR1–6)~~ | ✅ Feito | — |
 | 5 | ~~**Fase 2.3** — páginas públicas → `supabasePublic`~~ | ✅ Código | — |
 | 6 | **Fase 3** — smoke test upload + checklist Dashboard | Operação | Médio | Não |
-| 7 | **Operacional** — 4 órfãos (`operacional-correcao-orfaos.md`) | Dados | Baixo | Não |
+| 7 | **Operacional** — 1 órfão restante (teste; SQL em `docs/sql/`) | Dados | Baixo | Não |
+| 8 | **Runbook staging** — `docs/runbook-staging-enterprise.md` | Operação | Baixo | Não |
 
 **Parar e pedir autorização antes de:**
 

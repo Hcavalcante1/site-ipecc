@@ -1,8 +1,8 @@
 # Correção operacional — anexos órfãos (Bloco A)
 
-Gerado a partir de `npm run audit:anexos` em 2026-05-22. **Última revalidação:** 2026-05-22 — ainda 4 órfãos.
+Gerado a partir de `npm run audit:anexos` em 2026-05-22. **Última revalidação:** 2026-05-22 — **1 órfão** (após fix `candidatosPathProposta` para `propostas/public/`).
 
-**Resumo:** 8 propostas · 20 referências · **4 órfãos** (sem arquivo no bucket `propostas`).
+**Resumo:** 8 propostas · 20 referências · **1 órfão** (sem arquivo no bucket `propostas`).
 
 Não altera código. Ações no **Supabase Dashboard** (Storage + Table Editor `propostas`).
 
@@ -12,10 +12,11 @@ Não altera código. Ações no **Supabase Dashboard** (Storage + Table Editor `
 
 | Proposta ID | Nome / contexto | Coluna | Path no banco | Ação sugerida |
 |-------------|-----------------|--------|---------------|---------------|
-| `9e265fc7-3cca-4b51-8a20-e5e13ac8be73` | Teste validacao | `arquivo_url` | `1779231619365-proposta-teste-validacao.pdf` | Proposta de teste: **reupload** do PDF no path acima **ou** limpar `arquivo_url` e arquivar/excluir proposta |
-| `e8b0b8b8-94c8-4104-930d-e11233221b50` | asap | `arquivo_url` | `propostas/public/1774299374293-proposta-3964-05.pdf` | Path legado com prefixo errado: reupload como `1774299374293-proposta-3964-05.pdf` (sem `propostas/public/`) **ou** atualizar coluna para path que exista no storage |
-| `e8b0b8b8-94c8-4104-930d-e11233221b50` | asap | `cnpj_url` | `propostas/public/1774299377009-cnpj-3964-05.pdf` | Idem |
-| `e8b0b8b8-94c8-4104-930d-e11233221b50` | asap | `estatuto_url` | `propostas/public/1774299376006-estatuto-3964-05.pdf` | Idem |
+| `9e265fc7-3cca-4b51-8a20-e5e13ac8be73` | Teste validacao | `arquivo_url` | `1779231619365-proposta-teste-validacao.pdf` | Proposta de teste: **reupload** do PDF no path acima **ou** limpar `arquivo_url` / excluir proposta — ver SQL |
+
+### Resolvidos automaticamente (paths `propostas/public/`)
+
+A proposta `e8b0b8b8-94c8-4104-930d-e11233221b50` deixou de aparecer como órfã após ampliar `candidatosPathProposta` (arquivos existem sob `public/...` no bucket). Opcional: normalizar colunas no banco via `docs/sql/correcao-orfaos-propostas.sql`.
 
 **Nota:** Arquivos antigos podem estar sob `public/` no bucket (ex. proposta `1d3f7270-…` resolve com `public/...`). O download admin já tenta candidatos de path; órfãos são paths que não existem em nenhuma variante.
 
@@ -39,8 +40,18 @@ Não altera código. Ações no **Supabase Dashboard** (Storage + Table Editor `
 
 ---
 
+## SQL de referência (Dashboard)
+
+Modelos comentados de `SELECT` / `UPDATE` por proposta: [`docs/sql/correcao-orfaos-propostas.sql`](sql/correcao-orfaos-propostas.sql).
+
+**Nota código:** paths `propostas/public/...` no banco passam a ser resolvidos também como `public/...` e nome na raiz (`candidatosPathProposta`). Se o arquivo existir no Storage sob `public/`, a auditoria pode deixar de marcar órfão **sem** UPDATE — confira com `npm run audit:anexos` após deploy.
+
+---
+
 ## Referências
 
 - Script: `npm run audit:anexos` → `reports/auditoria-anexos-YYYY-MM-DD.csv`
 - UI: `/admin/propostas/auditoria`
+- Runbook completo: `docs/runbook-staging-enterprise.md`
 - Checklist segurança: `docs/fase1-seguranca-supabase.md`
+- Upload: `docs/fase3-validacao-upload-propostas.md`

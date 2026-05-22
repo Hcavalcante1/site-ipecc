@@ -40,7 +40,10 @@ Revise políticas atuais no Dashboard antes de aplicar SQL cego.
 
 ## 5. Testes pós-Dashboard
 
-1. Envio público de proposta (upload) ainda funciona
+1. Envio público de proposta (upload) ainda funciona — ver também `docs/fase3-validacao-upload-propostas.md`
 2. `/admin/propostas/[id]` — download de anexo com admin logado
 3. URL de download sem cookie → 401/403
 4. `/api/download/.../docs/...` e editais públicos continuam acessíveis
+5. `npm run audit:anexos` → 0 órfãos — `docs/operacional-correcao-orfaos.md`
+
+**Runbook unificado:** `docs/runbook-staging-enterprise.md`
