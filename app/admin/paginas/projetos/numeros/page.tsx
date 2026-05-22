@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
 type Resultado = {
   id: number;
@@ -82,13 +83,6 @@ export default function ProjetosResultadosAdminPage() {
     e.preventDefault();
 
     try {
-      const { createClient } = await import("@supabase/supabase-js");
-
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-
       const payload = resultados.map((r, index) => ({
         valor: r.valor,
         label: r.rotulo,

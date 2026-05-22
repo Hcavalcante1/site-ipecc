@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
 type Etapa = {
   id: number;
@@ -92,13 +93,6 @@ export default function ProjetosMetodologiaAdminPage() {
     e.preventDefault();
 
     try {
-      const { createClient } = await import("@supabase/supabase-js");
-
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-
       const payload = etapas.map((e, index) => ({
         titulo: e.titulo,
         texto: e.texto,

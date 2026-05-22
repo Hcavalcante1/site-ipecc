@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabaseClient";
 
 type Eixo = {
   id?: string;
@@ -10,11 +10,6 @@ type Eixo = {
   imagem_url?: string;
   ordem: number;
 };
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 export default function ProjetosEixosAdminPage() {
   const [eixos, setEixos] = useState<Eixo[]>([]);

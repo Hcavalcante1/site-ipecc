@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function QuemSomosBlocoPrincipalAdminPage() {
   const [titulo, setTitulo] = useState(
@@ -33,13 +34,6 @@ export default function QuemSomosBlocoPrincipalAdminPage() {
   // ✅ CARREGAR DADOS DO BANCO
   useEffect(() => {
     async function loadData() {
-      const { createClient } = await import("@supabase/supabase-js");
-
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-
       const { data } = await supabase
         .from("paginas_conteudo")
         .select("titulo, texto")
@@ -64,13 +58,6 @@ export default function QuemSomosBlocoPrincipalAdminPage() {
     e.preventDefault();
 
     try {
-      const { createClient } = await import("@supabase/supabase-js");
-
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-
       const texto = `${texto1}\n\n${texto2}`;
 
       const { error } = await supabase

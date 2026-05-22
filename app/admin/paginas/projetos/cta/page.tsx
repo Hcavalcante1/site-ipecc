@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function ProjetosCtaAdminPage() {
   const [tituloBloco, setTituloBloco] = useState("Parcerias e editais");
@@ -38,13 +39,6 @@ export default function ProjetosCtaAdminPage() {
     e.preventDefault();
 
     try {
-      const { createClient } = await import("@supabase/supabase-js");
-
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-
       const payload = {
         tituloCta,
         textoCta,

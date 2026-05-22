@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabaseClient";
 
 type Destaque = {
   id: number;
@@ -86,11 +86,6 @@ export default function ProjetosDestaquesAdminPage() {
     e.preventDefault();
 
     try {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-
       const payload = destaques.map((d, index) => ({
         titulo: d.titulo,
         texto: d.texto,

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { CSSProperties } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function QuemSomosHeroAdminPage() {
   const [titulo, setTitulo] = useState("");
@@ -23,13 +24,6 @@ export default function QuemSomosHeroAdminPage() {
   // ✅ CARREGAR DADOS EXISTENTES
   useEffect(() => {
     async function loadData() {
-      const { createClient } = await import("@supabase/supabase-js");
-
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-
       const { data } = await supabase
         .from("paginas_conteudo")
         .select("titulo, texto")
@@ -51,13 +45,6 @@ export default function QuemSomosHeroAdminPage() {
     e.preventDefault();
 
     try {
-      const { createClient } = await import("@supabase/supabase-js");
-
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-
       const { error } = await supabase
         .from("paginas_conteudo")
         .upsert(

@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabaseClient";
 
 export async function logAction({
   acao,
@@ -11,10 +11,6 @@ export async function logAction({
   registro_id?: string;
   dados?: any;
 }) {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! // 🔥 ESSA É A CORRETA
-  );
 
   const { error } = await supabase.from("logs_atividade").insert({
     acao,

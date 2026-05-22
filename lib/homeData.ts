@@ -1,8 +1,8 @@
-import { getSupabase } from "./getSupabase";
+import { createClient } from "./supabaseServer";
 import { HOME_QUERIES } from "./queries";
 
 export async function getHomeData() {
-  const supabase = getSupabase();
+  const supabase = createClient();
 
   const { data: hero } = await supabase
     .from("paginas_conteudo")

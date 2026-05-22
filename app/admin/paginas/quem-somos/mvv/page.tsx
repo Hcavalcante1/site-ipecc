@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function QuemSomosMvvAdminPage() {
   const [missao, setMissao] = useState(
@@ -37,13 +38,6 @@ Parceria e diálogo: pontes entre governo, sociedade civil e iniciativa privada.
   // ✅ LOAD DO BANCO (ADICIONADO)
   useEffect(() => {
     async function loadData() {
-      const { createClient } = await import("@supabase/supabase-js");
-
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-
       const { data } = await supabase
         .from("paginas_conteudo")
         .select("extra")
@@ -71,13 +65,6 @@ Parceria e diálogo: pontes entre governo, sociedade civil e iniciativa privada.
     e.preventDefault();
 
     try {
-      const { createClient } = await import("@supabase/supabase-js");
-
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-
       const extra = [
         { titulo: "Missão", texto: missao },
         { titulo: "Visão", texto: visao },

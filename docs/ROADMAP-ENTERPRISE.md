@@ -57,7 +57,7 @@ scripts/            → auditoria e automação read-only
 - [x] `.gitignore` env + tsbuildinfo
 - [ ] Checklist Dashboard 100% validado em produção
 
-### Fase 2 — Supabase / Auth 🔄 (~20% da fase)
+### Fase 2 — Supabase / Auth 🔄 (~75% da fase — admin browser concluído)
 
 **Objetivo:** um client browser, um server, um admin; eliminar `createClient` solto em páginas.
 
@@ -69,15 +69,15 @@ scripts/            → auditoria e automação read-only
 | `lib/supabaseAdmin.ts` | API download, storage, auditoria | **Canônico service role** |
 | `lib/getSupabase.ts` | `lib/homeData.ts` | Deprecar / migrar |
 | `lib/supabasePublic.ts` | Público sem sessão | Manter se necessário |
-| `createClient` inline | ~34 arquivos admin restantes | Ver `docs/FASE-2-2-MIGRACAO-SUPABASE.md` |
+| `createClient` inline no admin | — | ✅ Fase 2.2 concluída |
 
 **Microetapas (baixo risco, uma PR cada):**
 
 1. [x] Migrar módulo `app/admin/propostas` para `supabaseClient`
-2. [ ] Fase 2.2 — migrar demais admin por PR (editais → transparência → projetos → …) — **matriz pronta**
-3. [ ] Migrar `app/propostas/page.tsx` (público) — **exige validação de upload**
+2. [x] Fase 2.2 — admin browser migrado (PR1–6)
+3. [ ] Migrar `app/propostas/page.tsx` (público) — **exige validação de upload** (Fase 2.3)
 4. [x] Documentar clients: `docs/SUPABASE-CLIENTS.md` + `docs/FASE-2-2-MIGRACAO-SUPABASE.md`
-5. [ ] Remover `getSupabase.ts` quando sem referências
+5. [x] Remover `getSupabase.ts` (sem referências)
 
 **Não fazer ainda:** trocar auth helpers package, RLS em massa, service role no browser.
 
@@ -134,8 +134,8 @@ scripts/            → auditoria e automação read-only
 | 1 | ~~**Fase 2.1** — `app/admin/propostas` usa `supabaseClient`~~ | ✅ Feito | — |
 | 2 | ~~**Página auditoria** `/admin/propostas/auditoria`~~ | ✅ Feito | — |
 | 3 | **Operacional** — corrigir órfãos (4 hoje; plano em `docs/operacional-correcao-orfaos.md`) | Integridade | Baixo | Não (dados) |
-| 4 | ~~**Fase 2.2 PR1** — editais → `supabaseClient`~~ | ✅ Feito | — |
-| 5 | **Fase 2.2 PR2** — transparência admin | Arquitetura | Médio | Não |
+| 4 | ~~**Fase 2.2** — admin browser → `supabaseClient` (PR1–6)~~ | ✅ Feito | — |
+| 5 | **Fase 2.3** — páginas públicas (`app/propostas`, editais, etc.) | Arquitetura | Alto | **Sim** |
 
 **Parar e pedir autorização antes de:**
 

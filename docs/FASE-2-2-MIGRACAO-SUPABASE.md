@@ -80,65 +80,65 @@ Legenda: ✅ canônico · ⏳ pendente · 🔒 requer autorização · ⚙️ ma
 
 ---
 
-## PR 2 — Transparência admin
+## PR 2 — Transparência admin ✅
 
 | Arquivo | Tipo | Status |
 |---------|------|--------|
-| `app/admin/paginas/transparencia/hero/page.tsx` | top-level inline | ⏳ |
-| `app/admin/paginas/transparencia/cta/page.tsx` | top-level inline | ⏳ |
-| `app/admin/paginas/transparencia/documentos/page.tsx` | top-level inline | ⏳ |
-| `app/admin/paginas/transparencia/compromissos/page.tsx` | top-level inline | ⏳ |
-| `app/admin/paginas/transparencia/lgpd/page.tsx` | top-level inline | ⏳ |
-| `app/admin/paginas/transparencia/editais/page.tsx` | top-level inline | ⏳ |
-| `app/admin/paginas/transparencia/convenios/conveniosService.ts` | service module | ⏳ |
-| `app/admin/transparencia/resultados/page.tsx` | top-level inline | ⏳ |
+| `app/admin/paginas/transparencia/hero/page.tsx` | top-level inline | ✅ |
+| `app/admin/paginas/transparencia/cta/page.tsx` | top-level inline | ✅ |
+| `app/admin/paginas/transparencia/documentos/page.tsx` | top-level inline | ✅ |
+| `app/admin/paginas/transparencia/compromissos/page.tsx` | top-level inline | ✅ |
+| `app/admin/paginas/transparencia/lgpd/page.tsx` | top-level inline | ✅ |
+| `app/admin/paginas/transparencia/editais/page.tsx` | top-level inline | ✅ |
+| `app/admin/paginas/transparencia/convenios/conveniosService.ts` | service module | ✅ |
+| `app/admin/transparencia/resultados/page.tsx` | top-level inline | ✅ |
 
 ---
 
-## PR 3 — Projetos admin
+## PR 3 — Projetos admin ✅
 
 | Arquivo | Tipo | Status |
 |---------|------|--------|
-| `app/admin/paginas/projetos/hero/page.tsx` | top-level inline | ⏳ |
-| `app/admin/paginas/projetos/introducao/page.tsx` | top-level inline | ⏳ |
-| `app/admin/paginas/projetos/eixos/page.tsx` | top-level inline | ⏳ |
-| `app/admin/paginas/projetos/destaques/page.tsx` | inline em handler | ⏳ |
-| `app/admin/paginas/projetos/metodologia/page.tsx` | dynamic import | ⏳ |
-| `app/admin/paginas/projetos/numeros/page.tsx` | dynamic import | ⏳ |
-| `app/admin/paginas/projetos/cta/page.tsx` | dynamic import | ⏳ |
+| `app/admin/paginas/projetos/hero/page.tsx` | top-level inline | ✅ |
+| `app/admin/paginas/projetos/introducao/page.tsx` | top-level inline | ✅ |
+| `app/admin/paginas/projetos/eixos/page.tsx` | top-level inline | ✅ |
+| `app/admin/paginas/projetos/destaques/page.tsx` | inline em handler | ✅ |
+| `app/admin/paginas/projetos/metodologia/page.tsx` | dynamic import | ✅ |
+| `app/admin/paginas/projetos/numeros/page.tsx` | dynamic import | ✅ |
+| `app/admin/paginas/projetos/cta/page.tsx` | dynamic import | ✅ |
 
 ---
 
-## PR 4 — Quem somos admin
+## PR 4 — Quem somos admin ✅
 
 | Arquivo | Tipo | Status |
 |---------|------|--------|
-| `app/admin/paginas/quem-somos/hero/page.tsx` | dynamic (×2) | ⏳ |
-| `app/admin/paginas/quem-somos/mvv/page.tsx` | dynamic (×2) | ⏳ |
-| `app/admin/paginas/quem-somos/bloco-principal/page.tsx` | dynamic (×2) | ⏳ |
-| `app/admin/paginas/quem-somos/atuacao/page.tsx` | top-level inline | ⏳ |
-| `app/admin/paginas/quem-somos/cta/page.tsx` | top-level inline | ⏳ |
+| `app/admin/paginas/quem-somos/hero/page.tsx` | dynamic (×2) | ✅ |
+| `app/admin/paginas/quem-somos/mvv/page.tsx` | dynamic (×2) | ✅ |
+| `app/admin/paginas/quem-somos/bloco-principal/page.tsx` | dynamic (×2) | ✅ |
+| `app/admin/paginas/quem-somos/atuacao/page.tsx` | top-level inline | ✅ |
+| `app/admin/paginas/quem-somos/cta/page.tsx` | top-level inline | ✅ |
 
 ---
 
-## PR 5 — Contato admin
+## PR 5 — Contato admin ✅
 
 | Arquivo | Tipo | Status |
 |---------|------|--------|
-| `app/admin/paginas/contato/hero/page.tsx` | top-level inline | ⏳ |
-| `app/admin/paginas/contato/canais/page.tsx` | top-level inline | ⏳ |
-| `app/admin/paginas/contato/protocolos/page.tsx` | top-level inline | ⏳ |
+| `app/admin/paginas/contato/hero/page.tsx` | top-level inline | ✅ |
+| `app/admin/paginas/contato/canais/page.tsx` | top-level inline | ✅ |
+| `app/admin/paginas/contato/protocolos/page.tsx` | top-level inline | ✅ |
 
 ---
 
-## PR 6 — Lib / services (após admin UI)
+## PR 6 — Lib / services ✅
 
 | Arquivo | Ação | Status |
 |---------|------|--------|
-| `lib/logAction.ts` | Avaliar `supabaseAdmin` + chamada só server-side | ⏳ |
-| `lib/homeData.ts` | `getSupabase()` → `supabaseServer` ou `supabasePublic` | ⏳ |
-| `services/prestacaoContasService.ts` | `supabaseClient` ou server | ⏳ |
-| `lib/getSupabase.ts` | Remover quando sem refs | ⏳ |
+| `lib/logAction.ts` | `supabaseClient` | ✅ |
+| `lib/homeData.ts` | `supabaseServer` | ✅ |
+| `services/prestacaoContasService.ts` | `supabaseClient` | ✅ |
+| `lib/getSupabase.ts` | Removido | ✅ |
 | `supabase/client.ts` | Remover quando sem refs | ⏳ |
 
 ---
@@ -169,8 +169,8 @@ Legenda: ✅ canônico · ⏳ pendente · 🔒 requer autorização · ⚙️ ma
 | Admin propostas (2.1) | 2 | 0 |
 | Admin já canônico | 24 | 0 |
 | Admin Fase 2.2 PR1 editais | 11 | 0 |
-| Admin Fase 2.2 PR2–6 | 0 | 23 |
-| **Total admin browser** | **37** | **23** (~62% migrado) |
+| Admin Fase 2.2 PR2–6 | 23 | 0 |
+| **Total admin browser** | **60** | **0** (100% migrado) |
 
 ---
 
