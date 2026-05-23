@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "ci:local": "npm run typecheck && npm run build",
     "audit:anexos": "npx --yes tsx scripts/auditar-anexos-propostas.ts",
     "validate:upload-proposta": "npx --yes tsx scripts/validar-upload-proposta-staging.ts",
     "verify:proposta-anexos": "npx --yes tsx scripts/verificar-proposta-anexos-staging.ts",

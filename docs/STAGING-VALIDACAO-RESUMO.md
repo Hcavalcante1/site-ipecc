@@ -9,8 +9,8 @@ Data: 2026-05-23 · Ambiente: `http://localhost:3002` · Branch: `master`
 | Bloco A (integridade anexos) | **Fechado** em staging local (0 órfãos) |
 | Fase 3 upload (staging local) | **Fechado** — script + HTTP 401; browser UI OK |
 | Fase 2/3 código (clients + upload API) | **OK** |
-| Build produção | **OK** (91 rotas) |
-| CI GitHub | Workflow commitado; **push/remote pendente** (sem `origin` configurado) |
+| Build produção | **OK** (93 rotas) |
+| CI GitHub | Workflow OK localmente; **push pendente** (sem `origin`) |
 | Fase 1 Dashboard produção | **Pendente** (manual) |
 
 ---

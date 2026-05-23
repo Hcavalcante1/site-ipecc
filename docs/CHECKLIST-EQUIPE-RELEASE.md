@@ -14,16 +14,22 @@
 | Upload propostas (staging) | `npm run validate:upload-proposta` |
 | Build + TypeScript | `npx tsc --noEmit` + `npm run build` |
 | Clients Supabase padronizados | `docs/SUPABASE-CLIENTS.md` |
-| CI no repositório | `.github/workflows/ci.yml` (dispara após primeiro push) |
+| CI no repositório | `.github/workflows/ci.yml` — `npm run typecheck` + build (placeholders env) |
 
 ---
 
 ## Antes do primeiro push
 
-- [ ] Criar repositório remoto e `git remote add origin <URL>`
-- [ ] `git push -u origin master`
-- [ ] GitHub Actions → job **CI** verde (tsc + build)
-- [ ] Confirmar variáveis no host de deploy (Supabase URL, anon, service role, Resend)
+1. Criar repositório vazio no GitHub (privado recomendado)
+2. Configurar remote e enviar:
+
+```powershell
+git remote add origin https://github.com/SEU_USUARIO/ipecc-public-site.git
+git push -u origin master
+```
+
+3. GitHub → Actions → job **CI** verde
+4. Secrets reais ficam no host de deploy (Vercel/etc.), não no Actions (build usa placeholders)
 
 ---
 
