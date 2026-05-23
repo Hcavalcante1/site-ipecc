@@ -12,6 +12,7 @@
     "apply:m1-anexos-insert": "npx --yes tsx scripts/aplicar-m1-insert-legado-staging.ts",
     "sync:proposta-anexos": "npx --yes tsx scripts/sincronizar-todos-anexos-staging.ts",
     "validar:fluxo-publico-m3": "npx --yes tsx scripts/validar-fluxo-publico-m3-local.ts",
+    "validar:sync-admin-anexos": "npx --yes tsx scripts/validar-sync-admin-anexos-staging.ts",
     "diag:supabase-env": "npx --yes tsx scripts/diagnostico-supabase-env.ts",
     "validar:hibrido-anexos": "npx --yes tsx scripts/validar-hibrido-anexos-staging.ts"
   },

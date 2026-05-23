@@ -66,7 +66,9 @@ NEXT_PUBLIC_USE_PROPOSTA_ANEXOS_TABLE=true
 | # | Ação | Status |
 |---|------|--------|
 | M3.1 | `propostaAnexosEscrita.ts` + `POST /api/propostas/registrar-anexos` (service role) | ✅ |
-| M3.2 | Admin upload / substituição de anexo | pendente |
+| M3.2 | `POST /api/admin/propostas/sincronizar-anexos` + `validar:sync-admin-anexos` | ✅ |
+
+**M3.2:** não há UI de upload no admin ainda; a API sincroniza colunas `*_url` → `proposta_anexos` com `origem: admin` (sessão admin). Quando existir upload/substituição, chamar esta rota após gravar a coluna.
 
 Flag escrita (off por padrão):
 
