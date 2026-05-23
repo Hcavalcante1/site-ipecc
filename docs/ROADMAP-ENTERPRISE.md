@@ -109,7 +109,7 @@ scripts/            → auditoria e automação read-only
 - [x] Listagem: resumo anexos por card
 - [x] Script CSV global
 - [x] Página admin read-only `/admin/propostas/auditoria` + API `auditoria-anexos`
-- [ ] Modelo `proposta_anexos` (SQL + leitura paralela) — **decisão de produto**
+- [ ] Modelo `proposta_anexos` — rascunho em `docs/sql/proposta_anexos-draft.sql` + plano `docs/PLANO-MIGRACAO-PROPOSTA-ANEXOS.md` (não aplicado)
 
 ### Fase 5 — Consolidação admin
 
@@ -153,6 +153,7 @@ scripts/            → auditoria e automação read-only
 | 3b | ~~Storage download (paridade API)~~ | ✅ | passo 3 em `validate:upload-proposta` |
 | 5 | ~~**Fase 5 mínima** — editais cross-links + `supabaseClient`~~ | ✅ | `docs/FASE-5-EDITAIS-ROTAS.md` |
 | 5b | Checklist equipe release | ✅ | `docs/CHECKLIST-EQUIPE-RELEASE.md` |
+| 6 | **Plano `proposta_anexos`** (doc + SQL rascunho) | ✅ | `PLANO-MIGRACAO-PROPOSTA-ANEXOS.md` — M1 SQL aguarda autorização |
 | 4 | **Hardening local** — repetir runbook (`runbook-staging-enterprise.md`) após mudanças | Contínuo | Sem push |
 | 5 | **Fase 5 (opcional)** — unificar rotas admin editais (baixo risco, uma PR local) | Backlog | Pedir autorização se tocar layout |
 | — | ~~Push / remote / produção~~ | **Fora de escopo** | Até nova decisão de release |
