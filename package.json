@@ -18,7 +18,9 @@
     "validar:pre-m4-corte": "npx --yes tsx scripts/validar-pre-m4-corte-staging.ts",
     "validar:m4-somente-tabela": "npx --yes tsx scripts/validar-m4-somente-tabela-staging.ts",
     "diag:supabase-env": "npx --yes tsx scripts/diagnostico-supabase-env.ts",
-    "validar:hibrido-anexos": "npx --yes tsx scripts/validar-hibrido-anexos-staging.ts"
+    "validar:hibrido-anexos": "npx --yes tsx scripts/validar-hibrido-anexos-staging.ts",
+    "correlacionar:orfaos-logs": "npx --yes tsx scripts/correlacionar-orfaos-admin-logs.ts",
+    "validar:staging": "npm run typecheck && npm run audit:anexos && npm run verify:proposta-anexos && npm run validar:pre-m4-corte"
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.15.0",

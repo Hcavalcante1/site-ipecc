@@ -3,6 +3,7 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { adminTokens } from "@/components/admin";
 import { triggerToast } from "@/components/AdminToast";
+import { logAction } from "@/lib/adminLogger";
 import { ANEXOS_URL_PROPOSTA } from "@/lib/documental/propostaPaths";
 import { supabase } from "@/lib/supabaseClient";
 import { InfoCard } from "./propostaDetailUi";
@@ -78,6 +79,14 @@ export function AdminSubstituirAnexoProposta({ propostaId, onAtualizado }: Props
 
       await onAtualizado();
       setArquivo(null);
+
+      await logAction({
+        acao: "UPDATE",
+        tabela: "propostas",
+        registro_id: propostaId,
+        detalhes: { tipo: "substituir_anexo", chave, storage_path: path },
+      });
+
       triggerToast("Anexo atualizado com sucesso.", "success");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro ao enviar anexo";

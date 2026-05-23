@@ -131,7 +131,7 @@ scripts/            → auditoria e automação read-only
 - [x] `logs_download`, script CSV
 - [x] Health check `GET /api/health` (env + ping leve `propostas`, staging local)
 - [x] `scripts/lib/loadEnvLocal.ts` — env unificado nos scripts operacionais
-- [ ] Correlacionar órfãos com `admin_logs`
+- [x] Correlacionar órfãos com `admin_logs` — `npm run correlacionar:orfaos-logs`
 
 ### Fase 9 — Escalabilidade / SaaS
 
