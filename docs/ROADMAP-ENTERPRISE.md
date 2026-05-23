@@ -129,8 +129,9 @@ scripts/            → auditoria e automação read-only
 ### Fase 8 — Observabilidade
 
 - [x] `logs_download`, script CSV
+- [x] Health check `GET /api/health` (env + ping leve `propostas`, staging local)
+- [x] `scripts/lib/loadEnvLocal.ts` — env unificado nos scripts operacionais
 - [ ] Correlacionar órfãos com `admin_logs`
-- [ ] Health check `/api/health` (opcional)
 
 ### Fase 9 — Escalabilidade / SaaS
 

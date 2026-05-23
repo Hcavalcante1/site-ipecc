@@ -6,22 +6,14 @@
 import fs from "fs";
 import path from "path";
 import { createClient } from "@supabase/supabase-js";
-
-function carregarEnvLocal() {
-  const envPath = path.join(process.cwd(), ".env.local");
-  if (!fs.existsSync(envPath)) throw new Error(".env.local não encontrado");
-  for (const line of fs.readFileSync(envPath, "utf8").split(/\r?\n/)) {
-    const i = line.indexOf("=");
-    if (i < 1 || line.trimStart().startsWith("#")) continue;
-    process.env[line.slice(0, i).trim()] = line.slice(i + 1).trim();
-  }
-}
+import { loadEnvLocal, requireEnv } from "./lib/loadEnvLocal";
 
 async function main() {
-  carregarEnvLocal();
+  loadEnvLocal();
+  requireEnv("NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY");
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  if (!url || !anon) throw new Error("Variáveis públicas Supabase ausentes");
 
   const supabase = createClient(url, anon, {
     auth: { persistSession: false, autoRefreshToken: false },

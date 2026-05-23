@@ -9,42 +9,20 @@
 import fs from "fs";
 import path from "path";
 import { createClient } from "@supabase/supabase-js";
-
-function carregarEnvLocal() {
-  const envPath = path.join(process.cwd(), ".env.local");
-  if (!fs.existsSync(envPath)) {
-    throw new Error("Arquivo .env.local não encontrado na raiz do projeto.");
-  }
-
-  for (const line of fs.readFileSync(envPath, "utf8").split(/\r?\n/)) {
-    const i = line.indexOf("=");
-    if (i < 1 || line.trimStart().startsWith("#")) continue;
-    const key = line.slice(0, i).trim();
-    const value = line.slice(i + 1).trim();
-    if (
-      key === "NEXT_PUBLIC_SUPABASE_URL" ||
-      key === "SUPABASE_SERVICE_ROLE_KEY"
-    ) {
-      process.env[key] = value;
-    }
-  }
-}
+import { loadEnvLocal, requireEnv } from "./lib/loadEnvLocal";
 
 function csvEscape(valor: string) {
   return `"${valor.replace(/"/g, '""')}"`;
 }
 
 async function main() {
-  carregarEnvLocal();
+  loadEnvLocal({
+    keys: ["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"],
+  });
+  requireEnv("NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY");
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!url || !serviceKey) {
-    throw new Error(
-      "Defina NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY em .env.local"
-    );
-  }
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
   const admin = createClient(url, serviceKey);
   const { gerarAuditoriaAnexos } = await import("@/lib/documental/auditoriaAnexos");

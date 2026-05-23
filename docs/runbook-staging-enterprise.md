@@ -24,7 +24,10 @@ Ordem única para fechar Fase 1 (Dashboard), Fase 3 (upload) e Bloco A (órfãos
 ```bash
 npx tsc --noEmit
 npm run audit:anexos
+curl -s http://localhost:3002/api/health
 ```
+
+Scripts operacionais usam `scripts/lib/loadEnvLocal.ts` (env unificado).
 
 - [x] `tsc` sem erros (2026-05-22)
 - [x] `audit:anexos` → **0 órfãos** (staging local 2026-05-22)
