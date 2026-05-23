@@ -20,6 +20,9 @@ export default function EditaisAdminIndex() {
         Escolha qual bloco da página pública <strong>Editais</strong> você
         deseja editar.
       </p>
+      <p style={{ marginTop: 8, fontSize: 14 }}>
+        <Link href="/admin/editais">Gerenciar editais e PDFs (cadastro) →</Link>
+      </p>
 
       <div
         style={{

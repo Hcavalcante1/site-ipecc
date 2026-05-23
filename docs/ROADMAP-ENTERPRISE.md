@@ -150,7 +150,8 @@ scripts/            → auditoria e automação read-only
 | 2 | ~~Bloco A — 0 órfãos + smoke HTTP~~ | ✅ | `STAGING-VALIDACAO-RESUMO.md` |
 | 3 | ~~**Fase 3 local** — upload + insert + audit 0 órfãos~~ | ✅ | `docs/fase3-validacao-upload-propostas.md` (2026-05-23) |
 | 3b | ~~Storage download (paridade API)~~ | ✅ | passo 3 em `validate:upload-proposta` |
-| 5 | **Fase 5** — editais: ver `docs/FASE-5-EDITAIS-ROTAS.md` | Backlog | Cross-links + `supabaseClient` em `/admin/editais` |
+| 5 | ~~**Fase 5 mínima** — editais cross-links + `supabaseClient`~~ | ✅ | `docs/FASE-5-EDITAIS-ROTAS.md` |
+| 5b | Checklist equipe release | ✅ | `docs/CHECKLIST-EQUIPE-RELEASE.md` |
 | 4 | **Hardening local** — repetir runbook (`runbook-staging-enterprise.md`) após mudanças | Contínuo | Sem push |
 | 5 | **Fase 5 (opcional)** — unificar rotas admin editais (baixo risco, uma PR local) | Backlog | Pedir autorização se tocar layout |
 | — | ~~Push / remote / produção~~ | **Fora de escopo** | Até nova decisão de release |

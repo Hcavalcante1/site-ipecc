@@ -26,6 +26,6 @@ Unificar arquivos em uma só árvore **não** é recomendado: domínios diferent
 
 ## Critério de pronto (Fase 5 mínima)
 
-- [ ] Cross-links adicionados (opcional)
-- [ ] `app/admin/editais/page.tsx` → `supabaseClient`
+- [x] Cross-links entre `/admin/editais` e `/admin/paginas/editais`
+- [x] `supabaseClient` em `editais/page.tsx`, `editais/[id]/page.tsx`, `paginas/editais/documentos/page.tsx`
 - [ ] Smoke: login → listar edital → abrir página pública `/editais`

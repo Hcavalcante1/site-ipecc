@@ -2,14 +2,9 @@
 
 import { useState, useEffect } from "react";
 import type { CSSProperties } from "react";
-import { createBrowserClient } from "@supabase/ssr";
+import Link from "next/link";
+import { supabase } from "@/lib/supabaseClient";
 import { adminTokens } from "@/components/admin";
-
-// Cliente Supabase autenticado (admin)
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 // Normaliza nome do arquivo para storage
 function normalizarNomeArquivo(nome: string) {
@@ -150,6 +145,11 @@ export default function AdminEditais() {
 
       <p className="admin-subtitle">
         Cadastro e publicação de editais públicos.
+      </p>
+      <p className="admin-subtitle" style={{ marginTop: 8 }}>
+        <Link href="/admin/paginas/editais">
+          Editar textos da página pública Editais →
+        </Link>
       </p>
 
       <h2 className="admin-h2">Cadastrar novo edital</h2>
