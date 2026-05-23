@@ -21,7 +21,7 @@ Verifica (read-only):
 
 Com dev: `DEV_URL=http://localhost:3002 npm run validar:seguranca`
 
-**Correção se anon lê `propostas`:** `docs/sql/hardening-propostas-rls-anon.sql` (Dashboard, staging primeiro).
+**Correção se anon lê `propostas`:** aplicar `docs/sql/hardening-propostas-rls-APLICAR.sql` — guia `docs/HARDENING-RLS-APLICAR-STAGING.md` → `npm run validar:pos-hardening-rls`.
 
 ---
 

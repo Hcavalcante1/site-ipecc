@@ -14,7 +14,7 @@ Data: 2026-05-23 · Ambiente: `http://localhost:3002` · Branch: `master`
 | CI GitHub remoto | **Pendente** (sem `origin`) |
 | Fase 1 Dashboard produção | **Pendente** (manual) |
 | Prod prep documentado | `docs/PROD-PREP-CHECKLIST.md` |
-| Hardening RLS (script) | `validar:seguranca` — **ação:** RLS SELECT em `propostas` para anon (ver `docs/sql/hardening-propostas-rls-anon.sql`) |
+| Hardening RLS (script) | `validar:seguranca` falha anon SELECT → aplicar `HARDENING-RLS-APLICAR-STAGING.md` |
 
 ---
 
