@@ -9,13 +9,15 @@
 ## Antes
 
 1. Confirmar que `.env.local` aponta para **staging** (não produção).
-2. No terminal do projeto:
+2. Checklist completo: `docs/M1-CHECAGEM-VERIFICACAO.md`
+3. No terminal do projeto:
 
 ```bash
+npx tsc --noEmit
 npm run audit:anexos
 ```
 
-Anote: **referências de anexo** (ex.: 22).
+Anote: **referências de anexo** (ex.: 22). Se a tabela já existir vazia, rode só o **PASSO 4** do SQL.
 
 ---
 

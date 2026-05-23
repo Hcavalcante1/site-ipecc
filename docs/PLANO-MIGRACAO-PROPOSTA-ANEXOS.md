@@ -28,8 +28,9 @@ Normalizar anexos (1 linha por arquivo) mantendo **compatibilidade** com colunas
 
 - [x] Rascunho SQL + este plano
 - [x] Guia M1: `docs/M1-EXECUTAR-STAGING.md` + `docs/sql/proposta_anexos-M1-staging-APLICAR.sql`
-- [ ] **Você:** executar M1 no Dashboard staging
-- [ ] **Você:** `npm run verify:proposta-anexos` após M1
+- [x] Checagem local pré-M1 — `docs/M1-CHECAGEM-VERIFICACAO.md`
+- [ ] **Você:** PASSO 4 INSERT no Dashboard (tabela existe, migração pendente)
+- [ ] **Você:** `npm run verify:proposta-anexos` → deve imprimir `OK`
 
 ### Fase M1 — Tabela + migração legado (somente staging)
 
