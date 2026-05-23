@@ -29,9 +29,9 @@ Atualizado conforme rodadas locais. **Sem alteração de código** neste documen
 
 | # | Passo | SQL / ação | Esperado | Status |
 |---|-------|------------|----------|--------|
-| B1 | Tabela + índices | PASSO 1–2 em `proposta_anexos-M1-staging-APLICAR.sql` | Tabela existe | [x] (verify viu tabela) |
-| B2 | RLS admin | PASSO 3 | Sem erro no Run | [ ] conferir no Dashboard |
-| B3 | Migração legado | PASSO 4 INSERT | ~22 linhas | [ ] **pendente** (tabela com 0 linhas) |
+| B1 | Tabela + índices | PASSO 1–2 em `proposta_anexos-M1-staging-APLICAR.sql` | API vê a tabela | [ ] **pendente** (erro schema cache) |
+| B2 | RLS admin | PASSO 3 | Sem erro no Run | [ ] junto com B1 |
+| B3 | Migração legado | PASSO 4 ou `npm run apply:m1-anexos-insert` | ~22 linhas | [ ] após B1 |
 | B4 | Contagem SQL | `SELECT count(*) FROM proposta_anexos;` | ≈ 22 | [ ] após B3 |
 
 ---
@@ -50,8 +50,9 @@ Atualizado conforme rodadas locais. **Sem alteração de código** neste documen
 
 ```
 audit:anexos     → OK (0 órfãos, 22 referências)
-proposta_anexos  → tabela existe, 0 linhas → executar PASSO 4 do SQL
-verify           → aguardando B3
+proposta_anexos  → tabela ainda NÃO visível na API → rodar SQL PASSOS 1–3 no Dashboard staging
+verify           → aguardando B1
+apply:m1-anexos  → aguardando B1 (depois B3)
 ```
 
 ---

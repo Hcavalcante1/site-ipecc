@@ -21,12 +21,22 @@ Anote: **referências de anexo** (ex.: 22). Se a tabela já existir vazia, rode 
 
 ---
 
-## No Supabase Dashboard
+## No Supabase Dashboard (ou script local)
+
+**Opção A — SQL Editor**
 
 1. **SQL Editor** → New query.
-2. Cole o conteúdo de `proposta_anexos-M1-staging-APLICAR.sql`.
+2. Cole `docs/sql/proposta_anexos-M1-staging-APLICAR.sql` (ou só `proposta_anexos-M1-PASSO4-SOMENTE.sql` se a tabela já existir vazia).
 3. **Run** (uma vez).
-4. Se erro em `is_admin(auth.uid())`: abra Database → Functions → confira assinatura de `is_admin` e ajuste só o bloco RLS (PASSO 3).
+4. Se erro em `is_admin(auth.uid())`: ajuste PASSO 3 conforme sua função `is_admin`.
+
+**Opção B — terminal (staging, service role)**
+
+```bash
+npm run apply:m1-anexos-insert
+```
+
+Equivalente ao PASSO 4; usa `extrairAnexosProposta` (mesma fonte do audit).
 
 ---
 

@@ -17,13 +17,22 @@ async function main() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
+  const probe = await admin.from("proposta_anexos").select("id").limit(1);
+
+  if (probe.error) {
+    console.error("Tabela proposta_anexos inacessível:", probe.error.message);
+    console.error(
+      "Execute no Supabase STAGING: docs/sql/proposta_anexos-M1-staging-APLICAR.sql (PASSOS 1–3)"
+    );
+    process.exit(1);
+  }
+
   const { count, error: countErr } = await admin
     .from("proposta_anexos")
-    .select("*", { count: "exact", head: true });
+    .select("id", { count: "exact", head: true });
 
   if (countErr) {
-    console.error("Tabela proposta_anexos inacessível:", countErr.message);
-    console.error("Aplique M1 em staging: docs/M1-EXECUTAR-STAGING.md");
+    console.error("Erro ao contar proposta_anexos:", countErr.message);
     process.exit(1);
   }
 

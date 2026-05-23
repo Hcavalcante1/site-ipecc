@@ -8,7 +8,8 @@
     "start": "next start",
     "audit:anexos": "npx --yes tsx scripts/auditar-anexos-propostas.ts",
     "validate:upload-proposta": "npx --yes tsx scripts/validar-upload-proposta-staging.ts",
-    "verify:proposta-anexos": "npx --yes tsx scripts/verificar-proposta-anexos-staging.ts"
+    "verify:proposta-anexos": "npx --yes tsx scripts/verificar-proposta-anexos-staging.ts",
+    "apply:m1-anexos-insert": "npx --yes tsx scripts/aplicar-m1-insert-legado-staging.ts"
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.15.0",
