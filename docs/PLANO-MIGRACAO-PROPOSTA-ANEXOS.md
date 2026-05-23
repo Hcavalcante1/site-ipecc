@@ -24,11 +24,12 @@ Normalizar anexos (1 linha por arquivo) mantendo **compatibilidade** com colunas
 
 ## Fases
 
-### Fase M0 — Preparação (atual) ✅ doc
+### Fase M0 — Preparação ✅ doc
 
 - [x] Rascunho SQL + este plano
-- [ ] Revisão institucional do modelo (`chave`, `status`, RLS)
-- [ ] Aprovação para aplicar SQL em **staging/dev**
+- [x] Guia M1: `docs/M1-EXECUTAR-STAGING.md` + `docs/sql/proposta_anexos-M1-staging-APLICAR.sql`
+- [ ] **Você:** executar M1 no Dashboard staging
+- [ ] **Você:** `npm run verify:proposta-anexos` após M1
 
 ### Fase M1 — Tabela + migração legado (somente staging)
 
