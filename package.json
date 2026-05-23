@@ -10,6 +10,7 @@
     "validate:upload-proposta": "npx --yes tsx scripts/validar-upload-proposta-staging.ts",
     "verify:proposta-anexos": "npx --yes tsx scripts/verificar-proposta-anexos-staging.ts",
     "apply:m1-anexos-insert": "npx --yes tsx scripts/aplicar-m1-insert-legado-staging.ts",
+    "sync:proposta-anexos": "npx --yes tsx scripts/sincronizar-todos-anexos-staging.ts",
     "diag:supabase-env": "npx --yes tsx scripts/diagnostico-supabase-env.ts",
     "validar:hibrido-anexos": "npx --yes tsx scripts/validar-hibrido-anexos-staging.ts"
   },
