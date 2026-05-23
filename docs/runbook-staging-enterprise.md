@@ -23,6 +23,14 @@ Ordem única para fechar Fase 1 (Dashboard), Fase 3 (upload) e Bloco A (órfãos
 
 **Dev estável:** use **um único** `npm run dev`. Pare o dev antes de `npm run build` (evita cache `.next` corrompido e erro `Cannot find module './XXXX.js'` em rotas como `/quem-somos`).
 
+**Página em branco no admin (ex.: `/admin/propostas`):**
+
+1. Confirme a URL na saída do terminal (`http://localhost:3000` ou `3001` — não use porta antiga morta).
+2. Feche outros `npm run dev`; apague `.next`; suba de novo um único dev.
+3. Aguarde `Compiled /admin/propostas` (primeira carga pode levar ~15–20s).
+4. Sem login → redirect `/login` (307). Com sessão admin → listagem com cards escuros.
+5. Se persistir: `npx tsc --noEmit` e abra o console do navegador (F12).
+
 ```bash
 npx tsc --noEmit
 npm run audit:anexos
