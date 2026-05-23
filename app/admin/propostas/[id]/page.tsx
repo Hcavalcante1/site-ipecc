@@ -10,6 +10,7 @@ import {
   ChecklistDocumentalProposta,
   PainelStatusDocumental,
   RegularidadeFiscalEntidade,
+  AdminSubstituirAnexoProposta,
 } from "@/components/admin/propostas/detail";
 import { usePropostaDocumental } from "@/components/admin/propostas/usePropostaDocumental";
 import { usePropostaDownloadsVerificados } from "@/components/admin/propostas/usePropostaDownloadsVerificados";
@@ -81,20 +82,23 @@ export default function Page() {
   const [carregandoCertidoes, setCarregandoCertidoes] = useState(false);
 
   useEffect(() => {
-    async function carregar() {
-      if (!id) return;
+    void carregarProposta();
+  }, [id]);
 
-      const { data } = await supabase.from("propostas").select("*").eq("id", id);
+  async function carregarProposta() {
+    if (!id) return;
 
-      if (data && data.length > 0) {
-        setProposta(data[0]);
-      }
+    setLoading(true);
+    const { data } = await supabase.from("propostas").select("*").eq("id", id);
 
-      setLoading(false);
+    if (data && data.length > 0) {
+      setProposta(data[0]);
+    } else {
+      setProposta(null);
     }
 
-    carregar();
-  }, [id]);
+    setLoading(false);
+  }
 
   const {
     cnpjProposta,
@@ -322,6 +326,13 @@ export default function Page() {
             carregando={carregandoCertidoes}
             cnpjDigitos={cnpjProposta}
             certidoes={certidoesEntidade}
+          />
+        </div>
+
+        <div style={fullSpanStyle}>
+          <AdminSubstituirAnexoProposta
+            propostaId={String(id)}
+            onAtualizado={carregarProposta}
           />
         </div>
 

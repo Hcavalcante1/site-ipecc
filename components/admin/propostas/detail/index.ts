@@ -10,3 +10,4 @@ export { PainelStatusDocumental } from "./PainelStatusDocumental";
 export { ResumoAnexosInformados } from "./ResumoAnexosInformados";
 export { ChecklistDocumentalProposta } from "./ChecklistDocumentalProposta";
 export { RegularidadeFiscalEntidade } from "./RegularidadeFiscalEntidade";
+export { AdminSubstituirAnexoProposta } from "./AdminSubstituirAnexoProposta";
