@@ -48,9 +48,16 @@ Normalizar anexos (1 linha por arquivo) mantendo **compatibilidade** com colunas
 | M2.1 | `lib/documental/propostaAnexosHibrido.ts` + `validar:hibrido-anexos` | ✅ |
 | M2.2 | `gerarAuditoriaAnexos` com flag (default off) | ✅ |
 | M2.3 | API `resumo-anexos` híbrida (flag on → paths do servidor) | ✅ |
-| M2.4 | Admin detalhe (`usePropostaDocumental`) | pendente |
+| M2.4 | Admin detalhe (`useAnexosPropostaResolvidos` + downloads) | ✅ |
 
 Feature flag: `USE_PROPOSTA_ANEXOS_TABLE` / `NEXT_PUBLIC_USE_PROPOSTA_ANEXOS_TABLE` — **off** por padrão.
+
+Para ativar leitura híbrida no admin (API + detalhe no browser), defina **as duas** em `.env.local` quando for validar em staging:
+
+```env
+USE_PROPOSTA_ANEXOS_TABLE=true
+NEXT_PUBLIC_USE_PROPOSTA_ANEXOS_TABLE=true
+```
 
 **Critério de pronto:** mesma lista de anexos com flag on/off em staging.
 

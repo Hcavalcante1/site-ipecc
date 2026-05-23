@@ -9,13 +9,15 @@ import {
   montarChecklistDocumental,
   somenteDigitosCnpj,
 } from "@/lib/documental";
-import { extrairAnexosProposta } from "@/lib/documental/propostaPaths";
 import { DOWNLOAD_VISUAL_POR_COLUNA } from "@/components/admin/propostas/propostaDownloadStyles";
+import { useAnexosPropostaResolvidos } from "@/components/admin/propostas/useAnexosPropostaResolvidos";
 
 export function usePropostaDocumental(
   proposta: any,
   certidoesEntidade: CertidaoEntidadeLinha[]
 ) {
+  const { anexos: anexosResolvidos } = useAnexosPropostaResolvidos(proposta);
+
   const cnpjProposta = useMemo(
     () => somenteDigitosCnpj(proposta?.cnpj),
     [proposta?.cnpj]
@@ -72,12 +74,12 @@ export function usePropostaDocumental(
   const downloads = useMemo(() => {
     if (!proposta) return [];
 
-    return extrairAnexosProposta(proposta).map((anexo) => ({
+    return anexosResolvidos.map((anexo) => ({
       label: anexo.label,
       path: anexo.path,
       ...DOWNLOAD_VISUAL_POR_COLUNA[anexo.key],
     }));
-  }, [proposta]);
+  }, [proposta, anexosResolvidos]);
 
   return {
     cnpjProposta,
