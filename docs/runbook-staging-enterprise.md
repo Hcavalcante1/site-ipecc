@@ -66,3 +66,9 @@ Detalhe upload: `docs/fase3-validacao-upload-propostas.md`
 | Upload 403/RLS | Storage INSERT + RLS `propostas` INSERT |
 | Download admin 404 | Path no banco vs Storage; `candidatosPathProposta` |
 | Órfãos persistentes | CSV + SQL de correção; reupload |
+
+---
+
+## Resumo consolidado
+
+Ver `docs/STAGING-VALIDACAO-RESUMO.md` (validação local 2026-05-23).
