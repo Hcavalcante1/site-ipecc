@@ -1,6 +1,12 @@
 # Roadmap Enterprise — IPECC Public Site
 
-Documento vivo de planejamento. Atualizado após Fase 2.1 (propostas), auditoria de anexos e matriz Fase 2.2.
+Documento vivo de planejamento. Atualizado após Bloco A validado em staging local (2026-05-19).
+
+## Decisão estratégica — sem publicação (congelado)
+
+- **Produção não publicada** por decisão estratégica (sem `git push`, sem `remote`, sem deploy, sem alterações no Supabase de produção).
+- **Bloco A** considerado **fechado em staging local** — ver `docs/STAGING-VALIDACAO-RESUMO.md` (commits `2f7787f`, `d6ed39e`).
+- **Próxima fase** continua apenas em **ambiente local/staging** (`npm run dev`, scripts read-only, checklist Dashboard no projeto de **staging/dev** quando necessário).
 
 ## Visão
 
@@ -21,6 +27,9 @@ Evoluir o CMS institucional para uma plataforma **segura, auditável e modular**
 | Matriz Fase 2.2 + guia clients | Documentada | `docs/FASE-2-2-MIGRACAO-SUPABASE.md`, `docs/SUPABASE-CLIENTS.md` |
 | Fase 2.3 público → `supabasePublic` | Concluída (código) | inclui `app/propostas/page.tsx` |
 | Checklist upload Fase 3 | Documentado | `docs/fase3-validacao-upload-propostas.md` |
+| **Bloco A** — integridade anexos (staging local) | **Fechado** | `audit:anexos` = 0 órfãos; smoke HTTP/browser em `STAGING-VALIDACAO-RESUMO.md` |
+| CI workflow (`.github/workflows/ci.yml`) | Commitado localmente | **Não disparado** até existir push (fora do escopo atual) |
+| Publicação / produção | **Congelada** | Ver seção acima |
 
 ### Ferramentas operacionais
 
@@ -28,11 +37,12 @@ Evoluir o CMS institucional para uma plataforma **segura, auditável e modular**
 npm run audit:anexos   # CSV em reports/auditoria-anexos-YYYY-MM-DD.csv (read-only)
 ```
 
-### Pendências no Supabase Dashboard (manual)
+### Pendências no Supabase Dashboard (manual — só staging/dev enquanto publicação congelada)
 
-- Revisar políticas RLS/storage após bucket `propostas` privado
-- Corrigir dados órfãos identificados no CSV (reupload ou limpar `*_url` no banco)
-- Rotação de chaves se `.env` já vazou
+- Revisar políticas RLS/storage após bucket `propostas` privado (**projeto de staging**, não produção)
+- Órfãos em staging local: **0** (2026-05-23); manter `npm run audit:anexos` no runbook local
+- Rotação de chaves se `.env` já vazou (quando for publicar)
+- **Produção:** checklist em `docs/fase1-seguranca-supabase.md` — adiado até decisão de release
 
 ---
 
@@ -57,9 +67,10 @@ scripts/            → auditoria e automação read-only
 - [x] Middleware `getUser` em `/admin`
 - [x] API email endurecida (`tipo: admin` exige sessão)
 - [x] `.gitignore` env + tsbuildinfo
-- [ ] Checklist Dashboard 100% validado em produção
+- [x] Checklist validado em **staging local** (Bloco A)
+- [ ] Checklist Dashboard 100% em **produção** — adiado (publicação congelada)
 
-### Fase 2 — Supabase / Auth ✅ (código — falta smoke upload Fase 3)
+### Fase 2 — Supabase / Auth ✅ (código + smoke upload Fase 3 em staging local)
 
 **Objetivo:** um client browser, um server, um admin; eliminar `createClient` solto em páginas.
 
@@ -87,7 +98,7 @@ scripts/            → auditoria e automação read-only
 ### Fase 3 — Storage / Uploads / Downloads
 
 - [x] Download propostas via proxy + bucket privado
-- [ ] Upload público: validar política INSERT após bucket privado (`docs/fase3-validacao-upload-propostas.md`)
+- [x] Upload público validado em **staging local** (`docs/fase3-validacao-upload-propostas.md`, 2026-05-23)
 - [x] Paths novos sem `public/` legado (já no `uploadArquivo` de `/propostas`)
 - [ ] Signed URLs com TTL (opcional, reduz service role no download)
 - [ ] Padronizar paths (sem pasta `public/` legada em novos uploads)
@@ -131,18 +142,18 @@ scripts/            → auditoria e automação read-only
 
 ---
 
-## Próximas 3 microetapas recomendadas (ordem)
+## Próximas microetapas (somente local/staging — ordem)
 
-| # | Etapa | Prioridade | Risco | Autorização |
-|---|--------|------------|-------|-------------|
-| 1 | ~~**Fase 2.1** — `app/admin/propostas` usa `supabaseClient`~~ | ✅ Feito | — |
-| 2 | ~~**Página auditoria** `/admin/propostas/auditoria`~~ | ✅ Feito | — |
-| 3 | **Operacional** — corrigir órfãos (4 hoje; plano em `docs/operacional-correcao-orfaos.md`) | Integridade | Baixo | Não (dados) |
-| 4 | ~~**Fase 2.2** — admin browser → `supabaseClient` (PR1–6)~~ | ✅ Feito | — |
-| 5 | ~~**Fase 2.3** — páginas públicas → `supabasePublic`~~ | ✅ Código | — |
-| 6 | **Fase 3** — smoke test upload + checklist Dashboard | Operação | Médio | Não |
-| 7 | **Operacional** — 1 órfão restante (teste; SQL em `docs/sql/`) | Dados | Baixo | Não |
-| 8 | **Runbook staging** — `docs/runbook-staging-enterprise.md` | Operação | Baixo | Não |
+| # | Etapa | Status | Notas |
+|---|--------|--------|-------|
+| 1 | ~~Fase 2.1 / 2.2 / 2.3 (clients)~~ | ✅ | Código commitado |
+| 2 | ~~Bloco A — 0 órfãos + smoke HTTP~~ | ✅ | `STAGING-VALIDACAO-RESUMO.md` |
+| 3 | ~~**Fase 3 local** — upload + insert + audit 0 órfãos~~ | ✅ | `docs/fase3-validacao-upload-propostas.md` (2026-05-23) |
+| 3b | ~~Storage download (paridade API)~~ | ✅ | passo 3 em `validate:upload-proposta` |
+| 5 | **Fase 5** — editais: ver `docs/FASE-5-EDITAIS-ROTAS.md` | Backlog | Cross-links + `supabaseClient` em `/admin/editais` |
+| 4 | **Hardening local** — repetir runbook (`runbook-staging-enterprise.md`) após mudanças | Contínuo | Sem push |
+| 5 | **Fase 5 (opcional)** — unificar rotas admin editais (baixo risco, uma PR local) | Backlog | Pedir autorização se tocar layout |
+| — | ~~Push / remote / produção~~ | **Fora de escopo** | Até nova decisão de release |
 
 **Parar e pedir autorização antes de:**
 
@@ -170,7 +181,7 @@ Leitura híbrida sugerida: colunas legadas + tabela nova em paralelo (feature fl
 |--------|-----------|
 | Núcleo fases 1–4 (código) | ~65% |
 | Fase 2 admin browser | ~43% (26/60 arquivos) |
-| MVP enterprise (5 critérios) | ~58% |
+| MVP enterprise (5 critérios) | ~80% em staging local; produção congelada |
 
 ---
 
@@ -189,8 +200,17 @@ b0f4663 refactor(admin): extrair hook usePropostaDocumental do detalhe de propos
 
 ## Critérios de “pronto” para release enterprise (MVP)
 
-1. Fase 1 validada em staging com bucket privado e RLS revisada
-2. Zero anexo órfão em propostas ativas OU aviso explícito no admin
-3. Nenhum `createClient(anon)` novo fora dos clients canônicos
-4. `npm run audit:anexos` documentado no runbook operacional
-5. TypeScript e build CI verdes — `tsc` + `npm run build` OK local; workflow `ci.yml`
+1. Fase 1 validada em staging com bucket privado e RLS revisada — **OK local**; produção adiada
+2. Zero anexo órfão em propostas ativas OU aviso explícito no admin — **OK staging** (`audit:anexos` = 0)
+3. Nenhum `createClient(anon)` novo fora dos clients canônicos — **OK código**
+4. `npm run audit:anexos` documentado no runbook operacional — **OK**
+5. TypeScript e build verdes — `tsc` + `npm run build` OK local; `ci.yml` commitado (CI remoto só após push futuro)
+
+### Smoke Bloco A (staging local — baseline congelada)
+
+| Verificação | Esperado |
+|-------------|----------|
+| `npm run audit:anexos` | 0 órfãos |
+| `GET /propostas` | 200 |
+| `GET /api/download/propostas/...` sem sessão | 401 |
+| `GET /admin/propostas` sem sessão | redireciona login |

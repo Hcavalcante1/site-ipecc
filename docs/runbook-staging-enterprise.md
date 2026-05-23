@@ -36,7 +36,7 @@ npm run audit:anexos
 
 | # | Teste | Esperado |
 |---|--------|----------|
-| 1 | `/propostas` — envio com PDF teste | [x] via script (`validar-upload-proposta-staging.ts`); browser: dados OK, PDF manual |
+| 1 | `/propostas` — envio com PDF teste | [x] script 2026-05-23 (`validate:upload-proposta`); browser: etapas + campos OK, PDF manual no input |
 | 2 | `/admin/propostas` — nova proposta na lista | [x] proposta staging visível |
 | 3 | Detalhe admin — download anexo | [x] link download no detalhe |
 | 4 | Download sem login (URL API propostas) | [x] **401** |

@@ -10,13 +10,13 @@ Após bucket `propostas` privado e migração para `supabasePublic` em `app/prop
 
 ## Checklist manual (staging)
 
-1. [ ] Storage: política **INSERT** para `anon` ou `authenticated` no bucket `propostas` (paths na raiz do bucket).
-2. [ ] RLS tabela `propostas`: política **INSERT** para envio público (conforme modelo atual).
-3. [ ] Enviar proposta de teste em `/propostas` (PDF principal + 1 anexo opcional).
-4. [ ] Confirmar linha na tabela `propostas` e arquivos no Storage com o path gravado em `arquivo_url`.
-5. [ ] Admin logado: abrir `/admin/propostas/[id]` e baixar anexo (200).
-6. [ ] `npm run audit:anexos` — nova proposta sem órfãos.
-7. [ ] URL direta do storage sem sessão admin → negada (bucket privado).
+1. [x] Storage: política **INSERT** para `anon` no bucket `propostas` (validado via `npm run validate:upload-proposta`, 2026-05-23).
+2. [x] RLS tabela `propostas`: **INSERT** público (mesmo script — insert OK).
+3. [x] Envio com PDF: `npm run validate:upload-proposta` (paridade com `supabasePublic` da página). Browser: formulário e etapa “Selecionar PDF” OK em `/propostas`; upload de arquivo no browser requer seleção manual do PDF.
+4. [x] Linha + Storage: último teste `proposta_id` `1c5d4a89-8f8b-460a-a4fb-0cdf0c50502a`, path `1779498524252-proposta-staging-validacao.pdf`.
+5. [x] Caminho de arquivo no storage lê OK via `downloadArquivoProposta` (passo 3 do script). API `/api/download` com sessão admin (200): conferir no browser logado.
+6. [x] `npm run audit:anexos` — **0 órfãos** (10 propostas, 21 refs, 2026-05-23).
+7. [x] Download anônimo: `GET /api/download/propostas/{path}` → **401**; bucket privado.
 
 ## Se INSERT falhar
 

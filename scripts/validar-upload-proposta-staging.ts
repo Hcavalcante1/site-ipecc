@@ -68,8 +68,19 @@ async function main() {
   }
 
   console.log("   OK proposta_id:", data?.id);
-  console.log("3) Conferir: npm run audit:anexos e /admin/propostas");
-  console.log("   Download admin: /api/download/propostas/" + storagePath);
+
+  console.log("3) Storage download (mesmo caminho da API /api/download)...");
+  const { downloadArquivoProposta } = await import("../lib/storage/propostasBucket");
+  const dl = await downloadArquivoProposta(storagePath);
+  if ("error" in dl) {
+    console.error("FALHA DOWNLOAD STORAGE:", dl.error);
+    process.exit(1);
+  }
+  const bytes = (await dl.data.arrayBuffer()).byteLength;
+  console.log("   OK bytes:", bytes, "path:", dl.pathUsado);
+
+  console.log("4) Conferir: npm run audit:anexos e /admin/propostas");
+  console.log("   Download API (sessão admin): /api/download/propostas/" + storagePath);
 }
 
 main().catch((e) => {
