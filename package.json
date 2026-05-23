@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "audit:anexos": "npx --yes tsx scripts/auditar-anexos-propostas.ts"
+    "audit:anexos": "npx --yes tsx scripts/auditar-anexos-propostas.ts",
+    "validate:upload-proposta": "npx --yes tsx scripts/validar-upload-proposta-staging.ts"
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.15.0",

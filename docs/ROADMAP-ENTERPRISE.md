@@ -193,4 +193,4 @@ b0f4663 refactor(admin): extrair hook usePropostaDocumental do detalhe de propos
 2. Zero anexo órfão em propostas ativas OU aviso explícito no admin
 3. Nenhum `createClient(anon)` novo fora dos clients canônicos
 4. `npm run audit:anexos` documentado no runbook operacional
-5. TypeScript e build CI verdes
+5. TypeScript e build CI verdes — `tsc` + `npm run build` OK local; workflow `ci.yml`
