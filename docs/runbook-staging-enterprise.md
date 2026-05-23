@@ -41,7 +41,7 @@ npm run audit:anexos
 | 3 | Detalhe admin — download anexo | [x] link download no detalhe |
 | 4 | Download sem login (URL API propostas) | [x] **401** |
 | 5 | `/admin/propostas/auditoria` | [x] **Órfãos: 0** |
-| 6 | `/editais`, `/projetos`, `/quem-somos` | [ ] smoke rápido pendente em `:3004` |
+| 6 | `/editais`, `/projetos`, `/quem-somos` | [x] OK em `http://localhost:3002` (200, conteúdo Supabase) |
 
 Detalhe upload: `docs/fase3-validacao-upload-propostas.md`
 
