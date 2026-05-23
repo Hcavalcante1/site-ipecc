@@ -31,9 +31,19 @@ const shellStyle: CSSProperties = {
 const cardStyle: CSSProperties = {
   background: "#0f172a",
   padding: adminTokens.spacing.base + adminTokens.spacing.sm,
-  marginTop: adminTokens.spacing.md,
   borderRadius: 10,
+  border: "1px solid #1e293b",
   color: "#fff",
+  height: "100%",
+  boxSizing: "border-box",
+};
+
+const listGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))",
+  gap: adminTokens.spacing.md,
+  marginTop: adminTokens.spacing.md,
+  alignItems: "stretch",
 };
 
 const blockParaStyle: CSSProperties = {
@@ -120,11 +130,12 @@ export default function Page() {
       </div>
 
       {propostas.length === 0 ? (
-        <div style={cardStyle}>
+        <div style={{ ...cardStyle, marginTop: adminTokens.spacing.md }}>
           Nenhuma proposta recebida até o momento.
         </div>
       ) : (
-        propostas.map((p) => (
+        <div style={listGridStyle}>
+        {propostas.map((p) => (
           <div key={p.id} style={cardStyle}>
             <strong style={{ fontSize: 18 }}>{p.nome}</strong>
 
@@ -233,7 +244,8 @@ export default function Page() {
               </button>
             </div>
           </div>
-        ))
+        ))}
+        </div>
       )}
     </div>
   );
