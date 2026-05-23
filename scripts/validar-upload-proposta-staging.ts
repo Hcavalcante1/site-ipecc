@@ -61,6 +61,27 @@ async function main() {
 
   console.log("   OK proposta_id:", data?.id);
 
+  if (process.env.USE_PROPOSTA_ANEXOS_ESCRITA === "true" && data?.id) {
+    console.log("2b) Sincronizar proposta_anexos (escrita dupla)...");
+    requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+    const admin = createClient(url, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+    const { data: row } = await admin.from("propostas").select("*").eq("id", data.id).single();
+    const { sincronizarAnexosPropostaTabela } = await import(
+      "../lib/documental/propostaAnexosEscrita"
+    );
+    const sync = await sincronizarAnexosPropostaTabela(
+      admin,
+      data.id,
+      (row || {}) as Record<string, unknown>,
+      "upload_publico"
+    );
+    if (!sync.ok) {
+      console.error("FALHA SYNC proposta_anexos:", sync.error);
+      process.exit(1);
+    }
+    console.log("   OK linhas sincronizadas:", sync.linhas);
+  }
+
   console.log("3) Storage download (mesmo caminho da API /api/download)...");
   const { downloadArquivoProposta } = await import("../lib/storage/propostasBucket");
   const dl = await downloadArquivoProposta(storagePath);

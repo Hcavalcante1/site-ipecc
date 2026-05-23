@@ -63,12 +63,21 @@ NEXT_PUBLIC_USE_PROPOSTA_ANEXOS_TABLE=true
 
 ### Fase M3 — Escrita dupla (opcional, médio risco)
 
-| Ação | Notas |
-|------|-------|
-| Upload público grava coluna **e** linha em `proposta_anexos` | Exige RLS INSERT público na tabela nova (decisão) |
-| Admin upload idem | Sessão admin |
+| # | Ação | Status |
+|---|------|--------|
+| M3.1 | `propostaAnexosEscrita.ts` + `POST /api/propostas/registrar-anexos` (service role) | ✅ |
+| M3.2 | Admin upload / substituição de anexo | pendente |
 
-**Autorização obrigatória** — altera `app/propostas/page.tsx` e políticas Supabase.
+Flag escrita (off por padrão):
+
+```env
+USE_PROPOSTA_ANEXOS_ESCRITA=true
+NEXT_PUBLIC_USE_PROPOSTA_ANEXOS_ESCRITA=true
+```
+
+Após insert em `propostas`, a página chama a API (valida e-mail da proposta). Falha na sync **não** reverte o envio legado. **Não** exige RLS INSERT público em `proposta_anexos` (usa `supabaseAdmin`).
+
+Validar: `USE_PROPOSTA_ANEXOS_ESCRITA=true npm run validate:upload-proposta` → depois `verify:proposta-anexos`.
 
 ### Fase M4 — Corte legado (futuro)
 

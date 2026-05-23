@@ -71,3 +71,10 @@ export {
   anexoRowParaRef,
 } from "./propostaAnexosHibrido";
 export type { PropostaAnexoRow } from "./propostaAnexosHibrido";
+
+export {
+  usePropostaAnexosTableEscrita,
+  montarLinhasAnexosProposta,
+  sincronizarAnexosPropostaTabela,
+} from "./propostaAnexosEscrita";
+export type { OrigemPropostaAnexo } from "./propostaAnexosEscrita";

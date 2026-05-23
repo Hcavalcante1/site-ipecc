@@ -649,9 +649,37 @@ export default function PropostasPage() {
 
       aplicarUrlsNoInsert(data, arquivosEnviados);
 
-      const { error } = await supabase.from("propostas").insert(data);
+      const { data: inserida, error } = await supabase
+        .from("propostas")
+        .insert(data)
+        .select("id")
+        .single();
 
       if (error) throw error;
+
+      if (
+        process.env.NEXT_PUBLIC_USE_PROPOSTA_ANEXOS_ESCRITA === "true" &&
+        inserida?.id
+      ) {
+        try {
+          const res = await fetch("/api/propostas/registrar-anexos", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              propostaId: inserida.id,
+              email: dados.email.trim(),
+            }),
+          });
+          if (!res.ok) {
+            console.warn(
+              "proposta_anexos: sincronização não concluída",
+              await res.text()
+            );
+          }
+        } catch (syncErr) {
+          console.warn("proposta_anexos: falha ao sincronizar", syncErr);
+        }
+      }
 
       alert("Proposta enviada com sucesso!");
       setTipoPessoa("pessoa_juridica");
