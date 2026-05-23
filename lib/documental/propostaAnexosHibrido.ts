@@ -84,6 +84,13 @@ export function resolverAnexosProposta(
   return mesclarAnexosLegadoETabela(legado, anexosTabela);
 }
 
+export function extrairPathsResolvidos(
+  proposta: Record<string, unknown> | null | undefined,
+  anexosTabela?: AnexoPropostaRef[] | null
+): string[] {
+  return resolverAnexosProposta(proposta, anexosTabela).map((a) => a.path);
+}
+
 export async function carregarAnexosTabelaPorPropostas(
   client: SupabaseClient,
   propostaIds: string[]

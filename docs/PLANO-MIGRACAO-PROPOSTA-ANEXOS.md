@@ -86,8 +86,8 @@ Validar: `USE_PROPOSTA_ANEXOS_ESCRITA=true npm run validate:upload-proposta` →
 | # | Ação | Status |
 |---|------|--------|
 | M4.1 | `validar:pre-m4-corte` + flag `USE_PROPOSTA_ANEXOS_SOMENTE_TABELA` (off) | ✅ |
-| M4.2 | Ativar somente-tabela em staging + smoke admin/público | pendente |
-| M4.3 | Deprecar colunas `*_url` no código (sem DROP SQL) | pendente |
+| M4.2 | Ativar somente-tabela em staging + `validar:m4-somente-tabela` | ✅ |
+| M4.3 | Deprecar leitura direta `*_url` no código (sem DROP SQL) | ✅ |
 
 Guia: `docs/M4-PRE-CORTE-STAGING.md`
 

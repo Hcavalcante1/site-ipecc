@@ -9,6 +9,7 @@ Confirmar que **todas** as referências em colunas `*_url` existem em `proposta_
 ```bash
 npm run sync:proposta-anexos    # se houver gap após testes
 npm run validar:pre-m4-corte
+npm run validar:m4-somente-tabela   # smoke M4.2 (força SOMENTE_TABELA no script)
 npm run audit:anexos            # 0 órfãos
 npm run verify:proposta-anexos
 ```

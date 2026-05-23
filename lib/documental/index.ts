@@ -67,6 +67,7 @@ export {
   usePropostaAnexosSomenteTabela,
   assinaturaAnexos,
   resolverAnexosProposta,
+  extrairPathsResolvidos,
   mesclarAnexosLegadoETabela,
   carregarAnexosTabelaPorPropostas,
   carregarAnexosResolvidosPorPropostas,

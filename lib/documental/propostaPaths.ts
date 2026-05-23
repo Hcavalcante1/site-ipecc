@@ -31,6 +31,7 @@ export type AnexoPropostaRef = {
   path: string;
 };
 
+/** @deprecated Leitura legado — preferir resolverAnexosProposta / carregarAnexosResolvidosPorPropostas */
 export function extrairAnexosProposta(
   proposta: Record<string, unknown> | null | undefined
 ): AnexoPropostaRef[] {
@@ -51,6 +52,7 @@ export function extrairAnexosProposta(
 }
 
 /** Lista só os paths (listagem / APIs batch). */
+/** @deprecated Leitura legado — preferir extrairPathsResolvidos */
 export function extrairPathsAnexoProposta(
   proposta: Record<string, unknown> | null | undefined
 ): string[] {
