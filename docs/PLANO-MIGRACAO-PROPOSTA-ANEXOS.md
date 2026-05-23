@@ -46,9 +46,9 @@ Normalizar anexos (1 linha por arquivo) mantendo **compatibilidade** com colunas
 | # | Ação | Status |
 |---|------|--------|
 | M2.1 | `lib/documental/propostaAnexosHibrido.ts` + `validar:hibrido-anexos` | ✅ |
-| M2.2 | `gerarAuditoriaAnexos` com flag (default off) | pendente |
-| M2.3 | API `resumo-anexos` híbrida | pendente |
-| M2.4 | Admin detalhe/listagem (sem mudar visual) | pendente |
+| M2.2 | `gerarAuditoriaAnexos` com flag (default off) | ✅ |
+| M2.3 | API `resumo-anexos` híbrida (flag on → paths do servidor) | ✅ |
+| M2.4 | Admin detalhe (`usePropostaDocumental`) | pendente |
 
 Feature flag: `USE_PROPOSTA_ANEXOS_TABLE` / `NEXT_PUBLIC_USE_PROPOSTA_ANEXOS_TABLE` — **off** por padrão.
 

@@ -67,6 +67,7 @@ export {
   resolverAnexosProposta,
   mesclarAnexosLegadoETabela,
   carregarAnexosTabelaPorPropostas,
+  carregarAnexosResolvidosPorPropostas,
   anexoRowParaRef,
 } from "./propostaAnexosHibrido";
 export type { PropostaAnexoRow } from "./propostaAnexosHibrido";

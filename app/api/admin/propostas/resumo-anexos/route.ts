@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { verifyAdminSession } from "@/lib/auth/adminSession";
+import {
+  carregarAnexosResolvidosPorPropostas,
+  usePropostaAnexosTableLeitura,
+} from "@/lib/documental/propostaAnexosHibrido";
 import { existeArquivoProposta } from "@/lib/storage/propostasBucket";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type PropostaEntrada = { id: string; paths: string[] };
 
@@ -33,14 +38,48 @@ export async function POST(req: Request) {
       { total: number; disponiveis: number; orfaos: number }
     > = {};
 
+    const pathsHibridoPorId = new Map<string, string[]>();
+
+    if (usePropostaAnexosTableLeitura()) {
+      const ids = propostas
+        .map((p) => String(p.id || "").trim())
+        .filter(Boolean)
+        .slice(0, MAX_PROPOSTAS);
+
+      if (ids.length > 0) {
+        const { data: rows, error: dbError } = await supabaseAdmin
+          .from("propostas")
+          .select("*")
+          .in("id", ids);
+
+        if (dbError) {
+          return NextResponse.json({ ok: false, error: dbError.message }, { status: 500 });
+        }
+
+        const resolvidos = await carregarAnexosResolvidosPorPropostas(
+          supabaseAdmin,
+          (rows || []) as Record<string, unknown>[]
+        );
+
+        for (const [pid, refs] of resolvidos) {
+          pathsHibridoPorId.set(
+            pid,
+            refs.map((r) => r.path).slice(0, MAX_PATHS_POR_PROPOSTA)
+          );
+        }
+      }
+    }
+
     for (const item of propostas) {
       const id = String(item.id || "").trim();
       if (!id) continue;
 
-      const paths = (Array.isArray(item.paths) ? item.paths : [])
-        .map((p) => String(p || "").trim())
-        .filter(Boolean)
-        .slice(0, MAX_PATHS_POR_PROPOSTA);
+      const paths = (
+        pathsHibridoPorId.get(id) ??
+        (Array.isArray(item.paths) ? item.paths : [])
+          .map((p) => String(p || "").trim())
+          .filter(Boolean)
+      ).slice(0, MAX_PATHS_POR_PROPOSTA);
 
       if (paths.length === 0) {
         resumo[id] = { total: 0, disponiveis: 0, orfaos: 0 };

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { extrairAnexosProposta } from "@/lib/documental/propostaPaths";
+import { carregarAnexosResolvidosPorPropostas } from "@/lib/documental/propostaAnexosHibrido";
 import { existeArquivoProposta } from "@/lib/storage/propostasBucket";
 
 export type LinhaAuditoriaAnexo = {
@@ -30,10 +30,12 @@ export async function gerarAuditoriaAnexos(
 
   if (error) throw error;
 
+  const lista = (propostas || []) as Record<string, unknown>[];
+  const anexosPorProposta = await carregarAnexosResolvidosPorPropostas(admin, lista);
   const linhas: LinhaAuditoriaAnexo[] = [];
 
-  for (const proposta of propostas || []) {
-    const anexos = extrairAnexosProposta(proposta as Record<string, unknown>);
+  for (const proposta of lista) {
+    const anexos = anexosPorProposta.get(String(proposta.id)) || [];
 
     for (const anexo of anexos) {
       const check = await existeArquivoProposta(anexo.path);

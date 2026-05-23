@@ -91,3 +91,28 @@ export async function carregarAnexosTabelaPorPropostas(
 
   return map;
 }
+
+/** Resolve anexos por proposta (legado ou híbrido conforme flag). */
+export async function carregarAnexosResolvidosPorPropostas(
+  client: SupabaseClient,
+  propostas: Record<string, unknown>[]
+): Promise<Map<string, AnexoPropostaRef[]>> {
+  const map = new Map<string, AnexoPropostaRef[]>();
+  if (!propostas.length) return map;
+
+  for (const p of propostas) {
+    map.set(String(p.id), extrairAnexosProposta(p));
+  }
+
+  if (!usePropostaAnexosTableLeitura()) return map;
+
+  const ids = propostas.map((p) => String(p.id));
+  const porTabela = await carregarAnexosTabelaPorPropostas(client, ids);
+
+  for (const p of propostas) {
+    const id = String(p.id);
+    map.set(id, resolverAnexosProposta(p, porTabela.get(id)));
+  }
+
+  return map;
+}
