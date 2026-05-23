@@ -1,19 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { adminTokens } from "@/components/admin";
 import { supabase } from "@/lib/supabaseClient";
 import {
-  BadgeCard,
   btn,
   ChecklistDocumentalProposta,
-  gap20,
-  InfoCard,
-  LabelValue,
   PainelStatusDocumental,
   RegularidadeFiscalEntidade,
-  ResumoAnexosInformados,
 } from "@/components/admin/propostas/detail";
 import { usePropostaDocumental } from "@/components/admin/propostas/usePropostaDocumental";
 import { usePropostaDownloadsVerificados } from "@/components/admin/propostas/usePropostaDownloadsVerificados";
@@ -28,7 +24,48 @@ type CertidaoTipo = {
   nome: string;
 };
 
-const borderLight = `1px solid ${adminTokens.colors.border.light}`;
+const shellStyle: CSSProperties = {
+  padding: adminTokens.spacing.base + adminTokens.spacing.xl,
+};
+
+const cardStyle: CSSProperties = {
+  background: "#0f172a",
+  padding: adminTokens.spacing.base + adminTokens.spacing.sm,
+  borderRadius: 10,
+  border: "1px solid #1e293b",
+  color: "#fff",
+  height: "100%",
+  boxSizing: "border-box",
+};
+
+const listGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))",
+  gap: adminTokens.spacing.md,
+  marginTop: adminTokens.spacing.md,
+  alignItems: "stretch",
+};
+
+const sectionTitleStyle: CSSProperties = {
+  fontSize: 18,
+  display: "block",
+  marginBottom: adminTokens.spacing.md,
+};
+
+const tightParaStyle: CSSProperties = {
+  marginTop: adminTokens.spacing.xs,
+  marginBottom: 0,
+};
+
+const fullSpanStyle: CSSProperties = {
+  gridColumn: "1 / -1",
+};
+
+function corStatus(status?: string) {
+  if (status === "aprovado") return "#22c55e";
+  if (status === "rejeitado") return "#ef4444";
+  return "#facc15";
+}
 
 export default function Page() {
   const params = useParams();
@@ -150,120 +187,128 @@ export default function Page() {
     );
 
   return (
-    <div
-      style={{
-        padding: adminTokens.spacing.base + adminTokens.spacing.xl,
-      }}
-    >
+    <div style={shellStyle}>
       <div
         style={{
-          maxWidth: 1280,
-          margin: "0 auto",
-          background:
-            "linear-gradient(180deg, rgba(16,63,124,0.92) 0%, rgba(2,6,23,0.98) 100%)",
-          borderRadius: 28,
-          padding: adminTokens.spacing.xxxl + adminTokens.spacing.base,
-          color: "#e5e7eb",
-          border: borderLight,
-          boxShadow: "0 20px 60px rgba(0,0,0,0.30)",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          flexWrap: "wrap",
+          gap: adminTokens.spacing.md,
         }}
       >
-        <div
-          style={{
-            marginBottom: adminTokens.spacing.xl + adminTokens.spacing.md,
-            paddingBottom: adminTokens.spacing.xl,
-            borderBottom: borderLight,
-          }}
-        >
-          <h1
-            style={{
-              fontSize: 30,
-              margin: 0,
-              fontWeight: adminTokens.typography.fontWeight.bold,
-              color: "#ffffff",
-              lineHeight: 1.15,
-              letterSpacing: "-0.02em",
-            }}
-          >
+        <div>
+          <h1 style={{ margin: 0, fontSize: 28, color: "#fff" }}>
             Detalhe da Proposta
           </h1>
-
           <p
             style={{
-              marginTop: adminTokens.spacing.md,
+              marginTop: adminTokens.spacing.sm,
               marginBottom: 0,
               color: adminTokens.colors.text.muted,
-              fontSize: 15,
-              lineHeight: 1.55,
+              fontSize: 14,
             }}
           >
-            Visualização completa dos dados enviados, com separação por tipo,
-            categoria e anexos.
+            Dados, classificação, anexos e checklist no mesmo padrão da listagem.
+          </p>
+        </div>
+        <a
+          href="/admin/propostas"
+          style={{
+            color: "#93c5fd",
+            fontSize: 14,
+            textDecoration: "none",
+            fontWeight: adminTokens.typography.fontWeight.bold,
+          }}
+        >
+          ← Voltar às propostas
+        </a>
+      </div>
+
+      <div style={listGridStyle}>
+        <div style={cardStyle}>
+          <strong style={sectionTitleStyle}>{proposta.nome || "—"}</strong>
+          <p style={tightParaStyle}>
+            <strong>Email:</strong> {proposta.email || "—"}
+          </p>
+          <p style={tightParaStyle}>
+            <strong>Telefone:</strong> {proposta.telefone || "—"}
+          </p>
+          <p style={tightParaStyle}>
+            <strong>Documento:</strong> {proposta.cnpj || "—"}
+          </p>
+          <p style={tightParaStyle}>
+            <strong>Status:</strong>{" "}
+            <span
+              style={{
+                color: corStatus(proposta.status),
+                fontWeight: adminTokens.typography.fontWeight.bold,
+              }}
+            >
+              {proposta.status || "pendente"}
+            </span>
           </p>
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1.2fr 1fr",
-            gap: gap20,
-            alignItems: "start",
-          }}
-        >
-          <InfoCard title="Dados da Proponente">
-            <div style={{ display: "grid", gap: adminTokens.spacing.base }}>
-              <LabelValue label="Nome:" value={proposta.nome || "—"} />
-              <LabelValue label="Email:" value={proposta.email || "—"} />
-              <LabelValue label="Telefone:" value={proposta.telefone || "—"} />
-              <LabelValue label="Documento:" value={proposta.cnpj || "—"} />
-            </div>
-          </InfoCard>
-
-          <InfoCard title="Classificação da Proposta">
-            <div style={{ display: "grid", gap: adminTokens.spacing.lg }}>
-              <BadgeCard
-                label="Tipo de Pessoa"
-                value={tipoPessoa}
-                tone="green"
-              />
-              <BadgeCard
-                label="Categoria"
-                value={categoria}
-                tone="blue"
-              />
-            </div>
-          </InfoCard>
+        <div style={cardStyle}>
+          <strong style={sectionTitleStyle}>Classificação</strong>
+          <p style={{ ...tightParaStyle, marginTop: 0 }}>
+            <strong>Tipo de Pessoa:</strong> {tipoPessoa}
+          </p>
+          <p style={tightParaStyle}>
+            <strong>Categoria:</strong> {categoria}
+          </p>
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: gap20,
-            marginTop: gap20,
-          }}
-        >
-          <InfoCard title="Mensagem Principal">
+        <div style={cardStyle}>
+          <strong style={sectionTitleStyle}>Mensagem principal</strong>
+          <div
+            style={{
+              whiteSpace: "pre-line",
+              lineHeight: 1.6,
+              color: adminTokens.colors.text.muted,
+              fontSize: 14,
+            }}
+          >
+            {mensagemPrincipal || "—"}
+          </div>
+        </div>
+
+        <div style={cardStyle}>
+          <strong style={sectionTitleStyle}>Anexos informados</strong>
+          {resumoAnexos.length === 0 ? (
+            <span style={{ color: adminTokens.colors.text.muted, fontSize: 14 }}>
+              —
+            </span>
+          ) : (
             <div
               style={{
-                whiteSpace: "pre-line",
-                lineHeight: 1.65,
-                color: adminTokens.colors.text.secondary,
-                fontSize: 15,
+                display: "grid",
+                gap: adminTokens.spacing.sm,
               }}
             >
-              {mensagemPrincipal}
+              {resumoAnexos.map((item, index) => (
+                <p
+                  key={`${item.chave}-${index}`}
+                  style={{
+                    ...tightParaStyle,
+                    marginTop: index === 0 ? 0 : adminTokens.spacing.xs,
+                    fontSize: 13,
+                    wordBreak: "break-word",
+                  }}
+                >
+                  <strong>{item.chave}:</strong> {item.valor || "—"}
+                </p>
+              ))}
             </div>
-          </InfoCard>
-
-          <ResumoAnexosInformados itens={resumoAnexos} />
+          )}
         </div>
 
-        <div style={{ marginTop: gap20 }}>
+        <div style={fullSpanStyle}>
           <PainelStatusDocumental diagnostico={diagnosticoDocumental} />
         </div>
 
-        <div style={{ marginTop: gap20 }}>
+        <div style={fullSpanStyle}>
           <ChecklistDocumentalProposta
             checklist={checklistDocumental}
             totalItens={totalItensChecklist}
@@ -272,7 +317,7 @@ export default function Page() {
           />
         </div>
 
-        <div style={{ marginTop: gap20 }}>
+        <div style={fullSpanStyle}>
           <RegularidadeFiscalEntidade
             carregando={carregandoCertidoes}
             cnpjDigitos={cnpjProposta}
@@ -280,69 +325,63 @@ export default function Page() {
           />
         </div>
 
-        <div style={{ marginTop: gap20 }}>
-          <InfoCard title="Documentos Disponíveis para Download">
-            <div style={{ display: "flex", gap: adminTokens.spacing.base, flexWrap: "wrap" }}>
-              {verificandoDownloads && downloads.length > 0 ? (
-                <span style={{ color: adminTokens.colors.text.muted, fontSize: 14 }}>
-                  Verificando anexos no storage…
-                </span>
-              ) : downloadsDisponiveis.length === 0 ? (
-                <span style={{ color: adminTokens.colors.text.muted, fontSize: 14 }}>
-                  Nenhum documento disponível para download.
-                </span>
-              ) : (
-                downloadsDisponiveis.map((item) => (
-                  <a
-                    key={item.label}
-                    href={url(item.path)!}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={btn(item.bg, item.color)}
-                  >
-                    {item.label}
-                  </a>
-                ))
-              )}
-            </div>
-            {downloadsOrfaos.length > 0 && (
-              <p
-                style={{
-                  marginTop: adminTokens.spacing.base,
-                  marginBottom: 0,
-                  color: adminTokens.colors.text.muted,
-                  fontSize: 13,
-                  lineHeight: 1.5,
-                }}
-              >
-                Referências no banco sem arquivo no storage:{" "}
-                {downloadsOrfaos.map((o) => `${o.label} (${o.path})`).join("; ")}
-              </p>
+        <div style={{ ...cardStyle, ...fullSpanStyle }}>
+          <strong style={sectionTitleStyle}>Downloads</strong>
+          <div
+            style={{
+              display: "flex",
+              gap: adminTokens.spacing.md,
+              flexWrap: "wrap",
+            }}
+          >
+            {verificandoDownloads && downloads.length > 0 ? (
+              <span style={{ color: adminTokens.colors.text.muted, fontSize: 14 }}>
+                Verificando anexos no storage…
+              </span>
+            ) : downloadsDisponiveis.length === 0 ? (
+              <span style={{ color: adminTokens.colors.text.muted, fontSize: 14 }}>
+                Nenhum documento disponível para download.
+              </span>
+            ) : (
+              downloadsDisponiveis.map((item) => (
+                <a
+                  key={item.label}
+                  href={url(item.path)!}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={btn(item.bg, item.color)}
+                >
+                  {item.label}
+                </a>
+              ))
             )}
-          </InfoCard>
+          </div>
+          {downloadsOrfaos.length > 0 && (
+            <p
+              style={{
+                marginTop: adminTokens.spacing.md,
+                marginBottom: 0,
+                color: "#f97316",
+                fontSize: 13,
+              }}
+            >
+              Sem arquivo no storage:{" "}
+              {downloadsOrfaos.map((o) => `${o.label} (${o.path})`).join("; ")}
+            </p>
+          )}
         </div>
 
-        <div
-          style={{
-            marginTop: adminTokens.spacing.xxxl,
-            paddingTop: gap20,
-            borderTop: borderLight,
-            display: "flex",
-            justifyContent: "flex-start",
-          }}
-        >
+        <div style={{ ...fullSpanStyle, marginTop: adminTokens.spacing.sm }}>
           <button
             onClick={excluirProposta}
             style={{
-              background: adminTokens.colors.error.background,
-              color: adminTokens.colors.error.text,
-              padding: `${adminTokens.spacing.base}px ${adminTokens.spacing.xxl}px`,
-              borderRadius: adminTokens.borderRadius.full,
+              background: "#ef4444",
+              color: "#fff",
+              padding: `${adminTokens.spacing.xs}px ${adminTokens.spacing.base}px`,
+              borderRadius: 6,
               border: "none",
               cursor: "pointer",
-              fontWeight: adminTokens.typography.fontWeight.bold,
-              fontSize: adminTokens.sizes.button.medium.fontSize,
-              boxShadow: adminTokens.shadows.buttonRed,
+              fontWeight: 600,
             }}
           >
             Excluir Proposta
