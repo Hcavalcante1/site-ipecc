@@ -156,6 +156,7 @@ scripts/            → auditoria e automação read-only
 | 6 | **Plano `proposta_anexos`** (doc + SQL rascunho) | ✅ | `PLANO-MIGRACAO-PROPOSTA-ANEXOS.md` — M1 SQL aguarda autorização |
 | 4 | **Hardening local** — repetir runbook (`runbook-staging-enterprise.md`) após mudanças | Contínuo | Sem push |
 | 5 | **Fase 5 (opcional)** — unificar rotas admin editais (baixo risco, uma PR local) | Backlog | Pedir autorização se tocar layout |
+| 5 | **Prod prep** — checklist + `validar:release-prep` | ✅ | `docs/PROD-PREP-CHECKLIST.md` |
 | — | ~~Push / remote / produção~~ | **Fora de escopo** | Até nova decisão de release |
 
 **Parar e pedir autorização antes de:**

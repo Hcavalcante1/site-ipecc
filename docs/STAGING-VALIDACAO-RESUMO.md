@@ -1,4 +1,4 @@
-# Resumo — validação staging local (Bloco A + MVP)
+# Resumo — validação staging local (Bloco A + MVP + proposta_anexos)
 
 Data: 2026-05-23 · Ambiente: `http://localhost:3002` · Branch: `master`
 
@@ -6,12 +6,14 @@ Data: 2026-05-23 · Ambiente: `http://localhost:3002` · Branch: `master`
 
 | Área | Status |
 |------|--------|
-| Bloco A (integridade anexos) | **Fechado** em staging local (0 órfãos) |
-| Fase 3 upload (staging local) | **Fechado** — script + HTTP 401; browser UI OK |
+| Bloco A (integridade anexos) | **Fechado** — 0 órfãos |
+| Fase 3 upload (staging local) | **Fechado** |
+| Migração `proposta_anexos` M1–M4 | **Fechada** em staging (flags testáveis) |
 | Fase 2/3 código (clients + upload API) | **OK** |
-| Build produção | **OK** (93 rotas) |
-| CI GitHub | Workflow OK localmente; **push pendente** (sem `origin`) |
+| Build + CI local | **OK** (93 rotas; `ci.yml` + placeholders) |
+| CI GitHub remoto | **Pendente** (sem `origin`) |
 | Fase 1 Dashboard produção | **Pendente** (manual) |
+| Prod prep documentado | `docs/PROD-PREP-CHECKLIST.md` |
 
 ---
 
@@ -21,7 +23,9 @@ Data: 2026-05-23 · Ambiente: `http://localhost:3002` · Branch: `master`
 
 - `npx tsc --noEmit` — OK
 - `npm run build` — OK
-- `npm run audit:anexos` — **0 órfãos** (9 propostas, 20 referências)
+- `npm run audit:anexos` — **0 órfãos** (19 propostas, 32 referências, 32 linhas `proposta_anexos`)
+- `npm run validar:release-prep` — gate automatizado OK
+- `npm run validar:pre-m4-corte` + `validar:m4-somente-tabela` — OK
 - `npm run validate:upload-proposta` — upload + insert OK (2026-05-23: `1c5d4a89-…`, path `1779498524252-proposta-staging-validacao.pdf`)
 - Browser `/propostas` — formulário multi-etapa e “Selecionar PDF” na habilitação jurídica OK
 
@@ -63,7 +67,11 @@ Data: 2026-05-23 · Ambiente: `http://localhost:3002` · Branch: `master`
 ## Próximos passos (somente quando decidir publicar)
 
 1. `git remote add` + `git push` → validar Actions
-2. `docs/fase1-seguranca-supabase.md` no Supabase de **produção**
+2. `docs/PROD-PREP-CHECKLIST.md` (Supabase prod + flags + smoke)
 3. Smoke `/propostas` com PDF no browser de produção
 
-**Agora (local):** opcional — login admin e download da proposta `1c5d4a89-8f8b-460a-a4fb-0cdf0c50502a`.
+## Produção (registro pós-go-live)
+
+| Data | Responsável | Notas |
+|------|-------------|-------|
+| — | — | _Preencher após deploy autorizado_ |

@@ -20,7 +20,8 @@
     "diag:supabase-env": "npx --yes tsx scripts/diagnostico-supabase-env.ts",
     "validar:hibrido-anexos": "npx --yes tsx scripts/validar-hibrido-anexos-staging.ts",
     "correlacionar:orfaos-logs": "npx --yes tsx scripts/correlacionar-orfaos-admin-logs.ts",
-    "validar:staging": "npm run typecheck && npm run audit:anexos && npm run verify:proposta-anexos && npm run validar:pre-m4-corte"
+    "validar:staging": "npm run typecheck && npm run audit:anexos && npm run verify:proposta-anexos && npm run validar:pre-m4-corte",
+    "validar:release-prep": "npx --yes tsx scripts/validar-release-prep-staging.ts"
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.15.0",

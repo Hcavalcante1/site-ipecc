@@ -33,6 +33,7 @@ Ordem única para fechar Fase 1 (Dashboard), Fase 3 (upload) e Bloco A (órfãos
 
 ```bash
 npx tsc --noEmit
+npm run validar:release-prep
 npm run validar:staging
 npm run correlacionar:orfaos-logs   # se audit:anexos > 0 órfãos
 curl -s http://localhost:3002/api/health

@@ -1,6 +1,6 @@
 # Checklist equipe — release IPECC (1 página)
 
-**Estágio atual:** MVP enterprise ~85% em **staging local** · **Produção congelada** até decisão explícita.
+**Estágio atual:** MVP enterprise ~90% em **staging local** · Migração `proposta_anexos` M1–M4 validada · **Produção congelada**
 
 ---
 
@@ -14,6 +14,7 @@
 | Upload propostas (staging) | `npm run validate:upload-proposta` |
 | Build + TypeScript | `npx tsc --noEmit` + `npm run build` |
 | Clients Supabase padronizados | `docs/SUPABASE-CLIENTS.md` |
+| Migração `proposta_anexos` M1–M4 (staging) | `validar:release-prep`, `PLANO-MIGRACAO-PROPOSTA-ANEXOS.md` |
 | CI no repositório | `.github/workflows/ci.yml` — `npm run typecheck` + build (placeholders env) |
 
 ---
@@ -35,6 +36,9 @@ git push -u origin master
 
 ## Antes de abrir produção (Supabase + site)
 
+**Runbook completo:** `docs/PROD-PREP-CHECKLIST.md`
+
+- [ ] `npm run validar:release-prep` com `.env` apontando para o projeto **correto**
 - [ ] Executar `docs/fase1-seguranca-supabase.md` no projeto **produção**
 - [ ] Bucket `propostas` **privado**; sem SELECT público
 - [ ] Políticas INSERT (storage + tabela `propostas`) para envio público
@@ -55,7 +59,6 @@ git push -u origin master
 
 ## Fora do escopo desta release (backlog)
 
-- Modelo `proposta_anexos` (SQL)
 - Signed URLs com TTL
 - Performance / cache páginas públicas
 - Pentest / DR (Fase 10)
@@ -67,6 +70,7 @@ git push -u origin master
 | Tema | Arquivo |
 |------|---------|
 | Plano geral | `docs/ROADMAP-ENTERPRISE.md` |
+| **Prod prep / go-live** | `docs/PROD-PREP-CHECKLIST.md` |
 | Staging validado | `docs/STAGING-VALIDACAO-RESUMO.md` |
 | Runbook operacional | `docs/runbook-staging-enterprise.md` |
 | Editais admin (duas rotas) | `docs/FASE-5-EDITAIS-ROTAS.md` |

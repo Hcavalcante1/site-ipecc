@@ -26,8 +26,9 @@ async function main() {
   console.log("  ref:", ref);
   console.log("  host:", new URL(url).hostname);
   console.log("");
-  console.log("Confira no Dashboard se este é o projeto STAGING.");
-  console.log("Depois execute: docs/sql/proposta_anexos-M1-staging-APLICAR.sql");
+  console.log("Confira no Dashboard se este é STAGING (não produção).");
+  console.log("Release: docs/PROD-PREP-CHECKLIST.md");
+  console.log("M1 SQL (se necessário): docs/sql/proposta_anexos-M1-staging-APLICAR.sql");
 }
 
 main().catch((e) => {

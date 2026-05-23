@@ -46,4 +46,4 @@ Revise políticas atuais no Dashboard antes de aplicar SQL cego.
 4. `/api/download/.../docs/...` e editais públicos continuam acessíveis
 5. `npm run audit:anexos` → 0 órfãos — `docs/operacional-correcao-orfaos.md`
 
-**Runbook unificado:** `docs/runbook-staging-enterprise.md`
+**Runbook unificado:** `docs/runbook-staging-enterprise.md` · **Go-live:** `docs/PROD-PREP-CHECKLIST.md`
