@@ -26,6 +26,21 @@ export function usePropostaAnexosTableLeitura(): boolean {
   return raw === "true" || raw === "1";
 }
 
+/** M4 — leitura só de proposta_anexos (off por padrão; exige dados na tabela). */
+export function usePropostaAnexosSomenteTabela(): boolean {
+  const raw =
+    process.env.USE_PROPOSTA_ANEXOS_SOMENTE_TABELA ??
+    process.env.NEXT_PUBLIC_USE_PROPOSTA_ANEXOS_SOMENTE_TABELA;
+  return raw === "true" || raw === "1";
+}
+
+export function assinaturaAnexos(refs: AnexoPropostaRef[]): string {
+  return refs
+    .map((r) => `${r.key}:${r.path}`)
+    .sort()
+    .join("|");
+}
+
 export function anexoRowParaRef(row: PropostaAnexoRow): AnexoPropostaRef | null {
   const path = row.storage_path?.trim();
   if (!path || !isAnexoUrlKey(row.chave)) return null;
@@ -59,6 +74,10 @@ export function resolverAnexosProposta(
   proposta: Record<string, unknown> | null | undefined,
   anexosTabela?: AnexoPropostaRef[] | null
 ): AnexoPropostaRef[] {
+  if (usePropostaAnexosSomenteTabela()) {
+    return anexosTabela ?? [];
+  }
+
   const legado = extrairAnexosProposta(proposta);
   if (!usePropostaAnexosTableLeitura()) return legado;
   if (!anexosTabela?.length) return legado;
@@ -104,7 +123,9 @@ export async function carregarAnexosResolvidosPorPropostas(
     map.set(String(p.id), extrairAnexosProposta(p));
   }
 
-  if (!usePropostaAnexosTableLeitura()) return map;
+  if (!usePropostaAnexosTableLeitura() && !usePropostaAnexosSomenteTabela()) {
+    return map;
+  }
 
   const ids = propostas.map((p) => String(p.id));
   const porTabela = await carregarAnexosTabelaPorPropostas(client, ids);

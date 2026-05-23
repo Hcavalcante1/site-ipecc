@@ -64,6 +64,8 @@ export type { AnexoPropostaRef, AnexoUrlPropostaKey } from "./propostaPaths";
 
 export {
   usePropostaAnexosTableLeitura,
+  usePropostaAnexosSomenteTabela,
+  assinaturaAnexos,
   resolverAnexosProposta,
   mesclarAnexosLegadoETabela,
   carregarAnexosTabelaPorPropostas,

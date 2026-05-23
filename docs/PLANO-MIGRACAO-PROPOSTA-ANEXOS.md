@@ -83,9 +83,13 @@ Validar: `USE_PROPOSTA_ANEXOS_ESCRITA=true npm run validate:upload-proposta` →
 
 ### Fase M4 — Corte legado (futuro)
 
-- Leitura só da tabela nova.
-- Colunas `*_url` deprecadas (não remover fisicamente até backup).
-- Script de verificação: zero divergência coluna vs tabela.
+| # | Ação | Status |
+|---|------|--------|
+| M4.1 | `validar:pre-m4-corte` + flag `USE_PROPOSTA_ANEXOS_SOMENTE_TABELA` (off) | ✅ |
+| M4.2 | Ativar somente-tabela em staging + smoke admin/público | pendente |
+| M4.3 | Deprecar colunas `*_url` no código (sem DROP SQL) | pendente |
+
+Guia: `docs/M4-PRE-CORTE-STAGING.md`
 
 ---
 
