@@ -15,6 +15,7 @@ npm run diag:supabase-env
 
 ```bash
 npm run validar:release-prep
+npm run validar:seguranca
 npm run ci:local
 ```
 

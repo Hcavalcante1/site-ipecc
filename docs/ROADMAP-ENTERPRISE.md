@@ -139,7 +139,8 @@ scripts/            → auditoria e automação read-only
 
 ### Fase 10 — Hardening final
 
-- Revisão RLS completa, pentest, backup, DR.
+- [x] Checklist RLS + `npm run validar:seguranca` — `docs/HARDENING-RLS-CHECKLIST.md`
+- [ ] Pentest, backup, DR
 
 ---
 

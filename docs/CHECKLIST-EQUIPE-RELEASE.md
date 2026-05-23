@@ -73,4 +73,4 @@ git push -u origin master
 | **Prod prep / go-live** | `docs/PROD-PREP-CHECKLIST.md` |
 | Staging validado | `docs/STAGING-VALIDACAO-RESUMO.md` |
 | Runbook operacional | `docs/runbook-staging-enterprise.md` |
-| Editais admin (duas rotas) | `docs/FASE-5-EDITAIS-ROTAS.md` |
+| Hardening RLS | `docs/HARDENING-RLS-CHECKLIST.md` · `npm run validar:seguranca` |
