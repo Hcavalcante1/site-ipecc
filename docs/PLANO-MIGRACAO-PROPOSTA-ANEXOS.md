@@ -29,8 +29,7 @@ Normalizar anexos (1 linha por arquivo) mantendo **compatibilidade** com colunas
 - [x] Rascunho SQL + este plano
 - [x] Guia M1: `docs/M1-EXECUTAR-STAGING.md` + `docs/sql/proposta_anexos-M1-staging-APLICAR.sql`
 - [x] Checagem local pré-M1 — `docs/M1-CHECAGEM-VERIFICACAO.md`
-- [ ] **Você:** PASSO 4 INSERT no Dashboard (tabela existe, migração pendente)
-- [ ] **Você:** `npm run verify:proposta-anexos` → deve imprimir `OK`
+- [x] M1 fechado — 22 linhas, `verify` OK, `audit` 0 órfãos
 
 ### Fase M1 — Tabela + migração legado (somente staging)
 
@@ -44,11 +43,14 @@ Normalizar anexos (1 linha por arquivo) mantendo **compatibilidade** com colunas
 
 ### Fase M2 — Leitura híbrida (código, baixo risco)
 
-| Ação | Arquivos previstos |
-|------|-------------------|
-| `listarAnexosHibrido(proposta)` | `lib/documental/` (novo helper) |
-| Admin detalhe/listagem/auditoria | Consumir helper; fallback colunas `*_url` |
-| Feature flag | `USE_PROPOSTA_ANEXOS_TABLE=false` por padrão até validar |
+| # | Ação | Status |
+|---|------|--------|
+| M2.1 | `lib/documental/propostaAnexosHibrido.ts` + `validar:hibrido-anexos` | ✅ |
+| M2.2 | `gerarAuditoriaAnexos` com flag (default off) | pendente |
+| M2.3 | API `resumo-anexos` híbrida | pendente |
+| M2.4 | Admin detalhe/listagem (sem mudar visual) | pendente |
+
+Feature flag: `USE_PROPOSTA_ANEXOS_TABLE` / `NEXT_PUBLIC_USE_PROPOSTA_ANEXOS_TABLE` — **off** por padrão.
 
 **Critério de pronto:** mesma lista de anexos com flag on/off em staging.
 

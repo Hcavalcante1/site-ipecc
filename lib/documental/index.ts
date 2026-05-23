@@ -61,3 +61,12 @@ export {
   extrairPathsAnexoProposta,
 } from "./propostaPaths";
 export type { AnexoPropostaRef, AnexoUrlPropostaKey } from "./propostaPaths";
+
+export {
+  usePropostaAnexosTableLeitura,
+  resolverAnexosProposta,
+  mesclarAnexosLegadoETabela,
+  carregarAnexosTabelaPorPropostas,
+  anexoRowParaRef,
+} from "./propostaAnexosHibrido";
+export type { PropostaAnexoRow } from "./propostaAnexosHibrido";
