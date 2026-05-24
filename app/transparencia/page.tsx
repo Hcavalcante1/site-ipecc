@@ -2,6 +2,7 @@
 
 import { getDownloadUrl, isValidFileUrl } from "@/lib/storage";
 import { createClient } from "@/lib/supabaseServer";
+import { logPublicFetch } from "@/lib/observability/publicFetchLog";
 function fileUrl(url?: string | null) {
   if (!url) return "";
 
@@ -493,6 +494,21 @@ export default async function TransparenciaPage() {
       .order("ordem", { ascending: true })
       .order("created_at", { ascending: true }),
   ]);
+
+  logPublicFetch({
+    page: "/transparencia",
+    table: "paginas_conteudo+transparencia_*",
+    count:
+      (data?.length ?? 0) +
+      (conveniosData?.length ?? 0) +
+      (contratacoesData?.length ?? 0) +
+      (prestacoesData?.length ?? 0),
+    error:
+      error?.message ||
+      conveniosError?.message ||
+      contratacoesError?.message ||
+      prestacoesError?.message,
+  });
 
   const blocos = error ? [] : (data ?? []);
   const convenios = conveniosError ? [] : ((conveniosData ?? []) as TransparenciaConvenio[]);

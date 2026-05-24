@@ -2,6 +2,7 @@
 
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { resolveMediaPath } from "@/lib/media";
+import { logPublicFetch } from "@/lib/observability/publicFetchLog";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -33,6 +34,12 @@ export default async function ProjetosPage() {
     .order("ordem", { ascending: true });
 
   const eixos = eixosData || [];
+
+  logPublicFetch({
+    page: "/projetos",
+    table: "paginas_conteudo+paginas_eixos",
+    count: eixos.length,
+  });
 
   // DESTAQUES
   const { data: destaquesData } = await supabase

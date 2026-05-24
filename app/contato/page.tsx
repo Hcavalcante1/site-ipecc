@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabasePublic as supabase } from "@/lib/supabasePublic";
 
 type HeroBlock = {
   titulo?: string | null;

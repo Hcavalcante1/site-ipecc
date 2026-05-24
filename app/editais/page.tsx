@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
+import { logPublicFetch } from "@/lib/observability/publicFetchLog";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -50,10 +51,17 @@ const TITULOS_CATEGORIA: Record<CategoriaDocumento, string> = {
 };
 
 export default async function EditaisPublicPage() {
-  const { data: editais } = await supabase
+  const { data: editais, error: editaisError } = await supabase
     .from("editais")
     .select("id, titulo, tipo, periodo_envio, periodo, status, arquivo_pdf")
     .order("created_at", { ascending: false });
+
+  logPublicFetch({
+    page: "/editais",
+    table: "editais",
+    count: editais?.length ?? 0,
+    error: editaisError?.message,
+  });
 
   const { data: heroArray } = await supabase
     .from("paginas_conteudo")
