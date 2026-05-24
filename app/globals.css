@@ -731,6 +731,26 @@ a { text-decoration: none; color: inherit; }
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
+
+  .public-article__title{
+    font-size: 1.25rem;
+  }
+
+  .sobre{
+    padding: 18px 0;
+  }
+
+  .sobre h2{
+    font-size: 1.35rem;
+  }
+
+  .sobre-cta{
+    padding: 36px 0;
+  }
+
+  .cta-green__inner{
+    padding: 18px;
+  }
 }
 
 /* ===== PÁGINAS PÚBLICAS (listagens) ===== */
@@ -812,4 +832,68 @@ a { text-decoration: none; color: inherit; }
   font-weight: 600;
   color: #16a34a;
   text-decoration: none;
+}
+
+.public-card__resumo{
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+/* ===== ARTIGO PÚBLICO (detalhe notícia) ===== */
+.public-content--article .public-content__inner{
+  max-width: 760px;
+}
+
+.public-article__cover{
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 12px;
+  margin-bottom: 30px;
+}
+
+.public-article__cover img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.public-article__title{
+  margin-bottom: 10px;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.public-article__resumo{
+  font-size: 16px;
+  opacity: 0.7;
+  margin-bottom: 20px;
+}
+
+.public-article__body{
+  line-height: 1.6;
+  font-size: 16px;
+  color: #374151;
+}
+
+.public-article__body p{
+  margin-bottom: 14px;
+}
+
+/* ===== PÁGINA ESTÁTICA (ações etc.) ===== */
+.public-page-list{
+  line-height: 1.6;
+  padding-left: 1.25rem;
+}
+
+.public-page-list li{
+  margin-bottom: 12px;
+}
+
+.public-page-lead{
+  color: #4b5563;
+  line-height: 1.7;
+  margin-bottom: 20px;
 }

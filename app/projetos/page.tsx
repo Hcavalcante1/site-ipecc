@@ -2,6 +2,7 @@
 
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { resolveMediaPath } from "@/lib/media";
+import { PublicHeroRolling } from "@/components/public";
 import { logPublicFetch } from "@/lib/observability/publicFetchLog";
 
 export const dynamic = "force-dynamic";
@@ -95,22 +96,15 @@ export default async function ProjetosPage() {
 
   return (
     <>
-      {/* HERO */}
-      <section className="hero-rolling" aria-label="Projetos IPECC">
-        <div
-          className="hero-rolling__inner"
-          style={{
-            ["--hero-bg-image" as any]: 'url("/media/heroes/projetos/hero.webp")',
-          }}
-        >
-          <h1 className="hero__title">{hero?.titulo ?? "Projetos"}</h1>
-
-          <p className="hero__text">
-            {hero?.texto ??
-              "Nossos projetos unem educação, cultura e cidadania para fortalecer redes locais, ampliar o acesso a oportunidades e gerar impacto social duradouro."}
-          </p>
-        </div>
-      </section>
+      <PublicHeroRolling
+        bgImage="/media/heroes/projetos/hero.webp"
+        title={hero?.titulo ?? "Projetos"}
+        text={
+          hero?.texto ??
+          "Nossos projetos unem educação, cultura e cidadania para fortalecer redes locais, ampliar o acesso a oportunidades e gerar impacto social duradouro."
+        }
+        ariaLabel="Projetos IPECC"
+      />
 
       {/* INTRO */}
       <section

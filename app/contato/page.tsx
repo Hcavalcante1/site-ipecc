@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
+import { PublicHeroRolling } from "@/components/public";
 
 type HeroBlock = {
   titulo?: string | null;
@@ -209,20 +210,14 @@ export default function ContatoPage() {
 
   return (
     <>
-      <section className="hero-rolling">
-        <div
-          className="hero-rolling__inner"
-          style={{
-            ["--hero-bg-image" as any]: 'url("/media/heroes/contato/hero.webp")',
-          }}
-        >
-          <h1 className="hero__title">{hero?.titulo ?? "Contato"}</h1>
-          <p className="hero__text">
-            {hero?.texto ??
-              "Fale com a equipe do IPECC para informações institucionais, parcerias, projetos e atendimento."}
-          </p>
-        </div>
-      </section>
+      <PublicHeroRolling
+        bgImage="/media/heroes/contato/hero.webp"
+        title={hero?.titulo ?? "Contato"}
+        text={
+          hero?.texto ??
+          "Fale com a equipe do IPECC para informações institucionais, parcerias, projetos e atendimento."
+        }
+      />
 
       <section className="sobre" style={{ marginTop: 60 }}>
         <div className="container">

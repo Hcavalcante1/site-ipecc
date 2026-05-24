@@ -1,139 +1,88 @@
-import { supabase } from "@/lib/supabaseClient";
+import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { resolveMediaPath } from "@/lib/media";
+import { PublicHeroRolling, PublicPageContent } from "@/components/public";
+import { logPublicFetch } from "@/lib/observability/publicFetchLog";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
+export const runtime = "nodejs";
 
 export default async function EventosPage() {
-  const { data: eventos } = await supabase
+  const { data: eventos, error } = await supabase
     .from("eventos")
     .select("*")
     .eq("publicado", true)
     .order("data_evento", { ascending: true });
 
+  logPublicFetch({
+    page: "/eventos",
+    table: "eventos",
+    count: eventos?.length ?? 0,
+    error: error?.message,
+  });
+
   return (
     <>
-      {/* ===== HERO PADRÃO ===== */}
-      <section className="hero-rolling">
-        <div
-          className="hero-rolling__inner"
-          style={{
-            ["--hero-bg-image" as any]: 'url("/media/heroes/eventos/hero.webp")',
-          }}
-        >
-          <h1 className="hero__title">Eventos</h1>
-          <p className="hero__text">
-            Confira a agenda de atividades e ações do IPECC.
-          </p>
-        </div>
-      </section>
+      <PublicHeroRolling
+        bgImage="/media/heroes/eventos/hero.webp"
+        title="Eventos"
+        text="Confira a agenda de atividades e ações do IPECC."
+      />
 
-      {/* ===== CONTEÚDO ===== */}
-      <div style={{ padding: "40px 20px" }}>
-        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+      <PublicPageContent>
           {!eventos || eventos.length === 0 ? (
             <p>Nenhum evento disponível.</p>
           ) : (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, 1fr)",
-                gap: 20,
-              }}
-            >
+            <div className="public-card-grid">
               {eventos.map((e: any) => (
-                <div
-                  key={e.id}
-                  style={{
-                    borderRadius: 12,
-                    overflow: "hidden",
-                    background: "#fff",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: "100%",
-                      aspectRatio: "16 / 9",
-                      overflow: "hidden",
-                    }}
-                  >
+                <article key={e.id} className="public-card">
+                  <div className="public-card__media">
                     <img
-                      src={resolveMediaPath(e.imagem_url) || "/media/home/destaques/evento-cultural.jpg"}
+                      src={
+                        resolveMediaPath(e.imagem_url) ||
+                        "/media/home/destaques/evento-cultural.jpg"
+                      }
                       alt={e.titulo}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        display: "block",
-                      }}
                     />
                   </div>
 
-                  <div style={{ padding: 16 }}>
-                    <h3
-                      style={{
-                        marginBottom: 8,
-                        fontSize: 20,
-                        fontWeight: 700,
-                        lineHeight: 1.3,
-                      }}
-                    >
-                      {e.titulo}
-                    </h3>
+                  <div className="public-card__body">
+                    <h3 className="public-card__title">{e.titulo}</h3>
 
-                    <p
-                      style={{
-                        fontSize: 15,
-                        opacity: 0.9,
-                        marginBottom: 8,
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {e.descricao}
-                    </p>
+                    <p className="public-card__text">{e.descricao}</p>
 
-                    <p style={{ fontSize: 14, marginBottom: 4 }}>
+                    <p className="public-card__meta">
                       📅{" "}
                       {e.data_evento
                         ? new Date(e.data_evento).toLocaleDateString("pt-BR")
                         : "Sem data"}
                     </p>
 
-                    {e.horario && (
-                      <p style={{ fontSize: 14, marginBottom: 4 }}>
-                        ⏰ {e.horario}
-                      </p>
-                    )}
+                    {e.horario ? (
+                      <p className="public-card__meta">⏰ {e.horario}</p>
+                    ) : null}
 
-                    <p style={{ fontSize: 14, marginBottom: 6 }}>
+                    <p className="public-card__meta">
                       📍 {e.local || "Sem local"}
                     </p>
 
-                    {e.whatsapp && (
+                    {e.whatsapp ? (
                       <a
                         href={`https://wa.me/${e.whatsapp.replace(/\D/g, "")}`}
                         target="_blank"
-                        style={{
-                          display: "inline-block",
-                          marginTop: 6,
-                          fontSize: 14,
-                          fontWeight: 600,
-                          color: "#16a34a",
-                          textDecoration: "none",
-                        }}
+                        rel="noreferrer"
+                        className="public-card__link"
                       >
                         💬 Falar no WhatsApp
                       </a>
-                    )}
+                    ) : null}
                   </div>
-                </div>
+                </article>
               ))}
             </div>
           )}
-        </div>
-      </div>
+      </PublicPageContent>
     </>
   );
 }

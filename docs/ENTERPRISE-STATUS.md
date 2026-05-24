@@ -5,10 +5,19 @@ Atualizado: trilha M1–M4 + CI + admin + ops + prod prep + hardening (código).
 ## Gates automatizados
 
 ```bash
-npm run validar:enterprise    # consolidado
+npm run validar:enterprise    # consolidado (+ validar:publico)
+npm run validar:publico       # clients públicos
 npm run validar:release-prep    # release prep
 npm run validar:seguranca       # RLS + storage
 ```
+
+## Público (BATCH 8–9)
+
+| Item | Status |
+|------|--------|
+| `validar:publico` | OK |
+| Heroes padronizados | OK (exc. transparência/propostas — BATCH 10) |
+| `PublicPageContent` | OK em listagens + detalhe notícia |
 
 ## Resultado atual (staging)
 
@@ -46,6 +55,10 @@ Somente após staging 100% + autorização: `docs/PROD-PREP-CHECKLIST.md`
 | `npm run sync:proposta-anexos` | Gap tabela vs legado |
 | `npm run validar:m4-somente-tabela` | Smoke M4 |
 | `npm run correlacionar:orfaos-logs` | Ops |
+
+## Trilha pública (em andamento)
+
+Padrões: `docs/PUBLICO-PADROES.md` · componentes em `components/public/`
 
 ## Commits recentes (trilha)
 

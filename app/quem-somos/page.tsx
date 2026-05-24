@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { resolveMediaPath } from "@/lib/media";
+import { PublicHeroRolling } from "@/components/public";
 
 export default function QuemSomosPage() {
 
@@ -90,18 +91,11 @@ export default function QuemSomosPage() {
 
   return (
     <>
-      {/* HERO */}
-      <section className="hero-rolling">
-        <div
-          className="hero-rolling__inner"
-          style={{
-            ["--hero-bg-image" as any]: 'url("/media/heroes/quem-somos/hero.webp")',
-          }}
-        >
-          <h1 className="hero__title">{hero.titulo}</h1>
-          <p className="hero__text">{hero.texto}</p>
-        </div>
-      </section>
+      <PublicHeroRolling
+        bgImage="/media/heroes/quem-somos/hero.webp"
+        title={hero.titulo || "Quem somos"}
+        text={hero.texto}
+      />
 
       {/* BLOCO */}
       <section className="sobre">

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
+import { PublicHeroRolling } from "@/components/public";
 import { logPublicFetch } from "@/lib/observability/publicFetchLog";
 
 export const dynamic = "force-dynamic";
@@ -138,20 +139,11 @@ export default async function EditaisPublicPage() {
 
   return (
     <>
-      {/* HERO */}
-      <section className="hero-rolling">
-        <div
-          className="hero-rolling__inner"
-          style={{
-            ["--hero-bg-image" as any]: 'url("/media/heroes/editais/hero.webp")',
-          }}
-
-
-        >
-          <h1 className="hero__title">{tituloHero}</h1>
-          <p className="hero__text">{textoHero}</p>
-        </div>
-      </section>
+      <PublicHeroRolling
+        bgImage="/media/heroes/editais/hero.webp"
+        title={tituloHero}
+        text={textoHero}
+      />
 
       {/* CONTEÚDO */}
       <section className="sobre">
