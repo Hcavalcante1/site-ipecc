@@ -70,6 +70,7 @@ git push -u origin master
 | Tema | Arquivo |
 |------|---------|
 | Plano geral | `docs/ROADMAP-ENTERPRISE.md` |
+| **Status atual / bloqueadores** | `docs/ENTERPRISE-STATUS.md` |
 | **Prod prep / go-live** | `docs/PROD-PREP-CHECKLIST.md` |
 | Staging validado | `docs/STAGING-VALIDACAO-RESUMO.md` |
 | Runbook operacional | `docs/runbook-staging-enterprise.md` |
