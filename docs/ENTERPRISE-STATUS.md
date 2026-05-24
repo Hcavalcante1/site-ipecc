@@ -19,14 +19,14 @@ npm run validar:seguranca       # RLS + storage
 | CI workflow | OK local; push pendente |
 | Upload público | OK (`validate:upload-proposta`) |
 | Storage propostas privado | OK |
-| **RLS `propostas` anon SELECT** | **PENDENTE** — aplicar SQL |
+| **RLS `propostas` anon SELECT** | **OK** (após SQL + ajuste insert sem `.select()`) |
 | Git remote | Pendente |
 
-## Bloqueador #1 — RLS (5 min)
+## Bloqueador #1 — RLS — **resolvido em staging**
 
-1. Supabase **staging** → SQL Editor
-2. Executar `docs/sql/hardening-propostas-rls-APLICAR.sql`
-3. `npm run validar:pos-hardening-rls`
+Se INSERT falhar de novo: `docs/sql/hardening-propostas-rls-PASSO5-grants-insert.sql`
+
+Validar: `npm run validar:pos-hardening-rls`
 
 Guia: `docs/HARDENING-RLS-APLICAR-STAGING.md`
 
