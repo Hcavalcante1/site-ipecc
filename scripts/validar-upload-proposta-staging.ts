@@ -39,40 +39,50 @@ async function main() {
 
   const email = `staging-validacao-${stamp}@example.com`;
   console.log("2) Insert propostas...");
-  const { data, error: insErr } = await supabase
-    .from("propostas")
-    .insert({
-      nome: `Staging validacao ${stamp}`,
-      cnpj: "12345678000199",
-      email,
-      telefone: "11999999999",
-      mensagem: "Teste automatizado validar-upload-proposta-staging",
-      tipo: "pessoa_juridica",
-      categoria: "habilitacao_juridica",
-      arquivo_url: storagePath,
-    })
-    .select("id")
-    .single();
+  const { error: insErr } = await supabase.from("propostas").insert({
+    nome: `Staging validacao ${stamp}`,
+    cnpj: "12345678000199",
+    email,
+    telefone: "11999999999",
+    mensagem: "Teste automatizado validar-upload-proposta-staging",
+    tipo: "pessoa_juridica",
+    categoria: "habilitacao_juridica",
+    arquivo_url: storagePath,
+  });
 
   if (insErr) {
     console.error("FALHA INSERT:", insErr.message);
     process.exit(1);
   }
+  console.log("   OK insert (sem SELECT anon — RLS hardening)");
 
-  console.log("   OK proposta_id:", data?.id);
+  requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+  const admin = createClient(url, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+  const { data: row, error: findErr } = await admin
+    .from("propostas")
+    .select("id")
+    .eq("email", email)
+    .order("criado_em", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
-  if (process.env.USE_PROPOSTA_ANEXOS_ESCRITA === "true" && data?.id) {
+  if (findErr || !row?.id) {
+    console.error("FALHA: proposta não encontrada após insert:", findErr?.message);
+    process.exit(1);
+  }
+
+  console.log("   OK proposta_id:", row.id);
+
+  if (process.env.USE_PROPOSTA_ANEXOS_ESCRITA === "true") {
     console.log("2b) Sincronizar proposta_anexos (escrita dupla)...");
-    requireEnv("SUPABASE_SERVICE_ROLE_KEY");
-    const admin = createClient(url, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-    const { data: row } = await admin.from("propostas").select("*").eq("id", data.id).single();
+    const { data: full } = await admin.from("propostas").select("*").eq("id", row.id).single();
     const { sincronizarAnexosPropostaTabela } = await import(
       "../lib/documental/propostaAnexosEscrita"
     );
     const sync = await sincronizarAnexosPropostaTabela(
       admin,
-      data.id,
-      (row || {}) as Record<string, unknown>,
+      row.id,
+      (full || {}) as Record<string, unknown>,
       "upload_publico"
     );
     if (!sync.ok) {

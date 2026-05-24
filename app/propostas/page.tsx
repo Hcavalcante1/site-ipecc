@@ -649,24 +649,16 @@ export default function PropostasPage() {
 
       aplicarUrlsNoInsert(data, arquivosEnviados);
 
-      const { data: inserida, error } = await supabase
-        .from("propostas")
-        .insert(data)
-        .select("id")
-        .single();
+      const { error } = await supabase.from("propostas").insert(data);
 
       if (error) throw error;
 
-      if (
-        process.env.NEXT_PUBLIC_USE_PROPOSTA_ANEXOS_ESCRITA === "true" &&
-        inserida?.id
-      ) {
+      if (process.env.NEXT_PUBLIC_USE_PROPOSTA_ANEXOS_ESCRITA === "true") {
         try {
           const res = await fetch("/api/propostas/registrar-anexos", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              propostaId: inserida.id,
               email: dados.email.trim(),
             }),
           });

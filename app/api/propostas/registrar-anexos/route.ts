@@ -19,9 +19,34 @@ export async function POST(req: Request) {
     const propostaId = String(body?.propostaId || "").trim();
     const email = String(body?.email || "").trim();
 
-    if (!propostaId || !email) {
+    if (!email) {
       return NextResponse.json(
-        { ok: false, error: "propostaId e email são obrigatórios" },
+        { ok: false, error: "email é obrigatório" },
+        { status: 400 }
+      );
+    }
+
+    let idResolvido = propostaId;
+
+    if (!idResolvido) {
+      const { data: recente, error: buscaError } = await supabaseAdmin
+        .from("propostas")
+        .select("id, email")
+        .eq("email", email)
+        .order("criado_em", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (buscaError) {
+        return NextResponse.json({ ok: false, error: buscaError.message }, { status: 500 });
+      }
+
+      idResolvido = String(recente?.id || "").trim();
+    }
+
+    if (!idResolvido) {
+      return NextResponse.json(
+        { ok: false, error: "propostaId ou proposta recente por email são obrigatórios" },
         { status: 400 }
       );
     }
@@ -29,7 +54,7 @@ export async function POST(req: Request) {
     const { data: proposta, error: loadError } = await supabaseAdmin
       .from("propostas")
       .select("*")
-      .eq("id", propostaId)
+      .eq("id", idResolvido)
       .maybeSingle();
 
     if (loadError) {
@@ -46,7 +71,7 @@ export async function POST(req: Request) {
 
     const sync = await sincronizarAnexosPropostaTabela(
       supabaseAdmin,
-      propostaId,
+      idResolvido,
       proposta as Record<string, unknown>,
       "upload_publico"
     );

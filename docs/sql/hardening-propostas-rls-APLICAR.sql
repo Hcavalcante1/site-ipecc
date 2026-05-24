@@ -29,7 +29,10 @@ END $$;
 ALTER TABLE public.propostas ENABLE ROW LEVEL SECURITY;
 
 -- PASSO 2 — Políticas mínimas
--- Envio público /propostas (anon)
+GRANT USAGE ON SCHEMA public TO anon;
+GRANT INSERT ON TABLE public.propostas TO anon;
+
+-- Envio público /propostas (anon) — sem SELECT (RETURNING via .select() não é usado no cliente)
 CREATE POLICY "propostas_insert_anon"
   ON public.propostas
   FOR INSERT
