@@ -21,6 +21,12 @@ Ordem única para fechar Fase 1 (Dashboard), Fase 3 (upload) e Bloco A (órfãos
 
 ## B. Comandos locais
 
+```bash
+npm run validar:enterprise
+npm run validar:release-prep
+npm run validar:seguranca
+```
+
 **Dev estável:** use **um único** `npm run dev`. Pare o dev antes de `npm run build` (evita cache `.next` corrompido e erro `Cannot find module './XXXX.js'` em rotas como `/quem-somos`).
 
 **Página em branco no admin (ex.: `/admin/propostas`):**

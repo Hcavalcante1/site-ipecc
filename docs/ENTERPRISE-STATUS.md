@@ -32,12 +32,7 @@ Guia: `docs/HARDENING-RLS-APLICAR-STAGING.md`
 
 ## Bloqueador #2 — GitHub (quando autorizar)
 
-```powershell
-git remote add origin https://github.com/SEU_USUARIO/ipecc-public-site.git
-git push -u origin master
-```
-
-Checklist: `docs/CHECKLIST-EQUIPE-RELEASE.md`
+Guia: `docs/GITHUB-PUSH.md`
 
 ## Go-live produção
 
