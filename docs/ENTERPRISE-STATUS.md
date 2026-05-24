@@ -16,7 +16,7 @@ npm run validar:seguranca       # RLS + storage
 | Item | Status |
 |------|--------|
 | `validar:publico` | OK |
-| Heroes padronizados | OK (exc. transparência/propostas — BATCH 10) |
+| Heroes padronizados | OK (incl. home, transparência, propostas — BATCH 10) |
 | `PublicPageContent` | OK em listagens + detalhe notícia |
 
 ## Resultado atual (staging)

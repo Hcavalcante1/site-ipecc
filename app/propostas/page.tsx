@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
+import { PublicHeroRolling } from "@/components/public";
 
 type TipoPessoa = "pessoa_juridica" | "osc" | "pessoa_fisica";
 type CategoriaDocumento =
@@ -888,31 +889,14 @@ export default function PropostasPage() {
 
   return (
     <>
-      <section className="hero-rolling">
-        <div
-          className="hero-rolling__inner"
-          style={{
-            ["--hero-bg-image" as any]: 'url("/media/heroes/propostas/hero.webp")',
-          }}
-        >
-          <h1 className="hero__title">Enviar Proposta</h1>
-          <p className="hero__text">
-            Preencha os dados e a documentação em etapas. O envio definitivo cria uma
-            única proposta com todos os anexos selecionados.
-          </p>
-        </div>
-      </section>
+      <PublicHeroRolling
+        bgImage="/media/heroes/propostas/hero.webp"
+        title="Enviar Proposta"
+        text="Preencha os dados e a documentação em etapas. O envio definitivo cria uma única proposta com todos os anexos selecionados."
+      />
 
-      <section style={{ padding: "0 16px 60px" }}>
-        <div
-          style={{
-            maxWidth: 900,
-            margin: "0 auto",
-            background: "#fff",
-            borderRadius: 16,
-            padding: 32,
-          }}
-        >
+      <section className="public-form-shell">
+        <div className="public-form-shell__inner">
           <form
             onSubmit={handleEnviarProposta}
             style={{ display: "flex", flexDirection: "column", gap: 24 }}

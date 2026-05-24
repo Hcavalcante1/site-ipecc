@@ -3,6 +3,7 @@
 import { getDownloadUrl, isValidFileUrl } from "@/lib/storage";
 import { createClient } from "@/lib/supabaseServer";
 import { logPublicFetch } from "@/lib/observability/publicFetchLog";
+import { PublicHeroRolling } from "@/components/public";
 function fileUrl(url?: string | null) {
   if (!url) return "";
 
@@ -672,20 +673,12 @@ export default async function TransparenciaPage() {
 
   return (
     <>
-      <section className="hero-rolling" aria-label="Transparência IPECC">
-       <div
-  className="hero-rolling__inner"
-  style={
-    {
-      ["--hero-bg-image" as any]:
-        'url("/media/heroes/transparencia/hero.webp")',
-    }
-  }
->
-          <h1 className="hero__title">{hero.titulo}</h1>
-          <p className="hero__text">{hero.texto}</p>
-        </div>
-      </section>
+      <PublicHeroRolling
+        bgImage="/media/heroes/transparencia/hero.webp"
+        title={hero.titulo}
+        text={hero.texto}
+        ariaLabel="Transparência IPECC"
+      />
 
       <section className="sobre" aria-labelledby="compromissos">
         <div className="container">

@@ -1,5 +1,7 @@
 import { createClient } from "../lib/supabaseServer";
 import { resolveMediaPath } from "@/lib/media";
+import { PublicHeroRolling } from "@/components/public";
+import { logPublicFetch } from "@/lib/observability/publicFetchLog";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -289,34 +291,27 @@ const { data: eventos } = await supabase
       ? hero.texto.split("\n").filter(Boolean)
       : [];
 
+  logPublicFetch({
+    page: "/",
+    table: "paginas_conteudo+home",
+    count: cards.length + destaquesRender.length,
+  });
+
   return (
     <>
-      {/* ===== HERO ===== */}
-     <section className="hero-rolling">
-  <div
-    className="hero-rolling__inner"
-    style={{
-      ["--hero-bg-image" as any]: 'url("/media/heroes/home/hero.webp")',
-    }}
-  >
-          <h1 className="hero__title">
-            {hero?.titulo || "Educação, Cultura e Cidadania"}
-          </h1>
-
-          <p className="hero__text">
-            {partesHero[0] ||
-              "Promovemos projetos e ações para fortalecer a educação, a cultura e a cidadania no Estado de São Paulo."}
-          </p>
-
-          <a href={partesHero[2] || "/projetos"} className="btn btn--light">
-            {partesHero[1] || "Conheça nossos projetos"}
-          </a>
-        </div>
-      </section>
-
-
-
-
+      <PublicHeroRolling
+        bgImage="/media/heroes/home/hero.webp"
+        title={hero?.titulo || "Educação, Cultura e Cidadania"}
+        text={
+          partesHero[0] ||
+          "Promovemos projetos e ações para fortalecer a educação, a cultura e a cidadania no Estado de São Paulo."
+        }
+        ariaLabel="Instituto IPECC"
+      >
+        <a href={partesHero[2] || "/projetos"} className="btn btn--light">
+          {partesHero[1] || "Conheça nossos projetos"}
+        </a>
+      </PublicHeroRolling>
 
       {/* ===== CARDS ===== */}
       <section className="cards">

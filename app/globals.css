@@ -751,6 +751,21 @@ a { text-decoration: none; color: inherit; }
   .cta-green__inner{
     padding: 18px;
   }
+
+  .public-form-shell__inner{
+    padding: 20px 16px;
+    border-radius: 12px;
+  }
+
+  .hero-rolling .btn--light{
+    margin-top: 12px;
+  }
+
+  .cards .container,
+  .destaques .container,
+  .numeros .container{
+    width: min(94%, var(--container-w));
+  }
 }
 
 /* ===== PÁGINAS PÚBLICAS (listagens) ===== */
@@ -896,4 +911,17 @@ a { text-decoration: none; color: inherit; }
   color: #4b5563;
   line-height: 1.7;
   margin-bottom: 20px;
+}
+
+/* ===== FORMULÁRIO PÚBLICO (propostas) ===== */
+.public-form-shell{
+  padding: 0 16px 60px;
+}
+
+.public-form-shell__inner{
+  max-width: 900px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px;
 }

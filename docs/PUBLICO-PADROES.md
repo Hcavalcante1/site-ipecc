@@ -11,7 +11,7 @@ Guia para consolidar o site público sem alterar identidade visual IPECC.
 
 | Componente | Uso |
 |------------|-----|
-| `PublicHeroRolling` | Hero com `hero-rolling` + `--hero-bg-image` |
+| `PublicHeroRolling` | Hero com `hero-rolling` + `--hero-bg-image`; `children` opcional (ex.: CTA home) |
 | `PublicPageContent` | Wrapper `.public-content` / `__inner` |
 | Classes `.public-card*` | Listagens (eventos, notícias) |
 | Classes `.public-article*` | Detalhe de notícia (`public-content--article`) |

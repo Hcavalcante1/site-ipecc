@@ -3,6 +3,7 @@ type PublicHeroRollingProps = {
   title: string;
   text?: string;
   ariaLabel?: string;
+  children?: React.ReactNode;
 };
 
 export default function PublicHeroRolling({
@@ -10,6 +11,7 @@ export default function PublicHeroRolling({
   title,
   text,
   ariaLabel,
+  children,
 }: PublicHeroRollingProps) {
   return (
     <section className="hero-rolling" aria-label={ariaLabel}>
@@ -21,6 +23,7 @@ export default function PublicHeroRolling({
       >
         <h1 className="hero__title">{title}</h1>
         {text ? <p className="hero__text">{text}</p> : null}
+        {children}
       </div>
     </section>
   );
