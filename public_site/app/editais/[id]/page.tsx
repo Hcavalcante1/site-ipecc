@@ -54,6 +54,10 @@ export default function EditalDetalhePage() {
   }
 
   const storageBase = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/editais`;
+  const arquivoPdfPath = edital.arquivo_pdf
+    ? String(edital.arquivo_pdf).replace(/^editais\//, "")
+    : null;
+  const downloadUrl = arquivoPdfPath ? `${storageBase}/${arquivoPdfPath}` : null;
 
   return (
     <>
@@ -84,14 +88,16 @@ export default function EditalDetalhePage() {
             </div>
 
             <div style={{ padding: "0 16px 16px", display: "flex", gap: 12 }}>
-              <a
-                href={`${storageBase}/${edital.arquivo_pdf}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="card__link"
-              >
-                Baixar edital (PDF)
-              </a>
+              {downloadUrl && (
+                <a
+                  href={downloadUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="card__link"
+                >
+                  Baixar edital (PDF)
+                </a>
+              )}
 
               <Link
                 href={`/propostas?codigo=${edital.id}`}

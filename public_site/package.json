@@ -7,6 +7,9 @@
     "build": "next build",
     "typecheck": "node node_modules/typescript/lib/tsc.js --noEmit",
     "validar:enterprise": "npm run typecheck && npm run build",
+    "audit:anexos": "node scripts/audit-anexos.mjs",
+    "verify:proposta-anexos": "node scripts/verify-proposta-anexos.mjs",
+    "smoke:http": "node scripts/check-site.mjs --http http://localhost:3050",
     "smoke:static": "node scripts/check-site.mjs --dir ./out"
   },
   "dependencies": {

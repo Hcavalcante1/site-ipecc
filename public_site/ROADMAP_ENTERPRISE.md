@@ -10,13 +10,16 @@
 - Artefatos locais ignorados em `.gitignore`.
 - Responsividade mobile reforcada em grids publicos, formulario de propostas, contato, login e tabela admin de documentos.
 - Smoke crawler HTTP alinhado as rotas reais e a URLs HTML com `&amp;`.
+- Contratos locais de anexos documentais adicionados com `audit:anexos` e `verify:proposta-anexos`.
+- Caminhos de PDFs de editais padronizados para novos uploads, preservando leitura de legado com prefixo `editais/`.
+- Detalhe admin de propostas passou a expor proposta, estatuto social e cartao CNPJ.
 
 ## Proximos batches seguros
 
 1. Rodar `npm run validar:enterprise` apos cada mudanca estrutural e corrigir falhas locais.
 2. Melhorar estados vazios e feedback de salvamento em telas admin.
-3. Consolidar scripts documentais quando os fluxos de anexos forem identificados no codigo.
-4. Criar smoke HTTP local com servidor Next para paginas publicas e admin sem acessar producao.
+3. Expandir scripts documentais para validar fluxos de `docs`/transparencia quando houver contrato de dados definido.
+4. Automatizar smoke HTTP local com lifecycle de servidor dedicado.
 5. Planejar upgrade breaking para Next 16/Firebase 12 como decisao separada, com matriz de compatibilidade.
 
 ## Bloqueios atuais

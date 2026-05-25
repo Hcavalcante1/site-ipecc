@@ -9,10 +9,22 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+type PropostaDetalhe = {
+  nome?: string;
+  cnpj?: string;
+  email?: string;
+  telefone?: string;
+  mensagem?: string;
+  arquivo_url?: string | null;
+  estatuto_url?: string | null;
+  cnpj_url?: string | null;
+};
+
 export default function AdminPropostaDetalhePage() {
   const { id } = useParams();
-  const [proposta, setProposta] = useState<any>(null);
+  const [proposta, setProposta] = useState<PropostaDetalhe | null>(null);
   const [loading, setLoading] = useState(true);
+  const storageBase = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public`;
 
   useEffect(() => {
     async function carregar() {
@@ -48,11 +60,35 @@ export default function AdminPropostaDetalhePage() {
       {proposta.arquivo_url && (
         <p>
           <a
-            href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${proposta.arquivo_url}`}
+            href={`${storageBase}/${proposta.arquivo_url}`}
             target="_blank"
             rel="noreferrer"
           >
             Baixar Proposta (PDF)
+          </a>
+        </p>
+      )}
+
+      {proposta.estatuto_url && (
+        <p>
+          <a
+            href={`${storageBase}/${proposta.estatuto_url}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Baixar Estatuto Social (PDF)
+          </a>
+        </p>
+      )}
+
+      {proposta.cnpj_url && (
+        <p>
+          <a
+            href={`${storageBase}/${proposta.cnpj_url}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Baixar Cartão CNPJ (PDF)
           </a>
         </p>
       )}

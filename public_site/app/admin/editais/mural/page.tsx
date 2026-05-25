@@ -18,6 +18,15 @@ type Edital = {
   created_at: string;
 };
 
+function normalizarNomeArquivo(nome: string) {
+  return nome
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9.-]/g, "-")
+    .replace(/-+/g, "-")
+    .toLowerCase();
+}
+
 export default function MuralEditaisAdmin() {
   const [editais, setEditais] = useState<Edital[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,11 +69,14 @@ export default function MuralEditaisAdmin() {
 
     // Upload do PDF
     if (arquivo) {
-      const nomeArquivo = `${Date.now()}-${arquivo.name}`;
+      const nomeArquivo = `${Date.now()}-${normalizarNomeArquivo(arquivo.name)}`;
 
       const { error: uploadError } = await supabase.storage
         .from("editais")
-        .upload(nomeArquivo, arquivo, { upsert: false });
+        .upload(nomeArquivo, arquivo, {
+          upsert: false,
+          contentType: "application/pdf",
+        });
 
       if (uploadError) {
         alert("Erro ao enviar o PDF");
@@ -73,8 +85,8 @@ export default function MuralEditaisAdmin() {
         return;
       }
 
-      // salva apenas o caminho
-      arquivo_pdf = `editais/${nomeArquivo}`;
+      // Salva apenas o caminho relativo dentro do bucket; o publico ainda aceita legado com "editais/".
+      arquivo_pdf = nomeArquivo;
     }
 
     // Insert no banco
