@@ -42,7 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="container menubar__inner">
               <a href="/" className="brand" aria-label="APECC — Início">
                 <Image
-                  src="/media/ipecc_logo_v2.png"
+                  src="/logo-apecc.svg"
                   alt="Logo APECC"
                   width={240}
                   height={240}
