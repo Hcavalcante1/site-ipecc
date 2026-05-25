@@ -33,6 +33,9 @@ Validações adicionais por escopo:
   proposta, estatuto social e cartao CNPJ.
 - Artefatos locais (`node_modules`, `.next`, `tsconfig.tsbuildinfo`) estão
   cobertos pelo `.gitignore` para próximos ciclos.
+- Dependencias principais atualizadas para linhas atuais de seguranca
+  (`next`, `react`, `firebase`, `chart.js`, tipos e TypeScript), com
+  `npm audit --audit-level=moderate` sem vulnerabilidades.
 
 ## Bloqueios conhecidos
 
@@ -42,3 +45,5 @@ Validações adicionais por escopo:
 - `npm run audit:anexos` pode emitir avisos para referencias locais em
   `/docs` ou `/media` ainda sem arquivo publicado; os avisos devem virar
   correcoes documentais em batch proprio, sem publicar documentos falsos.
+- Next 16 exige ambiente Node moderno; validar `node --version` antes de
+  executar build em novos ambientes.

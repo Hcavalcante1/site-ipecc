@@ -34,3 +34,4 @@
 
 - Consolidar runbook de build/smoke.
 - Documentar riscos de dependencias e preparar checklist sem deploy.
+- Manter `npm audit --audit-level=moderate` zerado antes de qualquer release.
