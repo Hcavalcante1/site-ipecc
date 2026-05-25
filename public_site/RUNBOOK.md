@@ -1,0 +1,26 @@
+# Runbook operacional local/staging
+
+Este projeto deve ser operado localmente antes de qualquer acao externa.
+
+## Ciclo seguro
+
+1. Diagnosticar com `git status --short`.
+2. Validar tipos com `npm run typecheck`.
+3. Executar `npm run validar:enterprise`.
+4. Quando houver mudanca documental/storage, executar `npm run audit:anexos`.
+5. Quando houver mudanca em anexos de propostas, executar `npm run verify:proposta-anexos`.
+6. Para mudancas estruturais, executar `npm run build`.
+7. Commitar somente batches coesos e validados.
+
+## Limites operacionais
+
+- Nao atuar em producao sem revisao explicita.
+- Nao executar SQL destrutivo, DROP ou remocao de dados.
+- Nao remover fallback hibrido, colunas legadas ou chaves reais.
+- Manter alteracoes em local/staging ate revisao de release.
+
+## Observabilidade local
+
+- `validar:enterprise` cobre presenca de rotas publicas, admin minimo, scripts e documentos essenciais.
+- `audit:anexos` verifica anexos versionados em `public/docs`.
+- `verify:proposta-anexos` verifica o fluxo basico de envio/listagem de anexos de propostas.
