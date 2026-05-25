@@ -1,6 +1,6 @@
 # Plano — Chatbot WhatsApp (IPECC)
 
-**Status:** Etapa 1–2 implementadas (link wa.me centralizado). **Cloud API:** apenas esqueleto.
+**Status:** Etapa 1–2 implementadas (link wa.me). **Fase 1 bot:** motor + simulador (`npm run validar:whatsapp-bot`). **Cloud API:** esqueleto webhook.
 
 ## Diagnóstico (layout público)
 
@@ -80,18 +80,28 @@ sequenceDiagram
 ```
 lib/whatsapp/
   publicWhatsApp.ts      # wa.me (feito)
-  botMenu.ts             # definição de opções
-  cloudApiClient.ts      # fetch Graph API (server-only)
-  verifySignature.ts     # HMAC webhook
+  types.ts               # feito (Fase 1)
+  botMenu.ts             # feito
+  messageTemplates.ts    # feito
+  botEngine.ts           # feito
+  textUtils.ts           # feito
+  simulator.ts           # feito
+  parseWebhook.ts        # feito
+  verifySignature.ts     # feito
+  cloudApiClient.ts      # Fase 2
 app/api/whatsapp/
   webhook/route.ts       # esqueleto (feito)
-  send/route.ts          # opcional: envio interno admin
 ```
 
 ## Validação local (etapa atual)
 
 ```bash
 npx tsc --noEmit
+npm run validar:whatsapp-bot
+npm run whatsapp:simulate -- oi
+npm run whatsapp:simulate -- 1
+npm run whatsapp:simulate -- site
+npm run whatsapp:simulate -- reset
 npm run dev
 ```
 

@@ -26,7 +26,9 @@
     "validar:pos-hardening-rls": "npx --yes tsx scripts/validar-pos-hardening-rls-staging.ts",
     "validar:publico": "npx --yes tsx scripts/validar-publico-staging.ts",
     "validar:admin": "npx --yes tsx scripts/validar-admin-clients-staging.ts",
-    "validar:enterprise": "npx --yes tsx scripts/validar-enterprise-staging.ts"
+    "validar:enterprise": "npx --yes tsx scripts/validar-enterprise-staging.ts",
+    "whatsapp:simulate": "npx --yes tsx scripts/whatsapp-simulate-inbound.ts",
+    "validar:whatsapp-bot": "npx --yes tsx scripts/validar-whatsapp-bot-fase1.ts"
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.15.0",
