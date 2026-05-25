@@ -66,6 +66,18 @@ a { text-decoration: none; color: inherit; }
   opacity: .75;
 }
 
+button.social-link{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
 /* Linha inferior (LOGO + MENU) */
 .menubar-wrapper{
   background: #fff;

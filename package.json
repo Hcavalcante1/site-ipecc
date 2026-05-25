@@ -37,7 +37,8 @@
     "validar:whatsapp-meta": "npx --yes tsx scripts/validar-whatsapp-meta.ts",
     "validar:whatsapp-persist": "npx --yes tsx scripts/validar-whatsapp-persist-staging.ts",
     "auditar:cms-staging": "npx --yes tsx scripts/auditar-cms-staging.ts",
-    "validar:push-prep": "npx --yes tsx scripts/validar-push-prep.ts"
+    "validar:push-prep": "npx --yes tsx scripts/validar-push-prep.ts",
+    "validar:whatsapp-public-chat": "npx --yes tsx scripts/validar-whatsapp-public-chat.ts"
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.15.0",

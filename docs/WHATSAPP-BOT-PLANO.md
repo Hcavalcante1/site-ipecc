@@ -110,6 +110,8 @@ Roteiro sandbox Meta: `docs/WHATSAPP-META-SANDBOX.md`
 
 Persistência Supabase (opcional): aplicar `docs/sql/whatsapp-conversations-staging.sql` e `WHATSAPP_PERSIST_SUPABASE=1`.
 
+**Site público:** painel flutuante WhatsApp (`WhatsAppFloatingChat`) — menu antes do wa.me; validar com `npm run validar:whatsapp-public-chat`.
+
 Webhook local (com tunnel + secrets): `GET/POST /api/whatsapp/webhook`
 
 1. Abrir `http://localhost:3000`
