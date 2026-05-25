@@ -15,9 +15,11 @@
 - Runbook local define validacoes antes de commits e release.
 - Cabecalho publico e grids principais receberam ajustes responsivos locais.
 - Navegacao admin possui placeholders locais para modulos ainda nao integrados.
+- Dependencias receberam update conservador de seguranca sem salto major.
 
 ## Proximos batches seguros
 
 - Reduzir duplicacao de scripts legados em `app/scripts`.
 - Revisar fluxos admin de propostas/editais com validacoes locais adicionais.
 - Expandir smoke tests locais para rotas publicas apos build.
+- Planejar upgrade major de Next/Firebase em branch propria para zerar audit restante.
