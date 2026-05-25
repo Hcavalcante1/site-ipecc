@@ -8,6 +8,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "validar:enterprise": "npm run typecheck && node scripts/validar-enterprise.mjs",
+    "audit:deps": "node scripts/audit-deps.mjs",
     "audit:anexos": "node scripts/audit-anexos.mjs",
     "verify:proposta-anexos": "node scripts/verify-proposta-anexos.mjs",
     "smoke:local": "node scripts/smoke-local.mjs"

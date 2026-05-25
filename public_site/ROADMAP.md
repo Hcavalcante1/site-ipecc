@@ -17,6 +17,7 @@
 - Navegacao admin possui placeholders locais para modulos ainda nao integrados.
 - Dependencias receberam update conservador de seguranca sem salto major.
 - Smoke HTTP local foi versionado para rotas publicas e guarda admin.
+- Auditoria de dependencias agora diferencia correcoes seguras de upgrades major.
 
 ## Proximos batches seguros
 

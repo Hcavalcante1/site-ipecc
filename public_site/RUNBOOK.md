@@ -23,12 +23,13 @@ Este projeto deve ser operado localmente antes de qualquer acao externa.
 ## Observabilidade local
 
 - `validar:enterprise` cobre presenca de rotas publicas, admin minimo, scripts e documentos essenciais.
+- `audit:deps` bloqueia vulnerabilidades com correcao semver-minor/patch disponivel e avisa sobre upgrades major.
 - `audit:anexos` verifica anexos versionados em `public/docs`.
 - `verify:proposta-anexos` verifica o fluxo basico de envio/listagem de anexos de propostas.
 - `smoke:local` verifica rotas publicas principais e protecao por redirect das rotas admin.
 
 ## Seguranca de dependencias
 
-- Executar `npm audit` em ciclos de release local.
+- Executar `npm run audit:deps` em ciclos de release local.
 - Correcoes semver-minor/patch podem ser aplicadas quando `typecheck`, `validar:enterprise` e `build` passarem.
 - Upgrades major de framework (por exemplo Next ou Firebase) exigem branch/batch dedicado, smoke ampliado e decisao de release.
