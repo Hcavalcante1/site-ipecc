@@ -102,8 +102,11 @@ npm run validar:whatsapp-fase2
 npm run validar:whatsapp-webhook
 npm run validar:whatsapp-webhook-http   # opcional, com npm run dev
 npm run validar:whatsapp-fase3
+npm run validar:whatsapp-meta
 npm run whatsapp:simulate -- reset oi 1
 ```
+
+Roteiro sandbox Meta: `docs/WHATSAPP-META-SANDBOX.md`
 
 Persistência Supabase (opcional): aplicar `docs/sql/whatsapp-conversations-staging.sql` e `WHATSAPP_PERSIST_SUPABASE=1`.
 
@@ -115,8 +118,8 @@ Webhook local (com tunnel + secrets): `GET/POST /api/whatsapp/webhook`
 
 ## Próximos passos (ordem)
 
-1. [ ] Conta Meta Business + número de teste (sandbox)
-2. [ ] Preencher env servidor e testar `GET` verify no webhook (handshake Meta)
+1. [ ] Conta Meta Business + número de teste (sandbox) — ver `docs/WHATSAPP-META-SANDBOX.md`
+2. [ ] Preencher env servidor e testar `GET` verify no webhook (`npm run validar:whatsapp-meta` + tunnel)
 3. [x] `verifySignature` + menu de respostas (Fase 1–2)
 4. [x] Painel `/admin/whatsapp` + tabela `whatsapp_conversations` (SQL em `docs/sql/` + `WHATSAPP_PERSIST_SUPABASE=1`)
 5. [ ] Go-live número real — **somente** após autorização explícita (sem deploy automático)

@@ -33,7 +33,8 @@
     "validar:whatsapp-webhook": "npx --yes tsx scripts/validar-whatsapp-webhook-route.ts",
     "validar:whatsapp-webhook-http": "npx --yes tsx scripts/validar-whatsapp-webhook-http.ts",
     "validar:smoke-publico": "npx --yes tsx scripts/validar-smoke-publico-http.ts",
-    "validar:whatsapp-fase3": "npx --yes tsx scripts/validar-whatsapp-fase3.ts"
+    "validar:whatsapp-fase3": "npx --yes tsx scripts/validar-whatsapp-fase3.ts",
+    "validar:whatsapp-meta": "npx --yes tsx scripts/validar-whatsapp-meta.ts"
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.15.0",

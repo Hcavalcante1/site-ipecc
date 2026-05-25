@@ -23,5 +23,5 @@ Com sessão admin logada: abrir `http://localhost:3000/admin/whatsapp`.
 ## Próximo
 
 - Conta Meta sandbox + tunnel no webhook.
-- Registrar turnos em `admin_logs` (opcional).
+- [x] Handoff registrado em `admin_logs` (`HANDOFF`, e-mail `whatsapp-bot@ipecc.local`).
 - Go-live apenas com autorização explícita.

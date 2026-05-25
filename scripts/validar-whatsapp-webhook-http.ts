@@ -47,19 +47,40 @@ async function fetchOk(
 }
 
 async function main() {
-  await fetchOk("GET verify sem token", { method: "GET" }, 403);
-
   const envPath = join(process.cwd(), ".env.local");
-  let secret = process.env.WHATSAPP_APP_SECRET?.trim();
+  let verifyToken = process.env.WHATSAPP_VERIFY_TOKEN?.trim();
 
-  if (!secret && existsSync(envPath)) {
+  if (!verifyToken && existsSync(envPath)) {
     try {
-      loadEnvLocal({ keys: ["WHATSAPP_APP_SECRET"] });
-      secret = process.env.WHATSAPP_APP_SECRET?.trim();
+      loadEnvLocal({ keys: ["WHATSAPP_VERIFY_TOKEN", "WHATSAPP_APP_SECRET"] });
+      verifyToken = process.env.WHATSAPP_VERIFY_TOKEN?.trim();
     } catch {
       /* ignore */
     }
   }
+
+  if (verifyToken) {
+    const url = `${WEBHOOK}?hub.mode=subscribe&hub.verify_token=${encodeURIComponent(verifyToken)}&hub.challenge=CURSOR_META_TEST`;
+    try {
+      const res = await fetch(url, { method: "GET" });
+      if (res.status !== 200 || (await res.text()) !== "CURSOR_META_TEST") {
+        console.error("FALHA GET handshake Meta", res.status, await res.text());
+        process.exit(1);
+      }
+      console.log("OK: GET handshake Meta (HTTP 200 + challenge)");
+    } catch (e) {
+      console.warn(`SKIP: GET handshake — ${(e as Error).message}`);
+    }
+  } else {
+    const noCfg = await fetchOk("GET sem WHATSAPP_VERIFY_TOKEN", { method: "GET" }, 503);
+    if (!noCfg) process.exit(0);
+  }
+
+  if (!verifyToken) {
+    await fetchOk("GET verify token inválido", { method: "GET" }, 403);
+  }
+
+  let secret = process.env.WHATSAPP_APP_SECRET?.trim();
 
   const postNoConfig = await fetchOk(
     "POST sem secret no servidor",

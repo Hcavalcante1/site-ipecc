@@ -8,6 +8,7 @@ import {
 import { sendWhatsAppText } from "./cloudApiClient";
 import { isWhatsAppBotEnabled } from "./config";
 import { logWhatsApp } from "./logWhatsApp";
+import { logWhatsAppHandoff } from "./logHandoff";
 import type { InboundMessage } from "./types";
 
 export type HandleInboundResult = {
@@ -47,6 +48,13 @@ export async function handleInboundMessage(
 
   for (const reply of result.replies) {
     await sendWhatsAppText(inbound.waId, reply.text);
+  }
+
+  if (result.handoff) {
+    await logWhatsAppHandoff(inbound.waId, {
+      state: nextCtx.state,
+      messageId: inbound.messageId,
+    });
   }
 
   return {
