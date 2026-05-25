@@ -314,7 +314,33 @@ body {
   }
 
   .admin-sidebar {
-    display: none;
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  }
+
+  .admin-logo {
+    margin-bottom: 0;
+  }
+
+  .admin-nav {
+    flex-direction: row;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .admin-nav-item {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .admin-nav-item:hover {
+    transform: none;
   }
 
   .admin-main {
@@ -323,6 +349,26 @@ body {
 
   .admin-content-shell {
     padding: 18px 16px 20px;
+  }
+}
+
+@media (max-width: 520px) {
+  .admin-logo-sub {
+    display: none;
+  }
+
+  .admin-main {
+    padding: 14px 10px 20px;
+  }
+
+  .admin-content-shell,
+  .admin-box {
+    border-radius: 18px;
+    padding: 16px 12px;
+  }
+
+  .admin-grid {
+    grid-template-columns: 1fr;
   }
 }
 

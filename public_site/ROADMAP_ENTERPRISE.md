@@ -13,11 +13,12 @@
 - Contratos locais de anexos documentais adicionados com `audit:anexos` e `verify:proposta-anexos`.
 - Caminhos de PDFs de editais padronizados para novos uploads, preservando leitura de legado com prefixo `editais/`.
 - Detalhe admin de propostas passou a expor proposta, estatuto social e cartao CNPJ.
+- Navegacao admin mobile preservada com menu horizontal e estados de erro adicionados em propostas.
 
 ## Proximos batches seguros
 
 1. Rodar `npm run validar:enterprise` apos cada mudanca estrutural e corrigir falhas locais.
-2. Melhorar estados vazios e feedback de salvamento em telas admin.
+2. Melhorar feedback de salvamento em telas admin que ainda usam `alert`.
 3. Expandir scripts documentais para validar fluxos de `docs`/transparencia quando houver contrato de dados definido.
 4. Automatizar smoke HTTP local com lifecycle de servidor dedicado.
 5. Planejar upgrade breaking para Next 16/Firebase 12 como decisao separada, com matriz de compatibilidade.

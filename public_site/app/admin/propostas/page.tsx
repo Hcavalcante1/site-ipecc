@@ -24,9 +24,12 @@ type Proposta = {
 export default function AdminPropostasPage() {
   const [propostas, setPropostas] = useState<Proposta[]>([]);
   const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
 
   useEffect(() => {
     async function carregarPropostas() {
+      setErro(null);
+
       const { data, error } = await supabase
         .from("propostas")
         .select("*")
@@ -34,6 +37,7 @@ export default function AdminPropostasPage() {
 
       if (error) {
         console.error("Erro ao buscar propostas:", error);
+        setErro("Nao foi possivel carregar as propostas agora.");
       } else {
         setPropostas(data || []);
       }
@@ -52,11 +56,15 @@ export default function AdminPropostasPage() {
 
       {loading && <p>Carregando propostas...</p>}
 
-      {!loading && propostas.length === 0 && (
+      {!loading && erro && (
+        <p style={{ color: "#fecaca", marginBottom: 16 }}>{erro}</p>
+      )}
+
+      {!loading && !erro && propostas.length === 0 && (
         <p>Nenhuma proposta recebida.</p>
       )}
 
-      {propostas.map((p) => (
+      {!erro && propostas.map((p) => (
         <div
           key={p.id}
           style={{

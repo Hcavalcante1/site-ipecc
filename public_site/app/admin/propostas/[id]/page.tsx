@@ -24,17 +24,23 @@ export default function AdminPropostaDetalhePage() {
   const { id } = useParams();
   const [proposta, setProposta] = useState<PropostaDetalhe | null>(null);
   const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
   const storageBase = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public`;
 
   useEffect(() => {
     async function carregar() {
+      setErro(null);
+
       const { data, error } = await supabase
         .from("propostas")
         .select("*")
         .eq("id", id)
         .single();
 
-      if (!error) {
+      if (error) {
+        console.error("Erro ao carregar proposta:", error);
+        setErro("Nao foi possivel carregar os detalhes da proposta agora.");
+      } else {
         setProposta(data);
       }
 
@@ -45,6 +51,7 @@ export default function AdminPropostaDetalhePage() {
   }, [id]);
 
   if (loading) return <p>Carregando...</p>;
+  if (erro) return <p style={{ color: "#fecaca" }}>{erro}</p>;
   if (!proposta) return <p>Proposta não encontrada.</p>;
 
   return (
