@@ -3,6 +3,13 @@
 html, body { font-family: "Poppins", sans-serif; color: #111827; background: #fff; scroll-behavior: smooth; }
 img { max-width: 100%; display: block; }
 a { text-decoration: none; color: inherit; }
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible{
+  outline: 3px solid rgba(1,194,164,.45);
+  outline-offset: 3px;
+}
 
 /* ===== VARS ===== */
 :root{
@@ -41,15 +48,18 @@ a { text-decoration: none; color: inherit; }
 .icon-social:hover{ opacity: .75; }
 
 /* Linha inferior (LOGO + MENU) */
-.menubar-wrapper{ background: #fff; box-shadow: 0 3px 10px rgba(0,0,0,.05); }
+.menubar-wrapper{ background: rgba(255,255,255,.96); box-shadow: 0 3px 10px rgba(0,0,0,.05); backdrop-filter: blur(12px); }
 .menubar__inner{
   display: flex; align-items: center; justify-content: space-between;
   gap: 30px; height: 88px;
 }
 .brand__logo{ height: 120px; width: auto; object-fit: contain; } /* ajuste aqui se quiser maior */
-.menubar{ display: flex; align-items: center; gap: 28px; }
-.menu__link{ color: var(--blue-navy); font-weight: 600; font-size: 1rem; transition: .2s; }
-.menu__link:hover{ color: var(--blue-3); }
+.menubar{ display: flex; align-items: center; gap: 12px; }
+.menu__link{
+  color: var(--blue-navy); font-weight: 700; font-size: .96rem; transition: .2s;
+  border-radius: 999px; padding: 10px 12px; white-space: nowrap;
+}
+.menu__link:hover{ color: var(--blue-3); background: rgba(1,194,164,.08); }
 
 /* ===== TARJA AZUL DEGRADÊ (rola com o conteúdo) ===== */
 .hero-rolling{ padding: 22px 0; margin-top: 10px; }
@@ -72,20 +82,22 @@ a { text-decoration: none; color: inherit; }
 
 /* ===== CARDS ===== */
 .cards__grid{ display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 28px; }
-.card{ background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-lg); overflow: hidden; }
+.card{ background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-lg); overflow: hidden; border: 1px solid #eef2f7; }
 .card__media-wrap img{ width: 100%; height: 240px; object-fit: cover; }
 .card__body{ padding: 18px; }
 .card__title{ color: var(--blue-navy); font-size: 1.25rem; margin-bottom: 6px; font-weight: 800; }
 .card__text{ color: #6b7280; margin-bottom: 10px; }
 .card__link{ color: var(--blue-2); font-weight: 700; }
+.card__link:hover{ color: var(--blue-navy); text-decoration: underline; text-underline-offset: 3px; }
 
 /* ===== DESTAQUES ===== */
 .destaques{ background: #f8fafc; padding: 64px 0; }
 .destaques h2{ text-align: center; color: var(--blue-navy); margin-bottom: 22px; font-weight: 800; }
 .destaques__grid{ display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; }
-.destaques__grid article{ background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-lg); padding: 16px; }
-.destaques__grid img{ height: 220px; object-fit: cover; border-radius: 12px; margin-bottom: 10px; }
+.destaques__grid article{ background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-lg); padding: 16px; border: 1px solid #eef2f7; }
+.destaques__grid img{ width: 100%; height: 220px; object-fit: cover; border-radius: 12px; margin-bottom: 10px; }
 .btn-vermais{ display: inline-block; background: var(--blue-2); color: #fff; padding: 8px 16px; border-radius: 10px; font-weight: 700; }
+.btn-vermais:hover{ background: var(--blue-navy); }
 
 /* ===== NÚMEROS (com fundo e degradê) ===== */
 .numeros{ padding: 56px 0; }
@@ -151,15 +163,32 @@ a { text-decoration: none; color: inherit; }
 
 /* ===== RESPONSIVO ===== */
 @media (max-width: 992px){
-  .menubar__inner{ height: 80px; }
-  .brand__logo{ height: 100px; } /* diminui em telas menores */
-  .menubar{ gap: 16px; flex-wrap: wrap; justify-content: center; }
+  .menubar__inner{ height: auto; min-height: 80px; padding: 10px 0 14px; align-items: flex-start; }
+  .brand__logo{ height: 96px; } /* diminui em telas menores */
+  .menubar{ gap: 8px; flex-wrap: wrap; justify-content: flex-end; padding-top: 10px; }
+  .menu__link{ font-size: .9rem; padding: 8px 10px; }
   .hero-rolling__inner{ padding: 32px 18px; }
   .impacto__imagem{ height: 320px; }
   .sobre-cta__grid{ grid-template-columns: 1fr; }
 }
 @media (max-width: 640px){
+  .container{ width: min(92%, var(--container-w)); }
+  .topbar{ height: 36px; }
+  .topbar__inner{ justify-content: center; }
+  .menubar__inner{ flex-direction: column; align-items: center; gap: 6px; }
+  .brand__logo{ height: 82px; }
+  .menubar{ justify-content: center; width: 100%; gap: 6px; }
+  .menu__link{ font-size: .82rem; padding: 7px 9px; }
+  .page{ padding-top: 12px; }
+  .hero-rolling{ padding: 12px 0; margin-top: 4px; }
+  .hero__title{ font-size: 1.65rem; }
+  .hero__text{ font-size: .95rem; }
   .cards__grid{ grid-template-columns: 1fr; }
   .destaques__grid{ grid-template-columns: 1fr; }
+  .destaques,
+  .impacto,
+  .depoimentos,
+  .sobre-cta,
+  .numeros{ padding: 40px 0; }
   .impacto__imagem{ height: 260px; }
 }
