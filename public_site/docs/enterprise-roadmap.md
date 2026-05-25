@@ -13,8 +13,10 @@
 ### B1 - Qualidade operacional
 
 - Manter `npx tsc --noEmit` e `npm run validar:enterprise` verdes.
-- Adicionar scripts locais para auditoria de anexos e verificacao de propostas.
+- Manter scripts locais para auditoria de anexos e verificacao de propostas.
 - Evitar alteracoes de Supabase/RLS sem SQL revisado.
+- Converter avisos de anexos locais ausentes em correcoes documentais
+  verificaveis, sem publicar arquivos ficticios.
 
 ### B2 - Publico premium/mobile
 

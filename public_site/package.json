@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "validar:enterprise": "npm run typecheck",
+    "validar:enterprise": "npm run typecheck && npm run verify:proposta-anexos",
+    "audit:anexos": "node scripts/audit-anexos.mjs",
+    "verify:proposta-anexos": "node scripts/verify-proposta-anexos.mjs",
     "smoke:site": "node scripts/check-site.mjs --http http://localhost:3000"
   },
   "dependencies": {
