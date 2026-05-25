@@ -65,11 +65,12 @@ const sCard: React.CSSProperties = {
   borderRadius: 14,
   border: "1px solid rgba(255,255,255,0.12)",
   background: "rgba(0,0,0,0.18)",
-  overflow: "hidden",
+  overflowX: "auto",
 };
 
 const sTable: React.CSSProperties = {
   width: "100%",
+  minWidth: 760,
   borderCollapse: "collapse",
 };
 

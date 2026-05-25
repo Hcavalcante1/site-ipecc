@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const SEEDS = ["/", "/quem-somos", "/projetos", "/cotacoes", "/transparencia", "/contato", "/acoes"];
+const SEEDS = ["/", "/quem-somos", "/projetos", "/editais", "/transparencia", "/contato", "/acoes", "/propostas"];
 const MAX_PAGES = 200;
 
 const isInternal = (href, base) => {
@@ -24,8 +24,9 @@ const normalizePath = (p) => {
   }
 };
 const extractLinks = (html) => {
-  const hrefs = [...html.matchAll(/\shref\s*=\s*"(.*?)"/gi)].map(m => m[1]);
-  const srcs  = [...html.matchAll(/\ssrc\s*=\s*"(.*?)"/gi)].map(m => m[1]);
+  const decodeAttr = (value) => value.replace(/&amp;/g, "&");
+  const hrefs = [...html.matchAll(/\shref\s*=\s*"(.*?)"/gi)].map(m => decodeAttr(m[1]));
+  const srcs  = [...html.matchAll(/\ssrc\s*=\s*"(.*?)"/gi)].map(m => decodeAttr(m[1]));
   return { hrefs, srcs };
 };
 

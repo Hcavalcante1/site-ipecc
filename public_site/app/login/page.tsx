@@ -60,8 +60,9 @@ export default function LoginPage() {
         <form
           onSubmit={handleSubmit}
           style={{
-            width: 420,
-            padding: "36px 40px",
+            width: "min(420px, calc(100vw - 32px))",
+            padding: "clamp(28px, 6vw, 36px) clamp(22px, 6vw, 40px)",
+            boxSizing: "border-box",
             borderRadius: 16,
             background: "linear-gradient(180deg, #020617, #0b1220)",
             border: "1px solid rgba(255,255,255,0.12)",

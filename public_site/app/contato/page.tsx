@@ -131,7 +131,7 @@ export default function ContatoPage() {
               marginTop: 16
             }}
           >
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))", gap: 12 }}>
               <div>
                 <label htmlFor="nome" style={{ display: "block", fontWeight: 700, marginBottom: 6 }}>Nome</label>
                 <input id="nome" name="nome" type="text" required

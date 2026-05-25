@@ -8,11 +8,13 @@
 - Scripts locais adicionados para typecheck, validacao enterprise e smoke estatico.
 - Pagina admin de documentos de editais corrigida para remover export default duplicado.
 - Artefatos locais ignorados em `.gitignore`.
+- Responsividade mobile reforcada em grids publicos, formulario de propostas, contato, login e tabela admin de documentos.
+- Smoke crawler HTTP alinhado as rotas reais e a URLs HTML com `&amp;`.
 
 ## Proximos batches seguros
 
 1. Rodar `npm run validar:enterprise` apos cada mudanca estrutural e corrigir falhas locais.
-2. Melhorar responsividade de tabelas admin com wrappers horizontais e estados vazios consistentes.
+2. Melhorar estados vazios e feedback de salvamento em telas admin.
 3. Consolidar scripts documentais quando os fluxos de anexos forem identificados no codigo.
 4. Criar smoke HTTP local com servidor Next para paginas publicas e admin sem acessar producao.
 5. Planejar upgrade breaking para Next 16/Firebase 12 como decisao separada, com matriz de compatibilidade.
