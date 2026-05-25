@@ -22,6 +22,5 @@
 
 ## Pendencias seguras para proximos batches
 
-- Migrar `middleware.ts` para a convencao `proxy` do Next 16.
 - Revisar publicacao real dos documentos em `/docs` ou mover os links para storage/CMS com auditoria documental.
 - Padronizar componentes visuais publicos e reduzir estilos inline em paginas/admin.
