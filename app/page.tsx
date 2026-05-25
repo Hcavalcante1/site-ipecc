@@ -1,5 +1,6 @@
 import { createClient } from "../lib/supabaseServer";
 import { resolveMediaPath } from "@/lib/media";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { PublicHeroRolling } from "@/components/public";
 import { logPublicFetch } from "@/lib/observability/publicFetchLog";
 
@@ -473,7 +474,7 @@ const { data: eventos } = await supabase
             {/* ✅ NOVO: WHATSAPP */}
             {e.whatsapp && (
               <a
-                href={`https://wa.me/${e.whatsapp.replace(/\D/g, "")}`}
+                href={buildWhatsAppUrl({ number: e.whatsapp })}
                 target="_blank"
                 style={{
                   display: "inline-block",

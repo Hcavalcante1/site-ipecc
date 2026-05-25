@@ -4,6 +4,7 @@ import "./globals.css";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 export default function RootLayout({
   children,
@@ -111,7 +112,7 @@ export default function RootLayout({
 
                   {/* WhatsApp */}
                   <a
-                    href="https://wa.me/5511943312119?text=menu"
+                    href={buildWhatsAppUrl()}
                     target="_blank"
                     rel="noreferrer"
                     aria-label="WhatsApp"

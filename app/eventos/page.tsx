@@ -1,5 +1,6 @@
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { resolveMediaPath } from "@/lib/media";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { PublicHeroRolling, PublicPageContent } from "@/components/public";
 import { logPublicFetch } from "@/lib/observability/publicFetchLog";
 
@@ -69,7 +70,7 @@ export default async function EventosPage() {
 
                     {e.whatsapp ? (
                       <a
-                        href={`https://wa.me/${e.whatsapp.replace(/\D/g, "")}`}
+                        href={buildWhatsAppUrl({ number: e.whatsapp })}
                         target="_blank"
                         rel="noreferrer"
                         className="public-card__link"
