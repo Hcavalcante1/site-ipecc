@@ -16,6 +16,8 @@ Guia para consolidar o site público sem alterar identidade visual IPECC.
 | Classes `.public-card*` | Listagens (eventos, notícias) |
 | Classes `.public-article*` | Detalhe de notícia (`public-content--article`) |
 
+| `PublicProjectDetail` | Páginas filhas de `/projetos` |
+
 Import centralizado:
 
 ```tsx

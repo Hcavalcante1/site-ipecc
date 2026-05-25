@@ -11,13 +11,15 @@ npm run validar:release-prep    # release prep
 npm run validar:seguranca       # RLS + storage
 ```
 
-## Público (BATCH 8–9)
+## Público (BATCH 8–11)
 
 | Item | Status |
 |------|--------|
 | `validar:publico` | OK |
-| Heroes padronizados | OK (incl. home, transparência, propostas — BATCH 10) |
-| `PublicPageContent` | OK em listagens + detalhe notícia |
+| Heroes padronizados | OK (incl. home, transparência, propostas, edital detalhe) |
+| `PublicPageContent` / `PublicProjectDetail` | OK |
+| Páginas `/projetos/*` públicas | OK (corrigido BATCH 11) |
+| Checklist visual | `docs/VISUAL-GO-LIVE-CHECKLIST.md` |
 
 ## Resultado atual (staging)
 

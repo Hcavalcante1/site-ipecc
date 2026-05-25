@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 type PublicHeroRollingProps = {
   bgImage: string;
   title: string;

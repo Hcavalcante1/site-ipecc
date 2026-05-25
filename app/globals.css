@@ -913,6 +913,13 @@ a { text-decoration: none; color: inherit; }
   margin-bottom: 20px;
 }
 
+.public-page-actions{
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 0 16px 16px;
+}
+
 /* ===== FORMULÁRIO PÚBLICO (propostas) ===== */
 .public-form-shell{
   padding: 0 16px 60px;
