@@ -1,7 +1,14 @@
 const baseUrl = process.env.SMOKE_BASE_URL ?? "http://127.0.0.1:3050";
 
+const securityHeaders = [
+  "x-content-type-options",
+  "referrer-policy",
+  "x-frame-options",
+  "permissions-policy",
+];
+
 const checks = [
-  { path: "/", statuses: [200] },
+  { path: "/", statuses: [200], headers: securityHeaders },
   { path: "/quem-somos", statuses: [200] },
   { path: "/projetos", statuses: [200] },
   { path: "/editais", statuses: [200] },
@@ -30,6 +37,12 @@ for (const check of checks) {
 
   if (!ok) {
     failures.push(`${check.path}: expected ${check.statuses.join("/")} got ${status}`);
+  }
+
+  for (const header of check.headers ?? []) {
+    if (!response.headers.has(header)) {
+      failures.push(`${check.path}: missing response header ${header}`);
+    }
   }
 }
 

@@ -10,6 +10,7 @@
 - [x] Melhorar responsividade e acessibilidade basica do header publico.
 - [x] Adicionar script `start` para smoke local com `next start`.
 - [x] Consolidar smoke test local para rotas publicas principais.
+- [x] Adicionar headers HTTP conservadores de seguranca no Next.
 
 ## Proximos batches seguros
 
