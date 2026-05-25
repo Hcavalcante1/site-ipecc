@@ -50,6 +50,7 @@ npx tsc --noEmit
 npm run validar:whatsapp-meta
 npm run validar:whatsapp-webhook
 npm run validar:whatsapp-webhook-http   # com dev rodando
+npm run validar:whatsapp-persist        # opcional, Supabase + SQL
 ```
 
 Handshake simulado:

@@ -1,6 +1,6 @@
 # Checklist visual — go-live (sem deploy)
 
-**Última validação:** 2026-05-25 · ambiente `http://localhost:3000` · BATCH 13
+**Última validação:** 2026-05-25 · ambiente `http://localhost:3000` · BATCH 15 (smoke 15 rotas)
 
 Conferir em staging/local antes de autorizar produção. Não substitui `PROD-PREP-CHECKLIST.md`.
 
@@ -44,7 +44,7 @@ Conferir em staging/local antes de autorizar produção. Não substitui `PROD-PR
 
 ## Mobile (≤640px)
 
-Validação automatizada limitada; CSS defensivo já em `globals.css` (batches 8–11).
+Validação automatizada limitada; CSS defensivo em `globals.css` (batches 8–11, **15** — heroes `hero-rolling` ≤640px).
 
 - [ ] Menu hambúrguer e topbar sem overflow horizontal — **revisão humana**
 - [ ] Heroes legíveis (título + texto) — **revisão humana**

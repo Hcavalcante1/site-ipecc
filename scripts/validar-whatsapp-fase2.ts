@@ -62,6 +62,17 @@ async function main() {
   });
   assert("opção 3 propostas", r3.state === "topic_propostas");
 
+  resetConversationMemory("5511999990001");
+  const r4 = await handleInboundMessage({
+    waId: "5511999990001",
+    text: "6",
+    messageId: "wamid.TEST_INBOUND_HANDOFF",
+  });
+  assert(
+    "opção 6 handoff",
+    r4.handoff === true && r4.state === "handoff" && r4.repliesCount >= 1
+  );
+
   console.log("\nFase 2 validação concluída (dry-run).");
 }
 

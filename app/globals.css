@@ -766,6 +766,20 @@ a { text-decoration: none; color: inherit; }
   .numeros .container{
     width: min(94%, var(--container-w));
   }
+
+  .hero-rolling__inner{
+    padding: 28px 16px;
+  }
+
+  .hero-rolling .hero__title{
+    font-size: 1.35rem;
+    line-height: 1.25;
+    word-break: break-word;
+  }
+
+  .hero-rolling .hero__text{
+    font-size: 0.95rem;
+  }
 }
 
 /* ===== PÁGINAS PÚBLICAS (listagens) ===== */

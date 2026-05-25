@@ -9,31 +9,47 @@ const BASE = (process.env.PUBLIC_SMOKE_BASE_URL ?? "http://localhost:3000").repl
   ""
 );
 
-const ROUTES: { path: string; expect: number }[] = [
+type SmokeRoute = {
+  path: string;
+  expect?: number;
+  /** Aceita qualquer status listado (ex.: webhook sem env → 503 ou 403). */
+  accept?: number[];
+};
+
+const ROUTES: SmokeRoute[] = [
   { path: "/", expect: 200 },
   { path: "/propostas", expect: 200 },
   { path: "/editais", expect: 200 },
   { path: "/projetos", expect: 200 },
+  { path: "/projetos/valer-mais", expect: 200 },
+  { path: "/projetos/cultura-inclusao-social", expect: 200 },
+  { path: "/projetos/parcerias-institucionais", expect: 200 },
+  { path: "/projetos/oficinas-educacao-cidada", expect: 200 },
   { path: "/transparencia", expect: 200 },
   { path: "/quem-somos", expect: 200 },
   { path: "/noticias", expect: 200 },
   { path: "/eventos", expect: 200 },
   { path: "/contato", expect: 200 },
-  { path: "/api/whatsapp/webhook", expect: 403 },
+  { path: "/api/health", accept: [200, 503] },
+  { path: "/api/whatsapp/webhook", accept: [403, 503] },
 ];
 
 async function main() {
   let skipped = false;
   const failures: string[] = [];
 
-  for (const { path, expect } of ROUTES) {
+  for (const route of ROUTES) {
+    const { path, expect, accept } = route;
     const url = `${BASE}${path}`;
     try {
       const res = await fetch(url, { redirect: "follow" });
-      if (res.status !== expect) {
-        failures.push(`${path} → HTTP ${res.status} (esperado ${expect})`);
+      const allowed = accept ?? (expect !== undefined ? [expect] : [200]);
+      if (!allowed.includes(res.status)) {
+        failures.push(
+          `${path} → HTTP ${res.status} (esperado ${allowed.join(" ou ")})`
+        );
       } else {
-        console.log(`OK: ${path} (${expect})`);
+        console.log(`OK: ${path} (${res.status})`);
       }
     } catch (e) {
       skipped = true;
