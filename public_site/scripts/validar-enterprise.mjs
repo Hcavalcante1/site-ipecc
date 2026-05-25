@@ -37,7 +37,7 @@ for (const file of requiredFiles) assertFile(file);
 for (const file of requiredDocs) assertFile(file);
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-for (const script of ["build", "typecheck", "validar:enterprise", "audit:anexos", "verify:proposta-anexos"]) {
+for (const script of ["build", "start", "typecheck", "validar:enterprise", "audit:anexos", "verify:proposta-anexos", "smoke:local"]) {
   if (!packageJson.scripts?.[script]) {
     failures.push(`Script obrigatório ausente: ${script}`);
   }

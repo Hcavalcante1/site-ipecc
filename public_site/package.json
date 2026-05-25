@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "validar:enterprise": "npm run typecheck && node scripts/validar-enterprise.mjs",
     "audit:anexos": "node scripts/audit-anexos.mjs",
-    "verify:proposta-anexos": "node scripts/verify-proposta-anexos.mjs"
+    "verify:proposta-anexos": "node scripts/verify-proposta-anexos.mjs",
+    "smoke:local": "node scripts/smoke-local.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.8.0",

@@ -10,7 +10,8 @@ Este projeto deve ser operado localmente antes de qualquer acao externa.
 4. Quando houver mudanca documental/storage, executar `npm run audit:anexos`.
 5. Quando houver mudanca em anexos de propostas, executar `npm run verify:proposta-anexos`.
 6. Para mudancas estruturais, executar `npm run build`.
-7. Commitar somente batches coesos e validados.
+7. Para smoke HTTP local, subir `npm run start -- -p 3050` apos build e executar `npm run smoke:local`.
+8. Commitar somente batches coesos e validados.
 
 ## Limites operacionais
 
@@ -24,6 +25,7 @@ Este projeto deve ser operado localmente antes de qualquer acao externa.
 - `validar:enterprise` cobre presenca de rotas publicas, admin minimo, scripts e documentos essenciais.
 - `audit:anexos` verifica anexos versionados em `public/docs`.
 - `verify:proposta-anexos` verifica o fluxo basico de envio/listagem de anexos de propostas.
+- `smoke:local` verifica rotas publicas principais e protecao por redirect das rotas admin.
 
 ## Seguranca de dependencias
 
