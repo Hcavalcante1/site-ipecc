@@ -28,10 +28,14 @@ export default function AdminEditais() {
   );
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [msgErro, setMsgErro] = useState<string | null>(null);
+  const [msgOk, setMsgOk] = useState<string | null>(null);
 
   async function salvarEdital(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+    setMsgErro(null);
+    setMsgOk(null);
 
     let nomeArquivoEdital: string | null = null;
 
@@ -51,7 +55,7 @@ export default function AdminEditais() {
 
       if (error) {
         console.error("UPLOAD PDF:", error);
-        alert(error.message);
+        setMsgErro(error.message);
         setLoading(false);
         return;
       }
@@ -70,9 +74,9 @@ export default function AdminEditais() {
 
     if (error) {
       console.error("INSERT:", error);
-      alert(error.message);
+      setMsgErro(error.message);
     } else {
-      alert("Edital salvo com sucesso");
+      setMsgOk("Edital salvo com sucesso.");
 
       // reset
       setTitulo("");
@@ -96,6 +100,9 @@ export default function AdminEditais() {
       <h2 className="admin-h2">Cadastrar novo edital</h2>
 
       <form onSubmit={salvarEdital} className="admin-card">
+        {msgErro && <p style={{ color: "#fecaca" }}>{msgErro}</p>}
+        {msgOk && <p style={{ color: "#bbf7d0" }}>{msgOk}</p>}
+
         <label>Título do edital</label>
         <input
           value={titulo}

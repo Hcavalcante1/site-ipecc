@@ -16,11 +16,12 @@
 - Navegacao admin mobile preservada com menu horizontal e estados de erro adicionados em propostas.
 - Headers conservadores de seguranca configurados no Next.js (`nosniff`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`) e `X-Powered-By` desabilitado.
 - Endpoint local/staging `/api/health` e script `smoke:health` adicionados para observabilidade basica sem expor segredos.
+- Feedback inline adicionado em cadastro e mural de editais, reduzindo dependencia de `alert`.
 
 ## Proximos batches seguros
 
 1. Rodar `npm run validar:enterprise` apos cada mudanca estrutural e corrigir falhas locais.
-2. Melhorar feedback de salvamento em telas admin que ainda usam `alert`.
+2. Melhorar feedback de salvamento em demais telas admin que ainda usam `alert`.
 3. Expandir scripts documentais para validar fluxos de `docs`/transparencia quando houver contrato de dados definido.
 4. Automatizar smoke HTTP local com lifecycle de servidor dedicado.
 5. Planejar upgrade breaking para Next 16/Firebase 12 como decisao separada, com matriz de compatibilidade.

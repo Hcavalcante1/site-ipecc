@@ -37,6 +37,8 @@ export default function MuralEditaisAdmin() {
   const [status, setStatus] = useState("aberto");
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const [msgErro, setMsgErro] = useState<string | null>(null);
+  const [msgOk, setMsgOk] = useState<string | null>(null);
 
   // 🔹 Carregar editais do Supabase
   useEffect(() => {
@@ -45,6 +47,7 @@ export default function MuralEditaisAdmin() {
 
   async function carregarEditais() {
     setLoading(true);
+    setMsgErro(null);
 
     const { data, error } = await supabase
       .from("editais")
@@ -53,6 +56,7 @@ export default function MuralEditaisAdmin() {
 
     if (error) {
       console.error("Erro ao carregar editais:", error);
+      setMsgErro("Erro ao carregar editais.");
     } else {
       setEditais(data || []);
     }
@@ -64,6 +68,8 @@ export default function MuralEditaisAdmin() {
   async function salvarEdital(e: React.FormEvent) {
     e.preventDefault();
     setSalvando(true);
+    setMsgErro(null);
+    setMsgOk(null);
 
     let arquivo_pdf: string | null = null;
 
@@ -79,8 +85,8 @@ export default function MuralEditaisAdmin() {
         });
 
       if (uploadError) {
-        alert("Erro ao enviar o PDF");
         console.error(uploadError);
+        setMsgErro("Erro ao enviar o PDF.");
         setSalvando(false);
         return;
       }
@@ -98,13 +104,14 @@ export default function MuralEditaisAdmin() {
     });
 
     if (error) {
-      alert("Erro ao salvar edital");
       console.error(error);
+      setMsgErro("Erro ao salvar edital.");
     } else {
       setTitulo("");
       setPeriodo("");
       setStatus("aberto");
       setArquivo(null);
+      setMsgOk("Edital salvo com sucesso.");
       carregarEditais();
     }
 
@@ -113,15 +120,19 @@ export default function MuralEditaisAdmin() {
 
   // 🔹 Atualizar status
   async function atualizarStatus(id: string, novoStatus: string) {
+    setMsgErro(null);
+    setMsgOk(null);
+
     const { error } = await supabase
       .from("editais")
       .update({ status: novoStatus })
       .eq("id", id);
 
     if (error) {
-      alert("Erro ao atualizar status");
       console.error(error);
+      setMsgErro("Erro ao atualizar status.");
     } else {
+      setMsgOk("Status atualizado com sucesso.");
       carregarEditais();
     }
   }
@@ -132,6 +143,9 @@ export default function MuralEditaisAdmin() {
       <p className="admin-subtitle">
         Gerencie os editais que aparecem na página pública.
       </p>
+
+      {msgErro && <p style={{ color: "#fecaca", marginBottom: 12 }}>{msgErro}</p>}
+      {msgOk && <p style={{ color: "#bbf7d0", marginBottom: 12 }}>{msgOk}</p>}
 
       {/* FORMULÁRIO */}
       <form onSubmit={salvarEdital} className="admin-card">
