@@ -11,11 +11,13 @@
 - [x] Adicionar script `start` para smoke local com `next start`.
 - [x] Consolidar smoke test local para rotas publicas principais.
 - [x] Adicionar headers HTTP conservadores de seguranca no Next.
+- [x] Fortalecer validacao local de anexos PDF no envio de propostas.
+- [x] Criar verificacao local dedicada para contrato de anexos de propostas.
 
 ## Proximos batches seguros
 
 - Revisar acessibilidade basica de navegacao e foco no site publico.
-- Criar verificacoes dedicadas para anexos de propostas quando o contrato de storage estiver estabilizado.
+- Expandir validacoes de upload para areas admin/documentais sem alterar RLS ou schema.
 
 ## Bloqueios que exigem decisao externa
 

@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+const PDF_ACCEPT = "application/pdf,.pdf";
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -36,7 +39,42 @@ export default function PropostasPage() {
   const [estatuto, setEstatuto] = useState<File | null>(null);
   const [cnpjArquivo, setCnpjArquivo] = useState<File | null>(null);
 
+function validarPdf(file: File) {
+  const nome = file.name.toLowerCase();
+  const isPdf = file.type === "application/pdf" || nome.endsWith(".pdf");
+
+  if (!isPdf) {
+    throw new Error("Envie apenas arquivos PDF.");
+  }
+
+  if (file.size > MAX_UPLOAD_BYTES) {
+    throw new Error("O arquivo deve ter no maximo 10 MB.");
+  }
+}
+
+function selecionarPdf(
+  file: File | undefined,
+  setter: React.Dispatch<React.SetStateAction<File | null>>,
+  input: HTMLInputElement
+) {
+  if (!file) {
+    setter(null);
+    return;
+  }
+
+  try {
+    validarPdf(file);
+    setter(file);
+  } catch (err) {
+    setter(null);
+    input.value = "";
+    alert(err instanceof Error ? err.message : "Arquivo invalido.");
+  }
+}
+
 async function uploadArquivo(file: File, tipo: string) {
+  validarPdf(file);
+
   // Normaliza o nome do arquivo para evitar erro no Supabase Storage
   const nomeSeguro = file.name
     .normalize("NFD")
@@ -44,7 +82,8 @@ async function uploadArquivo(file: File, tipo: string) {
     .replace(/[^a-zA-Z0-9.-]/g, "-") // troca espaços e símbolos por -
     .toLowerCase();
 
-  const nomeFinal = `${Date.now()}-${tipo}-${nomeSeguro}`;
+  const idArquivo = crypto.randomUUID();
+  const nomeFinal = `${Date.now()}-${idArquivo}-${tipo}-${nomeSeguro}`;
   const path = `public/${nomeFinal}`;
 
   const { error } = await supabase.storage
@@ -172,9 +211,9 @@ async function uploadArquivo(file: File, tipo: string) {
                 </label>
                 <input
                   type="file"
-                  accept="application/pdf"
+                  accept={PDF_ACCEPT}
                   style={{ width: "100%", background: "#fff", padding: 8 }}
-                  onChange={(e) => setArquivo(e.target.files?.[0] ?? null)}
+                  onChange={(e) => selecionarPdf(e.target.files?.[0], setArquivo, e.currentTarget)}
                 />
               </div>
 
@@ -184,9 +223,9 @@ async function uploadArquivo(file: File, tipo: string) {
                 </label>
                 <input
                   type="file"
-                  accept="application/pdf"
+                  accept={PDF_ACCEPT}
                   style={{ width: "100%", background: "#fff", padding: 8 }}
-                  onChange={(e) => setEstatuto(e.target.files?.[0] ?? null)}
+                  onChange={(e) => selecionarPdf(e.target.files?.[0], setEstatuto, e.currentTarget)}
                 />
               </div>
 
@@ -196,9 +235,9 @@ async function uploadArquivo(file: File, tipo: string) {
                 </label>
                 <input
                   type="file"
-                  accept="application/pdf"
+                  accept={PDF_ACCEPT}
                   style={{ width: "100%", background: "#fff", padding: 8 }}
-                  onChange={(e) => setCnpjArquivo(e.target.files?.[0] ?? null)}
+                  onChange={(e) => selecionarPdf(e.target.files?.[0], setCnpjArquivo, e.currentTarget)}
                 />
               </div>
 

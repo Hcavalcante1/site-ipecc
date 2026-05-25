@@ -26,5 +26,5 @@ npm run smoke:local
 
 - `validar:enterprise` executa a checagem TypeScript do projeto.
 - `smoke:local` verifica rotas publicas principais e aceita redirect controlado do `/admin`.
-- `audit:anexos` usa o crawler estatico existente contra `./out`; requer export estatico disponivel antes da execucao.
-- `verify:proposta-anexos` esta ligado ao typecheck ate existir uma suite dedicada de anexos.
+- `audit:anexos` executa a verificacao local do contrato de anexos de propostas.
+- `verify:proposta-anexos` garante validacao local de PDF, limite de tamanho e bucket esperado.
