@@ -43,6 +43,16 @@ for (const script of ["build", "typecheck", "validar:enterprise", "audit:anexos"
   }
 }
 
+const adminLayout = fs.readFileSync(path.join(root, "app", "admin", "layout.tsx"), "utf8");
+const adminLinks = [...adminLayout.matchAll(/href="(\/admin\/[^"]+)"/g)].map((match) => match[1]);
+for (const href of adminLinks) {
+  const routePath = href.replace(/^\/admin\/?/, "");
+  const pagePath = routePath ? path.join(root, "app", "admin", routePath, "page.tsx") : path.join(root, "app", "admin", "page.tsx");
+  if (!fs.existsSync(pagePath)) {
+    failures.push(`Link admin sem página local: ${href}`);
+  }
+}
+
 const gitignore = fs.readFileSync(path.join(root, ".gitignore"), "utf8");
 for (const ignored of ["node_modules", ".next", "tsconfig.tsbuildinfo"]) {
   if (!gitignore.split(/\r?\n/).includes(ignored)) {

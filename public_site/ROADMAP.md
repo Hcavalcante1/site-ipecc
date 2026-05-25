@@ -14,6 +14,7 @@
 - Scripts operacionais foram padronizados em `package.json`.
 - Runbook local define validacoes antes de commits e release.
 - Cabecalho publico e grids principais receberam ajustes responsivos locais.
+- Navegacao admin possui placeholders locais para modulos ainda nao integrados.
 
 ## Proximos batches seguros
 
