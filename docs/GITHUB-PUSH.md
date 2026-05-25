@@ -1,11 +1,12 @@
 # Publicar repositório no GitHub
 
-> Pacote consolidado: `docs/PUSH-PACKAGE-LOCAL.md` (branch, commits, arquivos proibidos no stage).
+> Pacote consolidado: `docs/PUSH-PACKAGE-LOCAL.md` (branch, commits, gates).
 
 ## Pré-requisitos
 
-- `npm run validar:enterprise` → OK
-- `docs/VISUAL-GO-LIVE-CHECKLIST.md` — ressalvas de conteúdo revisadas ou aceitas pela equipe
+- `npm run validar:push-prep` → OK
+- `npm run validar:enterprise` → OK (recomendado antes do push)
+- `npm run auditar:cms-staging` → OK (conteúdo staging limpo)
 - Conta GitHub com repositório vazio criado
 - **Não** incluir `.env.local`, `.cursor/`, `reports/` no commit
 

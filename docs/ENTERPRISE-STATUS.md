@@ -1,26 +1,28 @@
 # Status enterprise — staging local
 
-Atualizado: trilha M1–M4 + CI + admin + ops + prod prep + hardening (código).
+Atualizado: trilha M1–M4 + CI + público BATCH 8–18 + WhatsApp + push prep.
 
 ## Gates automatizados
 
 ```bash
-npm run validar:enterprise    # consolidado (+ validar:publico)
-npm run validar:publico       # clients públicos
-npm run validar:release-prep    # release prep
-npm run validar:seguranca       # RLS + storage
+npm run validar:push-prep       # rápido (código + WhatsApp scripts)
+npm run validar:enterprise      # completo (+ build)
+npm run auditar:cms-staging     # conteúdo teste no Supabase
+npm run validar:publico
+npm run validar:smoke-publico   # requer npm run dev
 ```
 
-## Público / operação (BATCH 8–12)
+## Público / operação (BATCH 8–18)
 
 | Item | Status |
 |------|--------|
 | `validar:publico` | OK |
-| `validar:admin` | OK (script BATCH 12) |
-| Heroes padronizados | OK |
-| Layout legado documentado | `docs/PUBLIC-LAYOUT-LEGADO.md` |
-| Checklist visual go-live | `docs/VISUAL-GO-LIVE-CHECKLIST.md` |
-| Pacote push local | `docs/PUSH-PACKAGE-LOCAL.md` |
+| `validar:admin` | OK |
+| Mobile 375px (BATCH 16) | OK (código) |
+| Smoke 15 rotas (BATCH 15) | OK com dev |
+| CMS limpeza (BATCH 17) | Roteiro + auditoria; **2 convênios teste pendentes** |
+| Pacote push | `docs/PUSH-PACKAGE-LOCAL.md` (HEAD `ba91793`) |
+| WhatsApp Fases 1–3 | Código OK; Meta sandbox pendente |
 
 ## Resultado atual (staging)
 

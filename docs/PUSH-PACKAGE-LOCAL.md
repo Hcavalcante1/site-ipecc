@@ -1,60 +1,83 @@
 # Pacote local — pronto para push (quando autorizar)
 
-**Data:** 2026-05-25 · **Branch:** `master` · **Remote:** nenhum configurado
+**Atualizado:** 2026-05-25 · **Branch:** `master` · **HEAD:** `ba91793` · **Remote:** nenhum
 
 ## Estado do repositório
 
 ```text
 Branch: master
 Remote: (vazio — não executar push sem autorização)
-Working tree limpo para código (após commit BATCH 13)
-Não commitar: .env.local, tsconfig.tsbuildinfo, .cursor/
+Working tree: código commitado (BATCH 8–17 + WhatsApp Fases 1–3)
+Pendente local: .env.local, tsconfig.tsbuildinfo, .cursor/
 ```
 
-## Commits prontos para publicar (ordem cronológica recente)
+## Commits desde BATCH 13 (ordem recente → antigo)
 
 | Hash | Mensagem |
 |------|----------|
-| `071c52a` | docs(ops): BATCH 12 layout legado runbook e validar admin |
-| `4ca73fd` | fix(publico): BATCH 11 projetos publicos edital hero e observabilidade admin |
-| `6a125c6` / `f919dd2` | feat(publico): BATCH 10 home transparencia propostas heroes (duplicata local — considerar squash no push) |
-| `913e063` | feat(publico): BATCH 9 heroes padronizados e mobile publico |
-| `7bf03c7` | feat(publico): BATCH 8 clients, observabilidade e mobile base |
-| `31f5dc2` | docs: README, guia GitHub push e runbook enterprise |
-| `78586af` | fix(security): insert proposta sem SELECT anon e sync por email |
-| `b68011b` | docs(security): SQL aplicavel RLS propostas |
-| `417e5c3` | chore(security): hardening RLS checklist e validar:seguranca |
-| `6f4b46f` | docs(ops): prod prep checklist e gate validar:release-prep |
-| … | Ver `git log --oneline` completo |
+| `ba91793` | docs(cms): BATCH 17 auditoria staging e roteiro limpeza CMS |
+| `089d889` | fix(publico): BATCH 16 mobile 375px grids propostas e transparencia |
+| `cedcb0a` | feat(publico): BATCH 15 smoke projetos filhos e validar persistencia WhatsApp |
+| `43c73cc` | docs(whatsapp): roteiro Meta sandbox, verify GET e log handoff |
+| `d2ce460` | feat(whatsapp): Fase 3 painel admin atendimentos |
+| `a2013b7` | test(whatsapp): validacao webhook E2E e smoke HTTP BATCH 14 |
+| `215378d` | feat(whatsapp): Fase 2 webhook assinatura e dry-run Cloud API |
+| `6304d98` | feat(whatsapp): Fase 1 motor de conversa e simulador local |
+| `010b4d1` | feat(whatsapp): link wa.me e plano chatbot |
+| `985e1fd` | fix(publico): BATCH 13 smoke visual propostas 404 |
+| `071c52a` | docs(ops): BATCH 12 layout legado runbook |
+| `4ca73fd` | fix(publico): BATCH 11 projetos publicos |
+| `6a125c6` / `f919dd2` | feat(publico): BATCH 10 (duplicata — squash opcional) |
+| `913e063` | feat(publico): BATCH 9 heroes padronizados |
+| `7bf03c7` | feat(publico): BATCH 8 clients e observabilidade |
 
-> **Nota:** há dois commits BATCH 10 consecutivos (`6a125c6`, `f919dd2`). Antes do push, avaliar `git rebase -i` para squash **somente se a equipe autorizar** reescrita de histórico.
+> **Squash opcional:** commits duplicados BATCH 10 (`6a125c6`, `f919dd2`) — só com autorização explícita (`git rebase -i`).
 
-## Antes do primeiro push
+## Gates antes do primeiro push
 
-1. [ ] `npm run validar:enterprise` → OK
-2. [ ] `npm run auditar:cms-staging` → OK (sem teste publicado)
-3. [ ] `docs/VISUAL-GO-LIVE-CHECKLIST.md` — ressalvas de conteúdo resolvidas ou aceitas
-4. [ ] `git status` — sem `.env.local` no stage
-5. [ ] Criar repositório vazio no GitHub
-6. [ ] Seguir `docs/GITHUB-PUSH.md` (adicionar `origin` + push)
+```bash
+npm run validar:push-prep      # código (sem CMS)
+npm run auditar:cms-staging    # conteúdo — exit 0 após limpeza manual
+npm run validar:enterprise     # gate completo (inclui build)
+```
+
+Com `npm run dev` ativo, incluir também:
+
+```bash
+npm run validar:smoke-publico
+```
+
+## Checklist
+
+1. [ ] `npm run validar:push-prep` → OK
+2. [ ] `npm run auditar:cms-staging` → OK (2 convênios teste + copy hero — ver BATCH 17)
+3. [ ] `docs/VISUAL-GO-LIVE-CHECKLIST.md` — aceito pela equipe
+4. [ ] `git status` — sem `.env.local` / `.cursor/` no stage
+5. [ ] Repositório vazio no GitHub criado
+6. [ ] `docs/GITHUB-PUSH.md` — `git remote add origin` + push
 
 ## Arquivos que NUNCA devem ir no stage
 
 - `.env.local`
 - `.cursor/`
-- `reports/` (se gerados)
-- `tsconfig.tsbuildinfo` (opcional no `.gitignore`; hoje pode aparecer modificado localmente)
+- `reports/`
+- `tsconfig.tsbuildinfo`
 
-## Verificação rápida de stage
+## Verificação de stage
 
 ```powershell
 git status
 git diff --cached --name-only
-# Deve listar apenas código/docs intencionais
 ```
 
-## Após push (futuro)
+## Após push
 
 - CI: `.github/workflows/ci.yml` (`typecheck` + `build`)
-- Secrets de produção no host de deploy, não no repositório
-- Produção: `docs/PROD-PREP-CHECKLIST.md` (ainda congelado)
+- Secrets só no host de deploy
+- Produção: `docs/PROD-PREP-CHECKLIST.md` (congelado)
+
+## Referências
+
+- CMS: `docs/CMS-LIMPEZA-STAGING.md`
+- WhatsApp: `docs/WHATSAPP-META-SANDBOX.md` (sandbox depois do push)
+- Mobile: `docs/FASE-PUBLICO-BATCH16.md`
