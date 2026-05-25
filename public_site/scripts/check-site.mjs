@@ -29,8 +29,8 @@ const decodeHtmlAttribute = (value) =>
     .replace(/&quot;/g, "\"")
     .replace(/&#39;/g, "'");
 const extractLinks = (html) => {
-  const hrefs = [...html.matchAll(/\shref\s*=\s*"(.*?)"/gi)].map(m => decodeHtmlAttribute(m[1]));
-  const srcs  = [...html.matchAll(/\ssrc\s*=\s*"(.*?)"/gi)].map(m => decodeHtmlAttribute(m[1]));
+  const hrefs = [...html.matchAll(/<a\b[^>]*\shref\s*=\s*"(.*?)"/gi)].map(m => decodeHtmlAttribute(m[1]));
+  const srcs  = [...html.matchAll(/<(?:img|source|video|audio)\b[^>]*\ssrc\s*=\s*"(.*?)"/gi)].map(m => decodeHtmlAttribute(m[1]));
   return { hrefs, srcs };
 };
 
