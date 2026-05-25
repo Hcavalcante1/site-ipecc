@@ -85,6 +85,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <Link href="/admin/certidoes" className="admin-nav-item">📋 Certidões</Link>
             <Link href="/admin/noticias" className="admin-nav-item">📰 Notícias</Link>
             <Link href="/admin/eventos" className="admin-nav-item">📅 Eventos</Link>
+            <Link href="/admin/whatsapp" className="admin-nav-item">
+              💬 WhatsApp
+            </Link>
 	    <Link href="/admin/logs" className="admin-nav-item">
  		📊 Logs
 	    </Link>

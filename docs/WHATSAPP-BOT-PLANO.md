@@ -1,6 +1,6 @@
 # Plano — Chatbot WhatsApp (IPECC)
 
-**Status:** Fase 1 (motor + simulador) e **Fase 2** (webhook + assinatura + dry-run Cloud API) em código. Sandbox Meta pendente.
+**Status:** Fases 1–3 em código (motor, webhook, painel `/admin/whatsapp`). Sandbox Meta e persistência SQL manual pendentes.
 
 ## Diagnóstico (layout público)
 
@@ -101,6 +101,7 @@ npm run validar:whatsapp-bot
 npm run validar:whatsapp-fase2
 npm run validar:whatsapp-webhook
 npm run validar:whatsapp-webhook-http   # opcional, com npm run dev
+npm run validar:whatsapp-fase3
 npm run whatsapp:simulate -- reset oi 1
 ```
 
@@ -117,7 +118,7 @@ Webhook local (com tunnel + secrets): `GET/POST /api/whatsapp/webhook`
 1. [ ] Conta Meta Business + número de teste (sandbox)
 2. [ ] Preencher env servidor e testar `GET` verify no webhook (handshake Meta)
 3. [x] `verifySignature` + menu de respostas (Fase 1–2)
-4. [ ] Logs em `admin_logs` ou tabela `whatsapp_conversas` (SQL em `docs/sql/` + `WHATSAPP_PERSIST_SUPABASE=1`)
+4. [x] Painel `/admin/whatsapp` + tabela `whatsapp_conversations` (SQL em `docs/sql/` + `WHATSAPP_PERSIST_SUPABASE=1`)
 5. [ ] Go-live número real — **somente** após autorização explícita (sem deploy automático)
 
 ## Regras

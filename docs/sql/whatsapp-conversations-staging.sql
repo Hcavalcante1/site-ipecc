@@ -18,4 +18,5 @@ CREATE INDEX IF NOT EXISTS whatsapp_conversations_state_idx
 COMMENT ON TABLE whatsapp_conversations IS
   'Estado do bot WhatsApp por wa_id (Cloud API).';
 
--- RLS: sem acesso anon; service role nas rotas API.
+-- RLS: sem acesso anon; leitura/escrita admin via API (supabaseAdmin + verifyAdminSession).
+-- Não habilitar SELECT para authenticated sem política explícita.
