@@ -16,6 +16,16 @@ npm run build
 npm run smoke:local
 ```
 
+## Preflight de release local
+
+```bash
+npm run preflight:release
+npm run smoke:local
+```
+
+O preflight nao publica, nao faz push e nao acessa producao. Ele agrega typecheck,
+validacao enterprise, auditoria local de anexos e build.
+
 ## Validacoes condicionais
 
 - Ao mexer em documental/storage: `npm run audit:anexos`
@@ -28,3 +38,4 @@ npm run smoke:local
 - `smoke:local` verifica rotas publicas principais e aceita redirect controlado do `/admin`.
 - `audit:anexos` executa a verificacao local do contrato de anexos de propostas.
 - `verify:proposta-anexos` garante validacao local de PDF, limite de tamanho e bucket esperado.
+- `preflight:release` agrega as validacoes locais antes de qualquer preparacao de release.

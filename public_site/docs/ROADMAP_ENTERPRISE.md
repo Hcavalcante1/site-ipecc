@@ -15,6 +15,7 @@
 - [x] Criar verificacao local dedicada para contrato de anexos de propostas.
 - [x] Tornar campos do formulario de propostas responsivos em mobile.
 - [x] Compartilhar validacao PDF entre propostas e uploads de editais no admin.
+- [x] Criar preflight local de release sem publicacao.
 
 ## Proximos batches seguros
 

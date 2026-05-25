@@ -10,7 +10,8 @@
     "validar:enterprise": "npm run typecheck",
     "smoke:local": "node scripts/smoke-http.mjs",
     "audit:anexos": "npm run verify:proposta-anexos",
-    "verify:proposta-anexos": "node scripts/verify-proposta-anexos.mjs"
+    "verify:proposta-anexos": "node scripts/verify-proposta-anexos.mjs",
+    "preflight:release": "npm run validar:enterprise && npm run audit:anexos && npm run build"
   },
   "dependencies": {
     "@supabase/ssr": "0.8.0",
