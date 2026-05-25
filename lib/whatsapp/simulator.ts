@@ -1,24 +1,18 @@
-import { applyTurn, createInitialContext } from "./botEngine";
-import type { ConversationContext, InboundMessage } from "./types";
-
-const sessions = new Map<string, ConversationContext>();
-
-export function getOrCreateSession(waId: string): ConversationContext {
-  let ctx = sessions.get(waId);
-  if (!ctx) {
-    ctx = createInitialContext(waId);
-    sessions.set(waId, ctx);
-  }
-  return ctx;
-}
+import { applyTurn } from "./botEngine";
+import {
+  loadConversation,
+  resetConversationMemory,
+  saveConversation,
+} from "./conversationService";
+import type { InboundMessage } from "./types";
 
 export function resetSession(waId: string): void {
-  sessions.delete(waId);
+  resetConversationMemory(waId);
 }
 
-export function simulateInbound(message: InboundMessage) {
-  const ctx = getOrCreateSession(message.waId);
+export async function simulateInbound(message: InboundMessage) {
+  const ctx = await loadConversation(message.waId);
   const { ctx: nextCtx, result } = applyTurn(ctx, message);
-  sessions.set(message.waId, nextCtx);
+  await saveConversation(nextCtx);
   return { context: nextCtx, result };
 }

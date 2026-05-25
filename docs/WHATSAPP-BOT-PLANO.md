@@ -1,6 +1,6 @@
 # Plano — Chatbot WhatsApp (IPECC)
 
-**Status:** Etapa 1–2 implementadas (link wa.me). **Fase 1 bot:** motor + simulador (`npm run validar:whatsapp-bot`). **Cloud API:** esqueleto webhook.
+**Status:** Fase 1 (motor + simulador) e **Fase 2** (webhook + assinatura + dry-run Cloud API) em código. Sandbox Meta pendente.
 
 ## Diagnóstico (layout público)
 
@@ -98,12 +98,13 @@ app/api/whatsapp/
 ```bash
 npx tsc --noEmit
 npm run validar:whatsapp-bot
-npm run whatsapp:simulate -- oi
-npm run whatsapp:simulate -- 1
-npm run whatsapp:simulate -- site
-npm run whatsapp:simulate -- reset
-npm run dev
+npm run validar:whatsapp-fase2
+npm run whatsapp:simulate -- reset oi 1
 ```
+
+Persistência Supabase (opcional): aplicar `docs/sql/whatsapp-conversations-staging.sql` e `WHATSAPP_PERSIST_SUPABASE=1`.
+
+Webhook local (com tunnel + secrets): `GET/POST /api/whatsapp/webhook`
 
 1. Abrir `http://localhost:3000`
 2. Clicar ícone WhatsApp na topbar

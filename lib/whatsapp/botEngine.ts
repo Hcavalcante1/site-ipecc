@@ -152,7 +152,7 @@ export function processBotTurn(
 
   return {
     replies: toReplies(COPY.unknown(unknownCount)),
-    nextState: ctx.state === "idle" ? "menu" : ctx.state,
+    nextState: ctx.state,
   };
 }
 

@@ -19,10 +19,17 @@ function main() {
     process.exit(0);
   }
 
+  run(args).catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
+}
+
+async function run(args: string[]) {
   if (args.length === 1 && args[0] === "reset") {
     resetSession(WA_ID);
     console.log("Sessão reiniciada.");
-    process.exit(0);
+    return;
   }
 
   for (const raw of args) {
@@ -34,7 +41,7 @@ function main() {
 
     const text = raw === "site" ? SITE_WHATSAPP_DEFAULT_MESSAGE : raw;
 
-    const { context, result } = simulateInbound({
+    const { context, result } = await simulateInbound({
       waId: WA_ID,
       text,
       fromSite: raw === "site",

@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { parseMetaWebhookPayload } from "@/lib/whatsapp/parseWebhook";
+import { verifyMetaWebhookSignature } from "@/lib/whatsapp/verifySignature";
+import { handleInboundMessage } from "@/lib/whatsapp/handleInbound";
+import { logWhatsApp } from "@/lib/whatsapp/logWhatsApp";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-/**
- * Esqueleto WhatsApp Cloud API — sem credenciais reais até configurar env.
- * Docs: docs/WHATSAPP-BOT-PLANO.md
- */
 
 export async function GET(req: NextRequest) {
   const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN;
@@ -27,17 +26,44 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (!process.env.WHATSAPP_APP_SECRET) {
+  const appSecret = process.env.WHATSAPP_APP_SECRET?.trim();
+
+  if (!appSecret) {
     return NextResponse.json(
       { ok: false, reason: "whatsapp_not_configured" },
       { status: 503 }
     );
   }
 
-  // TODO (fase 2): validar X-Hub-Signature-256 com WHATSAPP_APP_SECRET
-  // TODO (fase 2): parsear payload, menu automático, handoff humano
+  const rawBody = await req.text();
+  const signature = req.headers.get("x-hub-signature-256");
 
-  await req.json().catch(() => null);
+  if (!verifyMetaWebhookSignature(rawBody, signature, appSecret)) {
+    logWhatsApp("webhook_invalid_signature", {});
+    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+  }
 
-  return NextResponse.json({ received: true });
+  let body: unknown;
+  try {
+    body = JSON.parse(rawBody);
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const messages = parseMetaWebhookPayload(
+    body as Parameters<typeof parseMetaWebhookPayload>[0]
+  );
+
+  const results = [];
+  for (const inbound of messages) {
+    results.push(await handleInboundMessage(inbound));
+  }
+
+  logWhatsApp("webhook_post", { count: messages.length });
+
+  return NextResponse.json({
+    received: true,
+    processed: messages.length,
+    results,
+  });
 }

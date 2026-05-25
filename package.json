@@ -28,7 +28,8 @@
     "validar:admin": "npx --yes tsx scripts/validar-admin-clients-staging.ts",
     "validar:enterprise": "npx --yes tsx scripts/validar-enterprise-staging.ts",
     "whatsapp:simulate": "npx --yes tsx scripts/whatsapp-simulate-inbound.ts",
-    "validar:whatsapp-bot": "npx --yes tsx scripts/validar-whatsapp-bot-fase1.ts"
+    "validar:whatsapp-bot": "npx --yes tsx scripts/validar-whatsapp-bot-fase1.ts",
+    "validar:whatsapp-fase2": "npx --yes tsx scripts/validar-whatsapp-fase2.ts"
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.15.0",
