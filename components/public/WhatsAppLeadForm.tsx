@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useId, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useId, useState, type FormEvent } from "react";
 import {
   PUBLIC_WHATSAPP_SUBJECT_OPTIONS,
   buildWhatsAppUrlFromLead,
@@ -20,6 +20,7 @@ const EMPTY_FORM: WhatsAppLeadFormFields = {
 
 type WhatsAppLeadFormProps = {
   onSuccess?: () => void;
+  initialAssunto?: string;
 };
 
 function WhatsAppSubmitIcon() {
@@ -30,13 +31,33 @@ function WhatsAppSubmitIcon() {
   );
 }
 
-export default function WhatsAppLeadForm({ onSuccess }: WhatsAppLeadFormProps) {
+export default function WhatsAppLeadForm({
+  onSuccess,
+  initialAssunto = "",
+}: WhatsAppLeadFormProps) {
   const formId = useId();
-  const [form, setForm] = useState<WhatsAppLeadFormFields>(EMPTY_FORM);
+  const [form, setForm] = useState<WhatsAppLeadFormFields>(() => ({
+    ...EMPTY_FORM,
+    assunto: initialAssunto,
+  }));
   const [errors, setErrors] = useState<
     Partial<Record<keyof WhatsAppLeadFormFields, string>>
   >({});
   const [showAlert, setShowAlert] = useState(false);
+
+  useEffect(() => {
+    setForm((prev) => ({
+      ...EMPTY_FORM,
+      assunto: initialAssunto,
+      nome: prev.nome,
+      organizacao: prev.organizacao,
+      telefone: prev.telefone,
+      email: prev.email,
+      mensagem: prev.mensagem,
+    }));
+    setErrors({});
+    setShowAlert(false);
+  }, [initialAssunto]);
 
   const updateField = useCallback(
     (field: keyof WhatsAppLeadFormFields, value: string) => {

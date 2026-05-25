@@ -249,8 +249,9 @@ export default async function ProjetosPage() {
             <p>{ctaExtra.textoCta || "Apresente sua proposta."}</p>
 
             <PublicWhatsAppCtaLink
-              href={ctaExtra.linkBotao || "/contato"}
               className="btn-cta"
+              href={ctaExtra.linkBotao || "/contato"}
+              assunto="projetos"
             >
               {ctaExtra.rotuloBotao || "Fale com o IPECC"}
             </PublicWhatsAppCtaLink>

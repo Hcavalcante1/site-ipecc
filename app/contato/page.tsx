@@ -447,6 +447,7 @@ export default function ContatoPage() {
             <PublicWhatsAppCtaLink
               href={ctaExtra?.botao_link || "/contato"}
               className="btn-cta"
+              assunto="equipe"
               style={{
                 width: "fit-content",
                 display: "inline-block",

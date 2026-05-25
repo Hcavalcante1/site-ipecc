@@ -104,6 +104,17 @@ export function isWhatsAppLeadHref(href: string): boolean {
   return u === "/contato" || u.endsWith("/contato");
 }
 
+/** Sugere assunto do pré-cadastro conforme a rota pública atual. */
+export function getWhatsAppSubjectFromPathname(pathname: string): string {
+  const path = pathname.split("?")[0].toLowerCase();
+  if (path.startsWith("/projetos")) return "projetos";
+  if (path.startsWith("/editais")) return "editais";
+  if (path.startsWith("/propostas")) return "propostas";
+  if (path.startsWith("/transparencia")) return "transparencia";
+  if (path.startsWith("/eventos")) return "eventos";
+  return "";
+}
+
 export function getWhatsAppSubjectLabel(assuntoId: string): string {
   const fromList = PUBLIC_WHATSAPP_SUBJECT_OPTIONS.find(
     (o) => o.id === assuntoId

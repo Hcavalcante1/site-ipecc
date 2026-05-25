@@ -9,6 +9,7 @@ export {
   getSiteWhatsAppNumber,
   getWhatsAppSubjectLabel,
   isWhatsAppLeadHref,
+  getWhatsAppSubjectFromPathname,
   normalizeWhatsAppNumber,
   validateWhatsAppLeadForm,
 } from "./publicWhatsApp";

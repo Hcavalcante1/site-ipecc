@@ -6,6 +6,7 @@ export {
   WhatsAppChatProvider,
   useWhatsAppChat,
 } from "./WhatsAppFloatingChat";
+export type { WhatsAppOpenPanelOptions } from "./WhatsAppFloatingChat";
 export { default as WhatsAppLeadForm } from "./WhatsAppLeadForm";
 export { default as WhatsAppLeadTrigger } from "./WhatsAppLeadTrigger";
 export { default as PublicWhatsAppCtaLink } from "./PublicWhatsAppCtaLink";

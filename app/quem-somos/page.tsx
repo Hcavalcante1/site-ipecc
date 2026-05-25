@@ -188,6 +188,7 @@ export default function QuemSomosPage() {
             <PublicWhatsAppCtaLink
               href={cta.extra?.botaoLink || "/contato"}
               className="btn-cta"
+              assunto="equipe"
             >
               {cta.extra?.botaoTexto}
             </PublicWhatsAppCtaLink>

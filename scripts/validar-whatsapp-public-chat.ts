@@ -11,6 +11,7 @@ import {
   buildWhatsAppUrlFromLead,
   formatWhatsAppLeadMessage,
   getWhatsAppUrlForChatOption,
+  getWhatsAppSubjectFromPathname,
   isWhatsAppLeadHref,
   validateWhatsAppLeadForm,
 } from "../lib/whatsapp/publicWhatsApp";
@@ -103,6 +104,9 @@ function main() {
   assert("href wa.me", isWhatsAppLeadHref("https://wa.me/5511999990000"));
   assert("href /contato", isWhatsAppLeadHref("/contato"));
   assert("href projetos não", !isWhatsAppLeadHref("/projetos"));
+  assert("rota /projetos", getWhatsAppSubjectFromPathname("/projetos") === "projetos");
+  assert("rota /editais", getWhatsAppSubjectFromPathname("/editais") === "editais");
+  assert("rota home", getWhatsAppSubjectFromPathname("/") === "");
 
   console.log("\nPainel público WhatsApp (lead form) validado.");
 }

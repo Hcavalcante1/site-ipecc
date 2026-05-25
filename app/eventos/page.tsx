@@ -69,7 +69,7 @@ export default async function EventosPage() {
                     </p>
 
                     {e.whatsapp ? (
-                      <WhatsAppLeadTrigger className="public-card__link">
+                      <WhatsAppLeadTrigger className="public-card__link" assunto="eventos">
                         💬 Falar no WhatsApp
                       </WhatsAppLeadTrigger>
                     ) : null}

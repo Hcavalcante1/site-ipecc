@@ -10,15 +10,22 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { usePathname } from "next/navigation";
 import {
   buildWhatsAppUrl,
+  getWhatsAppSubjectFromPathname,
 } from "@/lib/whatsapp/publicWhatsApp";
 import WhatsAppLeadForm from "./WhatsAppLeadForm";
 import styles from "./WhatsAppFloatingChat.module.css";
 
+export type WhatsAppOpenPanelOptions = {
+  assunto?: string;
+};
+
 type WhatsAppChatContextValue = {
   isOpen: boolean;
-  openPanel: () => void;
+  defaultAssunto: string;
+  openPanel: (options?: WhatsAppOpenPanelOptions) => void;
   closePanel: () => void;
   togglePanel: () => void;
 };
@@ -36,15 +43,33 @@ export function useWhatsAppChat(): WhatsAppChatContextValue {
 }
 
 export function WhatsAppChatProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [defaultAssunto, setDefaultAssunto] = useState("");
 
-  const openPanel = useCallback(() => setIsOpen(true), []);
-  const closePanel = useCallback(() => setIsOpen(false), []);
-  const togglePanel = useCallback(() => setIsOpen((v) => !v), []);
+  const openPanel = useCallback(
+    (options?: WhatsAppOpenPanelOptions) => {
+      const fromRoute = getWhatsAppSubjectFromPathname(pathname);
+      const assunto = options?.assunto?.trim() || fromRoute;
+      setDefaultAssunto(assunto);
+      setIsOpen(true);
+    },
+    [pathname]
+  );
+
+  const closePanel = useCallback(() => {
+    setIsOpen(false);
+    setDefaultAssunto("");
+  }, []);
+
+  const togglePanel = useCallback(() => {
+    if (isOpen) closePanel();
+    else openPanel();
+  }, [isOpen, closePanel, openPanel]);
 
   return (
     <WhatsAppChatContext.Provider
-      value={{ isOpen, openPanel, closePanel, togglePanel }}
+      value={{ isOpen, defaultAssunto, openPanel, closePanel, togglePanel }}
     >
       {children}
     </WhatsAppChatContext.Provider>
@@ -52,19 +77,25 @@ export function WhatsAppChatProvider({ children }: { children: ReactNode }) {
 }
 
 export default function WhatsAppFloatingChat() {
-  const { isOpen, closePanel } = useWhatsAppChat();
+  const { isOpen, closePanel, defaultAssunto } = useWhatsAppChat();
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
 
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") closePanel();
     };
 
     document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = prevOverflow;
+    };
   }, [isOpen, closePanel]);
 
   if (!isOpen) return null;
@@ -103,7 +134,11 @@ export default function WhatsAppFloatingChat() {
               ×
             </button>
           </div>
-          <WhatsAppLeadForm onSuccess={closePanel} />
+          <WhatsAppLeadForm
+            key={defaultAssunto || "default"}
+            initialAssunto={defaultAssunto}
+            onSuccess={closePanel}
+          />
           <div className={styles.footer}>
             <a
               href={buildWhatsAppUrl()}

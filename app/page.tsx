@@ -332,6 +332,7 @@ const { data: eventos } = await supabase
                 <PublicWhatsAppCtaLink
                   href={card.linkUrl}
                   className="card__link"
+                  assunto={card.id === "contato" ? "equipe" : undefined}
                 >
                   {card.linkTexto}
                 </PublicWhatsAppCtaLink>
@@ -478,6 +479,7 @@ const { data: eventos } = await supabase
             {/* ✅ NOVO: WHATSAPP */}
             {e.whatsapp && (
               <WhatsAppLeadTrigger
+                assunto="eventos"
                 style={{
                   display: "inline-block",
                   marginTop: 6,
