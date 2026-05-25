@@ -4,7 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build"
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "validar:enterprise": "npm run typecheck",
+    "smoke:site": "node scripts/check-site.mjs --http http://localhost:3000"
   },
   "dependencies": {
     "@supabase/ssr": "0.8.0",
