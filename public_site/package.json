@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "start": "next start",
     "typecheck": "node ./node_modules/typescript/bin/tsc --noEmit",
     "validar:enterprise": "npm run typecheck",
     "audit:anexos": "node scripts/check-site.mjs --dir ./out",

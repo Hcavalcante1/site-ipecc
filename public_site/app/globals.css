@@ -4,6 +4,28 @@ html, body { font-family: "Poppins", sans-serif; color: #111827; background: #ff
 img { max-width: 100%; display: block; }
 a { text-decoration: none; color: inherit; }
 
+:focus-visible{
+  outline: 3px solid var(--blue-3);
+  outline-offset: 3px;
+}
+
+.skip-link{
+  position: fixed;
+  left: 16px;
+  top: 12px;
+  z-index: 2000;
+  transform: translateY(-140%);
+  background: #fff;
+  color: var(--blue-navy);
+  border: 2px solid var(--blue-3);
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-weight: 800;
+  box-shadow: var(--shadow-lg);
+  transition: transform .2s ease;
+}
+.skip-link:focus{ transform: translateY(0); }
+
 /* ===== VARS ===== */
 :root{
   --container-w: 1140px;
@@ -47,8 +69,16 @@ a { text-decoration: none; color: inherit; }
   gap: 30px; height: 88px;
 }
 .brand__logo{ height: 120px; width: auto; object-fit: contain; } /* ajuste aqui se quiser maior */
-.menubar{ display: flex; align-items: center; gap: 28px; }
-.menu__link{ color: var(--blue-navy); font-weight: 600; font-size: 1rem; transition: .2s; }
+.menubar{ display: flex; align-items: center; justify-content: flex-end; gap: 28px; min-width: 0; }
+.menu__link{
+  color: var(--blue-navy);
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1.2;
+  border-radius: 999px;
+  padding: 8px 2px;
+  transition: .2s;
+}
 .menu__link:hover{ color: var(--blue-3); }
 
 /* ===== TARJA AZUL DEGRADÊ (rola com o conteúdo) ===== */
@@ -151,14 +181,24 @@ a { text-decoration: none; color: inherit; }
 
 /* ===== RESPONSIVO ===== */
 @media (max-width: 992px){
-  .menubar__inner{ height: 80px; }
-  .brand__logo{ height: 100px; } /* diminui em telas menores */
-  .menubar{ gap: 16px; flex-wrap: wrap; justify-content: center; }
+  .menubar__inner{ height: auto; min-height: 92px; padding: 10px 0 12px; align-items: flex-start; }
+  .brand{ flex: 0 0 auto; }
+  .brand__logo{ height: 86px; } /* diminui em telas menores */
+  .menubar{ gap: 10px; flex-wrap: wrap; justify-content: flex-end; padding-top: 14px; }
+  .menu__link{ background: #f8fafc; padding: 8px 12px; font-size: .95rem; }
   .hero-rolling__inner{ padding: 32px 18px; }
   .impacto__imagem{ height: 320px; }
   .sobre-cta__grid{ grid-template-columns: 1fr; }
 }
 @media (max-width: 640px){
+  .topbar{ height: 36px; }
+  .topbar__inner{ justify-content: center; }
+  .menubar__inner{ flex-direction: column; align-items: center; gap: 6px; }
+  .brand__logo{ height: 74px; }
+  .menubar{ justify-content: center; padding-top: 0; gap: 8px; }
+  .menu__link{ font-size: .9rem; padding: 8px 10px; }
+  .hero-rolling{ padding-top: 14px; }
+  .hero__title{ font-size: 1.65rem; }
   .cards__grid{ grid-template-columns: 1fr; }
   .destaques__grid{ grid-template-columns: 1fr; }
   .impacto__imagem{ height: 260px; }
