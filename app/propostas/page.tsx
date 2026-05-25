@@ -690,6 +690,7 @@ export default function PropostasPage() {
   function renderNavegacaoEtapas() {
     return (
       <nav
+        className="public-form-steps"
         style={{
           display: "flex",
           flexWrap: "wrap",
@@ -938,14 +939,7 @@ export default function PropostasPage() {
                     <option value="pessoa_fisica">Pessoa Física</option>
                   </select>
                 </div>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 16,
-                    marginBottom: 16,
-                  }}
-                >
+                <div className="public-form-grid-2">
                   <input
                     placeholder="Nome da proponente"
                     required
@@ -967,14 +961,7 @@ export default function PropostasPage() {
                     }
                   />
                 </div>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 16,
-                    marginBottom: 16,
-                  }}
-                >
+                <div className="public-form-grid-2">
                   <input
                     placeholder="E-mail"
                     required

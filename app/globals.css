@@ -661,7 +661,7 @@ a { text-decoration: none; color: inherit; }
 /* ===== CELULAR ===== */
 @media (max-width: 640px){
   .cards__grid{
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
   }
 
   .destaques__grid{
@@ -755,6 +755,7 @@ a { text-decoration: none; color: inherit; }
   .public-form-shell__inner{
     padding: 20px 16px;
     border-radius: 12px;
+    max-width: 100%;
   }
 
   .hero-rolling .btn--light{
@@ -769,6 +770,8 @@ a { text-decoration: none; color: inherit; }
 
   .hero-rolling__inner{
     padding: 28px 16px;
+    width: min(94%, var(--container-w));
+    min-height: 200px;
   }
 
   .hero-rolling .hero__title{
@@ -779,6 +782,55 @@ a { text-decoration: none; color: inherit; }
 
   .hero-rolling .hero__text{
     font-size: 0.95rem;
+  }
+
+  .sobre div[style*="grid-template-columns"]{
+    grid-template-columns: 1fr !important;
+  }
+
+  .public-form-grid-2{
+    grid-template-columns: 1fr;
+  }
+
+  .public-form-steps{
+    width: 100%;
+  }
+
+  .public-form-steps button{
+    flex: 1 1 100%;
+    max-width: 100%;
+    text-align: left;
+    line-height: 1.35;
+  }
+
+  .public-form-shell h2{
+    font-size: 1.25rem !important;
+  }
+
+  .public-card__title{
+    font-size: 1.125rem;
+  }
+
+  .btn.btn--light{
+    max-width: 100%;
+    white-space: normal;
+    line-height: 1.35;
+    padding: 12px 18px;
+  }
+
+  .public-page-actions{
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .public-page-actions a{
+    width: 100%;
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  .container{
+    width: min(94%, var(--container-w));
   }
 }
 
@@ -935,6 +987,13 @@ a { text-decoration: none; color: inherit; }
 }
 
 /* ===== FORMULÁRIO PÚBLICO (propostas) ===== */
+.public-form-grid-2{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
 .public-form-shell{
   padding: 0 16px 60px;
 }

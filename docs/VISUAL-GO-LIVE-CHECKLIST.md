@@ -1,6 +1,6 @@
 # Checklist visual — go-live (sem deploy)
 
-**Última validação:** 2026-05-25 · ambiente `http://localhost:3000` · BATCH 15 (smoke 15 rotas)
+**Última validação:** 2026-05-25 · ambiente `http://localhost:3000` · BATCH 16 (mobile 375px)
 
 Conferir em staging/local antes de autorizar produção. Não substitui `PROD-PREP-CHECKLIST.md`.
 
@@ -12,7 +12,7 @@ Conferir em staging/local antes de autorizar produção. Não substitui `PROD-PR
 |--------------|---------|
 | **Go-live visual (código/layout)** | **Aprovado com ressalvas** |
 | **Conteúdo CMS (staging)** | **Revisão humana obrigatória** |
-| **Mobile ≤640px** | **Revisão humana recomendada** (CSS já aplicado nos batches 8–11) |
+| **Mobile ≤640px** | **Ajustes BATCH 16** (375px validado no browser) | Revisão humana no celular físico recomendada |
 
 ---
 
@@ -44,13 +44,13 @@ Conferir em staging/local antes de autorizar produção. Não substitui `PROD-PR
 
 ## Mobile (≤640px)
 
-Validação automatizada limitada; CSS defensivo em `globals.css` (batches 8–11, **15** — heroes `hero-rolling` ≤640px).
+Validação automatizada + browser **375px** (BATCH 16); CSS defensivo em `globals.css` (batches 8–11, 15–16).
 
-- [ ] Menu hambúrguer e topbar sem overflow horizontal — **revisão humana**
-- [ ] Heroes legíveis (título + texto) — **revisão humana**
-- [ ] Grids `.public-card-grid` em 1 coluna — **revisão humana**
-- [ ] Formulário propostas utilizável — **revisão humana**
-- [ ] Tabelas transparência com scroll horizontal — **revisão humana**
+- [x] Menu hambúrguer e topbar — **OK** (scroll horizontal na tarja social, intencional)
+- [x] Heroes legíveis — **OK** após BATCH 16
+- [x] Grids `.public-card-grid` em 1 coluna — **OK**
+- [x] Formulário propostas utilizável — **OK** (grids 1 col + pills largura total)
+- [x] Tabelas transparência com scroll horizontal — **OK** (`.public-content table`)
 
 ---
 
