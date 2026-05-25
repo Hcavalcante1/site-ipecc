@@ -9,10 +9,10 @@
 - [x] Atualizar Next 14 e Firebase 10 para patches compativeis.
 - [x] Melhorar responsividade e acessibilidade basica do header publico.
 - [x] Adicionar script `start` para smoke local com `next start`.
+- [x] Consolidar smoke test local para rotas publicas principais.
 
 ## Proximos batches seguros
 
-- Consolidar smoke test local para rotas publicas principais.
 - Revisar acessibilidade basica de navegacao e foco no site publico.
 - Criar verificacoes dedicadas para anexos de propostas quando o contrato de storage estiver estabilizado.
 

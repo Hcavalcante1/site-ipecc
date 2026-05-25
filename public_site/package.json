@@ -8,6 +8,7 @@
     "start": "next start",
     "typecheck": "node ./node_modules/typescript/bin/tsc --noEmit",
     "validar:enterprise": "npm run typecheck",
+    "smoke:local": "node scripts/smoke-http.mjs",
     "audit:anexos": "node scripts/check-site.mjs --dir ./out",
     "verify:proposta-anexos": "npm run typecheck"
   },
