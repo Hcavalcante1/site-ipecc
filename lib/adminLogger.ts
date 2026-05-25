@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
+import { logAdminAction } from "@/lib/observability/adminActionLog";
 
 export async function logAction({
   acao,
@@ -23,7 +24,20 @@ export async function logAction({
       registro_id,
       detalhes,
     });
+
+    logAdminAction({
+      action: acao,
+      table: tabela,
+      recordId: registro_id,
+      userEmail: user?.email || "desconhecido",
+    });
   } catch (e) {
     console.error("Erro ao logar ação:", e);
+    logAdminAction({
+      action: acao,
+      table: tabela,
+      recordId: registro_id,
+      error: e instanceof Error ? e.message : String(e),
+    });
   }
 }

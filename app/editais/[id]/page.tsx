@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
+import { PublicHeroRolling } from "@/components/public";
 
 export default function EditalDetalhePage() {
   const params = useParams();
@@ -58,17 +59,10 @@ export default function EditalDetalhePage() {
 
   return (
     <>
-      <section className="hero-rolling">
-        <div
-          className="hero-rolling__inner"
-          style={{
-            ["--hero-bg-image" as any]:
-              'url("/media/heroes/editais/hero.webp")',
-          }}
-        >
-          <h1 className="hero__title">{edital.titulo}</h1>
-        </div>
-      </section>
+      <PublicHeroRolling
+        bgImage="/media/heroes/editais/hero.webp"
+        title={edital.titulo}
+      />
 
       <section className="sobre">
         <div className="container">
@@ -90,14 +84,7 @@ export default function EditalDetalhePage() {
               </p>
             </div>
 
-            <div
-              style={{
-                padding: "0 16px 16px",
-                display: "flex",
-                gap: 12,
-                flexWrap: "wrap",
-              }}
-            >
+            <div className="public-page-actions">
               {arquivo && (
                 <a
                  href={`/api/download/editais/${arquivo}`}
