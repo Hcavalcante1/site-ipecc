@@ -99,6 +99,8 @@ app/api/whatsapp/
 npx tsc --noEmit
 npm run validar:whatsapp-bot
 npm run validar:whatsapp-fase2
+npm run validar:whatsapp-webhook
+npm run validar:whatsapp-webhook-http   # opcional, com npm run dev
 npm run whatsapp:simulate -- reset oi 1
 ```
 
@@ -113,9 +115,9 @@ Webhook local (com tunnel + secrets): `GET/POST /api/whatsapp/webhook`
 ## Próximos passos (ordem)
 
 1. [ ] Conta Meta Business + número de teste (sandbox)
-2. [ ] Preencher env servidor e testar `GET` verify no webhook
-3. [ ] Implementar `verifySignature` + menu de respostas
-4. [ ] Logs em `admin_logs` ou tabela `whatsapp_conversas` (opcional)
+2. [ ] Preencher env servidor e testar `GET` verify no webhook (handshake Meta)
+3. [x] `verifySignature` + menu de respostas (Fase 1–2)
+4. [ ] Logs em `admin_logs` ou tabela `whatsapp_conversas` (SQL em `docs/sql/` + `WHATSAPP_PERSIST_SUPABASE=1`)
 5. [ ] Go-live número real — **somente** após autorização explícita (sem deploy automático)
 
 ## Regras

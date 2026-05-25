@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { parseMetaWebhookPayload } from "@/lib/whatsapp/parseWebhook";
-import { verifyMetaWebhookSignature } from "@/lib/whatsapp/verifySignature";
-import { handleInboundMessage } from "@/lib/whatsapp/handleInbound";
-import { logWhatsApp } from "@/lib/whatsapp/logWhatsApp";
+import { processWebhookPost } from "@/lib/whatsapp/processWebhookPost";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -26,44 +23,28 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const appSecret = process.env.WHATSAPP_APP_SECRET?.trim();
-
-  if (!appSecret) {
-    return NextResponse.json(
-      { ok: false, reason: "whatsapp_not_configured" },
-      { status: 503 }
-    );
-  }
-
   const rawBody = await req.text();
   const signature = req.headers.get("x-hub-signature-256");
-
-  if (!verifyMetaWebhookSignature(rawBody, signature, appSecret)) {
-    logWhatsApp("webhook_invalid_signature", {});
-    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
-  }
-
-  let body: unknown;
-  try {
-    body = JSON.parse(rawBody);
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  const messages = parseMetaWebhookPayload(
-    body as Parameters<typeof parseMetaWebhookPayload>[0]
+  const result = await processWebhookPost(
+    rawBody,
+    signature,
+    process.env.WHATSAPP_APP_SECRET
   );
 
-  const results = [];
-  for (const inbound of messages) {
-    results.push(await handleInboundMessage(inbound));
+  if (!result.ok) {
+    if (result.status === 503) {
+      return NextResponse.json(
+        { ok: false, reason: result.reason },
+        { status: 503 }
+      );
+    }
+    const err = result.status === 400 || result.status === 401 ? result.error : "error";
+    return NextResponse.json({ error: err }, { status: result.status });
   }
-
-  logWhatsApp("webhook_post", { count: messages.length });
 
   return NextResponse.json({
     received: true,
-    processed: messages.length,
-    results,
+    processed: result.processed,
+    results: result.results,
   });
 }

@@ -29,7 +29,10 @@
     "validar:enterprise": "npx --yes tsx scripts/validar-enterprise-staging.ts",
     "whatsapp:simulate": "npx --yes tsx scripts/whatsapp-simulate-inbound.ts",
     "validar:whatsapp-bot": "npx --yes tsx scripts/validar-whatsapp-bot-fase1.ts",
-    "validar:whatsapp-fase2": "npx --yes tsx scripts/validar-whatsapp-fase2.ts"
+    "validar:whatsapp-fase2": "npx --yes tsx scripts/validar-whatsapp-fase2.ts",
+    "validar:whatsapp-webhook": "npx --yes tsx scripts/validar-whatsapp-webhook-route.ts",
+    "validar:whatsapp-webhook-http": "npx --yes tsx scripts/validar-whatsapp-webhook-http.ts",
+    "validar:smoke-publico": "npx --yes tsx scripts/validar-smoke-publico-http.ts"
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.15.0",

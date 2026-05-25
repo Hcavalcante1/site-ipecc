@@ -30,7 +30,7 @@ Conferir em staging/local antes de autorizar produção. Não substitui `PROD-PR
 | `/transparencia` | 200 | OK | Seções e links; **dados de teste no CMS** (TESTE, TEST1…) |
 | `/noticias` | 200 | OK | Grid `public-card` |
 | `/eventos` | 200 | OK | Grid + metadados |
-| `/contato` | — | Não revalidado neste batch | Incluir na rodada mobile |
+| `/contato` | 200 | OK | Smoke BATCH 14 (`validar:smoke-publico`) |
 
 - [x] Home: hero, cards, destaques, números, depoimentos, CTA
 - [x] `/projetos` + 4 páginas filhas (`/projetos/*`)
@@ -38,7 +38,7 @@ Conferir em staging/local antes de autorizar produção. Não substitui `PROD-PR
 - [x] `/transparencia` (tabelas e links)
 - [x] `/propostas` (etapas do formulário)
 - [x] `/noticias`, `/eventos`
-- [ ] `/contato` — pendente smoke dedicado (fora da lista obrigatória do batch, mas no checklist original)
+- [x] `/contato` — smoke HTTP BATCH 14 (`validar:smoke-publico`)
 
 ---
 
