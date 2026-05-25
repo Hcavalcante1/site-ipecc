@@ -13,6 +13,7 @@
 - [x] Adicionar headers HTTP conservadores de seguranca no Next.
 - [x] Fortalecer validacao local de anexos PDF no envio de propostas.
 - [x] Criar verificacao local dedicada para contrato de anexos de propostas.
+- [x] Tornar campos do formulario de propostas responsivos em mobile.
 
 ## Proximos batches seguros
 

@@ -176,12 +176,12 @@ async function uploadArquivo(file: File, tipo: string) {
             style={{ display: "flex", flexDirection: "column", gap: 24 }}
           >
             {/* CAMPOS */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div className="proposta-form__grid">
               <input data-field="nome" placeholder="Empresa" required style={inputStyle} />
               <input data-field="cnpj" placeholder="CNPJ" required style={inputStyle} />
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div className="proposta-form__grid">
               <input data-field="email" placeholder="E-mail" required style={inputStyle} />
               <input data-field="telefone" placeholder="Telefone" required style={inputStyle} />
             </div>
