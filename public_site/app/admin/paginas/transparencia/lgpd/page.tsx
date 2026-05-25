@@ -217,6 +217,7 @@ export default function TransparenciaLgpdAdmin() {
 
       <input
         type="file"
+        accept="application/pdf"
         hidden
         ref={fileRef}
         onChange={(e) => {

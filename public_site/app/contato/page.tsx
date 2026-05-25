@@ -84,7 +84,7 @@ export default function ContatoPage() {
               {/* Substitua o src pelo embed do Google Maps quando desejar */}
               <div style={{ borderRadius: 12, overflow: "hidden", boxShadow: "0 10px 30px rgba(0,0,0,.08)" }}>
                 <img
-                  src="/media/mapa-placeholder.jpg"
+                  src="/media/hero-poster.jpg"
                   alt="Mapa de localização da APECC"
                   style={{ width: "100%", height: 220, objectFit: "cover" }}
                 />

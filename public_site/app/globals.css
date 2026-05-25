@@ -92,7 +92,7 @@ a { text-decoration: none; color: inherit; }
 .numeros .container{
   background:
     linear-gradient(90deg, rgba(11,107,255,.90), rgba(19,135,214,.90), rgba(1,194,164,.90)),
-    url("/media/fundo-numeros.jpg") center/cover no-repeat;
+    url("/media/hero-poster.jpg") center/cover no-repeat;
   color: #fff; border-radius: var(--radius); box-shadow: var(--shadow-lg);
   padding: 40px 20px; text-align: center;
 }

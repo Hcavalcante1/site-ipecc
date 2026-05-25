@@ -155,6 +155,7 @@ export default function TransparenciaCtaAdmin() {
 
       <input
         type="file"
+        accept="application/pdf"
         hidden
         ref={fileRef}
         onChange={(e) => {

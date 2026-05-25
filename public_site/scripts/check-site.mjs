@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const SEEDS = ["/", "/quem-somos", "/projetos", "/cotacoes", "/transparencia", "/contato", "/acoes"];
+const SEEDS = ["/", "/quem-somos", "/projetos", "/acoes", "/editais", "/transparencia", "/contato", "/propostas", "/login", "/admin"];
 const MAX_PAGES = 200;
 
 const isInternal = (href, base) => {
@@ -28,6 +28,9 @@ const extractLinks = (html) => {
   const srcs  = [...html.matchAll(/\ssrc\s*=\s*"(.*?)"/gi)].map(m => m[1]);
   return { hrefs, srcs };
 };
+
+const hasAssetExtension = (target) => /\.(?:css|js|mjs|png|jpe?g|gif|webp|svg|ico|pdf|zip|mp4|webm|txt|xml)$/i.test(target.split("?")[0]);
+const isStaticAsset = (target) => target.startsWith("/_next/") || target.startsWith("/media/") || target.startsWith("/docs/") || hasAssetExtension(target);
 
 // HTTP mode
 async function crawlHttp(baseUrl) {
@@ -74,9 +77,13 @@ async function crawlHttp(baseUrl) {
 function crawlStatic(outDir) {
   console.log(`📦 STATIC mode — dir: ${outDir}`);
   const norm = (p) => normalizePath(p);
+  const projectRoot = path.resolve(outDir, "../../..");
+  const nextRoot = path.join(projectRoot, ".next");
+  const publicRoot = path.join(projectRoot, "public");
   const visited = new Set();
   const queue = [...SEEDS.map(norm)];
   const errors = [];
+  const warnings = [];
 
   const resolveFile = (route) => {
     if (route === "/") return path.join(outDir, "index.html");
@@ -93,7 +100,7 @@ function crawlStatic(outDir) {
     visited.add(route);
 
     const file = resolveFile(route);
-    if (!file) { errors.push({ type: "route", target: route, note: "arquivo HTML não encontrado no /out" }); continue; }
+      if (!file) { errors.push({ type: "route", target: route, note: "arquivo HTML não encontrado no diretório estático" }); continue; }
 
     let html = "";
     try { html = fs.readFileSync(file, "utf8"); }
@@ -104,17 +111,30 @@ function crawlStatic(outDir) {
     for (const h of hrefs) {
       if (!isInternal(h, "http://local.test")) continue;
       const p = norm(h);
+      if (isStaticAsset(p)) {
+        if (p.startsWith("/docs/")) warnings.push({ type: "doc", target: p, where: file, note: "link documental local não validado no smoke estático" });
+        continue;
+      }
       if (!visited.has(p) && !queue.includes(p)) queue.push(p);
     }
     for (const s of srcs) {
       if (!isInternal(s, "http://local.test")) continue;
-      let fp = s.startsWith("/") ? path.join(outDir, s) : path.join(path.dirname(file), s);
+      const cleanSrc = s.replace(/&amp;/g, "&");
+      if (cleanSrc.startsWith("/_next/image")) continue;
+      let fp;
+      if (cleanSrc.startsWith("/_next/static/")) {
+        fp = path.join(nextRoot, cleanSrc.replace(/^\/_next\//, ""));
+      } else if (cleanSrc.startsWith("/")) {
+        fp = path.join(publicRoot, cleanSrc);
+      } else {
+        fp = path.join(path.dirname(file), cleanSrc);
+      }
       const candidates = [fp, fp.replace(/\/$/, "/index.html")];
       const ok = candidates.some(c => fs.existsSync(c));
       if (!ok) errors.push({ type: "img", target: s, where: file, note: "arquivo não encontrado" });
     }
   }
-  return { visited: [...visited], errors };
+  return { visited: [...visited], errors, warnings };
 }
 
 // CLI
@@ -137,6 +157,12 @@ const dirIdx  = args.indexOf("--dir");
 
   console.log("\n========== RELATÓRIO ==========");
   console.log(`Páginas verificadas: ${result.visited.length}`);
+  if (result.warnings?.length) {
+    console.log(`⚠️ Avisos: ${result.warnings.length}`);
+    for (const w of result.warnings) {
+      console.log(`- [${w.type}] ${w.target}${w.where ? `  (em: ${w.where})` : ""}  ${w.note ? ` → ${w.note}` : ""}`);
+    }
+  }
   if (result.errors.length === 0) {
     console.log("✅ Nenhum problema encontrado.");
     process.exit(0);

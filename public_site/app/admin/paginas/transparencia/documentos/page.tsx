@@ -201,6 +201,7 @@ export default function TransparenciaDocumentosAdmin() {
 
       <input
         type="file"
+        accept="application/pdf"
         hidden
         ref={fileRef}
         onChange={(e) => {

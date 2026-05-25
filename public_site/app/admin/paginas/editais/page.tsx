@@ -71,7 +71,12 @@ export default function AdminEditaisPage() {
 
   async function uploadDocumento(i: number, file: File) {
     const path = `editais/${Date.now()}-${file.name}`;
-    await supabase.storage.from("paginas").upload(path, file, { upsert: true });
+    const { error } = await supabase.storage.from("paginas").upload(path, file, { upsert: true });
+
+    if (error) {
+      setMsg(error.message);
+      return;
+    }
 
     const novo = [...documentos];
     novo[i].arquivo = path;
@@ -116,7 +121,7 @@ export default function AdminEditaisPage() {
             />
             <input
               type="file"
-              accept=".pdf"
+              accept="application/pdf"
               onChange={(e) => e.target.files && uploadDocumento(i, e.target.files[0])}
             />
           </div>
