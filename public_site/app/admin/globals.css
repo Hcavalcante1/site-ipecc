@@ -20,6 +20,15 @@ body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
+.admin-body a:focus-visible,
+.admin-body button:focus-visible,
+.admin-body input:focus-visible,
+.admin-body select:focus-visible,
+.admin-body textarea:focus-visible {
+  outline: 3px solid rgba(34, 197, 94, 0.65);
+  outline-offset: 3px;
+}
+
 .admin-wrapper {
   min-height: 100vh;
   display: grid;
@@ -314,7 +323,32 @@ body {
   }
 
   .admin-sidebar {
-    display: none;
+    position: sticky;
+    top: 0;
+    padding: 14px 14px 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  }
+
+  .admin-logo {
+    margin-bottom: 12px;
+  }
+
+  .admin-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .admin-nav-item {
+    justify-content: center;
+    border-radius: 14px;
+    padding: 10px 8px;
+    text-align: center;
+    background: rgba(15, 23, 42, 0.72);
+  }
+
+  .admin-nav-item:hover {
+    transform: none;
   }
 
   .admin-main {
@@ -323,6 +357,30 @@ body {
 
   .admin-content-shell {
     padding: 18px 16px 20px;
+  }
+}
+
+@media (max-width: 520px) {
+  .admin-sidebar {
+    padding-inline: 10px;
+  }
+
+  .admin-logo {
+    justify-content: center;
+  }
+
+  .admin-nav {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-main {
+    padding: 14px 10px 20px;
+  }
+
+  .admin-content-shell,
+  .admin-box {
+    border-radius: 18px;
+    padding: 16px 14px;
   }
 }
 
