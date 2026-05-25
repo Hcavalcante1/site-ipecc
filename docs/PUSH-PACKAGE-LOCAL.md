@@ -32,10 +32,11 @@ Não commitar: .env.local, tsconfig.tsbuildinfo, .cursor/
 ## Antes do primeiro push
 
 1. [ ] `npm run validar:enterprise` → OK
-2. [ ] `docs/VISUAL-GO-LIVE-CHECKLIST.md` — ressalvas de conteúdo resolvidas ou aceitas
-3. [ ] `git status` — sem `.env.local` no stage
-4. [ ] Criar repositório vazio no GitHub
-5. [ ] Seguir `docs/GITHUB-PUSH.md` (adicionar `origin` + push)
+2. [ ] `npm run auditar:cms-staging` → OK (sem teste publicado)
+3. [ ] `docs/VISUAL-GO-LIVE-CHECKLIST.md` — ressalvas de conteúdo resolvidas ou aceitas
+4. [ ] `git status` — sem `.env.local` no stage
+5. [ ] Criar repositório vazio no GitHub
+6. [ ] Seguir `docs/GITHUB-PUSH.md` (adicionar `origin` + push)
 
 ## Arquivos que NUNCA devem ir no stage
 

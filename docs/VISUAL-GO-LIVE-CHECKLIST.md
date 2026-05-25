@@ -79,7 +79,7 @@ Validação automatizada + browser **375px** (BATCH 16); CSS defensivo em `globa
 ## Revisão humana / conteúdo (antes de produção)
 
 - [ ] Revisar textos finais em `/projetos/*` (copy BATCH 11 é placeholder institucional)
-- [ ] Limpar editais e transparência de dados de teste no staging
+- [ ] Limpar editais e transparência de dados de teste no staging — roteiro `docs/CMS-LIMPEZA-STAGING.md` + `npm run auditar:cms-staging`
 - [ ] Validar `/quem-somos` completo após hydrate (MVV, atuação, CTA)
 - [ ] Rodada mobile no celular ou DevTools 375px
 - [ ] Conferir `/contato` e envio de formulário
