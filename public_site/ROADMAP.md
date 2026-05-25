@@ -13,10 +13,10 @@
 - Baseline local usa Next.js com paginas publicas e area admin no mesmo app.
 - Scripts operacionais foram padronizados em `package.json`.
 - Runbook local define validacoes antes de commits e release.
+- Cabecalho publico e grids principais receberam ajustes responsivos locais.
 
 ## Proximos batches seguros
 
-- Melhorar responsividade do cabecalho e menu publico.
 - Reduzir duplicacao de scripts legados em `app/scripts`.
 - Revisar fluxos admin de propostas/editais com validacoes locais adicionais.
 - Expandir smoke tests locais para rotas publicas apos build.
