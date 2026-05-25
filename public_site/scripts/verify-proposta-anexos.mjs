@@ -1,27 +1,54 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const sourcePath = path.resolve("app/propostas/page.tsx");
-const source = fs.readFileSync(sourcePath, "utf8");
+const read = (relativePath) => fs.readFileSync(path.resolve(relativePath), "utf8");
 
-const requiredSnippets = [
-  "const MAX_UPLOAD_BYTES = 10 * 1024 * 1024",
-  "const PDF_ACCEPT = \"application/pdf,.pdf\"",
-  "function validarPdf(file: File)",
-  "file.type === \"application/pdf\" || nome.endsWith(\".pdf\")",
-  "crypto.randomUUID()",
-  ".from(\"propostas\")",
-  "public/${nomeFinal}",
+const checks = [
+  {
+    label: "helper compartilhado",
+    source: read("lib/fileUploadGuards.ts"),
+    snippets: [
+      "export const MAX_PDF_UPLOAD_BYTES = 10 * 1024 * 1024",
+      "export const PDF_ACCEPT = \"application/pdf,.pdf\"",
+      "export function validatePdfFile(file: File)",
+      "file.type === \"application/pdf\" || name.endsWith(\".pdf\")",
+      "crypto.randomUUID()",
+    ],
+  },
+  {
+    label: "propostas publicas",
+    source: read("app/propostas/page.tsx"),
+    snippets: [
+      "validatePdfFile(file)",
+      "buildStorageFileName(file, tipo)",
+      ".from(\"propostas\")",
+      "public/${nomeFinal}",
+    ],
+  },
+  {
+    label: "admin editais",
+    source: read("app/admin/editais/page.tsx"),
+    snippets: [
+      "validatePdfFile(arquivo)",
+      "buildStorageFileName(arquivo, \"edital\")",
+      ".from(\"editais\")",
+      "contentType: \"application/pdf\"",
+    ],
+  },
 ];
 
-const missing = requiredSnippets.filter((snippet) => !source.includes(snippet));
+const missing = checks.flatMap((check) =>
+  check.snippets
+    .filter((snippet) => !check.source.includes(snippet))
+    .map((snippet) => `${check.label}: ${snippet}`)
+);
 
 if (missing.length > 0) {
-  console.error("Contrato de anexos de propostas incompleto:");
+  console.error("Contrato local de anexos PDF incompleto:");
   for (const snippet of missing) {
     console.error(`- ausente: ${snippet}`);
   }
   process.exit(1);
 }
 
-console.log("OK contrato local de anexos de propostas.");
+console.log("OK contrato local de anexos PDF.");

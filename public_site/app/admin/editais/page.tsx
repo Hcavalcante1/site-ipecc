@@ -2,22 +2,17 @@
 
 import { useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
+import {
+  buildStorageFileName,
+  PDF_ACCEPT,
+  validatePdfFile,
+} from "@/lib/fileUploadGuards";
 
 // Cliente Supabase autenticado (admin)
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
-
-// Normaliza nome do arquivo para storage
-function normalizarNomeArquivo(nome: string) {
-  return nome
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9.-]/g, "-")
-    .replace(/-+/g, "-")
-    .toLowerCase();
-}
 
 export default function AdminEditais() {
   const [titulo, setTitulo] = useState("");
@@ -29,6 +24,22 @@ export default function AdminEditais() {
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
 
+  function selecionarArquivo(file: File | undefined, input: HTMLInputElement) {
+    if (!file) {
+      setArquivo(null);
+      return;
+    }
+
+    try {
+      validatePdfFile(file);
+      setArquivo(file);
+    } catch (err) {
+      setArquivo(null);
+      input.value = "";
+      alert(err instanceof Error ? err.message : "Arquivo invalido.");
+    }
+  }
+
   async function salvarEdital(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -39,8 +50,8 @@ export default function AdminEditais() {
     // UPLOAD DO PDF DO EDITAL
     // =======================
     if (arquivo) {
-      const nomeSeguro = normalizarNomeArquivo(arquivo.name);
-      nomeArquivoEdital = `${Date.now()}-${nomeSeguro}`;
+      validatePdfFile(arquivo);
+      nomeArquivoEdital = buildStorageFileName(arquivo, "edital");
 
       const { error } = await supabase.storage
         .from("editais")
@@ -133,8 +144,8 @@ export default function AdminEditais() {
         <label>Arquivo do edital (PDF)</label>
         <input
           type="file"
-          accept="application/pdf"
-          onChange={(e) => setArquivo(e.target.files?.[0] ?? null)}
+          accept={PDF_ACCEPT}
+          onChange={(e) => selecionarArquivo(e.target.files?.[0], e.currentTarget)}
         />
 
         <button className="admin-button" disabled={loading}>

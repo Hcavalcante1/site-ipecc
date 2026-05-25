@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-
-const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
-const PDF_ACCEPT = "application/pdf,.pdf";
+import {
+  buildStorageFileName,
+  PDF_ACCEPT,
+  validatePdfFile,
+} from "@/lib/fileUploadGuards";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -39,19 +41,6 @@ export default function PropostasPage() {
   const [estatuto, setEstatuto] = useState<File | null>(null);
   const [cnpjArquivo, setCnpjArquivo] = useState<File | null>(null);
 
-function validarPdf(file: File) {
-  const nome = file.name.toLowerCase();
-  const isPdf = file.type === "application/pdf" || nome.endsWith(".pdf");
-
-  if (!isPdf) {
-    throw new Error("Envie apenas arquivos PDF.");
-  }
-
-  if (file.size > MAX_UPLOAD_BYTES) {
-    throw new Error("O arquivo deve ter no maximo 10 MB.");
-  }
-}
-
 function selecionarPdf(
   file: File | undefined,
   setter: React.Dispatch<React.SetStateAction<File | null>>,
@@ -63,7 +52,7 @@ function selecionarPdf(
   }
 
   try {
-    validarPdf(file);
+    validatePdfFile(file);
     setter(file);
   } catch (err) {
     setter(null);
@@ -73,17 +62,9 @@ function selecionarPdf(
 }
 
 async function uploadArquivo(file: File, tipo: string) {
-  validarPdf(file);
+  validatePdfFile(file);
 
-  // Normaliza o nome do arquivo para evitar erro no Supabase Storage
-  const nomeSeguro = file.name
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // remove acentos
-    .replace(/[^a-zA-Z0-9.-]/g, "-") // troca espaços e símbolos por -
-    .toLowerCase();
-
-  const idArquivo = crypto.randomUUID();
-  const nomeFinal = `${Date.now()}-${idArquivo}-${tipo}-${nomeSeguro}`;
+  const nomeFinal = buildStorageFileName(file, tipo);
   const path = `public/${nomeFinal}`;
 
   const { error } = await supabase.storage

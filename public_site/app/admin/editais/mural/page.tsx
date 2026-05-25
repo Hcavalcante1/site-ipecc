@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
+import {
+  buildStorageFileName,
+  PDF_ACCEPT,
+  validatePdfFile,
+} from "@/lib/fileUploadGuards";
 
 // 🔹 Cliente Supabase
 const supabase = createClient(
@@ -28,6 +33,22 @@ export default function MuralEditaisAdmin() {
   const [status, setStatus] = useState("aberto");
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [salvando, setSalvando] = useState(false);
+
+  function selecionarArquivo(file: File | undefined, input: HTMLInputElement) {
+    if (!file) {
+      setArquivo(null);
+      return;
+    }
+
+    try {
+      validatePdfFile(file);
+      setArquivo(file);
+    } catch (err) {
+      setArquivo(null);
+      input.value = "";
+      alert(err instanceof Error ? err.message : "Arquivo invalido.");
+    }
+  }
 
   // 🔹 Carregar editais do Supabase
   useEffect(() => {
@@ -60,7 +81,8 @@ export default function MuralEditaisAdmin() {
 
     // Upload do PDF
     if (arquivo) {
-      const nomeArquivo = `${Date.now()}-${arquivo.name}`;
+      validatePdfFile(arquivo);
+      const nomeArquivo = buildStorageFileName(arquivo, "edital");
 
       const { error: uploadError } = await supabase.storage
         .from("editais")
@@ -147,8 +169,8 @@ export default function MuralEditaisAdmin() {
         <label>PDF do edital</label>
         <input
           type="file"
-          accept="application/pdf"
-          onChange={(e) => setArquivo(e.target.files?.[0] ?? null)}
+          accept={PDF_ACCEPT}
+          onChange={(e) => selecionarArquivo(e.target.files?.[0], e.currentTarget)}
         />
 
         <button className="admin-button" disabled={salvando}>

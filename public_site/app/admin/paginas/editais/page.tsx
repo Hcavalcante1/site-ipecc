@@ -1,6 +1,11 @@
 "use client";
 
 import { useState, type CSSProperties, type FormEvent } from "react";
+import {
+  buildStorageFileName,
+  PDF_ACCEPT,
+  validatePdfFile,
+} from "@/lib/fileUploadGuards";
 import { supabase } from "@/lib/supabaseClient";
 
 type Documento = {
@@ -70,8 +75,13 @@ export default function AdminEditaisPage() {
   }
 
   async function uploadDocumento(i: number, file: File) {
-    const path = `editais/${Date.now()}-${file.name}`;
-    await supabase.storage.from("paginas").upload(path, file, { upsert: true });
+    validatePdfFile(file);
+
+    const path = `editais/${buildStorageFileName(file, "documento")}`;
+    await supabase.storage.from("paginas").upload(path, file, {
+      upsert: true,
+      contentType: "application/pdf",
+    });
 
     const novo = [...documentos];
     novo[i].arquivo = path;
@@ -116,8 +126,14 @@ export default function AdminEditaisPage() {
             />
             <input
               type="file"
-              accept=".pdf"
-              onChange={(e) => e.target.files && uploadDocumento(i, e.target.files[0])}
+              accept={PDF_ACCEPT}
+              onChange={(e) => {
+                if (!e.target.files?.[0]) return;
+                uploadDocumento(i, e.target.files[0]).catch((err) => {
+                  e.currentTarget.value = "";
+                  alert(err instanceof Error ? err.message : "Arquivo invalido.");
+                });
+              }}
             />
           </div>
         ))}

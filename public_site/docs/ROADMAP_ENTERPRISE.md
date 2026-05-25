@@ -14,11 +14,12 @@
 - [x] Fortalecer validacao local de anexos PDF no envio de propostas.
 - [x] Criar verificacao local dedicada para contrato de anexos de propostas.
 - [x] Tornar campos do formulario de propostas responsivos em mobile.
+- [x] Compartilhar validacao PDF entre propostas e uploads de editais no admin.
 
 ## Proximos batches seguros
 
 - Revisar acessibilidade basica de navegacao e foco no site publico.
-- Expandir validacoes de upload para areas admin/documentais sem alterar RLS ou schema.
+- Expandir validacoes de upload para demais areas documentais sem alterar RLS ou schema.
 
 ## Bloqueios que exigem decisao externa
 
