@@ -8,6 +8,7 @@ import { execSync } from "child_process";
 const steps: { label: string; cmd: string; optional?: boolean }[] = [
   { label: "typecheck", cmd: "npm run typecheck" },
   { label: "validar:publico", cmd: "npm run validar:publico" },
+  { label: "validar:admin", cmd: "npm run validar:admin" },
   { label: "validar:seguranca", cmd: "npm run validar:seguranca" },
   { label: "validar:release-prep", cmd: "npm run validar:release-prep" },
   { label: "validar:pre-m4-corte", cmd: "npm run validar:pre-m4-corte" },

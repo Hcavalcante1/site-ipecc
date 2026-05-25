@@ -25,6 +25,7 @@
     "validar:seguranca": "npx --yes tsx scripts/validar-seguranca-staging.ts",
     "validar:pos-hardening-rls": "npx --yes tsx scripts/validar-pos-hardening-rls-staging.ts",
     "validar:publico": "npx --yes tsx scripts/validar-publico-staging.ts",
+    "validar:admin": "npx --yes tsx scripts/validar-admin-clients-staging.ts",
     "validar:enterprise": "npx --yes tsx scripts/validar-enterprise-staging.ts"
   },
   "dependencies": {

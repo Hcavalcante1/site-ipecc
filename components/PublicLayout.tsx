@@ -1,3 +1,4 @@
+/** @deprecated Use app/layout.tsx — este arquivo é legado (redes/links antigos). Ver docs/PUBLIC-LAYOUT-LEGADO.md */
 import type { ReactNode } from "react";
 import Image from "next/image";
 

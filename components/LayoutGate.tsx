@@ -1,3 +1,4 @@
+/** @deprecated Não usado pelo App Router atual. Ver docs/PUBLIC-LAYOUT-LEGADO.md */
 import type { ReactNode } from "react";
 
 export default function LayoutGate({

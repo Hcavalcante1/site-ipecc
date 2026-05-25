@@ -5,7 +5,7 @@ Guia para consolidar o site público sem alterar identidade visual IPECC.
 ## Layout global
 
 - Chrome (header/menu/footer): `app/layout.tsx` (fonte da verdade).
-- `components/PublicLayout.tsx`: legado; não usar em páginas novas.
+- `components/PublicLayout.tsx`: legado; não usar. Ver `docs/PUBLIC-LAYOUT-LEGADO.md`.
 
 ## Componentes
 

@@ -24,8 +24,11 @@ Conferir em staging/local antes de autorizar produção. Não substitui `PROD-PR
 ```bash
 npm run typecheck
 npm run validar:publico
+npm run validar:admin
 npm run validar:enterprise
 ```
+
+Runbook completo: `docs/runbook-staging-enterprise.md`
 
 ## Observabilidade (opcional)
 

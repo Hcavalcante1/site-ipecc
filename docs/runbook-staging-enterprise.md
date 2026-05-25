@@ -23,19 +23,24 @@ Ordem única para fechar Fase 1 (Dashboard), Fase 3 (upload) e Bloco A (órfãos
 
 ```bash
 npm run validar:enterprise
+npm run validar:publico
+npm run validar:admin
 npm run validar:release-prep
 npm run validar:seguranca
 ```
 
-**Dev estável:** use **um único** `npm run dev`. Pare o dev antes de `npm run build` (evita cache `.next` corrompido e erro `Cannot find module './XXXX.js'` em rotas como `/quem-somos`).
+**Gate consolidado antes de go-live visual:** `validar:enterprise` inclui typecheck, segurança, release-prep, M4 pré-corte, órfãos e `validar:publico`. Opcional: `ci:local` (build).
 
-**Página em branco no admin (ex.: `/admin/propostas`):**
+**Checklist visual (sem deploy):** `docs/VISUAL-GO-LIVE-CHECKLIST.md` — conferir home, projetos, editais, transparência, propostas e mobile ≤640px.
 
-1. Confirme a URL na saída do terminal (`http://localhost:3000` ou `3001` — não use porta antiga morta).
-2. Feche outros `npm run dev`; apague `.next`; suba de novo um único dev.
-3. Aguarde `Compiled /admin/propostas` (primeira carga pode levar ~15–20s).
-4. Sem login → redirect `/login` (307). Com sessão admin → listagem com cards escuros.
-5. Se persistir: `npx tsc --noEmit` e abra o console do navegador (F12).
+**Observabilidade local (opcional no `.env.local`):**
+
+- `PUBLIC_FETCH_LOG=1` — leituras públicas (`[public-fetch]`)
+- `ADMIN_ACTION_LOG=1` — ações admin (`[admin-action]`)
+
+**Dev estável:** um único `npm run dev`; pare o processo antes de `npm run build` (evita `.next` corrompido).
+
+**Admin em branco (`/admin/propostas`):** confirme porta do terminal, limpe `.next`, aguarde compile; sem sessão → `/login` (307).
 
 ```bash
 npx tsc --noEmit
@@ -64,6 +69,9 @@ Scripts operacionais usam `scripts/lib/loadEnvLocal.ts` (env unificado).
 | 4 | Download sem login (URL API propostas) | [x] **401** |
 | 5 | `/admin/propostas/auditoria` | [x] **Órfãos: 0** |
 | 6 | `/editais`, `/projetos`, `/quem-somos` | [x] OK em `http://localhost:3002` (200, conteúdo Supabase) |
+| 7 | Checklist visual completo | [ ] `docs/VISUAL-GO-LIVE-CHECKLIST.md` |
+
+**Dev estável:** um único `npm run dev`; pare antes de `build` (evita `.next` corrompido).
 
 Detalhe upload: `docs/fase3-validacao-upload-propostas.md`
 
