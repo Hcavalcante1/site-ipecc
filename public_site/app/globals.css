@@ -151,15 +151,70 @@ a { text-decoration: none; color: inherit; }
 
 /* ===== RESPONSIVO ===== */
 @media (max-width: 992px){
-  .menubar__inner{ height: 80px; }
-  .brand__logo{ height: 100px; } /* diminui em telas menores */
-  .menubar{ gap: 16px; flex-wrap: wrap; justify-content: center; }
+  .topbar__inner{ justify-content: center; }
+  .menubar__inner{
+    height: auto;
+    min-height: 84px;
+    padding: 12px 0 14px;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .brand__logo{ height: 86px; } /* diminui em telas menores */
+  .menubar{
+    width: 100%;
+    gap: 10px;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding: 4px 2px 8px;
+    scrollbar-width: thin;
+  }
+  .menu__link{
+    flex: 0 0 auto;
+    padding: 8px 12px;
+    border: 1px solid rgba(11,42,107,.10);
+    border-radius: 999px;
+    background: #f8fafc;
+    font-size: .92rem;
+  }
+  .hero-rolling{ margin-top: 4px; }
   .hero-rolling__inner{ padding: 32px 18px; }
+  .hero__title{ font-size: clamp(1.6rem, 5vw, 2rem); }
+  .card__media-wrap img,
+  .destaques__grid img{ height: 210px; }
   .impacto__imagem{ height: 320px; }
   .sobre-cta__grid{ grid-template-columns: 1fr; }
 }
 @media (max-width: 640px){
+  .container{ width: min(94%, var(--container-w)); }
+  .topbar{ height: 36px; }
+  .icon-social{ width: 20px; height: 20px; }
+  .brand__logo{ height: 72px; }
+  .page{ padding-top: 14px; }
+  .hero-rolling__inner{
+    width: min(94%, var(--container-w));
+    padding: 28px 16px;
+    border-radius: 16px;
+  }
+  .hero__text{ font-size: .96rem; }
   .cards__grid{ grid-template-columns: 1fr; }
+  .card__media-wrap img,
+  .destaques__grid img{ height: 190px; }
+  .destaques,
+  .impacto,
+  .depoimentos,
+  .sobre-cta{ padding: 42px 0; }
   .destaques__grid{ grid-template-columns: 1fr; }
+  .numeros{ padding: 42px 0; }
+  .numeros .container{ padding: 32px 16px; }
+  .numeros__grid{ grid-template-columns: 1fr 1fr; }
+  .numeros__grid strong{ font-size: 1.7rem; }
   .impacto__imagem{ height: 260px; }
+  .depoimentos__grid{ grid-template-columns: 1fr; width: min(94%, var(--container-w)); }
+  .cta-green__inner{ padding: 20px; }
+}
+@media (max-width: 420px){
+  .menu__link{ font-size: .86rem; padding: 7px 10px; }
+  .numeros__grid{ grid-template-columns: 1fr; }
+  .site-footer{ font-size: .82rem; }
 }
