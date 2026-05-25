@@ -20,6 +20,7 @@ npm run validar:seguranca       # RLS + storage
 | Heroes padronizados | OK |
 | Layout legado documentado | `docs/PUBLIC-LAYOUT-LEGADO.md` |
 | Checklist visual go-live | `docs/VISUAL-GO-LIVE-CHECKLIST.md` |
+| Pacote push local | `docs/PUSH-PACKAGE-LOCAL.md` |
 
 ## Resultado atual (staging)
 
