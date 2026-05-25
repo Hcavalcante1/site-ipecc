@@ -9,6 +9,7 @@
     "validar:enterprise": "npm run typecheck && npm run build",
     "audit:anexos": "node scripts/audit-anexos.mjs",
     "verify:proposta-anexos": "node scripts/verify-proposta-anexos.mjs",
+    "smoke:health": "node scripts/check-health.mjs http://localhost:3050",
     "smoke:http": "node scripts/check-site.mjs --http http://localhost:3050",
     "smoke:static": "node scripts/check-site.mjs --dir ./out"
   },

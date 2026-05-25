@@ -20,6 +20,7 @@ Este runbook orienta ciclos autonomos no ambiente local/staging do site IPECC/AP
    - `npm run build` quando alterar paginas, layout, middleware, dependencias ou configuracao.
    - `npm run audit:anexos` e `npm run verify:proposta-anexos` quando o batch tocar documental/storage/anexos.
    - `npm run smoke:http` com o servidor local em `http://localhost:3050` quando paginas publicas/admin forem alteradas.
+   - `npm run smoke:health` com o servidor local em `http://localhost:3050` para validar observabilidade basica.
 5. Corrigir regressao local detectada.
 6. Commitar com escopo claro.
 
