@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { resolveMediaPath } from "@/lib/media";
 import { PublicHeroRolling } from "@/components/public";
+import PublicWhatsAppCtaLink from "@/components/public/PublicWhatsAppCtaLink";
 
 export default function QuemSomosPage() {
 
@@ -184,9 +185,12 @@ export default function QuemSomosPage() {
             <h3>{cta.extra?.conviteTitulo}</h3>
             <p>{cta.extra?.conviteTexto}</p>
 
-            <a href={cta.extra?.botaoLink} className="btn-cta">
+            <PublicWhatsAppCtaLink
+              href={cta.extra?.botaoLink || "/contato"}
+              className="btn-cta"
+            >
               {cta.extra?.botaoTexto}
-            </a>
+            </PublicWhatsAppCtaLink>
           </div>
 
         </div>

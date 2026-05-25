@@ -507,6 +507,24 @@ button.social-link{
   filter: brightness(.95);
 }
 
+button.btn-cta{
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+button.card__link{
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  color: var(--blue-2);
+  font-weight: 700;
+}
+
 /* ===== RODAPÉ ===== */
 .site-footer{
   background: #f1f5f9;

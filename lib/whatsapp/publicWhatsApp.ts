@@ -90,6 +90,20 @@ export type WhatsAppLeadValidation = {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/** URLs que devem abrir o pré-cadastro em vez de navegar direto. */
+export function isWhatsAppLeadHref(href: string): boolean {
+  const u = href.trim().toLowerCase();
+  if (!u) return false;
+  if (
+    u.includes("wa.me") ||
+    u.includes("whatsapp.com") ||
+    u.includes("api.whatsapp.com")
+  ) {
+    return true;
+  }
+  return u === "/contato" || u.endsWith("/contato");
+}
+
 export function getWhatsAppSubjectLabel(assuntoId: string): string {
   const fromList = PUBLIC_WHATSAPP_SUBJECT_OPTIONS.find(
     (o) => o.id === assuntoId

@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { PublicHeroRolling } from "@/components/public";
+import PublicWhatsAppCtaLink from "@/components/public/PublicWhatsAppCtaLink";
 
 type HeroBlock = {
   titulo?: string | null;
@@ -247,14 +248,12 @@ export default function ContatoPage() {
                               {valor}
                             </a>
                           ) : item.tipo === "link" && valor ? (
-                            <a
-                              className="card__link"
+                            <PublicWhatsAppCtaLink
                               href={valor}
-                              target="_blank"
-                              rel="noreferrer"
+                              className="card__link"
                             >
                               {valor}
-                            </a>
+                            </PublicWhatsAppCtaLink>
                           ) : (
                             valor
                           )}
@@ -445,7 +444,7 @@ export default function ContatoPage() {
               {ctaExtra?.descricao ?? ""}
             </p>
 
-            <a
+            <PublicWhatsAppCtaLink
               href={ctaExtra?.botao_link || "/contato"}
               className="btn-cta"
               style={{
@@ -454,7 +453,7 @@ export default function ContatoPage() {
               }}
             >
               {ctaExtra?.botao_texto || "Entrar em contato"}
-            </a>
+            </PublicWhatsAppCtaLink>
           </div>
         </div>
       </section>

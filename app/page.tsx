@@ -1,6 +1,7 @@
 import { createClient } from "../lib/supabaseServer";
 import { resolveMediaPath } from "@/lib/media";
 import { PublicHeroRolling } from "@/components/public";
+import PublicWhatsAppCtaLink from "@/components/public/PublicWhatsAppCtaLink";
 import WhatsAppLeadTrigger from "@/components/public/WhatsAppLeadTrigger";
 import { logPublicFetch } from "@/lib/observability/publicFetchLog";
 
@@ -328,9 +329,12 @@ const { data: eventos } = await supabase
               <div className="card__body">
                 <h3 className="card__title">{card.titulo}</h3>
                 <p className="card__text">{card.texto}</p>
-                <a href={card.linkUrl} className="card__link">
+                <PublicWhatsAppCtaLink
+                  href={card.linkUrl}
+                  className="card__link"
+                >
                   {card.linkTexto}
-                </a>
+                </PublicWhatsAppCtaLink>
               </div>
             </article>
           ))}
@@ -609,9 +613,12 @@ const { data: eventos } = await supabase
           <div className="cta-green__inner">
             <h3>{ctaAdmin?.titulo || FALLBACK_CTA.titulo}</h3>
             <p>{ctaAdmin?.texto || FALLBACK_CTA.texto}</p>
-            <a className="btn-cta" href={ctaAdmin?.url || FALLBACK_CTA.url}>
+            <PublicWhatsAppCtaLink
+              className="btn-cta"
+              href={ctaAdmin?.url || FALLBACK_CTA.url}
+            >
               {ctaAdmin?.label || FALLBACK_CTA.label}
-            </a>
+            </PublicWhatsAppCtaLink>
           </div>
         </div>
       </section>

@@ -3,6 +3,7 @@
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { resolveMediaPath } from "@/lib/media";
 import { PublicHeroRolling } from "@/components/public";
+import PublicWhatsAppCtaLink from "@/components/public/PublicWhatsAppCtaLink";
 import { logPublicFetch } from "@/lib/observability/publicFetchLog";
 
 export const dynamic = "force-dynamic";
@@ -247,9 +248,12 @@ export default async function ProjetosPage() {
             <h3>{ctaExtra.tituloCta || "Vamos construir juntos"}</h3>
             <p>{ctaExtra.textoCta || "Apresente sua proposta."}</p>
 
-            <a href={ctaExtra.linkBotao || "/contato"} className="btn-cta">
+            <PublicWhatsAppCtaLink
+              href={ctaExtra.linkBotao || "/contato"}
+              className="btn-cta"
+            >
               {ctaExtra.rotuloBotao || "Fale com o IPECC"}
-            </a>
+            </PublicWhatsAppCtaLink>
           </div>
         </div>
       </section>

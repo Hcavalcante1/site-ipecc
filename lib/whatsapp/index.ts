@@ -8,6 +8,7 @@ export {
   getWhatsAppUrlForChatOption,
   getSiteWhatsAppNumber,
   getWhatsAppSubjectLabel,
+  isWhatsAppLeadHref,
   normalizeWhatsAppNumber,
   validateWhatsAppLeadForm,
 } from "./publicWhatsApp";
