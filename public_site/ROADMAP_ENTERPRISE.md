@@ -14,6 +14,7 @@
 - Caminhos de PDFs de editais padronizados para novos uploads, preservando leitura de legado com prefixo `editais/`.
 - Detalhe admin de propostas passou a expor proposta, estatuto social e cartao CNPJ.
 - Navegacao admin mobile preservada com menu horizontal e estados de erro adicionados em propostas.
+- Headers conservadores de seguranca configurados no Next.js (`nosniff`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`) e `X-Powered-By` desabilitado.
 
 ## Proximos batches seguros
 
