@@ -1,11 +1,4 @@
 "use client";
-import dynamic from "next/dynamic";
-
-export default dynamic(
-  () => Promise.resolve(DocumentosPage),
-  { ssr: false }
-);
-
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
