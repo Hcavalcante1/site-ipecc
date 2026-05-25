@@ -3,6 +3,14 @@
 html, body { font-family: "Poppins", sans-serif; color: #111827; background: #fff; scroll-behavior: smooth; }
 img { max-width: 100%; display: block; }
 a { text-decoration: none; color: inherit; }
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible{
+  outline: 3px solid rgba(1,194,164,.55);
+  outline-offset: 3px;
+}
 
 /* ===== VARS ===== */
 :root{
@@ -48,7 +56,7 @@ a { text-decoration: none; color: inherit; }
 }
 .brand__logo{ height: 120px; width: auto; object-fit: contain; } /* ajuste aqui se quiser maior */
 .menubar{ display: flex; align-items: center; gap: 28px; }
-.menu__link{ color: var(--blue-navy); font-weight: 600; font-size: 1rem; transition: .2s; }
+.menu__link{ color: var(--blue-navy); font-weight: 600; font-size: 1rem; transition: .2s; border-radius: 999px; padding: 8px 0; }
 .menu__link:hover{ color: var(--blue-3); }
 
 /* ===== TARJA AZUL DEGRADÊ (rola com o conteúdo) ===== */
@@ -151,15 +159,38 @@ a { text-decoration: none; color: inherit; }
 
 /* ===== RESPONSIVO ===== */
 @media (max-width: 992px){
-  .menubar__inner{ height: 80px; }
-  .brand__logo{ height: 100px; } /* diminui em telas menores */
-  .menubar{ gap: 16px; flex-wrap: wrap; justify-content: center; }
+  .menubar__inner{ height: auto; min-height: 92px; padding: 10px 0 14px; align-items: center; }
+  .brand__logo{ height: 96px; } /* diminui em telas menores */
+  .menubar{ gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+  .menu__link{ font-size: .94rem; padding: 8px 10px; background: #f8fafc; }
   .hero-rolling__inner{ padding: 32px 18px; }
+  .cards__grid{ grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .destaques__grid{ grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
   .impacto__imagem{ height: 320px; }
   .sobre-cta__grid{ grid-template-columns: 1fr; }
 }
 @media (max-width: 640px){
+  .container{ width: min(92%, var(--container-w)); }
+  .topbar__inner{ justify-content: center; }
+  .menubar__inner{ flex-direction: column; gap: 8px; }
+  .brand__logo{ height: 84px; }
+  .menubar{ width: 100%; justify-content: center; gap: 8px; }
+  .menu__link{ font-size: .88rem; }
+  .hero-rolling{ padding: 14px 0; margin-top: 6px; }
+  .hero-rolling__inner{ width: min(92%, var(--container-w)); padding: 28px 16px; border-radius: 16px; }
+  .hero__title{ font-size: clamp(1.55rem, 8vw, 2rem); }
+  .page{ padding-top: 16px; }
   .cards__grid{ grid-template-columns: 1fr; }
+  .card__media-wrap img{ height: 210px; }
+  .destaques,
+  .numeros,
+  .impacto,
+  .depoimentos,
+  .sobre-cta{ padding: 40px 0; }
   .destaques__grid{ grid-template-columns: 1fr; }
+  .destaques__grid img{ height: 200px; width: 100%; }
+  .numeros h2{ font-size: 1.45rem; }
+  .numeros__grid strong{ font-size: 1.85rem; }
   .impacto__imagem{ height: 260px; }
+  .depoimentos__grid{ grid-template-columns: 1fr; width: min(92%, var(--container-w)); }
 }
