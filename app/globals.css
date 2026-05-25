@@ -927,6 +927,15 @@ button.social-link{
   text-decoration: none;
 }
 
+button.public-card__link{
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
 .public-card__resumo{
   font-size: 13px;
   opacity: 0.7;

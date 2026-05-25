@@ -1,7 +1,7 @@
 import { createClient } from "../lib/supabaseServer";
 import { resolveMediaPath } from "@/lib/media";
-import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { PublicHeroRolling } from "@/components/public";
+import WhatsAppLeadTrigger from "@/components/public/WhatsAppLeadTrigger";
 import { logPublicFetch } from "@/lib/observability/publicFetchLog";
 
 export const dynamic = "force-dynamic";
@@ -473,19 +473,22 @@ const { data: eventos } = await supabase
 
             {/* ✅ NOVO: WHATSAPP */}
             {e.whatsapp && (
-              <a
-                href={buildWhatsAppUrl({ number: e.whatsapp })}
-                target="_blank"
+              <WhatsAppLeadTrigger
                 style={{
                   display: "inline-block",
                   marginTop: 6,
                   fontSize: 17,
                   color: "#16a34a",
                   textDecoration: "none",
+                  background: "none",
+                  border: 0,
+                  padding: 0,
+                  cursor: "pointer",
+                  font: "inherit",
                 }}
               >
                 💬 Falar no WhatsApp
-              </a>
+              </WhatsAppLeadTrigger>
             )}
           </div>
         ))

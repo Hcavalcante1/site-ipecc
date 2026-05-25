@@ -51,16 +51,8 @@ export function WhatsAppChatProvider({ children }: { children: ReactNode }) {
   );
 }
 
-function WhatsAppIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 3a9 9 0 0 0-7.7 13.6L3 21l4.6-1.2A9 9 0 1 0 12 3Zm0 2a7 7 0 0 1 0 14c-1.2 0-2.3-.3-3.3-.8l-.3-.2-2.7.7.7-2.6-.2-.3A7 7 0 0 1 12 5Zm-2 3.1c-.2 0-.4.1-.6.3-.2.2-.7.7-.7 1.7 0 1 .7 2 1 2.4.2.4 1.4 2.3 3.4 3.1 2 .8 2 .6 2.4.6.4-.1 1.2-.5 1.4-1 .2-.5.2-.9.1-1-.1-.1-.3-.2-.7-.3l-1.2-.6c-.2-.1-.4-.1-.6.1l-.5.7c-.1.2-.3.2-.5.1-.2-.1-1-.4-1.8-1.2-.7-.6-1.1-1.4-1.2-1.6-.1-.2 0-.4.1-.5l.4-.4c.1-.1.1-.2.2-.3.1-.2.1-.3 0-.4l-.6-1.4c-.2-.4-.3-.4-.5-.4Z" />
-    </svg>
-  );
-}
-
 export default function WhatsAppFloatingChat() {
-  const { isOpen, closePanel, togglePanel } = useWhatsAppChat();
+  const { isOpen, closePanel } = useWhatsAppChat();
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -71,31 +63,26 @@ export default function WhatsAppFloatingChat() {
       if (e.key === "Escape") closePanel();
     };
 
-    const onPointerDown = (e: MouseEvent | TouchEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) {
-        closePanel();
-      }
-    };
-
     document.addEventListener("keydown", onKeyDown);
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("touchstart", onPointerDown);
-
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("touchstart", onPointerDown);
-    };
+    return () => document.removeEventListener("keydown", onKeyDown);
   }, [isOpen, closePanel]);
 
+  if (!isOpen) return null;
+
   return (
-    <div ref={rootRef} className={styles.waChat}>
-      {isOpen ? (
+    <>
+      <button
+        type="button"
+        className={styles.backdrop}
+        aria-label="Fechar atendimento"
+        onClick={closePanel}
+      />
+      <div ref={rootRef} className={styles.waChat}>
         <div
           id={panelId}
           className={styles.panel}
           role="dialog"
-          aria-modal="false"
+          aria-modal="true"
           aria-labelledby={`${panelId}-title`}
         >
           <div className={styles.header}>
@@ -128,19 +115,7 @@ export default function WhatsAppFloatingChat() {
             </a>
           </div>
         </div>
-      ) : null}
-      <button
-        type="button"
-        className={styles.fab}
-        onClick={togglePanel}
-        aria-label={
-          isOpen ? "Fechar atendimento WhatsApp" : "Atendimento WhatsApp"
-        }
-        aria-expanded={isOpen}
-        aria-controls={isOpen ? panelId : undefined}
-      >
-        <WhatsAppIcon />
-      </button>
-    </div>
+      </div>
+    </>
   );
 }

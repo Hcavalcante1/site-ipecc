@@ -7,3 +7,4 @@ export {
   useWhatsAppChat,
 } from "./WhatsAppFloatingChat";
 export { default as WhatsAppLeadForm } from "./WhatsAppLeadForm";
+export { default as WhatsAppLeadTrigger } from "./WhatsAppLeadTrigger";

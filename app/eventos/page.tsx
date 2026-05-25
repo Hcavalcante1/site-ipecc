@@ -1,7 +1,7 @@
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { resolveMediaPath } from "@/lib/media";
-import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { PublicHeroRolling, PublicPageContent } from "@/components/public";
+import WhatsAppLeadTrigger from "@/components/public/WhatsAppLeadTrigger";
 import { logPublicFetch } from "@/lib/observability/publicFetchLog";
 
 export const dynamic = "force-dynamic";
@@ -69,14 +69,9 @@ export default async function EventosPage() {
                     </p>
 
                     {e.whatsapp ? (
-                      <a
-                        href={buildWhatsAppUrl({ number: e.whatsapp })}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="public-card__link"
-                      >
+                      <WhatsAppLeadTrigger className="public-card__link">
                         💬 Falar no WhatsApp
-                      </a>
+                      </WhatsAppLeadTrigger>
                     ) : null}
                   </div>
                 </article>
