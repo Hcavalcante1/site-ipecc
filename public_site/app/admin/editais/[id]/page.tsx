@@ -9,11 +9,25 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+type EditalStatus = "aberto" | "encerrado" | "em_breve";
+
+type Edital = {
+  id: string | number;
+  titulo: string | null;
+  tipo: string | null;
+  descricao: string | null;
+  periodo: string | null;
+  status: EditalStatus;
+  resultado_organizacao: string | null;
+  resultado_cnpj: string | null;
+  resultado_valor: string | null;
+};
+
 export default function AdminEditalDetalhePage() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
 
-  const [edital, setEdital] = useState<any>(null);
+  const [edital, setEdital] = useState<Edital | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -37,6 +51,11 @@ export default function AdminEditalDetalhePage() {
     e.preventDefault();
     setSaving(true);
     setMsg(null);
+
+    if (!edital) {
+      setSaving(false);
+      return;
+    }
 
     const { error } = await supabase
       .from("editais")
@@ -113,7 +132,7 @@ export default function AdminEditalDetalhePage() {
         <select
           value={edital.status}
           onChange={(e) =>
-            setEdital({ ...edital, status: e.target.value })
+            setEdital({ ...edital, status: e.target.value as EditalStatus })
           }
         >
           <option value="aberto">Aberto</option>

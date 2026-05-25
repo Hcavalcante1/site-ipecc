@@ -9,9 +9,19 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+type Proposta = {
+  id: string | number;
+  nome: string | null;
+  cnpj: string | null;
+  email: string | null;
+  telefone: string | null;
+  mensagem: string | null;
+  arquivo_url: string | null;
+};
+
 export default function AdminPropostaDetalhePage() {
-  const { id } = useParams();
-  const [proposta, setProposta] = useState<any>(null);
+  const { id } = useParams<{ id: string }>();
+  const [proposta, setProposta] = useState<Proposta | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

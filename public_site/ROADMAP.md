@@ -18,6 +18,7 @@
 - Dependencias receberam update conservador de seguranca sem salto major.
 - Smoke HTTP local foi versionado para rotas publicas e guarda admin.
 - Auditoria de dependencias agora diferencia correcoes seguras de upgrades major.
+- Detalhes de editais/propostas reduziram uso de `any` com tipos locais.
 
 ## Proximos batches seguros
 

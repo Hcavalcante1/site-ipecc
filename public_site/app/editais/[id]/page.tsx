@@ -10,9 +10,18 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+type Edital = {
+  id: string | number;
+  titulo: string;
+  tipo: string | null;
+  periodo: string | null;
+  status: "aberto" | "encerrado" | "em_breve" | string;
+  arquivo_pdf: string | null;
+};
+
 export default function EditalDetalhePage() {
-  const { id } = useParams();
-  const [edital, setEdital] = useState<any>(null);
+  const { id } = useParams<{ id: string }>();
+  const [edital, setEdital] = useState<Edital | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
