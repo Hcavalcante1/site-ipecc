@@ -6,3 +6,4 @@ export {
   WhatsAppChatProvider,
   useWhatsAppChat,
 } from "./WhatsAppFloatingChat";
+export { default as WhatsAppLeadForm } from "./WhatsAppLeadForm";

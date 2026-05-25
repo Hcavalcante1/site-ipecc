@@ -1,12 +1,23 @@
 export {
   SITE_WHATSAPP_DEFAULT_MESSAGE,
   PUBLIC_WHATSAPP_CHAT_OPTIONS,
+  PUBLIC_WHATSAPP_SUBJECT_OPTIONS,
   buildWhatsAppUrl,
+  buildWhatsAppUrlFromLead,
+  formatWhatsAppLeadMessage,
   getWhatsAppUrlForChatOption,
   getSiteWhatsAppNumber,
+  getWhatsAppSubjectLabel,
   normalizeWhatsAppNumber,
+  validateWhatsAppLeadForm,
 } from "./publicWhatsApp";
-export type { PublicWhatsAppChatOption } from "./publicWhatsApp";
+export type {
+  PublicWhatsAppChatOption,
+  PublicWhatsAppSubjectId,
+  PublicWhatsAppSubjectOption,
+  WhatsAppLeadFormFields,
+  WhatsAppLeadValidation,
+} from "./publicWhatsApp";
 
 export { applyTurn, createInitialContext, processBotTurn } from "./botEngine";
 export { simulateInbound, resetSession } from "./simulator";

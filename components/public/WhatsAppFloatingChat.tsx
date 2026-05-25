@@ -11,10 +11,9 @@ import {
   type ReactNode,
 } from "react";
 import {
-  PUBLIC_WHATSAPP_CHAT_OPTIONS,
   buildWhatsAppUrl,
-  getWhatsAppUrlForChatOption,
 } from "@/lib/whatsapp/publicWhatsApp";
+import WhatsAppLeadForm from "./WhatsAppLeadForm";
 import styles from "./WhatsAppFloatingChat.module.css";
 
 type WhatsAppChatContextValue = {
@@ -104,7 +103,9 @@ export default function WhatsAppFloatingChat() {
               <h2 id={`${panelId}-title`} className={styles.title}>
                 Atendimento IPECC
               </h2>
-              <p className={styles.subtitle}>Como podemos ajudar?</p>
+              <p className={styles.subtitle}>
+                Preencha seus dados para continuar no WhatsApp
+              </p>
             </div>
             <button
               type="button"
@@ -115,24 +116,7 @@ export default function WhatsAppFloatingChat() {
               ×
             </button>
           </div>
-          <ul className={styles.options} role="list">
-            {PUBLIC_WHATSAPP_CHAT_OPTIONS.map((opt, index) => (
-              <li key={opt.id}>
-                <a
-                  href={getWhatsAppUrlForChatOption(opt.id)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.optionBtn}
-                  onClick={closePanel}
-                >
-                  <span className={styles.optionKey} aria-hidden="true">
-                    {index + 1}
-                  </span>
-                  {opt.label}
-                </a>
-              </li>
-            ))}
-          </ul>
+          <WhatsAppLeadForm onSuccess={closePanel} />
           <div className={styles.footer}>
             <a
               href={buildWhatsAppUrl()}

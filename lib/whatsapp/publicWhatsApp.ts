@@ -6,19 +6,40 @@
 export const SITE_WHATSAPP_DEFAULT_MESSAGE =
   "Olá, vim pelo site do IPECC e gostaria de atendimento.";
 
-/** Opções do painel flutuante público (wa.me — sem Cloud API). */
+/** Opções de assunto do pré-cadastro (painel flutuante). */
+export type PublicWhatsAppSubjectId =
+  | "projetos"
+  | "editais"
+  | "propostas"
+  | "transparencia"
+  | "eventos"
+  | "equipe"
+  | "outro";
+
+export type PublicWhatsAppSubjectOption = {
+  id: PublicWhatsAppSubjectId;
+  label: string;
+};
+
+export const PUBLIC_WHATSAPP_SUBJECT_OPTIONS: PublicWhatsAppSubjectOption[] =
+  [
+    { id: "projetos", label: "Projetos" },
+    { id: "editais", label: "Editais" },
+    { id: "propostas", label: "Propostas" },
+    { id: "transparencia", label: "Transparência" },
+    { id: "eventos", label: "Eventos" },
+    { id: "equipe", label: "Falar com a equipe" },
+    { id: "outro", label: "Outro" },
+  ];
+
+/** @deprecated Use PUBLIC_WHATSAPP_SUBJECT_OPTIONS — mantido para scripts legados. */
 export type PublicWhatsAppChatOption = {
-  id:
-    | "projetos"
-    | "editais"
-    | "propostas"
-    | "transparencia"
-    | "eventos"
-    | "equipe";
+  id: Exclude<PublicWhatsAppSubjectId, "outro">;
   label: string;
   message: string;
 };
 
+/** @deprecated Mensagens rápidas antigas; pré-cadastro usa formatWhatsAppLeadMessage. */
 export const PUBLIC_WHATSAPP_CHAT_OPTIONS: PublicWhatsAppChatOption[] = [
   {
     id: "projetos",
@@ -52,6 +73,80 @@ export const PUBLIC_WHATSAPP_CHAT_OPTIONS: PublicWhatsAppChatOption[] = [
     message: "Olá, gostaria de falar com a equipe do IPECC.",
   },
 ];
+
+export type WhatsAppLeadFormFields = {
+  nome: string;
+  organizacao: string;
+  telefone: string;
+  email: string;
+  assunto: string;
+  mensagem: string;
+};
+
+export type WhatsAppLeadValidation = {
+  ok: boolean;
+  errors: Partial<Record<keyof WhatsAppLeadFormFields, string>>;
+};
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function getWhatsAppSubjectLabel(assuntoId: string): string {
+  const fromList = PUBLIC_WHATSAPP_SUBJECT_OPTIONS.find(
+    (o) => o.id === assuntoId
+  )?.label;
+  return fromList ?? (assuntoId.trim() || "—");
+}
+
+export function formatWhatsAppLeadMessage(
+  data: WhatsAppLeadFormFields
+): string {
+  const assunto = getWhatsAppSubjectLabel(data.assunto);
+  const org = data.organizacao.trim() || "—";
+  const email = data.email.trim() || "—";
+  const msg = data.mensagem.trim() || "—";
+
+  return [
+    "Olá, vim pelo site do IPECC.",
+    "",
+    `Nome: ${data.nome.trim()}`,
+    `Organização: ${org}`,
+    `Telefone: ${data.telefone.trim()}`,
+    `E-mail: ${email}`,
+    `Assunto: ${assunto}`,
+    `Mensagem: ${msg}`,
+  ].join("\n");
+}
+
+export function validateWhatsAppLeadForm(
+  data: WhatsAppLeadFormFields
+): WhatsAppLeadValidation {
+  const errors: WhatsAppLeadValidation["errors"] = {};
+
+  if (!data.nome.trim()) {
+    errors.nome = "Informe seu nome.";
+  }
+  if (!data.telefone.trim()) {
+    errors.telefone = "Informe um telefone.";
+  }
+  if (!data.assunto.trim()) {
+    errors.assunto = "Selecione um assunto.";
+  } else if (
+    !PUBLIC_WHATSAPP_SUBJECT_OPTIONS.some((o) => o.id === data.assunto)
+  ) {
+    errors.assunto = "Assunto inválido.";
+  }
+  if (data.email.trim() && !EMAIL_RE.test(data.email.trim())) {
+    errors.email = "E-mail inválido.";
+  }
+
+  return { ok: Object.keys(errors).length === 0, errors };
+}
+
+export function buildWhatsAppUrlFromLead(
+  data: WhatsAppLeadFormFields
+): string {
+  return buildWhatsAppUrl({ message: formatWhatsAppLeadMessage(data) });
+}
 
 const FALLBACK_NUMBER = "5511943312119";
 
