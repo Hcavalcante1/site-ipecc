@@ -29,6 +29,8 @@ npm run smoke:admin
 npm run health:local
 ```
 
+`health:local` consulta `GET /api/health` em `LOCAL_BASE_URL` ou `http://localhost:3000`.
+
 ## Guardrails
 
 - Nao versionar `.env.local` real.

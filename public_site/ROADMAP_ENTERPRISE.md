@@ -7,13 +7,13 @@
 - Arquivos `.env.local` reais removidos do rastreamento Git e exemplos Supabase padronizados.
 - Correcoes TypeScript aplicadas em login e admin de documentos.
 - Login/logout admin alinhados ao proxy por cookies HTTP-only em `/api/admin/login` e `/api/admin/logout`.
+- Endpoint `/api/health` criado para observabilidade local/staging sem expor segredos.
 
 ## Proximos batches seguros
 
 1. Revisar responsividade do menu publico em telas pequenas.
-2. Criar endpoint `/api/health` local sem expor segredos.
-3. Mapear pendencias de anexos documentais reais em `public/docs` ou storage Supabase staging.
-4. Revisar o subprojeto legado `app/admin` antes de qualquer remocao ou merge estrutural.
+2. Mapear pendencias de anexos documentais reais em `public/docs` ou storage Supabase staging.
+3. Revisar o subprojeto legado `app/admin` antes de qualquer remocao ou merge estrutural.
 
 ## Bloqueios de producao
 
