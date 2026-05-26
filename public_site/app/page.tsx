@@ -22,7 +22,7 @@ export default function HomePage() {
           {/* Projetos */}
           <article className="card">
             <div className="card__media-wrap">
-              <img src="/media/projetos.jpg" alt="Projetos APECC" />
+              <img src="/media/news-1.jpg" alt="Projetos APECC" />
             </div>
             <div className="card__body">
               <h3 className="card__title">Projetos</h3>
@@ -36,7 +36,7 @@ export default function HomePage() {
           {/* Transparência */}
           <article className="card">
             <div className="card__media-wrap">
-              <img src="/media/transparencia.jpg" alt="Transparência APECC" />
+              <img src="/media/news-2.jpg" alt="Transparência APECC" />
             </div>
             <div className="card__body">
               <h3 className="card__title">Transparência</h3>
@@ -50,7 +50,7 @@ export default function HomePage() {
           {/* Contato */}
           <article className="card">
             <div className="card__media-wrap">
-              <img src="/media/contato.jpg" alt="Fale com a APECC" />
+              <img src="/media/news-3.jpg" alt="Fale com a APECC" />
             </div>
             <div className="card__body">
               <h3 className="card__title">Contato</h3>
@@ -69,21 +69,21 @@ export default function HomePage() {
           <h2>Destaques da Semana</h2>
           <div className="destaques__grid">
             <article>
-              <img src="/media/evento-cultural.jpg" alt="Festival Cultural APECC" />
+              <img src="/media/news-1.jpg" alt="Festival Cultural APECC" />
               <h3>Festival Cultural APECC</h3>
               <p>Apresentações artísticas, oficinas e atividades educativas em parceria com escolas e OSCs locais.</p>
               <a href="/projetos" className="btn-vermais">Saiba mais</a>
             </article>
 
             <article>
-              <img src="/media/oficina-educacao.jpg" alt="Oficinas de Educação Cidadã" />
+              <img src="/media/news-2.jpg" alt="Oficinas de Educação Cidadã" />
               <h3>Oficinas de Educação Cidadã</h3>
               <p>Capacitação de jovens e adultos com foco em cidadania, sustentabilidade e participação social.</p>
               <a href="/projetos" className="btn-vermais">Ver detalhes</a>
             </article>
 
             <article>
-              <img src="/media/acao-social.jpg" alt="Ação Social Itinerante" />
+              <img src="/media/news-3.jpg" alt="Ação Social Itinerante" />
               <h3>Ação Social Itinerante</h3>
               <p>Atendimento gratuito e oficinas integradas em bairros periféricos com apoio de voluntários e parceiros.</p>
               <a href="/projetos" className="btn-vermais">Ver ação</a>
@@ -114,7 +114,7 @@ export default function HomePage() {
             que fortalecem o vínculo entre sociedade civil e poder público.
           </p>
           <div className="impacto__imagem">
-            <img src="/media/impacto-social.jpg" alt="Impacto social APECC" />
+            <img src="/media/hero-poster.jpg" alt="Impacto social APECC" />
           </div>
         </div>
       </section>

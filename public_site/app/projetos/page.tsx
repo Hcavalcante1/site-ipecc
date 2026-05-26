@@ -73,7 +73,7 @@ export default function ProjetosPage() {
           <h2 id="destaques-projetos">Destaques</h2>
           <div className="destaques__grid">
             <article>
-              <img src="/media/evento-cultural.jpg" alt="Festival Cultural APECC" />
+              <img src="/media/news-1.jpg" alt="Festival Cultural APECC" />
               <h3>Festival Cultural APECC</h3>
               <p>
                 Programação com música, dança, artes visuais e oficinas abertas, realizada
@@ -82,7 +82,7 @@ export default function ProjetosPage() {
             </article>
 
             <article>
-              <img src="/media/oficina-educacao.jpg" alt="Trilhas de Educação Cidadã" />
+              <img src="/media/news-2.jpg" alt="Trilhas de Educação Cidadã" />
               <h3>Trilhas de Educação Cidadã</h3>
               <p>
                 Sequências formativas em temas como direitos humanos, meio ambiente,
@@ -91,7 +91,7 @@ export default function ProjetosPage() {
             </article>
 
             <article>
-              <img src="/media/acao-social.jpg" alt="Ação Social Itinerante" />
+              <img src="/media/news-3.jpg" alt="Ação Social Itinerante" />
               <h3>Ação Social Itinerante</h3>
               <p>
                 Atendimentos e oficinas integradas em bairros periféricos, mobilizando

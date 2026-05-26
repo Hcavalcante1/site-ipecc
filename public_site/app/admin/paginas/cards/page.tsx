@@ -19,7 +19,7 @@ const INICIAIS: Card[] = [
       "Conheça nossas iniciativas e resultados nas áreas de educação, cultura, cidadania e desenvolvimento social.",
     linkTexto: "Ver projetos",
     linkUrl: "/projetos",
-    imagem: "/media/projetos.jpg",
+    imagem: "/media/news-1.jpg",
   },
   {
     id: "transparencia",
@@ -28,7 +28,7 @@ const INICIAIS: Card[] = [
       "Acompanhe editais, contratos, termos de parceria e relatórios institucionais.",
     linkTexto: "Acesso à transparência",
     linkUrl: "/transparencia",
-    imagem: "/media/transparencia.jpg",
+    imagem: "/media/news-2.jpg",
   },
   {
     id: "contato",
@@ -37,7 +37,7 @@ const INICIAIS: Card[] = [
       "Fale conosco para parcerias, informações institucionais ou atendimento.",
     linkTexto: "Fale com a APECC",
     linkUrl: "/contato",
-    imagem: "/media/contato.jpg",
+    imagem: "/media/news-3.jpg",
   },
 ];
 

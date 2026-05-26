@@ -20,7 +20,7 @@ const INICIAIS: Destaque[] = [
       "Apresentações artísticas, oficinas e atividades educativas em parceria com escolas e OSCs locais.",
     linkTexto: "Saiba mais",
     linkUrl: "/projetos",
-    imagem: "/media/evento-cultural.jpg",
+    imagem: "/media/news-1.jpg",
   },
   {
     id: "oficinas",
@@ -29,7 +29,7 @@ const INICIAIS: Destaque[] = [
       "Capacitação de jovens e adultos com foco em cidadania, sustentabilidade e participação social.",
     linkTexto: "Ver detalhes",
     linkUrl: "/projetos",
-    imagem: "/media/oficina-educacao.jpg",
+    imagem: "/media/news-2.jpg",
   },
   {
     id: "acao",
@@ -38,7 +38,7 @@ const INICIAIS: Destaque[] = [
       "Atendimento gratuito e oficinas integradas em bairros periféricos com apoio de voluntários e parceiros.",
     linkTexto: "Ver ação",
     linkUrl: "/projetos",
-    imagem: "/media/acao-social.jpg",
+    imagem: "/media/news-3.jpg",
   },
 ];
 
