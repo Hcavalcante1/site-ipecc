@@ -1,6 +1,6 @@
 # Pacote local — pronto para push (quando autorizar)
 
-**Atualizado:** 2026-05-26 · **Branch:** `master` · **HEAD:** ver `git log -1` · **Remote:** nenhum
+**Atualizado:** 2026-05-26 · **Branch:** `master` · **HEAD:** `0619936` · **Remote:** nenhum
 
 ## Estado do repositório
 
@@ -24,6 +24,9 @@ Pendente local: .env.local, tsconfig.tsbuildinfo, .cursor/
 | `167cb09` | feat(whatsapp): conectar CTAs e links de contato ao pre-cadastro |
 | `ae5e8fd` | fix(whatsapp): remover FAB e abrir formulario pelos gatilhos do site |
 | `8a6ec5a` | feat(whatsapp): formulario lead flutuante antes do wa.me |
+| `a7043d0` | fix(whatsapp): remover item WhatsApp do menu principal publico |
+| `ad63bdf` | docs(whatsapp): topbar como unico acesso no menu de redes |
+| `0619936` | fix(layout): tratar pathname nulo no shell publico |
 
 ## Commits anteriores (BATCH / bot)
 
@@ -49,7 +52,7 @@ Pendente local: .env.local, tsconfig.tsbuildinfo, .cursor/
 
 ## Gates antes do primeiro push
 
-**Última execução local:** `npm run validar:push-prep` → **OK** · `npm run build` → **OK** · `npm run validar:smoke-publico` → **OK** (15 rotas, dev em `:3000`).
+**Última execução local:** `npm run validar:push-prep` → **OK** · `npm run build` → **OK** · `npm run validar:enterprise` → **OK** · `npm run validar:smoke-publico` → **OK** (15 rotas, dev em `:3001`).
 
 ```bash
 npm run validar:push-prep      # código — OK
@@ -73,7 +76,7 @@ npm run validar:whatsapp-public-pages  # integração nas páginas
 2. [ ] `npm run auditar:cms-staging` → **4 itens** pendentes (convênios teste + títulos hero — `docs/CMS-LIMPEZA-STAGING.md`)
 3. [x] `npm run build` → OK
 4. [x] `npm run validar:smoke-publico` → OK (com `npm run dev`)
-5. [ ] `npm run validar:enterprise` → opcional
+5. [x] `npm run validar:enterprise` → OK
 6. [ ] `docs/VISUAL-GO-LIVE-CHECKLIST.md` — aceito pela equipe
 7. [ ] `git status` — sem `.env.local` / `.cursor/` no stage
 8. [ ] Repositório vazio no GitHub criado

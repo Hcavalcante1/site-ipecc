@@ -46,6 +46,19 @@ npm run validar:smoke-publico
 
 Conferir no browser: `/editais`, `/transparencia`.
 
+## Snapshot da auditoria (2026-05-26)
+
+Itens reportados por `npm run auditar:cms-staging` (staging `eohshxaxbsdpxundsley`):
+
+| Tipo | ID | Ação sugerida |
+|------|-----|----------------|
+| `transparencia_convenios` | `6e2d99c7-e9ee-415e-866e-0c9ca648ad99` | Excluir ou despublicar — título `TESTE` |
+| `transparencia_convenios` | `c4ad00cc-d5fc-4619-b554-d2c5f5f3b480` | Excluir ou despublicar — lixo de teclado |
+| `paginas_conteudo` hero | `24397d6c-a6af-408e-8b61-89c3d5a80279` | Corrigir título `Transparência ` → remover espaço final |
+| `paginas_conteudo` hero | `cb1fc875-6c43-4a67-b081-e16c379bc31e` | Corrigir título `Projetos ` → remover espaço final |
+
+Admin: convênios em `/admin/paginas/transparencia/convenios`; heroes em `/admin/paginas/transparencia` e `/admin/paginas/projetos`.
+
 ## 5. Checklist
 
 - [ ] `auditar:cms-staging` → OK
