@@ -13,7 +13,8 @@ Prioridades do ciclo autonomo:
 - [x] Desbloquear `npx tsc --noEmit` no ambiente local.
 - [x] Corrigir falha TypeScript em admin/editais/documentos.
 - [x] Registrar runbook operacional inicial.
-- [ ] Adicionar scripts locais de validacao enterprise/smoke sem dependencia de producao.
+- [x] Adicionar scripts locais de validacao enterprise/smoke sem dependencia de producao.
+- [x] Verificar anexos de propostas no fluxo publico/admin.
 - [ ] Melhorar responsividade do cabecalho publico em telas pequenas.
 - [ ] Revisar paginas publicas para consistencia visual e acessibilidade basica.
 - [ ] Documentar checklist de release staging sem deploy.

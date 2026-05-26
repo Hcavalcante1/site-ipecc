@@ -20,3 +20,22 @@ Validacoes:
 Resultado:
 - TypeScript e build de producao passaram localmente.
 - Sem alteracoes em producao, deploy, SQL ou dados.
+
+## Ciclo 2026-05-26 06:00 UTC - validadores enterprise locais
+
+Escopo:
+- Adicionar scripts npm para typecheck, smoke estatico, auditoria de anexos e
+  verificacao de anexos de propostas.
+- Validar links locais para `public/docs`.
+- Garantir que a tela admin de detalhe de proposta exponha proposta, estatuto
+  social e CNPJ quando enviados.
+
+Validacoes planejadas:
+- `git status --short`
+- `npm run validar:enterprise`
+- `npm run build`
+
+Resultado:
+- Auditoria local detecta placeholders vazios em `public/docs` como aviso.
+- Use `STRICT_ANEXOS=1 npm run audit:anexos` para transformar placeholders
+  vazios em erro duro quando houver pacote documental oficial.

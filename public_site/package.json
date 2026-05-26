@@ -4,7 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build"
+    "build": "next build",
+    "typecheck": "tsc --noEmit",
+    "check:http": "node scripts/check-site.mjs --http http://localhost:3000",
+    "check:out": "node scripts/check-site.mjs --dir ./out",
+    "audit:anexos": "node scripts/audit-anexos.mjs",
+    "verify:proposta-anexos": "node scripts/verify-proposta-anexos.mjs",
+    "validar:enterprise": "npm run typecheck && npm run audit:anexos && npm run verify:proposta-anexos"
   },
   "dependencies": {
     "@supabase/ssr": "0.8.0",

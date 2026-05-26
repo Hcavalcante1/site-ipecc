@@ -9,6 +9,12 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+const anexos = [
+  { campo: "arquivo_url", rotulo: "Baixar Proposta (PDF)" },
+  { campo: "estatuto_url", rotulo: "Baixar Estatuto Social (PDF)" },
+  { campo: "cnpj_url", rotulo: "Baixar CNPJ (PDF)" },
+];
+
 export default function AdminPropostaDetalhePage() {
   const { id } = useParams();
   const [proposta, setProposta] = useState<any>(null);
@@ -45,17 +51,22 @@ export default function AdminPropostaDetalhePage() {
       <p><strong>Telefone:</strong> {proposta.telefone}</p>
       <p><strong>Mensagem:</strong> {proposta.mensagem}</p>
 
-      {proposta.arquivo_url && (
-        <p>
-          <a
-            href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${proposta.arquivo_url}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Baixar Proposta (PDF)
-          </a>
-        </p>
-      )}
+      {anexos.map(({ campo, rotulo }) => {
+        const caminho = proposta[campo];
+        if (!caminho) return null;
+
+        return (
+          <p key={campo}>
+            <a
+              href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${caminho}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {rotulo}
+            </a>
+          </p>
+        );
+      })}
     </div>
   );
 }
