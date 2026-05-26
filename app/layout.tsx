@@ -8,6 +8,7 @@ import WhatsAppFloatingChat, {
   WhatsAppChatProvider,
   useWhatsAppChat,
 } from "@/components/public/WhatsAppFloatingChat";
+import PublicMenuWhatsAppLink from "@/components/public/PublicMenuWhatsAppLink";
 
 function PublicSiteShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -177,6 +178,7 @@ function PublicSiteShell({ children }: { children: ReactNode }) {
               >
                 Contato
               </a>
+              <PublicMenuWhatsAppLink onNavigate={() => setMenuOpen(false)} />
             </nav>
           </div>
         </div>

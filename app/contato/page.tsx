@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { PublicHeroRolling } from "@/components/public";
 import PublicWhatsAppCtaLink from "@/components/public/PublicWhatsAppCtaLink";
+import WhatsAppLeadTrigger from "@/components/public/WhatsAppLeadTrigger";
 
 type HeroBlock = {
   titulo?: string | null;
@@ -218,7 +219,15 @@ export default function ContatoPage() {
           hero?.texto ??
           "Fale com a equipe do IPECC para informações institucionais, parcerias, projetos e atendimento."
         }
-      />
+      >
+        <WhatsAppLeadTrigger
+          assunto="equipe"
+          className="btn btn--light"
+          style={{ marginTop: 16 }}
+        >
+          Atendimento via WhatsApp
+        </WhatsAppLeadTrigger>
+      </PublicHeroRolling>
 
       <section className="sobre" style={{ marginTop: 60 }}>
         <div className="container">

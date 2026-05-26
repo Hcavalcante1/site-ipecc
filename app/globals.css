@@ -116,6 +116,23 @@ button.social-link{
   color: var(--blue-3);
 }
 
+button.menu__link{
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.menu__link--whatsapp{
+  color: #128c7e;
+}
+
+.menu__link--whatsapp:hover{
+  color: #0d6b5c;
+}
+
 /* ===== BOTÃO MENU MOBILE ===== */
 .menu-toggle{
   display: none;

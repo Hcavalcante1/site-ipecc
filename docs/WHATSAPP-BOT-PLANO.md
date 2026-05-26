@@ -110,13 +110,28 @@ Roteiro sandbox Meta: `docs/WHATSAPP-META-SANDBOX.md`
 
 Persistência Supabase (opcional): aplicar `docs/sql/whatsapp-conversations-staging.sql` e `WHATSAPP_PERSIST_SUPABASE=1`.
 
-**Site público:** painel flutuante WhatsApp (`WhatsAppFloatingChat`) — menu antes do wa.me; validar com `npm run validar:whatsapp-public-chat`.
+**Site público — pré-cadastro WhatsApp** (sem bot flutuante FAB):
+
+| Item | Detalhe |
+|------|---------|
+| Componentes | `WhatsAppLeadForm`, `WhatsAppFloatingChat` (painel), `PublicWhatsAppCtaLink`, `WhatsAppLeadTrigger` |
+| Topbar | Ícone WhatsApp → abre painel com formulário |
+| Menu | Item **WhatsApp** → painel; **Contato** → página `/contato` |
+| Envio | `Continuar no WhatsApp` → `buildWhatsAppUrlFromLead()` + `NEXT_PUBLIC_WHATSAPP_NUMBER` |
+| Assunto | Pré-preenchido por rota (`getWhatsAppSubjectFromPathname`) ou prop `assunto` nos CTAs |
+| Fallback | Link “Abrir WhatsApp com mensagem padrão” no rodapé do painel |
+| Validação | `npm run validar:whatsapp-public-chat` |
+
+Teste manual:
+
+1. Abrir `/`, `/projetos`, `/editais`, `/contato`
+2. Clicar ícone topbar ou menu **WhatsApp** ou CTAs “Fale com…”
+3. Preencher nome, telefone, assunto → **Continuar no WhatsApp**
+4. Confirmar `wa.me` com mensagem formatada (nova aba)
+
+**Legado:** painel com 6 opções diretas ao wa.me foi substituído pelo formulário de lead.
 
 Webhook local (com tunnel + secrets): `GET/POST /api/whatsapp/webhook`
-
-1. Abrir `http://localhost:3000`
-2. Clicar ícone WhatsApp na topbar
-3. Confirmar abertura wa.me com texto pré-preenchido
 
 ## Próximos passos (ordem)
 
