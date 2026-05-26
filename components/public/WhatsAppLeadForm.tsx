@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from "react";
 import {
   PUBLIC_WHATSAPP_SUBJECT_OPTIONS,
   buildWhatsAppUrlFromLead,
@@ -36,6 +36,7 @@ export default function WhatsAppLeadForm({
   initialAssunto = "",
 }: WhatsAppLeadFormProps) {
   const formId = useId();
+  const nomeRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState<WhatsAppLeadFormFields>(() => ({
     ...EMPTY_FORM,
     assunto: initialAssunto,
@@ -57,6 +58,11 @@ export default function WhatsAppLeadForm({
     }));
     setErrors({});
     setShowAlert(false);
+  }, [initialAssunto]);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => nomeRef.current?.focus(), 50);
+    return () => window.clearTimeout(t);
   }, [initialAssunto]);
 
   const updateField = useCallback(
@@ -109,6 +115,7 @@ export default function WhatsAppLeadForm({
             Nome <span className={styles.required} aria-hidden="true">*</span>
           </label>
           <input
+            ref={nomeRef}
             id={`${formId}-nome`}
             name="nome"
             type="text"

@@ -120,7 +120,7 @@ Persistência Supabase (opcional): aplicar `docs/sql/whatsapp-conversations-stag
 | Envio | `Continuar no WhatsApp` → `buildWhatsAppUrlFromLead()` + `NEXT_PUBLIC_WHATSAPP_NUMBER` |
 | Assunto | Pré-preenchido por rota (`getWhatsAppSubjectFromPathname`) ou prop `assunto` nos CTAs |
 | Fallback | Link “Abrir WhatsApp com mensagem padrão” no rodapé do painel |
-| Validação | `npm run validar:whatsapp-public-chat` |
+| Validação | `npm run validar:whatsapp-public-chat` + `npm run validar:whatsapp-public-pages` |
 
 Teste manual:
 

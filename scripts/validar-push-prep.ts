@@ -13,6 +13,7 @@ const steps: { label: string; cmd: string }[] = [
   { label: "validar:whatsapp-meta", cmd: "npm run validar:whatsapp-meta" },
   { label: "validar:whatsapp-fase2", cmd: "npm run validar:whatsapp-fase2" },
   { label: "validar:whatsapp-public-chat", cmd: "npm run validar:whatsapp-public-chat" },
+  { label: "validar:whatsapp-public-pages", cmd: "npm run validar:whatsapp-public-pages" },
 ];
 
 function main() {

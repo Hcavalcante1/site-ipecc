@@ -15,6 +15,7 @@ Pendente local: .env.local, tsconfig.tsbuildinfo, .cursor/
 
 | Hash | Mensagem |
 |------|----------|
+| `c423878` | feat(whatsapp): linha de ajuda em editais e transparencia |
 | `b03b40e` | feat(whatsapp): link de ajuda em propostas e gate push-prep |
 | `40575a9` | feat(whatsapp): menu WhatsApp e CTA na pagina de contato |
 | `5303258` | feat(whatsapp): pre-selecionar assunto por pagina no pre-cadastro |
@@ -57,6 +58,7 @@ Com `npm run dev` ativo, incluir também:
 ```bash
 npm run validar:smoke-publico
 npm run validar:whatsapp-public-chat   # pré-cadastro wa.me (site público)
+npm run validar:whatsapp-public-pages  # integração nas páginas
 ```
 
 ## Checklist
