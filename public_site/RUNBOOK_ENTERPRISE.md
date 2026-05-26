@@ -35,3 +35,10 @@ npm run health:local
 - Nao fazer push/deploy/producao neste modo sem autorizacao explicita.
 - Nao executar `DROP`, apagar dados, remover colunas legadas ou alterar RLS critica sem SQL revisado.
 - Preferir batches pequenos, validados e com commit local claro.
+
+## Autenticacao admin local
+
+- `/login` envia credenciais para `/api/admin/login`.
+- `/api/admin/login` autentica no Supabase e grava cookies HTTP-only `sb-access-token` e `sb-refresh-token`.
+- `proxy.ts` protege `/admin/:path*` exigindo pelo menos um desses cookies.
+- Logout deve chamar `/api/admin/logout` para expirar ambos os cookies antes de voltar para `/login`.
