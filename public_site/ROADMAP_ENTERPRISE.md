@@ -39,6 +39,12 @@
 - Sidebar admin passa a funcionar como navegacao horizontal sticky em telas menores.
 - Estados de foco adicionados a links e botoes do painel.
 
+### 2026-05-26 - Headers de seguranca e health
+
+- `X-Powered-By` desabilitado.
+- Headers basicos adicionados: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` e `Permissions-Policy`.
+- `/api/health` passou a expor versao local do pacote e runtime.
+
 ## Próximos batches seguros
 
 1. Padronizar clientes Supabase com guardas de ambiente para build local/staging.
