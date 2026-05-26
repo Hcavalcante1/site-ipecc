@@ -16,6 +16,7 @@ Prioridades do ciclo autonomo:
 - [x] Adicionar scripts locais de validacao enterprise/smoke sem dependencia de producao.
 - [x] Verificar anexos de propostas no fluxo publico/admin.
 - [x] Melhorar responsividade do cabecalho publico em telas pequenas.
+- [x] Ajustar smoke HTTP local para rotas publicas atuais.
 - [ ] Revisar paginas publicas para consistencia visual e acessibilidade basica.
 - [ ] Documentar checklist de release staging sem deploy.
 

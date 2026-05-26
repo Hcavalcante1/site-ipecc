@@ -35,6 +35,11 @@ Validacoes planejadas:
 - `npm run validar:enterprise`
 - `npm run build`
 
+Smoke local:
+- `npm run check:http` deve ser executado com `npm run dev` ativo.
+- Ajustado para rotas publicas atuais e atributos HTML com entidades
+  (`&amp;`) geradas pelo Next/Image.
+
 Resultado:
 - Auditoria local detecta placeholders vazios em `public/docs` como aviso.
 - Use `STRICT_ANEXOS=1 npm run audit:anexos` para transformar placeholders
