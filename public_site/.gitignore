@@ -1,1 +1,12 @@
 .vercel
+node_modules
+.next
+out
+*.tsbuildinfo
+
+# Local secrets must stay outside version control.
+.env
+.env.local
+.env.*.local
+app/admin/.env.local
+!*.example

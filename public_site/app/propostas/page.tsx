@@ -31,6 +31,14 @@ const textareaStyle: React.CSSProperties = {
 };
 /* ================================================================= */
 
+function normalizarNomeArquivo(fileName: string) {
+  return fileName
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9.-]/g, "-")
+    .toLowerCase();
+}
+
 export default function PropostasPage() {
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [estatuto, setEstatuto] = useState<File | null>(null);
@@ -38,11 +46,7 @@ export default function PropostasPage() {
 
 async function uploadArquivo(file: File, tipo: string) {
   // Normaliza o nome do arquivo para evitar erro no Supabase Storage
-  const nomeSeguro = file.name
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // remove acentos
-    .replace(/[^a-zA-Z0-9.-]/g, "-") // troca espaços e símbolos por -
-    .toLowerCase();
+  const nomeSeguro = normalizarNomeArquivo(file.name);
 
   const nomeFinal = `${Date.now()}-${tipo}-${nomeSeguro}`;
   const path = `public/${nomeFinal}`;
