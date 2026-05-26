@@ -8,12 +8,12 @@
 - Correcoes TypeScript aplicadas em login e admin de documentos.
 - Login/logout admin alinhados ao proxy por cookies HTTP-only em `/api/admin/login` e `/api/admin/logout`.
 - Endpoint `/api/health` criado para observabilidade local/staging sem expor segredos.
+- Cabecalho/menu publico recebeu ajustes responsivos para navegacao mobile horizontal e alvos de toque maiores.
 
 ## Proximos batches seguros
 
-1. Revisar responsividade do menu publico em telas pequenas.
-2. Mapear pendencias de anexos documentais reais em `public/docs` ou storage Supabase staging.
-3. Revisar o subprojeto legado `app/admin` antes de qualquer remocao ou merge estrutural.
+1. Mapear pendencias de anexos documentais reais em `public/docs` ou storage Supabase staging.
+2. Revisar o subprojeto legado `app/admin` antes de qualquer remocao ou merge estrutural.
 
 ## Bloqueios de producao
 

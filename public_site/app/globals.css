@@ -159,7 +159,40 @@ a { text-decoration: none; color: inherit; }
   .sobre-cta__grid{ grid-template-columns: 1fr; }
 }
 @media (max-width: 640px){
+  .topbar{ height: 32px; }
+  .topbar__inner{ justify-content: center; }
+  .topbar .social{ gap: 12px; }
+  .icon-social{ width: 20px; height: 20px; }
+  .menubar__inner{
+    height: auto;
+    padding: 10px 0 12px;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .brand__logo{ height: 72px; }
+  .menubar{
+    width: 100%;
+    gap: 8px;
+    padding: 2px 2px 8px;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+  .menu__link{
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    font-size: .92rem;
+  }
+  .hero-rolling{ margin-top: 4px; padding: 18px 0; }
+  .hero__title{ font-size: 1.55rem; }
+  .hero__text{ font-size: .98rem; }
   .cards__grid{ grid-template-columns: 1fr; }
   .destaques__grid{ grid-template-columns: 1fr; }
   .impacto__imagem{ height: 260px; }
+  .sobre-cta{ padding: 40px 0; }
 }
