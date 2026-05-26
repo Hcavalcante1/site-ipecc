@@ -73,14 +73,14 @@ npm run validar:whatsapp-public-pages  # integração nas páginas
 ## Checklist
 
 1. [x] `npm run validar:push-prep` → OK (código)
-2. [ ] `npm run auditar:cms-staging` → **4 itens** pendentes (convênios teste + títulos hero — `docs/CMS-LIMPEZA-STAGING.md`)
+2. [x] `npm run auditar:cms-staging` → OK (limpeza via `npm run limpar:cms-staging -- --apply`)
 3. [x] `npm run build` → OK
 4. [x] `npm run validar:smoke-publico` → OK (com `npm run dev`)
 5. [x] `npm run validar:enterprise` → OK
 6. [ ] `docs/VISUAL-GO-LIVE-CHECKLIST.md` — aceito pela equipe
 7. [ ] `git status` — sem `.env.local` / `.cursor/` no stage
 8. [ ] Repositório vazio no GitHub criado
-9. [ ] `docs/GITHUB-PUSH.md` — `git remote add origin` + push
+9. [ ] `docs/GITHUB-PUSH.md` — `$env:GITHUB_REPO_URL` + `scripts/preparar-github-push.ps1 -Push`
 
 ## Arquivos que NUNCA devem ir no stage
 

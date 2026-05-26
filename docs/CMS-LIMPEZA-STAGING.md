@@ -61,7 +61,7 @@ Admin: convênios em `/admin/paginas/transparencia/convenios`; heroes em `/admin
 
 ## 5. Checklist
 
-- [ ] `auditar:cms-staging` → OK
+- [x] `auditar:cms-staging` → OK (2026-05-26, `npm run limpar:cms-staging -- --apply`)
 - [ ] Nenhum `TEST*` visível em `/transparencia`
 - [ ] Editais públicos são reais ou rascunho oculto
 - [ ] Hero projetos sem vírgula dupla

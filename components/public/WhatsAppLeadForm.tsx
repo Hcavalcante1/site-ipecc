@@ -79,13 +79,27 @@ export default function WhatsAppLeadForm({
     []
   );
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const result = validateWhatsAppLeadForm(form);
     setErrors(result.errors);
     setShowAlert(!result.ok);
 
     if (!result.ok) return;
+
+    try {
+      await fetch("/api/public/whatsapp-lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          pagina_origem: window.location.pathname,
+          user_agent: navigator.userAgent,
+        }),
+      });
+    } catch {
+      /* persistência opcional — não bloqueia wa.me */
+    }
 
     const url = buildWhatsAppUrlFromLead(form);
     window.open(url, "_blank", "noopener,noreferrer");

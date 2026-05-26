@@ -1,6 +1,6 @@
 # Pré-cadastro WhatsApp — persistência (futuro)
 
-**Status atual:** o site público **não grava** leads no banco. Após validação no painel, o usuário abre `wa.me` com mensagem formatada (`buildWhatsAppUrlFromLead`).
+**Status atual:** o site grava leads **somente** com `WHATSAPP_LEADS_PERSIST_SUPABASE=1` e tabela `whatsapp_leads` no staging. Sem isso, o fluxo continua só com `wa.me` (`buildWhatsAppUrlFromLead`).
 
 ## O que já existe
 
@@ -22,10 +22,11 @@
    WHATSAPP_LEADS_PERSIST_SUPABASE=1
    ```
 
-3. Implementar (PR separado):
-   - `POST /api/public/whatsapp-lead` — valida payload, `insert` com `supabaseAdmin`, rate limit
-   - Chamada no `handleSubmit` do `WhatsAppLeadForm` **antes** de `window.open(wa.me)`
-   - Painel admin opcional: listagem em `/admin/whatsapp/leads`
+3. Ativar no ambiente:
+   - `POST /api/public/whatsapp-lead` — implementado (`lib/whatsapp/leadPersist.ts`)
+   - `WhatsAppLeadForm` chama a API antes de `window.open(wa.me)` (falha silenciosa se desligado)
+   - `npm run aplicar:whatsapp-leads-staging` / `npm run validar:whatsapp-leads-staging`
+   - Painel admin opcional (futuro): listagem em `/admin/whatsapp/leads`
 
 4. **Não** misturar com `whatsapp_conversations` (bot Cloud API) — tabelas e fluxos distintos.
 
