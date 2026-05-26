@@ -125,14 +125,6 @@ button.menu__link{
   text-align: left;
 }
 
-.menu__link--whatsapp{
-  color: #128c7e;
-}
-
-.menu__link--whatsapp:hover{
-  color: #0d6b5c;
-}
-
 /* ===== BOTÃO MENU MOBILE ===== */
 .menu-toggle{
   display: none;

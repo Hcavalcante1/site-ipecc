@@ -116,7 +116,7 @@ Persistência Supabase (opcional): aplicar `docs/sql/whatsapp-conversations-stag
 |------|---------|
 | Componentes | `WhatsAppLeadForm`, `WhatsAppFloatingChat` (painel), `PublicWhatsAppCtaLink`, `WhatsAppLeadTrigger` |
 | Topbar | Ícone WhatsApp → abre painel com formulário |
-| Menu | Item **WhatsApp** → painel; **Contato** → página `/contato` |
+| Menu | Item **Contato** → página `/contato`; WhatsApp só na **topbar de redes sociais** |
 | Envio | `Continuar no WhatsApp` → `buildWhatsAppUrlFromLead()` + `NEXT_PUBLIC_WHATSAPP_NUMBER` |
 | Assunto | Pré-preenchido por rota (`getWhatsAppSubjectFromPathname`) ou prop `assunto` nos CTAs |
 | Fallback | Link “Abrir WhatsApp com mensagem padrão” no rodapé do painel |
@@ -125,7 +125,7 @@ Persistência Supabase (opcional): aplicar `docs/sql/whatsapp-conversations-stag
 Teste manual:
 
 1. Abrir `/`, `/projetos`, `/editais`, `/contato`
-2. Clicar ícone topbar ou menu **WhatsApp** ou CTAs “Fale com…”
+2. Clicar ícone WhatsApp na **topbar (redes sociais)** ou CTAs “Fale com…”
 3. Preencher nome, telefone, assunto → **Continuar no WhatsApp**
 4. Confirmar `wa.me` com mensagem formatada (nova aba)
 

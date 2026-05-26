@@ -25,7 +25,7 @@ function read(rel: string): string {
 function main() {
   const layout = read("app/layout.tsx");
   assert("layout WhatsAppChatProvider", layout.includes("WhatsAppChatProvider"));
-  assert("layout PublicMenuWhatsAppLink", layout.includes("PublicMenuWhatsAppLink"));
+  assert("layout topbar WhatsApp", layout.includes('aria-label="WhatsApp — atendimento"'));
   assert("layout openPanel topbar", layout.includes("openPanel()"));
 
   for (const page of [
