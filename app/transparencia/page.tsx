@@ -4,6 +4,7 @@ import { getDownloadUrl, isValidFileUrl } from "@/lib/storage";
 import { createClient } from "@/lib/supabaseServer";
 import { logPublicFetch } from "@/lib/observability/publicFetchLog";
 import { PublicHeroRolling } from "@/components/public";
+import PublicWhatsAppHelpLine from "@/components/public/PublicWhatsAppHelpLine";
 function fileUrl(url?: string | null) {
   if (!url) return "";
 
@@ -678,6 +679,12 @@ export default async function TransparenciaPage() {
         title={hero.titulo}
         text={hero.texto}
         ariaLabel="Transparência IPECC"
+      />
+
+      <PublicWhatsAppHelpLine
+        assunto="transparencia"
+        intro="Dúvidas sobre transparência ou documentos?"
+        linkLabel="Fale conosco no WhatsApp"
       />
 
       <section className="sobre" aria-labelledby="compromissos">

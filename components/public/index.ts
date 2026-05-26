@@ -11,3 +11,4 @@ export { default as WhatsAppLeadForm } from "./WhatsAppLeadForm";
 export { default as WhatsAppLeadTrigger } from "./WhatsAppLeadTrigger";
 export { default as PublicWhatsAppCtaLink } from "./PublicWhatsAppCtaLink";
 export { default as PublicMenuWhatsAppLink } from "./PublicMenuWhatsAppLink";
+export { default as PublicWhatsAppHelpLine } from "./PublicWhatsAppHelpLine";

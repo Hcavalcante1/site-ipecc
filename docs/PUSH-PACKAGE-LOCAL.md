@@ -1,17 +1,28 @@
 # Pacote local — pronto para push (quando autorizar)
 
-**Atualizado:** 2026-05-25 · **Branch:** `master` · **HEAD:** `ba91793` · **Remote:** nenhum
+**Atualizado:** 2026-05-26 · **Branch:** `master` · **HEAD:** ver `git log -1` · **Remote:** nenhum
 
 ## Estado do repositório
 
 ```text
 Branch: master
 Remote: (vazio — não executar push sem autorização)
-Working tree: código commitado (BATCH 8–17 + WhatsApp Fases 1–3)
+Working tree: código commitado (BATCH 8–17 + WhatsApp bot + pré-cadastro público)
 Pendente local: .env.local, tsconfig.tsbuildinfo, .cursor/
 ```
 
-## Commits desde BATCH 13 (ordem recente → antigo)
+## Commits WhatsApp site público (pré-cadastro)
+
+| Hash | Mensagem |
+|------|----------|
+| `b03b40e` | feat(whatsapp): link de ajuda em propostas e gate push-prep |
+| `40575a9` | feat(whatsapp): menu WhatsApp e CTA na pagina de contato |
+| `5303258` | feat(whatsapp): pre-selecionar assunto por pagina no pre-cadastro |
+| `167cb09` | feat(whatsapp): conectar CTAs e links de contato ao pre-cadastro |
+| `ae5e8fd` | fix(whatsapp): remover FAB e abrir formulario pelos gatilhos do site |
+| `8a6ec5a` | feat(whatsapp): formulario lead flutuante antes do wa.me |
+
+## Commits anteriores (BATCH / bot)
 
 | Hash | Mensagem |
 |------|----------|

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { PublicHeroRolling } from "@/components/public";
+import PublicWhatsAppHelpLine from "@/components/public/PublicWhatsAppHelpLine";
 import { logPublicFetch } from "@/lib/observability/publicFetchLog";
 
 export const dynamic = "force-dynamic";
@@ -143,6 +144,12 @@ export default async function EditaisPublicPage() {
         bgImage="/media/heroes/editais/hero.webp"
         title={tituloHero}
         text={textoHero}
+      />
+
+      <PublicWhatsAppHelpLine
+        assunto="editais"
+        intro="Precisa de orientação sobre um edital?"
+        linkLabel="Fale conosco no WhatsApp"
       />
 
       {/* CONTEÚDO */}
