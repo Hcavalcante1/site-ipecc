@@ -39,6 +39,21 @@ Smoke local:
 - `npm run check:http` deve ser executado com `npm run dev` ativo.
 - Ajustado para rotas publicas atuais e atributos HTML com entidades
   (`&amp;`) geradas pelo Next/Image.
+- Reinicie `npm run dev` apos `npm run build` antes de repetir smoke HTTP,
+  pois o build regenera artefatos em `.next`.
+
+## Ciclo 2026-05-26 06:00 UTC - hardening de dependencia Next
+
+Escopo:
+- Atualizar Next.js da linha `14.2.5` para `14.2.35` no site principal.
+- Sincronizar o `package.json` do admin standalone para a mesma linha 14.x.
+- Manter React 18 e evitar salto major de framework.
+
+Validacoes planejadas:
+- `git status --short`
+- `npm run validar:enterprise`
+- `npm run build`
+- `npm run check:http` com servidor local reiniciado
 
 Resultado:
 - Auditoria local detecta placeholders vazios em `public/docs` como aviso.

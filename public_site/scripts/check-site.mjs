@@ -68,8 +68,8 @@ async function crawlHttp(baseUrl) {
       if (u.origin !== new URL(baseUrl).origin) continue;
       try {
         const r = await fetch(u.href, { method: "HEAD" });
-        if (!r.ok) errors.push({ type: "img", target: u.href, note: `HTTP ${r.status}` });
-      } catch (e) { errors.push({ type: "img", target: u.href, note: e.message }); }
+        if (!r.ok) errors.push({ type: "asset", target: u.href, note: `HTTP ${r.status}` });
+      } catch (e) { errors.push({ type: "asset", target: u.href, note: e.message }); }
     }
   }
   return { visited: [...visited], errors };
@@ -116,7 +116,7 @@ function crawlStatic(outDir) {
       let fp = s.startsWith("/") ? path.join(outDir, s) : path.join(path.dirname(file), s);
       const candidates = [fp, fp.replace(/\/$/, "/index.html")];
       const ok = candidates.some(c => fs.existsSync(c));
-      if (!ok) errors.push({ type: "img", target: s, where: file, note: "arquivo não encontrado" });
+      if (!ok) errors.push({ type: "asset", target: s, where: file, note: "arquivo não encontrado" });
     }
   }
   return { visited: [...visited], errors };
