@@ -10,7 +10,7 @@ import WhatsAppFloatingChat, {
 } from "@/components/public/WhatsAppFloatingChat";
 
 function PublicSiteShell({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
   const [menuOpen, setMenuOpen] = useState(false);
   const { openPanel } = useWhatsAppChat();
 
@@ -209,7 +209,7 @@ export default function RootLayout({
 }: {
   children: ReactNode;
 }) {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
 
   const isInternal =
     pathname.startsWith("/login") ||

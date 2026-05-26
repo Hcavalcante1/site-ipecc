@@ -44,7 +44,7 @@ export function useWhatsAppChat(): WhatsAppChatContextValue {
 }
 
 export function WhatsAppChatProvider({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
   const [isOpen, setIsOpen] = useState(false);
   const [defaultAssunto, setDefaultAssunto] = useState("");
 
