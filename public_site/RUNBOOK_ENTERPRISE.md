@@ -35,6 +35,14 @@
 - Build: `npm run build`
 - Smoke HTTP: `SMOKE_BASE_URL=http://localhost:3000 npm run smoke:site`
 
+## Ultimo baseline local validado
+
+- `npx tsc --noEmit`
+- `npm run validar:enterprise`
+- `npm run build`
+- `npm run smoke:site` com servidor local em `http://localhost:3000`
+- Resultado: typecheck, audit npm, audit de anexos, build e smoke HTTP verdes.
+
 ## Politica de parada
 
 Parar e reportar opcoes quando a proxima acao exigir producao, deploy, push, Supabase Dashboard, SQL destrutivo, remocao de dados, DROP, remocao de legado ou decisao funcional de produto.
