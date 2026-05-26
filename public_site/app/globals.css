@@ -3,6 +3,29 @@
 html, body { font-family: "Poppins", sans-serif; color: #111827; background: #fff; scroll-behavior: smooth; }
 img { max-width: 100%; display: block; }
 a { text-decoration: none; color: inherit; }
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible{
+  outline: 3px solid rgba(1,194,164,.75);
+  outline-offset: 3px;
+}
+
+.skip-link{
+  position: fixed;
+  left: 16px;
+  top: 16px;
+  z-index: 2000;
+  transform: translateY(-140%);
+  background: #fff;
+  color: var(--blue-navy);
+  padding: 10px 14px;
+  border-radius: 999px;
+  box-shadow: var(--shadow-lg);
+  font-weight: 800;
+  transition: transform .2s ease;
+}
+.skip-link:focus{ transform: translateY(0); }
 
 /* ===== VARS ===== */
 :root{
@@ -50,6 +73,7 @@ a { text-decoration: none; color: inherit; }
 .menubar{ display: flex; align-items: center; gap: 28px; }
 .menu__link{ color: var(--blue-navy); font-weight: 600; font-size: 1rem; transition: .2s; }
 .menu__link:hover{ color: var(--blue-3); }
+.menu__link:focus-visible{ color: var(--blue-3); }
 
 /* ===== TARJA AZUL DEGRADÊ (rola com o conteúdo) ===== */
 .hero-rolling{ padding: 22px 0; margin-top: 10px; }
@@ -151,7 +175,7 @@ a { text-decoration: none; color: inherit; }
 
 /* ===== RESPONSIVO ===== */
 @media (max-width: 992px){
-  .menubar__inner{ height: 80px; }
+  .menubar__inner{ height: auto; min-height: 80px; padding: 8px 0 12px; }
   .brand__logo{ height: 100px; } /* diminui em telas menores */
   .menubar{ gap: 16px; flex-wrap: wrap; justify-content: center; }
   .hero-rolling__inner{ padding: 32px 18px; }
@@ -159,6 +183,35 @@ a { text-decoration: none; color: inherit; }
   .sobre-cta__grid{ grid-template-columns: 1fr; }
 }
 @media (max-width: 640px){
+  .topbar{ height: 36px; }
+  .topbar__inner{ justify-content: center; }
+  .menubar__inner{
+    width: min(94%, var(--container-w));
+    flex-direction: column;
+    gap: 8px;
+  }
+  .brand__logo{ height: 78px; }
+  .menubar{
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .menu__link{
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 10px;
+    border-radius: 999px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    text-align: center;
+    font-size: .9rem;
+  }
+  .hero-rolling{ padding: 14px 0; margin-top: 0; }
+  .hero__title{ font-size: 1.65rem; }
+  .hero__text{ font-size: .95rem; }
   .cards__grid{ grid-template-columns: 1fr; }
   .destaques__grid{ grid-template-columns: 1fr; }
   .impacto__imagem{ height: 260px; }
