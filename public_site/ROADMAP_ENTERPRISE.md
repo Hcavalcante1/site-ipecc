@@ -21,6 +21,9 @@
    - logo publico aponta para asset existente;
    - sitemap inclui `/editais` e `/propostas`;
    - robots corrige bloqueio de `/login`.
+4. Compatibilidade Next/admin:
+   - middleware migrado para `proxy.ts` no padrao Next 16;
+   - links admin de Noticias, Eventos, Banners e Galeria agora possuem paginas "Em breve" em vez de 404.
 
 ## Proximos batches seguros
 
@@ -30,7 +33,7 @@
    - validar localmente sem alterar RLS ou producao.
 2. Admin CMS:
    - padronizar clientes Supabase compartilhados;
-   - substituir links admin inexistentes por modulos "Em breve" ou remover do menu apos decisao funcional.
+   - evoluir modulos "Em breve" para CMS somente apos staging Supabase e politicas revisadas.
 3. Publico premium/mobile:
    - menu publico mobile colapsavel;
    - padronizar assets ausentes e imagens responsivas.

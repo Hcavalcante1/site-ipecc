@@ -48,3 +48,8 @@ npm run smoke:site
 - `audit:anexos`: invariantes locais do fluxo documental de propostas.
 - `verify:proposta-anexos`: marcadores de upload e persistencia de anexos no formulario publico.
 - `check:site`/`smoke:site`: crawler simples para rotas publicas locais.
+
+## Compatibilidade Next 16
+
+- A protecao de rotas admin usa `proxy.ts`.
+- Se o build voltar a alertar sobre `middleware.ts`, verifique se nenhum arquivo legado com esse nome foi recriado.

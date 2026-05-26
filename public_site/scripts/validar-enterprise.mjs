@@ -27,7 +27,8 @@ if (missingScripts.length > 0) {
 
 const trackedEnv = read("git", ["ls-files", ".env*", "app/admin/.env.local"])
   .split("\n")
-  .filter(Boolean);
+  .filter(Boolean)
+  .filter((file) => !file.endsWith(".example"));
 
 if (trackedEnv.length > 0) {
   throw new Error(`Arquivos de ambiente rastreados: ${trackedEnv.join(", ")}`);
