@@ -62,6 +62,18 @@ Nota de seguranca:
   cuja correcao sugerida exige salto para Next 16.x. Esse salto e tratado como
   decisao funcional/arquitetural, nao aplicado automaticamente neste ciclo.
 
+## Ciclo 2026-05-26 06:00 UTC - formularios publicos mobile
+
+Escopo:
+- Tornar grids de campos em contato/propostas responsivos em telas pequenas.
+- Manter o fluxo Supabase e o conteudo dos formularios inalterados.
+
+Validacoes planejadas:
+- `git status --short`
+- `npm run validar:enterprise`
+- `npm run build`
+- `npm run check:http` com servidor local reiniciado
+
 Resultado:
 - Auditoria local detecta placeholders vazios em `public/docs` como aviso.
 - Use `STRICT_ANEXOS=1 npm run audit:anexos` para transformar placeholders
