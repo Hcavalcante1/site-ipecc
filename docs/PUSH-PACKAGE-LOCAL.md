@@ -15,6 +15,7 @@ Pendente local: .env.local, tsconfig.tsbuildinfo, .cursor/
 
 | Hash | Mensagem |
 |------|----------|
+| `bdd3219` | docs(whatsapp): roteiro futuro de leads e push-prep OK |
 | `4b9568f` | chore(whatsapp): validacao de paginas publicas e foco no formulario |
 | `c423878` | feat(whatsapp): linha de ajuda em editais e transparencia |
 | `b03b40e` | feat(whatsapp): link de ajuda em propostas e gate push-prep |
@@ -48,10 +49,12 @@ Pendente local: .env.local, tsconfig.tsbuildinfo, .cursor/
 
 ## Gates antes do primeiro push
 
-**Última execução local:** `npm run validar:push-prep` → **OK** (typecheck + público + admin + WhatsApp bot + pré-cadastro).
+**Última execução local:** `npm run validar:push-prep` → **OK** · `npm run build` → **OK** · `npm run validar:smoke-publico` → **OK** (15 rotas, dev em `:3000`).
 
 ```bash
-npm run validar:push-prep      # código (sem CMS) — OK em 2026-05-26
+npm run validar:push-prep      # código — OK
+npm run build                # produção — OK
+npm run validar:smoke-publico  # com npm run dev — OK (15 rotas)
 npm run auditar:cms-staging    # conteúdo — exit 0 após limpeza manual
 npm run validar:enterprise     # gate completo (inclui build)
 ```
