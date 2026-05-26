@@ -55,17 +55,19 @@ export default function LoginPage() {
           alignItems: "center",
           justifyContent: "center",
           background: "linear-gradient(180deg, #0b1220 0%, #020617 100%)",
+          padding: "24px 16px",
         }}
       >
         <form
           onSubmit={handleSubmit}
           style={{
-            width: 420,
+            width: "min(420px, 100%)",
             padding: "36px 40px",
             borderRadius: 16,
             background: "linear-gradient(180deg, #020617, #0b1220)",
             border: "1px solid rgba(255,255,255,0.12)",
             boxShadow: "0 24px 60px rgba(0,0,0,0.45)",
+            boxSizing: "border-box",
           }}
         >
           <h2 style={{ textAlign: "center", marginBottom: 6 }}>
@@ -145,7 +147,8 @@ export default function LoginPage() {
               fontSize: 15,
               fontWeight: 500,
               border: "none",
-              cursor: "pointer",
+              cursor: loading ? "wait" : "pointer",
+              opacity: loading ? 0.75 : 1,
             }}
           >
             {loading ? "Verificando acesso..." : "Entrar"}

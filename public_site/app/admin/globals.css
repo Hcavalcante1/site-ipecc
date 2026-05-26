@@ -113,6 +113,18 @@ body {
   opacity: 1;
 }
 
+.admin-nav-item:focus-visible,
+.admin-button:focus-visible,
+.admin-save-button:focus-visible,
+.admin-content-shell a:focus-visible,
+.admin-content-shell button:focus-visible,
+.admin-content-shell input:focus-visible,
+.admin-content-shell textarea:focus-visible,
+.admin-content-shell select:focus-visible {
+  outline: 3px solid rgba(34, 197, 94, 0.75);
+  outline-offset: 3px;
+}
+
 .admin-nav-icon {
   width: 20px;
   text-align: center;
@@ -314,7 +326,34 @@ body {
   }
 
   .admin-sidebar {
-    display: none;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    padding: 14px 14px 12px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  }
+
+  .admin-logo {
+    margin-bottom: 12px;
+  }
+
+  .admin-nav {
+    flex-direction: row;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+  }
+
+  .admin-nav-item {
+    flex: 0 0 auto;
+    min-height: 42px;
+    padding: 8px 12px;
+    white-space: nowrap;
+  }
+
+  .admin-nav-item:hover {
+    transform: translateY(-1px);
   }
 
   .admin-main {
@@ -323,6 +362,26 @@ body {
 
   .admin-content-shell {
     padding: 18px 16px 20px;
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-main {
+    padding: 14px 10px 20px;
+  }
+
+  .admin-content-shell {
+    border-radius: 18px;
+    padding: 16px 12px;
+  }
+
+  .admin-h1,
+  .admin-title {
+    font-size: 1.35rem;
+  }
+
+  .admin-grid {
+    grid-template-columns: 1fr;
   }
 }
 
