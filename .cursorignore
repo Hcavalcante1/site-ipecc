@@ -1,0 +1,16 @@
+node_modules/
+.next/
+out/
+dist/
+build/
+.vercel/
+.git/
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+reports/
+coverage/
+public/media/
+agent-transcripts/
+terminals/
