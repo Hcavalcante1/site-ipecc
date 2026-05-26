@@ -34,6 +34,11 @@
 - Estados de foco adicionados a links/botoes principais.
 - Formulario publico de propostas ajustado para grids fluidos em mobile.
 
+### 2026-05-26 - Responsividade admin inicial
+
+- Sidebar admin passa a funcionar como navegacao horizontal sticky em telas menores.
+- Estados de foco adicionados a links e botoes do painel.
+
 ## Próximos batches seguros
 
 1. Padronizar clientes Supabase com guardas de ambiente para build local/staging.

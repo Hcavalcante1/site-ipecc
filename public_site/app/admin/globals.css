@@ -107,10 +107,18 @@ body {
   transition: background 0.15s ease, transform 0.12s ease, opacity 0.15s ease;
 }
 
-.admin-nav-item:hover {
+.admin-nav-item:hover,
+.admin-nav-item:focus-visible {
   background: rgba(15, 23, 42, 0.96);
   transform: translateX(2px);
   opacity: 1;
+}
+
+.admin-nav-item:focus-visible,
+.admin-button:focus-visible,
+.admin-save-button:focus-visible {
+  outline: 3px solid rgba(34, 197, 94, 0.35);
+  outline-offset: 3px;
 }
 
 .admin-nav-icon {
@@ -314,7 +322,33 @@ body {
   }
 
   .admin-sidebar {
-    display: none;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    padding: 14px 14px 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  }
+
+  .admin-logo {
+    margin-bottom: 12px;
+  }
+
+  .admin-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scrollbar-width: thin;
+  }
+
+  .admin-nav-item {
+    flex: 0 0 auto;
+    min-height: 40px;
+    padding: 8px 12px;
+  }
+
+  .admin-nav-item:hover,
+  .admin-nav-item:focus-visible {
+    transform: none;
   }
 
   .admin-main {
@@ -323,6 +357,21 @@ body {
 
   .admin-content-shell {
     padding: 18px 16px 20px;
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-logo-sub {
+    display: none;
+  }
+
+  .admin-main {
+    padding: 14px 10px 20px;
+  }
+
+  .admin-content-shell {
+    border-radius: 20px;
+    padding: 16px 12px 18px;
   }
 }
 
