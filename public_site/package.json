@@ -4,15 +4,23 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build"
+    "build": "next build",
+    "typecheck": "tsc --noEmit",
+    "validar:enterprise": "node scripts/validar-enterprise.mjs",
+    "audit:anexos": "node scripts/audit-anexos.mjs",
+    "verify:proposta-anexos": "node scripts/verify-proposta-anexos.mjs",
+    "health:local": "node scripts/health-local.mjs",
+    "check:site": "node scripts/check-site.mjs --http http://localhost:3000",
+    "smoke:site": "node scripts/check-site.mjs --http http://localhost:3000",
+    "smoke:admin": "node scripts/smoke-admin.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.8.0",
     "@supabase/supabase-js": "2.90.1",
     "chart.js": "4.4.1",
-    "firebase": "10.12.5",
+    "firebase": "^12.13.0",
     "jszip": "3.10.1",
-    "next": "14.2.5",
+    "next": "^15.5.18",
     "react": "18.2.0",
     "react-chartjs-2": "5.2.0",
     "react-dom": "18.2.0"
@@ -24,7 +32,3 @@
     "typescript": "5.4.5"
   }
 }
-
-
-
-

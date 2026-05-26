@@ -2,8 +2,15 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const SEEDS = ["/", "/quem-somos", "/projetos", "/cotacoes", "/transparencia", "/contato", "/acoes"];
+const SEEDS = ["/", "/quem-somos", "/projetos", "/editais", "/transparencia", "/contato", "/acoes"];
 const MAX_PAGES = 200;
+const decodeHtmlAttribute = (value) =>
+  value
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, "\"")
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
 
 const isInternal = (href, base) => {
   if (!href) return false;
@@ -24,8 +31,8 @@ const normalizePath = (p) => {
   }
 };
 const extractLinks = (html) => {
-  const hrefs = [...html.matchAll(/\shref\s*=\s*"(.*?)"/gi)].map(m => m[1]);
-  const srcs  = [...html.matchAll(/\ssrc\s*=\s*"(.*?)"/gi)].map(m => m[1]);
+  const hrefs = [...html.matchAll(/\shref\s*=\s*"(.*?)"/gi)].map(m => decodeHtmlAttribute(m[1]));
+  const srcs  = [...html.matchAll(/\ssrc\s*=\s*"(.*?)"/gi)].map(m => decodeHtmlAttribute(m[1]));
   return { hrefs, srcs };
 };
 
@@ -58,11 +65,11 @@ async function crawlHttp(baseUrl) {
       const next = new URL(h, url).href.split("#")[0];
       if (!visited.has(next) && !queue.includes(next)) queue.push(next);
     }
-    for (const s of srcs) {
+    for (const s of new Set(srcs)) {
       const u = new URL(s, url);
       if (u.origin !== new URL(baseUrl).origin) continue;
       try {
-        const r = await fetch(u.href, { method: "HEAD" });
+        const r = await fetch(u.href);
         if (!r.ok) errors.push({ type: "img", target: u.href, note: `HTTP ${r.status}` });
       } catch (e) { errors.push({ type: "img", target: u.href, note: e.message }); }
     }
