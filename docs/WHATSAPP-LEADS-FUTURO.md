@@ -47,6 +47,7 @@ Alinhados ao formulário atual:
 
 ```bash
 npm run dev
+npm run validar:smoke-publico   # inclui /, /propostas, /editais, /projetos, /transparencia, /contato
 ```
 
 1. `/projetas` → menu WhatsApp → preencher → Continuar
