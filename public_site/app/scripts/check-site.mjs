@@ -2,8 +2,9 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const SEEDS = ["/", "/quem-somos", "/projetos", "/editais", "/transparencia", "/contato", "/acoes"];
+const SEEDS = ["/", "/quem-somos", "/projetos", "/editais", "/transparencia", "/contato", "/acoes", "/propostas", "/login"];
 const MAX_PAGES = 200;
+const REQUEST_TIMEOUT_MS = 10000;
 
 const isInternal = (href, base) => {
   if (!href) return false;
@@ -48,7 +49,7 @@ async function crawlHttp(baseUrl) {
     visited.add(url);
 
     let res;
-    try { res = await fetch(url, { redirect: "follow" }); }
+    try { res = await fetch(url, { redirect: "follow", signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) }); }
     catch (e) { errors.push({ type: "fetch", target: url, note: e.message }); continue; }
 
     if (!res.ok) { errors.push({ type: "status", target: url, note: `HTTP ${res.status}` }); continue; }
@@ -68,7 +69,7 @@ async function crawlHttp(baseUrl) {
       const u = new URL(s, url);
       if (u.origin !== new URL(baseUrl).origin) continue;
       try {
-        const r = await fetch(u.href, { method: "HEAD" });
+        const r = await fetch(u.href, { method: "HEAD", signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
         if (!r.ok) errors.push({ type: "img", target: u.href, note: `HTTP ${r.status}` });
       } catch (e) { errors.push({ type: "img", target: u.href, note: e.message }); }
     }
@@ -123,6 +124,16 @@ function crawlStatic(outDir) {
   return { visited: [...visited], errors };
 }
 
+const uniqueErrors = (errors) => {
+  const seen = new Set();
+  return errors.filter((error) => {
+    const key = `${error.type}|${error.target}|${error.where ?? ""}|${error.note ?? ""}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 // CLI
 const args = process.argv.slice(2);
 const httpIdx = args.indexOf("--http");
@@ -140,6 +151,8 @@ const dirIdx  = args.indexOf("--dir");
     console.error("Uso:\n  node scripts/check-site.mjs --http http://localhost:3000\n  node scripts/check-site.mjs --dir ./out");
     process.exit(2);
   }
+
+  result.errors = uniqueErrors(result.errors);
 
   console.log("\n========== RELATÓRIO ==========");
   console.log(`Páginas verificadas: ${result.visited.length}`);

@@ -14,6 +14,7 @@
 - Smoke local ajustado para rotas reais e URLs HTML escapadas.
 - Visual publico recebeu refinamento responsivo de baixo risco em tokens, cards, hero, foco acessivel e header mobile.
 - Admin recebeu ajuste mobile para manter navegacao acessivel e reduzir overflow de tabelas/formularios.
+- Smoke local passou a cobrir propostas/login, aplicar timeout por requisicao e deduplicar falhas repetidas.
 
 ## Proximos batches seguros
 
@@ -26,8 +27,8 @@
    - Reutilizar componentes de formulario/tabela quando houver repeticao segura.
 
 3. Observabilidade local:
-   - Ampliar smoke para cobrir rotas admin publicamente acessiveis sem credenciais.
-   - Registrar falhas por tipo com saida mais objetiva para CI/staging.
+   - Ampliar smoke para cobrir redirecionamentos admin sem credenciais.
+   - Avaliar exportacao JSON opcional para CI/staging.
 
 4. Preparacao de release sem publicar:
    - Manter audit e build limpos.
