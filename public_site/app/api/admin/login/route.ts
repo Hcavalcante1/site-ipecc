@@ -29,19 +29,23 @@ export async function POST(req: Request) {
       );
     }
 
-    // 🔐 MANUALMENTE DEFINE COOKIE (server-side)
     const res = NextResponse.json({ success: true });
+    const secure = process.env.NODE_ENV === "production";
 
     res.cookies.set("sb-access-token", data.session.access_token, {
       httpOnly: true,
       sameSite: "lax",
+      secure,
       path: "/",
+      maxAge: data.session.expires_in,
     });
 
     res.cookies.set("sb-refresh-token", data.session.refresh_token, {
       httpOnly: true,
       sameSite: "lax",
+      secure,
       path: "/",
+      maxAge: 60 * 60 * 24 * 30,
     });
 
     return res;

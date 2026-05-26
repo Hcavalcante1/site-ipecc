@@ -27,12 +27,15 @@
 5. Responsividade publica:
    - menu publico mobile acessivel via `details/summary`;
    - ajustes de topo, logo e espacamento para telas pequenas.
+6. Auth admin local/staging:
+   - login usa `/api/admin/login` para criar cookies HTTP-only;
+   - logout usa `/api/admin/logout` para limpar cookies;
+   - layout admin confia na protecao da `proxy.ts`, eliminando checagem client-side divergente.
 
 ## Proximos batches seguros
 
 1. Auth admin SSR:
-   - migrar login/admin/logout para `@supabase/ssr`;
-   - alinhar middleware/proxy com cookies Supabase oficiais;
+   - considerar migracao futura para `@supabase/ssr` com cookies Supabase oficiais;
    - validar localmente sem alterar RLS ou producao.
 2. Admin CMS:
    - padronizar clientes Supabase compartilhados;

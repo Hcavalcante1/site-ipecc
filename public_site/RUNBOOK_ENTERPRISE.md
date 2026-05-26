@@ -53,6 +53,8 @@ npm run smoke:site
 
 - A protecao de rotas admin usa `proxy.ts`.
 - Se o build voltar a alertar sobre `middleware.ts`, verifique se nenhum arquivo legado com esse nome foi recriado.
+- Login admin deve chamar `/api/admin/login`; logout deve chamar `/api/admin/logout`.
+- Cookies esperados pela proxy local: `sb-access-token` e `sb-refresh-token`.
 
 ## Smoke visual rapido
 
