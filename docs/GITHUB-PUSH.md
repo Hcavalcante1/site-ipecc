@@ -10,22 +10,22 @@
 - Conta GitHub com repositório vazio criado
 - **Não** incluir `.env.local`, `.cursor/`, `reports/` no commit
 
-## Passo 1 — preparar (PowerShell)
+## Passo 1 — push (PowerShell)
 
-O `gh` não é obrigatório. Use o script do repositório:
+Script principal: **`scripts/push-prep.ps1`**
 
 ```powershell
 cd C:\Users\helio\Downloads\public_site_v3_heroes_padronizados_corrigido
+Set-ExecutionPolicy -Scope Process Bypass
 
-# 1) Crie repo vazio no GitHub (sem README) e copie a URL HTTPS
-$env:GITHUB_REPO_URL = "https://github.com/SEU_USUARIO/ipecc-public-site.git"
+# Dry-run (valida remote, não envia)
+.\scripts\push-prep.ps1 -RemoteUrl "https://github.com/Hcavalcante1/ipecc-whatsapp-leads.git"
 
-# 2) Valida stage e registra remote
-.\scripts\preparar-github-push.ps1
-
-# 3) Enviar (somente quando autorizado)
-.\scripts\preparar-github-push.ps1 -Push
+# Enviar (GitHub usa branch main por padrão)
+.\scripts\push-prep.ps1 -RemoteUrl "https://github.com/Hcavalcante1/ipecc-whatsapp-leads.git" -Push -UseMain
 ```
+
+Legado (env var): `scripts/preparar-github-push.ps1` com `$env:GITHUB_REPO_URL`.
 
 ## Comandos manuais (alternativa)
 

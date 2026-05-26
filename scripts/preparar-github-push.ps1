@@ -38,11 +38,15 @@ if (-not $env:GITHUB_REPO_URL) {
   exit 0
 }
 
-$remote = git remote get-url origin 2>$null
-if (-not $remote) {
+$hasOrigin = $false
+git remote get-url origin 2>$null | Out-Null
+if ($LASTEXITCODE -eq 0) { $hasOrigin = $true }
+
+if (-not $hasOrigin) {
   git remote add origin $env:GITHUB_REPO_URL
   Write-Host "Remote origin adicionado: $env:GITHUB_REPO_URL"
 } else {
+  $remote = (git remote get-url origin).Trim()
   Write-Host "Remote origin já existe: $remote"
 }
 
