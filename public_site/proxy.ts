@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const hasSession =
     req.cookies.get("sb-access-token") ||
     req.cookies.get("sb-refresh-token");
@@ -16,7 +16,3 @@ export function middleware(req: NextRequest) {
 export const config = {
   matcher: ["/admin/:path*"],
 };
-
-
-
-
