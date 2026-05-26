@@ -25,14 +25,16 @@
 6. Responsividade publica.
    - Formulario de propostas e painel institucional de editais usam classes responsivas.
    - Header/menu publico recebeu ajustes mobile para reduzir overflow horizontal.
+7. Smoke admin local.
+   - Script dedicado valida rotas admin principais com cookie sintetico local.
 
 ## Proximos batches seguros
 
 1. Rodar `npm run build` e corrigir incompatibilidades do Next 16.
 2. Migrar `middleware.ts` para `proxy.ts` se o build emitir bloqueio/deprecacao forte.
-3. Expandir smoke local para rotas admin com cookie local de sessao.
-4. Padronizar componentes visuais publicos, priorizando cards e secoes internas.
-5. Substituir placeholders documentais por arquivos oficiais revisados.
+3. Padronizar componentes visuais publicos, priorizando cards e secoes internas.
+4. Substituir placeholders documentais por arquivos oficiais revisados.
+5. Evoluir smoke admin para cobrir fluxos de formulario sem gravar dados.
 
 ## Bloqueios de producao
 

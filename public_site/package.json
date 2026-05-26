@@ -10,7 +10,8 @@
     "audit:anexos": "node scripts/audit-anexos.mjs",
     "verify:proposta-anexos": "node scripts/verify-proposta-anexos.mjs",
     "check:site": "node scripts/check-site.mjs --http http://localhost:3000",
-    "smoke:site": "node scripts/check-site.mjs --http http://localhost:3000"
+    "smoke:site": "node scripts/check-site.mjs --http http://localhost:3000",
+    "smoke:admin": "node scripts/smoke-admin.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

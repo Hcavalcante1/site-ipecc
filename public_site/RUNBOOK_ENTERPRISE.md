@@ -28,9 +28,11 @@ Para smoke local:
 ```bash
 npm run dev
 npm run smoke:site
+npm run smoke:admin
 ```
 
 O smoke HTTP percorre rotas publicas a partir de `scripts/check-site.mjs` e tambem valida assets internos encontrados em `href` e `src`.
+O smoke admin usa cookie sintetico `sb-access-token=local-smoke` apenas contra ambiente local.
 
 ## Regras de seguranca
 

@@ -31,6 +31,7 @@ const requiredScripts = [
   "verify:proposta-anexos",
   "check:site",
   "smoke:site",
+  "smoke:admin",
 ];
 
 const packageJson = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
