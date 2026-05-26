@@ -131,6 +131,8 @@ Teste manual:
 
 **Legado:** painel com 6 opções diretas ao wa.me foi substituído pelo formulário de lead.
 
+Persistência de leads (opcional, não ativa): `docs/WHATSAPP-LEADS-FUTURO.md` + `docs/sql/whatsapp-leads-staging.sql`.
+
 Webhook local (com tunnel + secrets): `GET/POST /api/whatsapp/webhook`
 
 ## Próximos passos (ordem)

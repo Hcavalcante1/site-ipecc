@@ -15,6 +15,7 @@ Pendente local: .env.local, tsconfig.tsbuildinfo, .cursor/
 
 | Hash | Mensagem |
 |------|----------|
+| `4b9568f` | chore(whatsapp): validacao de paginas publicas e foco no formulario |
 | `c423878` | feat(whatsapp): linha de ajuda em editais e transparencia |
 | `b03b40e` | feat(whatsapp): link de ajuda em propostas e gate push-prep |
 | `40575a9` | feat(whatsapp): menu WhatsApp e CTA na pagina de contato |
@@ -47,8 +48,10 @@ Pendente local: .env.local, tsconfig.tsbuildinfo, .cursor/
 
 ## Gates antes do primeiro push
 
+**Última execução local:** `npm run validar:push-prep` → **OK** (typecheck + público + admin + WhatsApp bot + pré-cadastro).
+
 ```bash
-npm run validar:push-prep      # código (sem CMS)
+npm run validar:push-prep      # código (sem CMS) — OK em 2026-05-26
 npm run auditar:cms-staging    # conteúdo — exit 0 após limpeza manual
 npm run validar:enterprise     # gate completo (inclui build)
 ```
@@ -63,7 +66,7 @@ npm run validar:whatsapp-public-pages  # integração nas páginas
 
 ## Checklist
 
-1. [ ] `npm run validar:push-prep` → OK
+1. [x] `npm run validar:push-prep` → OK (código)
 2. [ ] `npm run auditar:cms-staging` → OK (2 convênios teste + copy hero — ver BATCH 17)
 3. [ ] `docs/VISUAL-GO-LIVE-CHECKLIST.md` — aceito pela equipe
 4. [ ] `git status` — sem `.env.local` / `.cursor/` no stage
