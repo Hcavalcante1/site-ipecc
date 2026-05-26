@@ -7,7 +7,7 @@ Allow: /
 # Impede que áreas administrativas e privadas sejam indexadas
 Disallow: /admin/
 Disallow: /dashboard/
-Disallow: /login/
+Disallow: /login
 Disallow: /painel/
 Disallow: /api/
 Disallow: /_next/

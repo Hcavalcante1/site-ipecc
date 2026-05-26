@@ -2,8 +2,18 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const SEEDS = ["/", "/quem-somos", "/projetos", "/cotacoes", "/transparencia", "/contato", "/acoes"];
+const SEEDS = [
+  "/",
+  "/quem-somos",
+  "/projetos",
+  "/editais",
+  "/propostas",
+  "/transparencia",
+  "/contato",
+  "/acoes",
+];
 const MAX_PAGES = 200;
+const REQUEST_TIMEOUT_MS = 10000;
 
 const isInternal = (href, base) => {
   if (!href) return false;
@@ -29,6 +39,16 @@ const extractLinks = (html) => {
   return { hrefs, srcs };
 };
 
+async function fetchWithTimeout(url, init = {}) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 // HTTP mode
 async function crawlHttp(baseUrl) {
   console.log(`🌐 HTTP mode — base: ${baseUrl}`);
@@ -42,7 +62,7 @@ async function crawlHttp(baseUrl) {
     visited.add(url);
 
     let res;
-    try { res = await fetch(url, { redirect: "follow" }); }
+    try { res = await fetchWithTimeout(url, { redirect: "follow" }); }
     catch (e) { errors.push({ type: "fetch", target: url, note: e.message }); continue; }
 
     if (!res.ok) { errors.push({ type: "status", target: url, note: `HTTP ${res.status}` }); continue; }
@@ -62,7 +82,7 @@ async function crawlHttp(baseUrl) {
       const u = new URL(s, url);
       if (u.origin !== new URL(baseUrl).origin) continue;
       try {
-        const r = await fetch(u.href, { method: "HEAD" });
+        const r = await fetchWithTimeout(u.href, { method: "HEAD" });
         if (!r.ok) errors.push({ type: "img", target: u.href, note: `HTTP ${r.status}` });
       } catch (e) { errors.push({ type: "img", target: u.href, note: e.message }); }
     }

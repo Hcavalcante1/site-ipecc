@@ -4,27 +4,33 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build"
+    "build": "next build",
+    "typecheck": "node node_modules/typescript/bin/tsc --noEmit",
+    "validar:enterprise": "node scripts/validar-enterprise.mjs",
+    "audit:anexos": "node scripts/audit-anexos.mjs",
+    "verify:proposta-anexos": "node scripts/verify-proposta-anexos.mjs",
+    "check:site": "node scripts/check-site.mjs",
+    "smoke:site": "node scripts/check-site.mjs --http http://localhost:3000"
   },
   "dependencies": {
-    "@supabase/ssr": "0.8.0",
-    "@supabase/supabase-js": "2.90.1",
-    "chart.js": "4.4.1",
-    "firebase": "10.12.5",
-    "jszip": "3.10.1",
-    "next": "14.2.5",
-    "react": "18.2.0",
-    "react-chartjs-2": "5.2.0",
-    "react-dom": "18.2.0"
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.106.2",
+    "chart.js": "^4.5.1",
+    "firebase": "^12.13.0",
+    "jszip": "^3.10.1",
+    "next": "^16.2.6",
+    "postcss": "^8.5.15",
+    "react": "^19.2.6",
+    "react-chartjs-2": "^5.3.1",
+    "react-dom": "^19.2.6"
   },
   "devDependencies": {
-    "@types/node": "20.11.30",
-    "@types/react": "18.2.48",
-    "@types/react-dom": "18.2.18",
-    "typescript": "5.4.5"
+    "@types/node": "^25.9.1",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^6.0.3"
+  },
+  "overrides": {
+    "postcss": "^8.5.15"
   }
 }
-
-
-
-
