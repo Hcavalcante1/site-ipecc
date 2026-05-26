@@ -30,8 +30,11 @@ const checks = [
       adminListPage.includes("cnpj_url"),
   },
   {
-    label: "Admin proposal detail exposes at least main proposal attachment",
-    ok: adminDetailPage.includes("arquivo_url"),
+    label: "Admin proposal detail exposes all stored attachments",
+    ok:
+      adminDetailPage.includes("arquivo_url") &&
+      adminDetailPage.includes("estatuto_url") &&
+      adminDetailPage.includes("cnpj_url"),
   },
 ];
 

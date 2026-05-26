@@ -53,6 +53,7 @@ Veja `.env.local.example`:
 
 - Rotas `/admin/:path*` exigem cookies `sb-access-token` ou `sb-refresh-token`.
 - Para smoke local sem credenciais reais, usar cookie sintetico apenas no ambiente local.
+- Detalhes de propostas devem expor os tres anexos persistidos: proposta, estatuto social e cartao CNPJ.
 
 ## Responsividade publica
 

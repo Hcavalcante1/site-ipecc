@@ -27,6 +27,8 @@
    - Header/menu publico recebeu ajustes mobile para reduzir overflow horizontal.
 7. Smoke admin local.
    - Script dedicado valida rotas admin principais com cookie sintetico local.
+8. Admin/CMS de propostas.
+   - Detalhe de proposta lista proposta, estatuto social e cartao CNPJ quando presentes.
 
 ## Proximos batches seguros
 
