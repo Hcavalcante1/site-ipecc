@@ -78,6 +78,15 @@ a { text-decoration: none; color: inherit; }
 .card__title{ color: var(--blue-navy); font-size: 1.25rem; margin-bottom: 6px; font-weight: 800; }
 .card__text{ color: #6b7280; margin-bottom: 10px; }
 .card__link{ color: var(--blue-2); font-weight: 700; }
+.card__link--disabled{
+  color: #64748b;
+  cursor: not-allowed;
+  opacity: .78;
+}
+.card__link--disabled small{
+  font-weight: 600;
+  white-space: nowrap;
+}
 
 /* ===== DESTAQUES ===== */
 .destaques{ background: #f8fafc; padding: 64px 0; }

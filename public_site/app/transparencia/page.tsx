@@ -1,4 +1,42 @@
 // app/transparencia/page.tsx
+import fs from "node:fs";
+import path from "node:path";
+import type { ReactNode } from "react";
+
+function isDocumentAvailable(href: string) {
+  if (!href.startsWith("/docs/")) return true;
+
+  try {
+    const filePath = path.join(process.cwd(), "public", href);
+    return fs.statSync(filePath).size > 0;
+  } catch {
+    return false;
+  }
+}
+
+function DocumentLink({
+  href,
+  children,
+  className = "card__link",
+}: {
+  href: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  if (!isDocumentAvailable(href)) {
+    return (
+      <span className={`${className} card__link--disabled`} aria-disabled="true">
+        {children} <small>(em atualização)</small>
+      </span>
+    );
+  }
+
+  return (
+    <a className={className} href={href} target="_blank" rel="noreferrer">
+      {children}
+    </a>
+  );
+}
 
 export default function TransparenciaPage() {
   return (
@@ -37,9 +75,9 @@ export default function TransparenciaPage() {
               <div className="card__body">
                 <h3 className="card__title">Atos constitutivos</h3>
                 <ul style={{ paddingLeft: "1.2rem", lineHeight: 1.7 }}>
-                  <li><a className="card__link" href="/docs/estatuto-social.pdf" target="_blank" rel="noreferrer">Estatuto Social (atualizado)</a></li>
-                  <li><a className="card__link" href="/docs/ata-eleicao-diretoria.pdf" target="_blank" rel="noreferrer">Ata de Eleição e Posse da Diretoria</a></li>
-                  <li><a className="card__link" href="/docs/cnpj-cartao.pdf" target="_blank" rel="noreferrer">Cartão CNPJ</a></li>
+                  <li><DocumentLink href="/docs/estatuto-social.pdf">Estatuto Social (atualizado)</DocumentLink></li>
+                  <li><DocumentLink href="/docs/ata-eleicao-diretoria.pdf">Ata de Eleição e Posse da Diretoria</DocumentLink></li>
+                  <li><DocumentLink href="/docs/cnpj-cartao.pdf">Cartão CNPJ</DocumentLink></li>
                 </ul>
               </div>
             </article>
@@ -48,9 +86,9 @@ export default function TransparenciaPage() {
               <div className="card__body">
                 <h3 className="card__title">Governança e conformidade</h3>
                 <ul style={{ paddingLeft: "1.2rem", lineHeight: 1.7 }}>
-                  <li><a className="card__link" href="/docs/regimento-interno.pdf" target="_blank" rel="noreferrer">Regimento Interno / Políticas</a></li>
-                  <li><a className="card__link" href="/docs/codigo-conduta.pdf" target="_blank" rel="noreferrer">Código de Conduta e Integridade</a></li>
-                  <li><a className="card__link" href="/docs/politica-lgpd.pdf" target="_blank" rel="noreferrer">Política de Privacidade e LGPD</a></li>
+                  <li><DocumentLink href="/docs/regimento-interno.pdf">Regimento Interno / Políticas</DocumentLink></li>
+                  <li><DocumentLink href="/docs/codigo-conduta.pdf">Código de Conduta e Integridade</DocumentLink></li>
+                  <li><DocumentLink href="/docs/politica-lgpd.pdf">Política de Privacidade e LGPD</DocumentLink></li>
                 </ul>
               </div>
             </article>
@@ -59,9 +97,9 @@ export default function TransparenciaPage() {
               <div className="card__body">
                 <h3 className="card__title">Habilitações e certidões</h3>
                 <ul style={{ paddingLeft: "1.2rem", lineHeight: 1.7 }}>
-                  <li><a className="card__link" href="/docs/cnd-federal.pdf" target="_blank" rel="noreferrer">CND Federal (RFB / PGFN)</a></li>
-                  <li><a className="card__link" href="/docs/cnd-estadual.pdf" target="_blank" rel="noreferrer">CND Estadual</a></li>
-                  <li><a className="card__link" href="/docs/cnd-municipal.pdf" target="_blank" rel="noreferrer">CND Municipal</a></li>
+                  <li><DocumentLink href="/docs/cnd-federal.pdf">CND Federal (RFB / PGFN)</DocumentLink></li>
+                  <li><DocumentLink href="/docs/cnd-estadual.pdf">CND Estadual</DocumentLink></li>
+                  <li><DocumentLink href="/docs/cnd-municipal.pdf">CND Municipal</DocumentLink></li>
                 </ul>
               </div>
             </article>
@@ -83,18 +121,18 @@ export default function TransparenciaPage() {
             <article>
               <h3>Termos e convênios</h3>
               <ul style={{ paddingLeft: "1.2rem", lineHeight: 1.7 }}>
-                <li><a className="card__link" href="/docs/termo-colaboracao-001.pdf" target="_blank" rel="noreferrer">Termo de Colaboração nº 001/2025 — Plano de Trabalho</a></li>
-                <li><a className="card__link" href="/docs/aditivo-001-termo001.pdf" target="_blank" rel="noreferrer">Aditivo nº 001 — Ampliação de Metas</a></li>
-                <li><a className="card__link" href="/docs/relatorio-parcial-termo001.pdf" target="_blank" rel="noreferrer">Relatório Parcial de Execução</a></li>
+                <li><DocumentLink href="/docs/termo-colaboracao-001.pdf">Termo de Colaboração nº 001/2025 — Plano de Trabalho</DocumentLink></li>
+                <li><DocumentLink href="/docs/aditivo-001-termo001.pdf">Aditivo nº 001 — Ampliação de Metas</DocumentLink></li>
+                <li><DocumentLink href="/docs/relatorio-parcial-termo001.pdf">Relatório Parcial de Execução</DocumentLink></li>
               </ul>
             </article>
 
             <article>
               <h3>Chamadas e editais</h3>
               <ul style={{ paddingLeft: "1.2rem", lineHeight: 1.7 }}>
-                <li><a className="card__link" href="/docs/edital-parceria-educacao.pdf" target="_blank" rel="noreferrer">Edital — Programa de Educação e Cidadania</a></li>
-                <li><a className="card__link" href="/docs/edital-circuito-cultural.pdf" target="_blank" rel="noreferrer">Edital — Circuito Cultural</a></li>
-                <li><a className="card__link" href="/docs/resultado-selecao.pdf" target="_blank" rel="noreferrer">Resultados de Seleção</a></li>
+                <li><DocumentLink href="/docs/edital-parceria-educacao.pdf">Edital — Programa de Educação e Cidadania</DocumentLink></li>
+                <li><DocumentLink href="/docs/edital-circuito-cultural.pdf">Edital — Circuito Cultural</DocumentLink></li>
+                <li><DocumentLink href="/docs/resultado-selecao.pdf">Resultados de Seleção</DocumentLink></li>
               </ul>
             </article>
           </div>
@@ -116,8 +154,8 @@ export default function TransparenciaPage() {
               <div className="card__body">
                 <h3 className="card__title">Relatórios técnicos</h3>
                 <ul style={{ paddingLeft: "1.2rem", lineHeight: 1.7 }}>
-                  <li><a className="card__link" href="/docs/relatorio-tecnico-semestral.pdf" target="_blank" rel="noreferrer">Relatório Técnico Semestral</a></li>
-                  <li><a className="card__link" href="/docs/relatorio-atividades.pdf" target="_blank" rel="noreferrer">Relatório de Atividades</a></li>
+                  <li><DocumentLink href="/docs/relatorio-tecnico-semestral.pdf">Relatório Técnico Semestral</DocumentLink></li>
+                  <li><DocumentLink href="/docs/relatorio-atividades.pdf">Relatório de Atividades</DocumentLink></li>
                 </ul>
               </div>
             </article>
@@ -126,8 +164,8 @@ export default function TransparenciaPage() {
               <div className="card__body">
                 <h3 className="card__title">Relatórios financeiros</h3>
                 <ul style={{ paddingLeft: "1.2rem", lineHeight: 1.7 }}>
-                  <li><a className="card__link" href="/docs/demonstrativo-receitas-despesas.pdf" target="_blank" rel="noreferrer">Demonstrativo de Receitas e Despesas</a></li>
-                  <li><a className="card__link" href="/docs/conciliacao-bancaria.pdf" target="_blank" rel="noreferrer">Conciliação Bancária</a></li>
+                  <li><DocumentLink href="/docs/demonstrativo-receitas-despesas.pdf">Demonstrativo de Receitas e Despesas</DocumentLink></li>
+                  <li><DocumentLink href="/docs/conciliacao-bancaria.pdf">Conciliação Bancária</DocumentLink></li>
                 </ul>
               </div>
             </article>
@@ -136,8 +174,8 @@ export default function TransparenciaPage() {
               <div className="card__body">
                 <h3 className="card__title">Publicações complementares</h3>
                 <ul style={{ paddingLeft: "1.2rem", lineHeight: 1.7 }}>
-                  <li><a className="card__link" href="/docs/parecer-contabil.pdf" target="_blank" rel="noreferrer">Parecer Contábil</a></li>
-                  <li><a className="card__link" href="/docs/auditoria-independente.pdf" target="_blank" rel="noreferrer">Relatório de Auditoria Independente</a></li>
+                  <li><DocumentLink href="/docs/parecer-contabil.pdf">Parecer Contábil</DocumentLink></li>
+                  <li><DocumentLink href="/docs/auditoria-independente.pdf">Relatório de Auditoria Independente</DocumentLink></li>
                 </ul>
               </div>
             </article>
@@ -156,7 +194,7 @@ export default function TransparenciaPage() {
               disponibilizamos canais específicos de atendimento com registro e retorno.
             </p>
             <ul style={{ paddingLeft: "1.2rem", lineHeight: 1.7 }}>
-              <li><a className="card__link" href="/docs/politica-lgpd.pdf" target="_blank" rel="noreferrer">Política de Privacidade e Proteção de Dados</a></li>
+              <li><DocumentLink href="/docs/politica-lgpd.pdf">Política de Privacidade e Proteção de Dados</DocumentLink></li>
               <li><a className="card__link" href="mailto:lgpd@apecc.org.br">Canal LGPD — lgpd@apecc.org.br</a></li>
               <li><a className="card__link" href="mailto:integridade@apecc.org.br">Canal de Integridade — integridade@apecc.org.br</a></li>
             </ul>
@@ -165,9 +203,7 @@ export default function TransparenciaPage() {
           <div className="cta-green__inner">
             <h3>Acesso rápido a documentos</h3>
             <p>Baixe diretamente os principais arquivos publicados pela APECC.</p>
-            <a href="/docs/relatorio-atividades.pdf" className="btn-cta" aria-label="Baixar Relatório de Atividades">
-              Baixar Relatório de Atividades
-            </a>
+            <DocumentLink href="/docs/relatorio-atividades.pdf" className="btn-cta">Baixar Relatório de Atividades</DocumentLink>
           </div>
         </div>
       </section>
