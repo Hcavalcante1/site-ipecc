@@ -12,27 +12,23 @@
   - override de PostCSS corrigido
 - Guard admin migrado de `middleware.ts` para `proxy.ts`.
 - Smoke local ajustado para rotas reais e URLs HTML escapadas.
+- Visual publico recebeu refinamento responsivo de baixo risco em tokens, cards, hero, foco acessivel e header mobile.
 
 ## Proximos batches seguros
 
-1. Visual publico premium:
-   - Revisar home, quem somos, projetos, editais e transparencia.
-   - Consolidar tokens visuais em `app/globals.css`.
-   - Melhorar hierarquia mobile sem alterar conteudo institucional sensivel.
-
-2. Responsividade mobile:
+1. Responsividade mobile:
    - Auditar header fixo, menu principal, cards e tabelas.
    - Reduzir overflow horizontal em paginas admin e publicas.
 
-3. Admin/CMS local:
+2. Admin/CMS local:
    - Padronizar estados de loading, erro e sucesso.
    - Reutilizar componentes de formulario/tabela quando houver repeticao segura.
 
-4. Observabilidade local:
+3. Observabilidade local:
    - Ampliar smoke para cobrir rotas admin publicamente acessiveis sem credenciais.
    - Registrar falhas por tipo com saida mais objetiva para CI/staging.
 
-5. Preparacao de release sem publicar:
+4. Preparacao de release sem publicar:
    - Manter audit e build limpos.
    - Documentar variaveis obrigatorias sem expor segredos.
    - Gerar checklist pre-release local/staging.
