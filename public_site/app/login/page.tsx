@@ -16,19 +16,36 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    setLoading(false);
+      if (error) {
+        setError("E-mail ou senha inválidos");
+        return;
+      }
 
-    if (error) {
-      setError("E-mail ou senha inválidos");
-      return;
+      const cookieResponse = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!cookieResponse.ok) {
+        await supabase.auth.signOut();
+        setError("Não foi possível iniciar a sessão administrativa.");
+        return;
+      }
+
+      router.replace("/admin");
+    } catch {
+      await supabase.auth.signOut();
+      setError("Falha de conexão ao iniciar sessão.");
+    } finally {
+      setLoading(false);
     }
-
-    router.replace("/admin");
   }
 
   return (

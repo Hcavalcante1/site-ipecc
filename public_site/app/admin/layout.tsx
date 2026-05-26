@@ -30,6 +30,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   async function handleLogout() {
     await supabase.auth.signOut();
+    await fetch("/api/admin/logout", { method: "POST" });
     router.replace("/login");
   }
 

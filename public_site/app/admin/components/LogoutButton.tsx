@@ -8,6 +8,7 @@ export default function LogoutButton() {
 
   async function handleLogout() {
     await supabase.auth.signOut();
+    await fetch("/api/admin/logout", { method: "POST" });
     router.replace("/login");
   }
 
