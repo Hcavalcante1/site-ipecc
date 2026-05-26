@@ -62,6 +62,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <a href="/transparencia" className="menu__link">Transparência</a>
                 <a href="/contato" className="menu__link">Contato</a>
               </nav>
+
+              <details className="mobile-menu">
+                <summary className="mobile-menu__summary" aria-label="Abrir menu principal">
+                  Menu
+                </summary>
+                <nav className="mobile-menu__panel" aria-label="Menu principal mobile">
+                  <a href="/" className="menu__link">Início</a>
+                  <a href="/quem-somos" className="menu__link">Quem Somos</a>
+                  <a href="/projetos" className="menu__link">Projetos</a>
+                  <a href="/editais" className="menu__link">Editais e Chamadas Públicas</a>
+                  <a href="/transparencia" className="menu__link">Transparência</a>
+                  <a href="/contato" className="menu__link">Contato</a>
+                </nav>
+              </details>
             </div>
           </div>
         </header>

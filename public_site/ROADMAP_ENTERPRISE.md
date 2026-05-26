@@ -24,6 +24,9 @@
 4. Compatibilidade Next/admin:
    - middleware migrado para `proxy.ts` no padrao Next 16;
    - links admin de Noticias, Eventos, Banners e Galeria agora possuem paginas "Em breve" em vez de 404.
+5. Responsividade publica:
+   - menu publico mobile acessivel via `details/summary`;
+   - ajustes de topo, logo e espacamento para telas pequenas.
 
 ## Proximos batches seguros
 
@@ -35,7 +38,6 @@
    - padronizar clientes Supabase compartilhados;
    - evoluir modulos "Em breve" para CMS somente apos staging Supabase e politicas revisadas.
 3. Publico premium/mobile:
-   - menu publico mobile colapsavel;
    - padronizar assets ausentes e imagens responsivas.
 
 ## Bloqueios explicitos

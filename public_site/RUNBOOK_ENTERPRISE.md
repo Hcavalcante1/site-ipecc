@@ -53,3 +53,9 @@ npm run smoke:site
 
 - A protecao de rotas admin usa `proxy.ts`.
 - Se o build voltar a alertar sobre `middleware.ts`, verifique se nenhum arquivo legado com esse nome foi recriado.
+
+## Smoke visual rapido
+
+- Em telas pequenas, o menu publico deve aparecer como botao "Menu" no topo.
+- O menu desktop permanece visivel em telas medias/grandes.
+- Para validar sem browser, use `npm run smoke:site`; para regressao visual, abrir `/`, `/editais` e `/propostas` no dev server.
