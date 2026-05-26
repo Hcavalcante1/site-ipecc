@@ -20,6 +20,8 @@
 4. Higiene operacional.
    - `.gitignore` cobre envs reais, build outputs, cache TypeScript e `node_modules`.
    - `.env.local.example` documenta variaveis esperadas.
+5. Smoke HTTP local.
+   - Crawler local valida rotas publicas principais e decodifica atributos HTML escapados gerados pelo Next.
 
 ## Proximos batches seguros
 

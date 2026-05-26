@@ -23,9 +23,14 @@ const normalizePath = (p) => {
     return p.split("#")[0].split("?")[0].replace(/\/+$/, "") || "/";
   }
 };
+const decodeHtmlAttribute = (value) =>
+  value
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, "\"")
+    .replace(/&#39;/g, "'");
 const extractLinks = (html) => {
-  const hrefs = [...html.matchAll(/\shref\s*=\s*"(.*?)"/gi)].map(m => m[1]);
-  const srcs  = [...html.matchAll(/\ssrc\s*=\s*"(.*?)"/gi)].map(m => m[1]);
+  const hrefs = [...html.matchAll(/\shref\s*=\s*"(.*?)"/gi)].map(m => decodeHtmlAttribute(m[1]));
+  const srcs  = [...html.matchAll(/\ssrc\s*=\s*"(.*?)"/gi)].map(m => decodeHtmlAttribute(m[1]));
   return { hrefs, srcs };
 };
 

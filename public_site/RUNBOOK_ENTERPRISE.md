@@ -30,6 +30,8 @@ npm run dev
 npm run smoke:site
 ```
 
+O smoke HTTP percorre rotas publicas a partir de `scripts/check-site.mjs` e tambem valida assets internos encontrados em `href` e `src`.
+
 ## Regras de seguranca
 
 - Nunca versionar `.env.local` ou variantes reais.
