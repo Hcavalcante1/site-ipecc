@@ -14,6 +14,7 @@ import { usePathname } from "next/navigation";
 import {
   buildWhatsAppUrl,
   getWhatsAppSubjectFromPathname,
+  isValidWhatsAppSubjectId,
 } from "@/lib/whatsapp/publicWhatsApp";
 import WhatsAppLeadForm from "./WhatsAppLeadForm";
 import styles from "./WhatsAppFloatingChat.module.css";
@@ -50,7 +51,9 @@ export function WhatsAppChatProvider({ children }: { children: ReactNode }) {
   const openPanel = useCallback(
     (options?: WhatsAppOpenPanelOptions) => {
       const fromRoute = getWhatsAppSubjectFromPathname(pathname);
-      const assunto = options?.assunto?.trim() || fromRoute;
+      const requested = options?.assunto?.trim() || fromRoute;
+      const assunto =
+        requested && isValidWhatsAppSubjectId(requested) ? requested : "";
       setDefaultAssunto(assunto);
       setIsOpen(true);
     },

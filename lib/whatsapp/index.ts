@@ -8,6 +8,7 @@ export {
   getWhatsAppUrlForChatOption,
   getSiteWhatsAppNumber,
   getWhatsAppSubjectLabel,
+  isValidWhatsAppSubjectId,
   isWhatsAppLeadHref,
   getWhatsAppSubjectFromPathname,
   normalizeWhatsAppNumber,

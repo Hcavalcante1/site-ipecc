@@ -12,6 +12,7 @@ const steps: { label: string; cmd: string }[] = [
   { label: "validar:whatsapp-webhook", cmd: "npm run validar:whatsapp-webhook" },
   { label: "validar:whatsapp-meta", cmd: "npm run validar:whatsapp-meta" },
   { label: "validar:whatsapp-fase2", cmd: "npm run validar:whatsapp-fase2" },
+  { label: "validar:whatsapp-public-chat", cmd: "npm run validar:whatsapp-public-chat" },
 ];
 
 function main() {

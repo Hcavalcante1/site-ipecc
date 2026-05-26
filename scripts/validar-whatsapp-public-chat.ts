@@ -12,6 +12,7 @@ import {
   formatWhatsAppLeadMessage,
   getWhatsAppUrlForChatOption,
   getWhatsAppSubjectFromPathname,
+  isValidWhatsAppSubjectId,
   isWhatsAppLeadHref,
   validateWhatsAppLeadForm,
 } from "../lib/whatsapp/publicWhatsApp";
@@ -107,6 +108,8 @@ function main() {
   assert("rota /projetos", getWhatsAppSubjectFromPathname("/projetos") === "projetos");
   assert("rota /editais", getWhatsAppSubjectFromPathname("/editais") === "editais");
   assert("rota home", getWhatsAppSubjectFromPathname("/") === "");
+  assert("assunto valido", isValidWhatsAppSubjectId("propostas"));
+  assert("assunto invalido", !isValidWhatsAppSubjectId("foo"));
 
   console.log("\nPainel público WhatsApp (lead form) validado.");
 }

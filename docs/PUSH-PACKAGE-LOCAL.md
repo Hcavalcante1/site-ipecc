@@ -45,6 +45,7 @@ Com `npm run dev` ativo, incluir também:
 
 ```bash
 npm run validar:smoke-publico
+npm run validar:whatsapp-public-chat   # pré-cadastro wa.me (site público)
 ```
 
 ## Checklist

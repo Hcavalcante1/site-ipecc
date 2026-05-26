@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { PublicHeroRolling } from "@/components/public";
+import WhatsAppLeadTrigger from "@/components/public/WhatsAppLeadTrigger";
 
 type TipoPessoa = "pessoa_juridica" | "osc" | "pessoa_fisica";
 type CategoriaDocumento =
@@ -895,6 +896,37 @@ export default function PropostasPage() {
         title="Enviar Proposta"
         text="Preencha os dados e a documentação em etapas. O envio definitivo cria uma única proposta com todos os anexos selecionados."
       />
+
+      <p
+        className="public-form-shell__help"
+        style={{
+          textAlign: "center",
+          maxWidth: 720,
+          margin: "0 auto 24px",
+          padding: "0 16px",
+          color: "#64748b",
+          fontSize: "0.9375rem",
+          lineHeight: 1.5,
+        }}
+      >
+        Dúvidas sobre o envio?{" "}
+        <WhatsAppLeadTrigger
+          assunto="propostas"
+          style={{
+            border: 0,
+            padding: 0,
+            background: "none",
+            color: "#128c7e",
+            fontWeight: 700,
+            cursor: "pointer",
+            font: "inherit",
+            textDecoration: "underline",
+          }}
+        >
+          Fale conosco no WhatsApp
+        </WhatsAppLeadTrigger>
+        .
+      </p>
 
       <section className="public-form-shell">
         <div className="public-form-shell__inner">

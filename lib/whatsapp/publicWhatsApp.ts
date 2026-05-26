@@ -32,6 +32,10 @@ export const PUBLIC_WHATSAPP_SUBJECT_OPTIONS: PublicWhatsAppSubjectOption[] =
     { id: "outro", label: "Outro" },
   ];
 
+export function isValidWhatsAppSubjectId(assuntoId: string): boolean {
+  return PUBLIC_WHATSAPP_SUBJECT_OPTIONS.some((o) => o.id === assuntoId);
+}
+
 /** @deprecated Use PUBLIC_WHATSAPP_SUBJECT_OPTIONS — mantido para scripts legados. */
 export type PublicWhatsAppChatOption = {
   id: Exclude<PublicWhatsAppSubjectId, "outro">;
