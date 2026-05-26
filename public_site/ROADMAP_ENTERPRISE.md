@@ -16,13 +16,18 @@
 - Endpoint local de health adicionado em `/api/health`.
 - `tsconfig` ajustado para TypeScript 6.
 
+### 2026-05-26 - Autenticação admin local/staging
+
+- Login admin alinhado para `/api/admin/login`, com cookies HTTP-only usados pelo `proxy.ts`.
+- Logout server-side adicionado em `/api/admin/logout`.
+- Layout admin deixou de depender de sessão client-side Supabase para evitar loop pos-login.
+
 ## Próximos batches seguros
 
-1. Corrigir autenticação admin para usar cookies HTTP-only via API de login/logout.
-2. Melhorar responsividade do header/menu publico e formularios mobile.
-3. Padronizar clientes Supabase com guardas de ambiente para build local/staging.
-4. Executar smokes locais com servidor Next ativo.
-5. Revisar fluxo documental/storage sem alterar RLS nem dados.
+1. Melhorar responsividade do header/menu publico e formularios mobile.
+2. Padronizar clientes Supabase com guardas de ambiente para build local/staging.
+3. Executar smokes locais com servidor Next ativo.
+4. Revisar fluxo documental/storage sem alterar RLS nem dados.
 
 ## Bloqueios permanentes sem autorização
 

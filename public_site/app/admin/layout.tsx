@@ -3,33 +3,14 @@
 import "./globals.css";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import type { ReactNode } from "react";
 export const dynamic = "force-dynamic";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const [checking, setChecking] = useState(true);
-
-  useEffect(() => {
-    async function checkAuth() {
-      const { data } = await supabase.auth.getSession();
-
-      if (!data.session) {
-        router.replace("/login");
-        return;
-      }
-
-      setChecking(false);
-    }
-
-    checkAuth();
-  }, [router]);
-
-  if (checking) return null;
 
   async function handleLogout() {
-    await supabase.auth.signOut();
+    await fetch("/api/admin/logout", { method: "POST" });
     router.replace("/login");
   }
 

@@ -29,20 +29,17 @@ export async function POST(req: Request) {
       );
     }
 
-    // 🔐 MANUALMENTE DEFINE COOKIE (server-side)
     const res = NextResponse.json({ success: true });
-
-    res.cookies.set("sb-access-token", data.session.access_token, {
+    const cookieOptions = {
       httpOnly: true,
-      sameSite: "lax",
+      sameSite: "lax" as const,
+      secure: process.env.NODE_ENV === "production",
       path: "/",
-    });
+      maxAge: data.session.expires_in,
+    };
 
-    res.cookies.set("sb-refresh-token", data.session.refresh_token, {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-    });
+    res.cookies.set("sb-access-token", data.session.access_token, cookieOptions);
+    res.cookies.set("sb-refresh-token", data.session.refresh_token, cookieOptions);
 
     return res;
   } catch (err) {
