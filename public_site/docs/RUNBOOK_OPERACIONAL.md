@@ -47,6 +47,8 @@ Smoke local:
 Escopo:
 - Atualizar Next.js da linha `14.2.5` para `14.2.35` no site principal.
 - Sincronizar o `package.json` do admin standalone para a mesma linha 14.x.
+- Atualizar Firebase para `12.13.0`; nao ha imports Firebase no codigo atual,
+  reduzindo risco de runtime no site.
 - Manter React 18 e evitar salto major de framework.
 
 Validacoes planejadas:
@@ -54,6 +56,11 @@ Validacoes planejadas:
 - `npm run validar:enterprise`
 - `npm run build`
 - `npm run check:http` com servidor local reiniciado
+
+Nota de seguranca:
+- `npm audit --omit=dev` ainda aponta vulnerabilidades associadas a Next/PostCSS
+  cuja correcao sugerida exige salto para Next 16.x. Esse salto e tratado como
+  decisao funcional/arquitetural, nao aplicado automaticamente neste ciclo.
 
 Resultado:
 - Auditoria local detecta placeholders vazios em `public/docs` como aviso.
