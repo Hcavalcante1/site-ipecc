@@ -44,12 +44,21 @@ a { text-decoration: none; color: inherit; }
 .menubar-wrapper{ background: #fff; box-shadow: 0 3px 10px rgba(0,0,0,.05); }
 .menubar__inner{
   display: flex; align-items: center; justify-content: space-between;
-  gap: 30px; height: 88px;
+  gap: 30px; min-height: 88px;
+  padding: 8px 0;
 }
 .brand__logo{ height: 120px; width: auto; object-fit: contain; } /* ajuste aqui se quiser maior */
-.menubar{ display: flex; align-items: center; gap: 28px; }
+.menubar{ display: flex; align-items: center; justify-content: flex-end; gap: 28px; }
 .menu__link{ color: var(--blue-navy); font-weight: 600; font-size: 1rem; transition: .2s; }
-.menu__link:hover{ color: var(--blue-3); }
+.menu__link:hover, .menu__link:focus-visible{ color: var(--blue-3); }
+.menu__link:focus-visible,
+.card__link:focus-visible,
+.btn:focus-visible,
+.btn-vermais:focus-visible,
+.btn-cta:focus-visible{
+  outline: 3px solid rgba(1,194,164,.35);
+  outline-offset: 3px;
+}
 
 /* ===== TARJA AZUL DEGRADÊ (rola com o conteúdo) ===== */
 .hero-rolling{ padding: 22px 0; margin-top: 10px; }
@@ -151,15 +160,42 @@ a { text-decoration: none; color: inherit; }
 
 /* ===== RESPONSIVO ===== */
 @media (max-width: 992px){
-  .menubar__inner{ height: 80px; }
-  .brand__logo{ height: 100px; } /* diminui em telas menores */
-  .menubar{ gap: 16px; flex-wrap: wrap; justify-content: center; }
+  .menubar__inner{
+    min-height: auto;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .brand__logo{ height: 82px; } /* diminui em telas menores */
+  .menubar{
+    width: 100%;
+    gap: 10px;
+    overflow-x: auto;
+    justify-content: flex-start;
+    padding: 0 0 10px;
+    scrollbar-width: thin;
+  }
+  .menu__link{
+    flex: 0 0 auto;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 8px 12px;
+    background: #f8fafc;
+  }
   .hero-rolling__inner{ padding: 32px 18px; }
   .impacto__imagem{ height: 320px; }
   .sobre-cta__grid{ grid-template-columns: 1fr; }
 }
 @media (max-width: 640px){
+  .topbar{ height: 36px; }
+  .topbar__inner{ justify-content: center; }
+  .page{ padding-top: 12px; }
+  .hero-rolling{ padding: 14px 0; margin-top: 0; }
+  .hero__title{ font-size: 1.6rem; }
   .cards__grid{ grid-template-columns: 1fr; }
   .destaques__grid{ grid-template-columns: 1fr; }
   .impacto__imagem{ height: 260px; }
+  .depoimentos__grid{ grid-template-columns: 1fr; }
 }

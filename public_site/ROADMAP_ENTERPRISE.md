@@ -28,11 +28,16 @@
 - Logo do cabecalho ajustado para asset SVG versionado existente.
 - Smokes locais de health, admin e site executados com servidor Next local.
 
+### 2026-05-26 - Responsividade publica inicial
+
+- Header publico ajustado para menu horizontal rolavel em telas menores.
+- Estados de foco adicionados a links/botoes principais.
+- Formulario publico de propostas ajustado para grids fluidos em mobile.
+
 ## Próximos batches seguros
 
-1. Melhorar responsividade do header/menu publico e formularios mobile.
-2. Padronizar clientes Supabase com guardas de ambiente para build local/staging.
-3. Revisar fluxo documental/storage sem alterar RLS nem dados.
+1. Padronizar clientes Supabase com guardas de ambiente para build local/staging.
+2. Revisar fluxo documental/storage sem alterar RLS nem dados.
 
 ## Bloqueios permanentes sem autorização
 
