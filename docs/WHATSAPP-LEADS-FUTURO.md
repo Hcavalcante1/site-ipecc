@@ -50,6 +50,6 @@ npm run dev
 npm run validar:smoke-publico   # inclui /, /propostas, /editais, /projetos, /transparencia, /contato
 ```
 
-1. `/projetas` → menu WhatsApp → preencher → Continuar
+1. `/projetos` → ícone WhatsApp na topbar (redes sociais) → preencher → Continuar
 2. Conferir URL `wa.me` com bloco de texto do IPECC
 3. Repetir em `/editais`, `/propostas`, `/transparencia`
