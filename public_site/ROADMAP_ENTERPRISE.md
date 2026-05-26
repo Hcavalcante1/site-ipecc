@@ -13,12 +13,13 @@
 - Guard admin migrado de `middleware.ts` para `proxy.ts`.
 - Smoke local ajustado para rotas reais e URLs HTML escapadas.
 - Visual publico recebeu refinamento responsivo de baixo risco em tokens, cards, hero, foco acessivel e header mobile.
+- Admin recebeu ajuste mobile para manter navegacao acessivel e reduzir overflow de tabelas/formularios.
 
 ## Proximos batches seguros
 
 1. Responsividade mobile:
-   - Auditar header fixo, menu principal, cards e tabelas.
-   - Reduzir overflow horizontal em paginas admin e publicas.
+   - Auditar paginas com grids inline de duas colunas.
+   - Reduzir overflow horizontal residual em formularios especificos.
 
 2. Admin/CMS local:
    - Padronizar estados de loading, erro e sucesso.
