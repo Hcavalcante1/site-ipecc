@@ -46,6 +46,8 @@ npm run health:local
 - `npm run smoke:site`: crawl HTTP basico do site local.
 - `npm run smoke:admin`: confirma redirect protegido de `/admin` para `/login`.
 
+O smoke publico usa seeds reais do app (`/`, `/quem-somos`, `/projetos`, `/editais`, `/propostas`, `/transparencia`, `/contato`, `/acoes`) e valida links/assets internos por HTTP.
+
 ## Autenticacao admin local/staging
 
 - O login deve ser feito via `POST /api/admin/login`.
