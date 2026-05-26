@@ -29,6 +29,12 @@ const textareaStyle: React.CSSProperties = {
   resize: "vertical",
   boxSizing: "border-box",
 };
+
+const responsiveGridStyle: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gap: 16,
+};
 /* ================================================================= */
 
 export default function PropostasPage() {
@@ -104,17 +110,17 @@ async function uploadArquivo(file: File, tipo: string) {
           style={{
             maxWidth: 1100,
             margin: "0 auto",
-            padding: "48px 32px",
+            padding: "clamp(32px, 7vw, 48px) clamp(20px, 5vw, 32px)",
             borderRadius: 24,
             background: "linear-gradient(90deg, #0d6efd, #00c6a7)",
             textAlign: "center",
             color: "#fff",
           }}
         >
-          <h1 style={{ fontSize: 36, marginBottom: 10 }}>
+          <h1 style={{ fontSize: "clamp(2rem, 8vw, 2.25rem)", marginBottom: 10 }}>
             Enviar Proposta
           </h1>
-          <p style={{ fontSize: 18, margin: 0 }}>
+          <p style={{ fontSize: "clamp(1rem, 4vw, 1.125rem)", margin: 0 }}>
             Transparência, participação e responsabilidade institucional.
           </p>
         </div>
@@ -128,7 +134,7 @@ async function uploadArquivo(file: File, tipo: string) {
             margin: "0 auto",
             background: "#fff",
             borderRadius: 16,
-            padding: 32,
+            padding: "clamp(20px, 5vw, 32px)",
             boxShadow: "0 10px 30px rgba(0,0,0,.08)",
           }}
         >
@@ -137,12 +143,12 @@ async function uploadArquivo(file: File, tipo: string) {
             style={{ display: "flex", flexDirection: "column", gap: 24 }}
           >
             {/* CAMPOS */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div style={responsiveGridStyle}>
               <input data-field="nome" placeholder="Empresa" required style={inputStyle} />
               <input data-field="cnpj" placeholder="CNPJ" required style={inputStyle} />
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div style={responsiveGridStyle}>
               <input data-field="email" placeholder="E-mail" required style={inputStyle} />
               <input data-field="telefone" placeholder="Telefone" required style={inputStyle} />
             </div>

@@ -125,7 +125,7 @@ export default function EditaisPublicPage() {
             style={{
               background: "#f8fafc",
               borderRadius: 20,
-              padding: "64px 72px",
+              padding: "clamp(28px, 6vw, 64px) clamp(20px, 6vw, 72px)",
               marginBottom: 120,
             }}
           >

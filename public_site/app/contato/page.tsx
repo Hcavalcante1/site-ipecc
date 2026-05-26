@@ -1,6 +1,13 @@
 // app/contato/page.tsx
+import type { CSSProperties } from "react";
 
 export default function ContatoPage() {
+  const responsiveGridStyle: CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: 12,
+  };
+
   return (
     <>
       {/* Tarja degradê que rola com o conteúdo */}
@@ -131,7 +138,7 @@ export default function ContatoPage() {
               marginTop: 16
             }}
           >
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div style={responsiveGridStyle}>
               <div>
                 <label htmlFor="nome" style={{ display: "block", fontWeight: 700, marginBottom: 6 }}>Nome</label>
                 <input id="nome" name="nome" type="text" required
