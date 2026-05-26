@@ -27,8 +27,12 @@ export default function WhatsAppLeadTrigger({
     <button
       type="button"
       className={className}
-      style={style}
-      onClick={() => openPanel(assunto ? { assunto } : undefined)}
+      style={{ cursor: "pointer", ...style }}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openPanel(assunto ? { assunto } : undefined);
+      }}
     >
       {children}
     </button>

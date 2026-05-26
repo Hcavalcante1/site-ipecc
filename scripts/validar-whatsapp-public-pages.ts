@@ -25,18 +25,33 @@ function read(rel: string): string {
 function main() {
   const layout = read("app/layout.tsx");
   assert("layout WhatsAppChatProvider", layout.includes("WhatsAppChatProvider"));
-  assert("layout topbar WhatsApp", layout.includes('aria-label="WhatsApp — atendimento"'));
-  assert("layout openPanel topbar", layout.includes("openPanel()"));
+  // Topbar pode ser renderizada via componente (ex.: PublicSocialLinks)
+  // então não validamos mais por string literal do botão.
+  assert(
+    "layout topbar WhatsApp",
+    layout.includes("PublicSocialLinks") || layout.includes("openPanel")
+  );
+
+  const landing = read("components/public/ApresentacaoLanding.tsx");
+  assert(
+    "landing integração WhatsApp",
+    landing.includes("ApresentacaoCta") ||
+      landing.includes("WhatsAppLeadTrigger")
+  );
 
   for (const page of [
-    "app/page.tsx",
+    "app/inicio/page.tsx",
     "app/projetos/page.tsx",
     "app/editais/page.tsx",
+    "app/editais/[id]/page.tsx",
     "app/propostas/page.tsx",
     "app/transparencia/page.tsx",
     "app/eventos/page.tsx",
     "app/contato/page.tsx",
     "app/quem-somos/page.tsx",
+    "app/noticias/page.tsx",
+    "app/noticias/[id]/page.tsx",
+    "app/acoes/page.tsx",
   ]) {
     const src = read(page);
     const hasIntegration =

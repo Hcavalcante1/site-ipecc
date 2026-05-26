@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PublicHeroRolling, PublicPageContent } from "@/components/public";
+import PublicWhatsAppHelpLine from "@/components/public/PublicWhatsAppHelpLine";
 
 export default function Acoes() {
   return (
@@ -11,6 +12,7 @@ export default function Acoes() {
         ariaLabel="Ações e iniciativas"
       />
 
+      <PublicWhatsAppHelpLine assunto="projetos" />
       <PublicPageContent>
         <p className="public-page-lead">
           Nesta seção você encontra um panorama das ações, atividades públicas,

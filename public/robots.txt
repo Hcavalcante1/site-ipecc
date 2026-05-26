@@ -1,4 +1,4 @@
-# robots.txt — APECC - Associação Paulista de Educação, Cultura e Cidadania
+﻿# robots.txt — IPECC - Instituto Paulista de Esporte, Cultura e Cidadania
 # Controla o acesso dos mecanismos de busca ao site público.
 
 User-agent: *
@@ -13,4 +13,5 @@ Disallow: /api/
 Disallow: /_next/
 
 # Indica o sitemap principal do site
-Sitemap: https://apecc.ong.br/sitemap.xml
+Sitemap: https://www.ipecc.org.br/sitemap.xml
+

@@ -1,6 +1,7 @@
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { resolveMediaPath } from "@/lib/media";
 import { PublicHeroRolling, PublicPageContent } from "@/components/public";
+import PublicWhatsAppHelpLine from "@/components/public/PublicWhatsAppHelpLine";
 import { logPublicFetch } from "@/lib/observability/publicFetchLog";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +31,10 @@ export default async function NoticiasPage() {
         text="Acompanhe as ações, projetos e iniciativas do IPECC."
       />
 
+      <PublicWhatsAppHelpLine
+        assunto="outro"
+        intro="Quer falar com a equipe sobre esta notícia?"
+      />
       <PublicPageContent>
           {!noticias || noticias.length === 0 ? (
             <p>Nenhuma notícia disponível.</p>

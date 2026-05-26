@@ -1,115 +1,150 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
-import { PublicHeroRolling } from "@/components/public";
+import {
+  PublicHeroRolling,
+  PublicPageContent,
+} from "@/components/public";
+import PublicWhatsAppHelpLine from "@/components/public/PublicWhatsAppHelpLine";
+import {
+  editalStatusLabel,
+  resolveEditalDownloadUrl,
+} from "@/lib/editais/download";
+
+type EditalStatus = "aberto" | "encerrado" | "em_breve";
+
+type Edital = {
+  id: string;
+  titulo: string;
+  tipo?: string | null;
+  periodo?: string | null;
+  periodo_envio?: string | null;
+  status: EditalStatus;
+  arquivo_pdf?: string | null;
+};
 
 export default function EditalDetalhePage() {
   const params = useParams();
   const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
 
-  const [edital, setEdital] = useState<any>(null);
+  const [edital, setEdital] = useState<Edital | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadEdital() {
-      if (!id) return;
+      if (!id) {
+        setLoading(false);
+        return;
+      }
 
       const { data } = await supabase
         .from("editais")
-        .select("*")
+        .select(
+          "id, titulo, tipo, periodo, periodo_envio, status, arquivo_pdf"
+        )
         .eq("id", id)
-        .single();
+        .maybeSingle();
 
-      if (data) setEdital(data);
+      if (data) setEdital(data as Edital);
       setLoading(false);
     }
 
     loadEdital();
   }, [id]);
 
+  const downloadUrl = useMemo(
+    () => resolveEditalDownloadUrl(edital?.arquivo_pdf),
+    [edital?.arquivo_pdf]
+  );
+
+  const periodo =
+    edital?.periodo_envio || edital?.periodo || "Não informado";
+
   if (loading) {
     return (
-      <section className="sobre">
-        <div className="container">
+      <>
+        <PublicHeroRolling
+          bgImage="/media/heroes/editais/hero.webp"
+          title="Editais"
+          text="Carregando informações do edital…"
+        />
+        <PublicPageContent>
           <p>Carregando edital…</p>
-        </div>
-      </section>
+        </PublicPageContent>
+      </>
     );
   }
 
   if (!edital) {
     return (
-      <section className="sobre">
-        <div className="container">
-          <h2>Edital não encontrado</h2>
-          <Link href="/editais" className="card__link">
-            Voltar para editais
+      <>
+        <PublicHeroRolling
+          bgImage="/media/heroes/editais/hero.webp"
+          title="Editais"
+          text="Chamamento não encontrado."
+        />
+        <PublicPageContent>
+          <h1 className="public-article__title">Edital não encontrado</h1>
+          <p className="public-page-lead">
+            O edital solicitado não existe ou não está mais disponível.
+          </p>
+          <Link href="/editais" className="public-detail-card__back">
+            ← Voltar para editais
           </Link>
-        </div>
-      </section>
+        </PublicPageContent>
+      </>
     );
   }
-
-  const arquivo = edital.arquivo_pdf
-    ? edital.arquivo_pdf.replace(/^editais\//, "")
-    : null;
 
   return (
     <>
       <PublicHeroRolling
         bgImage="/media/heroes/editais/hero.webp"
         title={edital.titulo}
+        text="Detalhes do chamamento público e links para documentação e proposta."
       />
 
-      <section className="sobre">
-        <div className="container">
-          <div className="card" style={{ maxWidth: 900 }}>
-            <div className="card__body">
-              <p className="card__text">
-                <strong>Tipo:</strong> {edital.tipo || "—"}
-              </p>
+      <PublicWhatsAppHelpLine
+        assunto="editais"
+        intro="Precisa de orientação sobre este edital?"
+      />
 
-              <p className="card__text">
-                <strong>Período:</strong> {edital.periodo || "—"}
-              </p>
-
-              <p className="card__text">
-                <strong>Status:</strong>{" "}
-                {edital.status === "aberto" && "Aberto"}
-                {edital.status === "encerrado" && "Encerrado"}
-                {edital.status === "em_breve" && "Em breve"}
-              </p>
-            </div>
-
-            <div className="public-page-actions">
-              {arquivo && (
-                <a
-                 href={`/api/download/editais/${arquivo}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="card__link"
-                >
-                  Baixar edital (PDF)
-                </a>
-              )}
-
-              <Link
-                href={`/propostas?codigo=${edital.id}`}
-                className="card__link"
-              >
-                Enviar Proposta
-              </Link>
-
-              <Link href="/editais" className="card__link">
-                Voltar para lista
-              </Link>
-            </div>
+      <PublicPageContent>
+        <article className="public-detail-card">
+          <div className="public-detail-card__body">
+            <p className="public-detail-card__meta">
+              <strong>Tipo:</strong> {edital.tipo || "Chamamento público"}
+            </p>
+            <p className="public-detail-card__meta">
+              <strong>Período:</strong> {periodo}
+            </p>
+            <p className="public-detail-card__meta">
+              <strong>Status:</strong> {editalStatusLabel(edital.status)}
+            </p>
           </div>
-        </div>
-      </section>
+
+          <div className="public-page-actions">
+            {downloadUrl && (
+              <a
+                href={downloadUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Baixar edital (PDF)
+              </a>
+            )}
+
+            <Link href={`/propostas?codigo=${edital.id}`}>
+              Enviar proposta
+            </Link>
+
+            <Link href="/editais">Voltar para lista</Link>
+          </div>
+        </article>
+      </PublicPageContent>
     </>
   );
 }

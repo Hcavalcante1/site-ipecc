@@ -2,7 +2,7 @@ export default function Head() {
   const title = "IPECC | Instituto Paulista de Esporte, Cultura e Cidadania";
   const description =
     "Conheça o IPECC, suas ações, projetos, transparência institucional, editais, notícias, eventos e canais de contato.";
-  const baseUrl = "https://apecc.ong.br";
+  const baseUrl = "https://www.ipecc.org.br";
   const ogImage = `${baseUrl}/media/global/logos/ipecc_logo_v2.png`;
 
   return (
@@ -39,7 +39,7 @@ export default function Head() {
             alternateName: "IPECC",
             url: baseUrl,
             logo: ogImage,
-            email: "contato@apecc.ong.br",
+            email: "contato@ipecc.org.br",
             telephone: "+55-11-94331-2119",
             sameAs: [
               "https://www.instagram.com/ipecc.sp/",

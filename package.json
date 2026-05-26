@@ -42,7 +42,8 @@
     "validar:whatsapp-leads-staging": "npx --yes tsx scripts/validar-whatsapp-leads-staging.ts",
     "validar:push-prep": "npx --yes tsx scripts/validar-push-prep.ts",
     "validar:whatsapp-public-chat": "npx --yes tsx scripts/validar-whatsapp-public-chat.ts",
-    "validar:whatsapp-public-pages": "npx --yes tsx scripts/validar-whatsapp-public-pages.ts"
+    "validar:whatsapp-public-pages": "npx --yes tsx scripts/validar-whatsapp-public-pages.ts",
+    "validar:public-pages-padrao": "npx --yes tsx scripts/validar-public-pages-padrao.ts"
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.15.0",

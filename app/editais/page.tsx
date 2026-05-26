@@ -2,8 +2,12 @@
 
 import Link from "next/link";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
-import { PublicHeroRolling } from "@/components/public";
+import { PublicHeroRolling, PublicPageContent } from "@/components/public";
 import PublicWhatsAppHelpLine from "@/components/public/PublicWhatsAppHelpLine";
+import {
+  editalStatusLabel,
+  resolveEditalDownloadUrl,
+} from "@/lib/editais/download";
 import { logPublicFetch } from "@/lib/observability/publicFetchLog";
 
 export const dynamic = "force-dynamic";
@@ -137,6 +141,15 @@ export default async function EditaisPublicPage() {
     .limit(1);
 
   const cta = ctaArray?.[0] || null;
+  const ctaExtra =
+    cta?.extra && typeof cta.extra === "object"
+      ? (cta.extra as {
+          titulo?: string;
+          descricao?: string;
+          botao_link?: string;
+          botao_texto?: string;
+        })
+      : null;
 
   return (
     <>
@@ -152,58 +165,44 @@ export default async function EditaisPublicPage() {
         linkLabel="Fale conosco no WhatsApp"
       />
 
-      {/* CONTEÚDO */}
-      <section className="sobre">
-        <div className="container" style={{ maxWidth: 1200 }}>
-          {/* EDITAIS */}
-          <section style={{ marginBottom: 40 }}>
-            <h2 style={{ marginBottom: 20 }}>Editais e Chamadas Ativas</h2>
+      <PublicPageContent>
+        <section className="public-section" style={{ paddingTop: 0 }}>
+          <h2 className="public-section__title">Editais e chamadas ativas</h2>
 
+          {(editais as Edital[] | null)?.length ? (
             <div className="cards__grid">
-              {(editais as Edital[] | null)?.map((edital) => {
+              {(editais as Edital[]).map((edital) => {
                 const periodo =
                   edital.periodo_envio || edital.periodo || "Não informado";
+                const downloadUrl = resolveEditalDownloadUrl(edital.arquivo_pdf);
 
-           
-let downloadUrl = null;
-
-if (edital.arquivo_pdf) {
-  const path = edital.arquivo_pdf.includes("/docs/")
-    ? edital.arquivo_pdf.split("/docs/")[1]
-    : edital.arquivo_pdf.replace(/^editais\//, "");
-
-  downloadUrl = `/api/download/docs/${path}`;
-}
                 return (
-                  <article key={edital.id} className="card">
+                  <article
+                    key={edital.id}
+                    className="card public-edital-card"
+                  >
                     <div className="card__body">
                       <h3 className="card__title">{edital.titulo}</h3>
-
                       <p className="card__text">
                         <strong>Tipo:</strong>{" "}
                         {edital.tipo || "Chamamento público"}
                       </p>
-
                       <p className="card__text">
                         <strong>Período:</strong> {periodo}
                       </p>
-
                       <p className="card__text">
                         <strong>Status:</strong>{" "}
-                        {edital.status === "aberto" && "Aberto"}
-                        {edital.status === "encerrado" && "Encerrado"}
-                        {edital.status === "em_breve" && "Em breve"}
+                        {editalStatusLabel(edital.status)}
                       </p>
                     </div>
 
-                    <div
-                      style={{
-                        padding: "0 16px 20px",
-                        display: "flex",
-                        gap: 20,
-                        flexWrap: "wrap",
-                      }}
-                    >
+                    <div className="public-page-actions">
+                      <Link
+                        href={`/editais/${edital.id}`}
+                        className="card__link"
+                      >
+                        Ver detalhes
+                      </Link>
                       {downloadUrl && (
                         <a
                           href={downloadUrl}
@@ -211,10 +210,9 @@ if (edital.arquivo_pdf) {
                           rel="noreferrer"
                           className="card__link"
                         >
-                          Baixar edital (PDF)
+                          Baixar PDF
                         </a>
                       )}
-
                       <Link
                         href={`/propostas?codigo=${edital.id}`}
                         className="card__link"
@@ -226,124 +224,70 @@ if (edital.arquivo_pdf) {
                 );
               })}
             </div>
-          </section>
+          ) : (
+            <p className="public-page-lead">Nenhum edital publicado no momento.</p>
+          )}
+        </section>
 
-          {/* DOCUMENTOS */}
-          <section
-            style={{
-              background: "#f8fafc",
-              borderRadius: 20,
-              padding: "36px 40px",
-              marginBottom: 56,
-            }}
-          >
-            <div style={{ maxWidth: 980 }}>
-              <h2 style={{ marginBottom: 20 }}>{tituloDocumentos}</h2>
+        <section className="public-docs-panel">
+          <h2 className="public-section__title">{tituloDocumentos}</h2>
+          <p className="public-docs-panel__lead">{textoDocumentos}</p>
 
-              <p style={{ marginBottom: 28 }}>{textoDocumentos}</p>
-
-              <div style={{ display: "grid", gap: 28 }}>
-                {documentosAgrupados.map((grupo) => (
+          {documentosAgrupados.map((grupo) => (
+            <div key={grupo.tipo} className="public-docs-group">
+              <h3 className="public-docs-group__title">{grupo.titulo}</h3>
+              <div className="public-docs-categories">
+                {grupo.categorias.map((subgrupo) => (
                   <div
-                    key={grupo.tipo}
-                    style={{
-                      background: "#ffffff",
-                      border: "1px solid #e2e8f0",
-                      borderRadius: 18,
-                      padding: 24,
-                    }}
+                    key={subgrupo.categoria}
+                    className="public-docs-category"
                   >
-                    <h3
-                      style={{
-                        marginBottom: 18,
-                        fontSize: 24,
-                        color: "#0f172a",
-                      }}
-                    >
-                      {grupo.titulo}
-                    </h3>
-
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-                        gap: 20,
-                      }}
-                    >
-                      {grupo.categorias.map((subgrupo) => (
-                        <div
-                          key={subgrupo.categoria}
-                          style={{
-                            background: "#f8fafc",
-                            border: "1px solid #cbd5e1",
-                            borderRadius: 16,
-                            padding: 18,
-                          }}
-                        >
-                          <h4
-                            style={{
-                              marginBottom: 14,
-                              fontSize: 18,
-                              color: "#0f172a",
-                            }}
-                          >
-                            {subgrupo.titulo}
-                          </h4>
-
-                          {subgrupo.itens.length > 0 ? (
-                            <ul style={{ paddingLeft: 18, margin: 0 }}>
-                              {subgrupo.itens.map((doc) => (
-                                <li key={doc.id} style={{ marginBottom: 10 }}>
-                                  <strong>{doc.titulo}</strong>
-                                  {doc.descricao ? ` — ${doc.descricao}` : ""}
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p
-                              style={{
-                                margin: 0,
-                                color: "#64748b",
-                                fontSize: 14,
-                              }}
-                            >
-                              Nenhum documento cadastrado nesta categoria.
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                    <h4 className="public-docs-category__title">
+                      {subgrupo.titulo}
+                    </h4>
+                    {subgrupo.itens.length > 0 ? (
+                      <ul>
+                        {subgrupo.itens.map((doc) => (
+                          <li key={doc.id}>
+                            <strong>{doc.titulo}</strong>
+                            {doc.descricao ? ` — ${doc.descricao}` : ""}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="public-page-lead" style={{ marginBottom: 0 }}>
+                        Nenhum documento nesta categoria.
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
-          </section>
-        </div>
-      </section>
+          ))}
+        </section>
+      </PublicPageContent>
 
-      {/* CTA CORRIGIDO */}
-      <section className="sobre-cta" style={{ marginTop: 20 }}>
+      <section className="sobre-cta">
         <div className="container sobre-cta__grid">
-          {/* ESQUERDA SEM CARD */}
-          <div style={{ padding: 20 }}>
-            <h2>{cta?.titulo}</h2>
-            <p style={{ marginTop: 10 }}>{cta?.texto}</p>
+          <div>
+            <h2>{cta?.titulo || "Envie sua proposta"}</h2>
+            <p className="public-page-lead" style={{ marginTop: 10 }}>
+              {cta?.texto ||
+                "Utilize o portal de propostas com checklist documental."}
+            </p>
           </div>
 
-          {/* DIREITA */}
           <div className="cta-green__inner">
             <div>
-              <h3>{cta?.extra?.titulo}</h3>
-              <p>{cta?.extra?.descricao}</p>
+              <h3>{ctaExtra?.titulo || "Participar de um edital"}</h3>
+              <p>{ctaExtra?.descricao || "Envie documentação e acompanhe o status."}</p>
             </div>
-
-            <a
-              href={cta?.extra?.botao_link || "/propostas"}
+            <Link
+              href={ctaExtra?.botao_link || "/propostas"}
               className="btn-cta"
-              style={{ width: "fit-content" }}
             >
-              {cta?.extra?.botao_texto || "Enviar proposta"}
-            </a>
+              {ctaExtra?.botao_texto || "Enviar proposta"}
+            </Link>
           </div>
         </div>
       </section>

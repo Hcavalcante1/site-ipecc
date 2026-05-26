@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     template: "%s | IPECC",
   },
   description:
-    "Instituto Paulista de Esporte, Cultura e Cidadania. Projetos sociais, transparência, editais, cultura, educação e cidadania.",
+    "IPECC — projetos sociais, editais, propostas e transparência em São Paulo. Educação, cultura e cidadania com impacto mensurável.",
   keywords: [
     "IPECC",
     "instituto",

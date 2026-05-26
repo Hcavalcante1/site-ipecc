@@ -3,9 +3,9 @@
   max-width: 720px;
   margin: 0 auto 24px;
   padding: 0 16px;
-  color: #64748b;
-  font-size: 0.9375rem;
-  line-height: 1.5;
+  color: var(--public-muted, #475569);
+  font-size: var(--public-text-base, 1rem);
+  line-height: var(--public-leading, 1.65);
   font-family: "Poppins", sans-serif;
 }
 
@@ -27,6 +27,6 @@
 @media (max-width: 640px) {
   .help {
     margin-bottom: 20px;
-    font-size: 0.875rem;
+    font-size: var(--public-text-sm, 0.9375rem);
   }
 }

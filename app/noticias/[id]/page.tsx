@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabaseServer";
 import { resolveMediaPath } from "@/lib/media";
 import { PublicHeroRolling, PublicPageContent } from "@/components/public";
+import PublicWhatsAppHelpLine from "@/components/public/PublicWhatsAppHelpLine";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -36,6 +37,10 @@ export default async function NoticiaPage({ params }: Props) {
         text="Acompanhe as ações, projetos e iniciativas do IPECC."
       />
 
+      <PublicWhatsAppHelpLine
+        assunto="outro"
+        intro="Dúvidas sobre esta notícia?"
+      />
       <PublicPageContent className="public-content--article">
         <div className="public-article__cover">
           <img

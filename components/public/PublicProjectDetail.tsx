@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import PublicHeroRolling from "./PublicHeroRolling";
 import PublicPageContent from "./PublicPageContent";
+import PublicWhatsAppHelpLine from "./PublicWhatsAppHelpLine";
 
 type PublicProjectDetailProps = {
   title: string;
@@ -23,6 +24,7 @@ export default function PublicProjectDetail({
         text={lead}
         ariaLabel={title}
       />
+      <PublicWhatsAppHelpLine assunto="projetos" />
       <PublicPageContent>
         {children}
         <p style={{ marginTop: 24 }}>
