@@ -12,6 +12,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-BR">
       <body>
+        <a className="skip-link" href="#conteudo">Pular para o conteúdo</a>
+
         {/* ===== CABEÇALHO FIXO (duas faixas empilhadas) ===== */}
         <header className="header-fixo" role="banner">
           {/* 1) TARJA AZUL-ESCURA (REDES SOCIAIS) */}

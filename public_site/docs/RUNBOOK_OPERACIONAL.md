@@ -39,3 +39,15 @@ Resultado:
 - Auditoria local detecta placeholders vazios em `public/docs` como aviso.
 - Use `STRICT_ANEXOS=1 npm run audit:anexos` para transformar placeholders
   vazios em erro duro quando houver pacote documental oficial.
+
+## Ciclo 2026-05-26 06:00 UTC - responsividade do cabecalho publico
+
+Escopo:
+- Adicionar link de salto para o conteudo principal.
+- Ajustar logo/menu do cabecalho para telas pequenas.
+- Reduzir risco de overflow horizontal no menu principal mobile.
+
+Validacoes planejadas:
+- `git status --short`
+- `npm run validar:enterprise`
+- `npm run build`

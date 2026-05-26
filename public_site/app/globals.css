@@ -3,6 +3,13 @@
 html, body { font-family: "Poppins", sans-serif; color: #111827; background: #fff; scroll-behavior: smooth; }
 img { max-width: 100%; display: block; }
 a { text-decoration: none; color: inherit; }
+.skip-link{
+  position: fixed; left: 16px; top: 12px; z-index: 2000;
+  transform: translateY(-160%); background: #fff; color: var(--blue-navy);
+  border: 2px solid var(--blue-navy); border-radius: 999px;
+  padding: 8px 14px; font-weight: 800; box-shadow: var(--shadow-lg);
+}
+.skip-link:focus{ transform: translateY(0); }
 
 /* ===== VARS ===== */
 :root{
@@ -46,9 +53,9 @@ a { text-decoration: none; color: inherit; }
   display: flex; align-items: center; justify-content: space-between;
   gap: 30px; height: 88px;
 }
-.brand__logo{ height: 120px; width: auto; object-fit: contain; } /* ajuste aqui se quiser maior */
+.brand__logo{ height: clamp(72px, 9vw, 120px); width: auto; object-fit: contain; } /* ajuste aqui se quiser maior */
 .menubar{ display: flex; align-items: center; gap: 28px; }
-.menu__link{ color: var(--blue-navy); font-weight: 600; font-size: 1rem; transition: .2s; }
+.menu__link{ color: var(--blue-navy); font-weight: 600; font-size: 1rem; transition: .2s; white-space: nowrap; }
 .menu__link:hover{ color: var(--blue-3); }
 
 /* ===== TARJA AZUL DEGRADÊ (rola com o conteúdo) ===== */
@@ -151,14 +158,25 @@ a { text-decoration: none; color: inherit; }
 
 /* ===== RESPONSIVO ===== */
 @media (max-width: 992px){
-  .menubar__inner{ height: 80px; }
-  .brand__logo{ height: 100px; } /* diminui em telas menores */
+  .menubar__inner{ height: auto; min-height: 80px; padding: 8px 0; }
   .menubar{ gap: 16px; flex-wrap: wrap; justify-content: center; }
   .hero-rolling__inner{ padding: 32px 18px; }
   .impacto__imagem{ height: 320px; }
   .sobre-cta__grid{ grid-template-columns: 1fr; }
 }
 @media (max-width: 640px){
+  .container{ width: min(94%, var(--container-w)); }
+  .topbar{ height: 36px; }
+  .topbar__inner{ justify-content: center; }
+  .menubar__inner{ flex-direction: column; gap: 8px; align-items: stretch; }
+  .brand{ display: flex; justify-content: center; }
+  .brand__logo{ height: 72px; }
+  .menubar{
+    justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap;
+    gap: 14px; padding: 0 2px 8px; scrollbar-width: thin;
+  }
+  .menu__link{ font-size: .95rem; }
+  .hero__title{ font-size: clamp(1.65rem, 8vw, 2rem); }
   .cards__grid{ grid-template-columns: 1fr; }
   .destaques__grid{ grid-template-columns: 1fr; }
   .impacto__imagem{ height: 260px; }
