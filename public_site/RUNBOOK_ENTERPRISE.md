@@ -51,3 +51,9 @@ Veja `.env.local.example`:
 
 - Rotas `/admin/:path*` exigem cookies `sb-access-token` ou `sb-refresh-token`.
 - Para smoke local sem credenciais reais, usar cookie sintetico apenas no ambiente local.
+
+## Responsividade publica
+
+- Classes `proposal-*` controlam o formulario publico de propostas.
+- `public-info-panel` controla paineis institucionais com padding responsivo.
+- O menu publico em telas pequenas usa rolagem horizontal controlada para evitar quebra visual.

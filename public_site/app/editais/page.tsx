@@ -121,14 +121,7 @@ export default function EditaisPublicPage() {
           {/* ================================= */}
           {/* BLOCO 2 — INFORMAÇÕES INSTITUCIONAIS */}
           {/* ================================= */}
-          <section
-            style={{
-              background: "#f8fafc",
-              borderRadius: 20,
-              padding: "64px 72px",
-              marginBottom: 120,
-            }}
-          >
+          <section className="public-info-panel">
             <div style={{ maxWidth: 820 }}>
 
               {/* DOCUMENTAÇÃO */}

@@ -22,14 +22,17 @@
    - `.env.local.example` documenta variaveis esperadas.
 5. Smoke HTTP local.
    - Crawler local valida rotas publicas principais e decodifica atributos HTML escapados gerados pelo Next.
+6. Responsividade publica.
+   - Formulario de propostas e painel institucional de editais usam classes responsivas.
+   - Header/menu publico recebeu ajustes mobile para reduzir overflow horizontal.
 
 ## Proximos batches seguros
 
 1. Rodar `npm run build` e corrigir incompatibilidades do Next 16.
 2. Migrar `middleware.ts` para `proxy.ts` se o build emitir bloqueio/deprecacao forte.
-3. Melhorar responsividade dos formularios publicos de editais/propostas.
-4. Expandir smoke local para rotas admin com cookie local de sessao.
-5. Padronizar componentes visuais publicos, priorizando menu mobile e cards.
+3. Expandir smoke local para rotas admin com cookie local de sessao.
+4. Padronizar componentes visuais publicos, priorizando cards e secoes internas.
+5. Substituir placeholders documentais por arquivos oficiais revisados.
 
 ## Bloqueios de producao
 

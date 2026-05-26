@@ -99,22 +99,14 @@ async function uploadArquivo(file: File, tipo: string) {
   return (
     <>
       {/* ================= TARJA AZUL ================= */}
-      <div style={{ padding: "40px 16px" }}>
+      <div className="proposal-hero-shell">
         <div
-          style={{
-            maxWidth: 1100,
-            margin: "0 auto",
-            padding: "48px 32px",
-            borderRadius: 24,
-            background: "linear-gradient(90deg, #0d6efd, #00c6a7)",
-            textAlign: "center",
-            color: "#fff",
-          }}
+          className="proposal-hero-card"
         >
-          <h1 style={{ fontSize: 36, marginBottom: 10 }}>
+          <h1 className="proposal-hero-title">
             Enviar Proposta
           </h1>
-          <p style={{ fontSize: 18, margin: 0 }}>
+          <p className="proposal-hero-text">
             Transparência, participação e responsabilidade institucional.
           </p>
         </div>
@@ -122,27 +114,18 @@ async function uploadArquivo(file: File, tipo: string) {
 
       {/* ================= FORMULÁRIO ================= */}
       <section style={{ padding: "0 16px 60px" }}>
-        <div
-          style={{
-            maxWidth: 900,
-            margin: "0 auto",
-            background: "#fff",
-            borderRadius: 16,
-            padding: 32,
-            boxShadow: "0 10px 30px rgba(0,0,0,.08)",
-          }}
-        >
+        <div className="proposal-form-card">
           <form
             onSubmit={handleSubmit}
             style={{ display: "flex", flexDirection: "column", gap: 24 }}
           >
             {/* CAMPOS */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div className="proposal-form-grid">
               <input data-field="nome" placeholder="Empresa" required style={inputStyle} />
               <input data-field="cnpj" placeholder="CNPJ" required style={inputStyle} />
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div className="proposal-form-grid">
               <input data-field="email" placeholder="E-mail" required style={inputStyle} />
               <input data-field="telefone" placeholder="Telefone" required style={inputStyle} />
             </div>

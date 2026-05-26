@@ -149,6 +149,36 @@ a { text-decoration: none; color: inherit; }
   padding: 20px 0; font-size: .9rem; margin-top: 40px; border-top: 1px solid #e5e7eb;
 }
 
+/* ===== FORMULARIOS E PAINEIS PUBLICOS ===== */
+.proposal-hero-shell{ padding: 40px 16px; }
+.proposal-hero-card{
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px 32px;
+  border-radius: 24px;
+  background: linear-gradient(90deg, #0d6efd, #00c6a7);
+  text-align: center;
+  color: #fff;
+  box-shadow: var(--shadow-lg);
+}
+.proposal-hero-title{ font-size: clamp(2rem, 5vw, 2.25rem); margin-bottom: 10px; }
+.proposal-hero-text{ font-size: 1.125rem; margin: 0; }
+.proposal-form-card{
+  max-width: 900px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: var(--shadow-lg);
+}
+.proposal-form-grid{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.public-info-panel{
+  background: #f8fafc;
+  border-radius: 20px;
+  padding: 64px 72px;
+  margin-bottom: 120px;
+}
+
 /* ===== RESPONSIVO ===== */
 @media (max-width: 992px){
   .menubar__inner{ height: 80px; }
@@ -159,7 +189,21 @@ a { text-decoration: none; color: inherit; }
   .sobre-cta__grid{ grid-template-columns: 1fr; }
 }
 @media (max-width: 640px){
+  .topbar__inner{ justify-content: center; }
+  .menubar__inner{ height: auto; padding: 12px 0 16px; flex-direction: column; gap: 12px; }
+  .brand__logo{ height: 84px; }
+  .menubar{ width: 100%; overflow-x: auto; justify-content: flex-start; padding-bottom: 4px; }
+  .menu__link{ white-space: nowrap; font-size: .95rem; }
+  .hero-rolling{ padding: 14px 0; }
+  .hero-rolling__inner{ width: min(94%, var(--container-w)); padding: 28px 16px; }
+  .page{ padding-top: 12px; }
   .cards__grid{ grid-template-columns: 1fr; }
   .destaques__grid{ grid-template-columns: 1fr; }
   .impacto__imagem{ height: 260px; }
+  .proposal-hero-shell{ padding: 24px 12px; }
+  .proposal-hero-card{ padding: 32px 18px; border-radius: 18px; }
+  .proposal-hero-text{ font-size: 1rem; line-height: 1.5; }
+  .proposal-form-card{ padding: 20px; border-radius: 14px; }
+  .proposal-form-grid{ grid-template-columns: 1fr; }
+  .public-info-panel{ padding: 28px 20px; margin-bottom: 64px; border-radius: 16px; }
 }
