@@ -9,6 +9,7 @@
     "validar:enterprise": "node scripts/validar-enterprise.mjs",
     "audit:anexos": "node scripts/audit-anexos.mjs",
     "verify:proposta-anexos": "node scripts/verify-proposta-anexos.mjs",
+    "health:local": "node scripts/check-health.mjs",
     "check:site": "node scripts/check-site.mjs",
     "smoke:site": "node scripts/check-site.mjs --http http://localhost:3000",
     "smoke:admin": "node scripts/check-site.mjs --http http://localhost:3000/login"

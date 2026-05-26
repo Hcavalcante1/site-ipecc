@@ -9,6 +9,7 @@
 - Cabecalho publico ganhou melhorias de acessibilidade, foco visivel e responsividade mobile.
 - Admin mobile preserva navegacao em barra rolavel e login usa largura fluida.
 - Login/admin sincronizam sessao client-side com cookies HTTP-only e logout limpa cookies locais.
+- Observabilidade local ganhou `GET /api/health` e script `npm run health:local`.
 
 ## Proximos batches seguros
 
@@ -16,6 +17,7 @@
 2. Eliminar dependencias client-side desnecessarias em layouts/admin quando causarem regressao de build.
 3. Padronizar clientes Supabase para reduzir duplicacao e falhas por env ausente.
 4. Expandir smoke autenticado do admin com credenciais locais seguras quando disponiveis.
+5. Integrar healthcheck em pipeline de staging quando houver orquestrador definido.
 
 ## Bloqueios de producao
 

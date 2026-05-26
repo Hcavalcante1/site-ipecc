@@ -25,9 +25,11 @@ Este runbook registra a operacao segura do projeto APECC/IPECC em ambiente local
 - `npm run validar:enterprise`: scripts obrigatorios, envs reais fora do Git, typecheck, audit e checks locais.
 - `npm run audit:anexos`: varredura local de extensoes permitidas e arquivos vazios em diretorios documentais publicos.
 - `npm run verify:proposta-anexos`: invariantes estaticas do fluxo de propostas e anexos.
+- `npm run health:local`: valida `GET /api/health` contra servidor local em execucao.
 - `npm run check:site`: crawler local estatico/HTTP.
 
 ## Estado atual
 
 - Primeiro batch reforcou higiene de segredos, scripts de validacao e documentacao operacional.
 - `.env.local` e `app/admin/.env.local` devem existir apenas localmente, nunca rastreados.
+- `GET /api/health` retorna readiness local sem expor valores de env.
