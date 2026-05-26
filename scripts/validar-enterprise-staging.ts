@@ -33,7 +33,14 @@ async function main() {
   const falhas: string[] = [];
   const avisos: string[] = [];
 
+  const skipBuild = process.env.ENTERPRISE_GUARD_SKIP_BUILD === "1";
+
   for (const step of steps) {
+    if (skipBuild && step.optional) {
+      console.log(`\n=== ${step.label} (pulado: ENTERPRISE_GUARD_SKIP_BUILD) ===\n`);
+      avisos.push(`${step.label} (pulado)`);
+      continue;
+    }
     const ok = runStep(step.label, step.cmd);
     if (!ok) {
       if (step.optional) avisos.push(step.label);

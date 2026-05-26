@@ -44,6 +44,20 @@ git push -u origin master
 2. Secrets de produção ficam no host de deploy (Vercel etc.), não no Actions
 3. Atualizar `docs/ENTERPRISE-STATUS.md` com URL do repositório (opcional)
 
+## Cursor Automation (Enterprise Guard)
+
+O composer na nuvem usa o **GitHub remoto** conectado no painel — não a pasta local.
+
+| Item | Valor |
+|------|--------|
+| Repositório do automation | **`Hcavalcante1/site-ipecc`** (branch `main`) |
+| Repositório local / push prep | `Hcavalcante1/ipecc-whatsapp-leads` |
+| `.cursorignore` | Deve existir em **ambos** se houver dois remotes |
+
+Commit em `site-ipecc/main`: `cf69a17` — `.cursorignore` na raiz.
+
+Se o Run Test falhar com `resource_exhausted`: aguarde 10–15 min, feche outros Background Agents, confirme repo **`site-ipecc`** / branch **`main`**, e tente de novo. Automation: `e1026493-c440-4fd3-8896-7de19ce4699b`.
+
 ## Não incluir no Git
 
 - `.env.local` (já no `.gitignore`)
