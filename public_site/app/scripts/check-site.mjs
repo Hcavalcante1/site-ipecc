@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const SEEDS = ["/", "/quem-somos", "/projetos", "/cotacoes", "/transparencia", "/contato", "/acoes"];
+const SEEDS = ["/", "/quem-somos", "/projetos", "/editais", "/transparencia", "/contato", "/acoes"];
 const MAX_PAGES = 200;
 
 const isInternal = (href, base) => {

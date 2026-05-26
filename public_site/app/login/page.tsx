@@ -33,8 +33,7 @@ export default function LoginPage() {
 
   return (
     <>
-      {/* 🔒 CSS LOCAL — APENAS PARA ESTA PÁGINA */}
-      <style jsx>{`
+      <style>{`
         .login-wrapper,
         .login-wrapper h2,
         .login-wrapper p,

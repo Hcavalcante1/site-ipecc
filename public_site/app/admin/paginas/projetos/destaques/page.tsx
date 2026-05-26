@@ -21,21 +21,21 @@ export default function ProjetosDestaquesAdminPage() {
       titulo: "Projetos em escolas públicas",
       texto:
         "Iniciativas que aproximam família, escola e comunidade, fortalecendo a educação pública com ações integradas de cidadania e cultura.",
-      imagem: "/media/projetos-escolas.jpg",
+      imagem: "/media/news-1.jpg",
     },
     {
       id: 2,
       titulo: "Circuitos culturais e eventos",
       texto:
         "Mostras, festivais e ações culturais que ampliam o acesso à arte e à cultura como direito de todos.",
-      imagem: "/media/projetos-circuito-cultural.jpg",
+      imagem: "/media/news-2.jpg",
     },
     {
       id: 3,
       titulo: "Parcerias com o poder público",
       texto:
         "Projetos realizados em cooperação com prefeituras, secretarias e conselhos, com foco em políticas públicas e fortalecimento institucional.",
-      imagem: "/media/projetos-parcerias.jpg",
+      imagem: "/media/news-3.jpg",
     },
   ]);
 
@@ -71,7 +71,7 @@ export default function ProjetosDestaquesAdminPage() {
         id: novoId,
         titulo: "Novo destaque",
         texto: "Descrição do novo destaque.",
-        imagem: "/media/nova-imagem.jpg",
+        imagem: "/media/news-1.jpg",
       },
     ]);
   }
