@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { resolveMediaPath } from "@/lib/media";
-import { PublicHeroRolling } from "@/components/public";
+import { PublicHeroRolling, PublicPageContent } from "@/components/public";
 import PublicWhatsAppCtaLink from "@/components/public/PublicWhatsAppCtaLink";
+import PublicWhatsAppHelpLine from "@/components/public/PublicWhatsAppHelpLine";
 
 export default function QuemSomosPage() {
 
@@ -98,6 +99,12 @@ export default function QuemSomosPage() {
         text={hero.texto}
       />
 
+      <PublicWhatsAppHelpLine
+        assunto="equipe"
+        intro="Quer falar com a equipe do IPECC?"
+      />
+
+      <PublicPageContent>
       {/* BLOCO */}
       <section className="sobre">
         <div className="container">
@@ -168,6 +175,7 @@ export default function QuemSomosPage() {
           </div>
         </div>
       </section>
+      </PublicPageContent>
 
       {/* CTA */}
       <section className="sobre-cta">

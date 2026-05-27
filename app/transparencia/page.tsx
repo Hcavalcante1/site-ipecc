@@ -3,7 +3,7 @@
 import { getDownloadUrl, isValidFileUrl } from "@/lib/storage";
 import { createClient } from "@/lib/supabaseServer";
 import { logPublicFetch } from "@/lib/observability/publicFetchLog";
-import { PublicHeroRolling } from "@/components/public";
+import { PublicHeroRolling, PublicPageContent } from "@/components/public";
 import PublicWhatsAppHelpLine from "@/components/public/PublicWhatsAppHelpLine";
 function fileUrl(url?: string | null) {
   if (!url) return "";
@@ -687,6 +687,7 @@ export default async function TransparenciaPage() {
         linkLabel="Fale conosco no WhatsApp"
       />
 
+      <PublicPageContent>
       <section className="sobre" aria-labelledby="compromissos">
         <div className="container">
           <h2 id="compromissos">{compromissos.titulo}</h2>
@@ -1258,6 +1259,7 @@ export default async function TransparenciaPage() {
           )}
         </div>
       </section>
+      </PublicPageContent>
 
       <section className="sobre-cta" aria-label="LGPD e integridade">
         <div className="container sobre-cta__grid">

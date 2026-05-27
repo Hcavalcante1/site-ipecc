@@ -94,14 +94,14 @@ function main() {
       src.includes("PublicHeroRolling") || src.includes("ApresentacaoLanding");
     assert(`${page} hero padrão`, hasHero);
     assert(`${page} integração WhatsApp`, WHATSAPP_RE.test(src));
-    if (
-      page === "app/editais/[id]/page.tsx" ||
-      page === "app/editais/page.tsx"
-    ) {
-      assert(
-        `${page} PublicPageContent`,
-        src.includes("PublicPageContent")
-      );
+    const needsPageContent = [
+      "app/editais/page.tsx",
+      "app/editais/[id]/page.tsx",
+      "app/quem-somos/page.tsx",
+      "app/transparencia/page.tsx",
+    ];
+    if (needsPageContent.includes(page)) {
+      assert(`${page} PublicPageContent`, src.includes("PublicPageContent"));
     }
   }
 

@@ -19,12 +19,12 @@ Roteiro operacional. Marque `[x]` conforme concluir.
 - [ ] Aceitar `docs/VISUAL-GO-LIVE-CHECKLIST.md`
 - [ ] Revisão copy CMS (projetos, IPECC vs APECC)
 
-## Fase 3 — Padronização páginas legadas (requer autorização de layout)
+## Fase 3 — Padronização páginas legadas
 
-- [ ] `quem-somos` → `PublicPageContent` + hero padrão
-- [ ] `transparencia` → `PublicPageContent` + hero padrão
+- [x] `quem-somos` → `PublicPageContent` + `PublicWhatsAppHelpLine` (hero já era `PublicHeroRolling`)
+- [x] `transparencia` → `PublicPageContent` (hero + WhatsApp já padronizados)
 - [ ] `projetos` → reduzir uso de `.sobre` onde fizer sentido
-- [ ] Estender `validar:public-pages-padrao` após mudanças
+- [x] `validar:public-pages-padrao` exige `PublicPageContent` em quem-somos e transparência
 
 ## Fase 4 — WhatsApp Meta
 
