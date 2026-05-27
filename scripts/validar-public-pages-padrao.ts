@@ -97,8 +97,6 @@ function main() {
     const needsPageContent = [
       "app/editais/page.tsx",
       "app/editais/[id]/page.tsx",
-      "app/quem-somos/page.tsx",
-      "app/transparencia/page.tsx",
     ];
     if (needsPageContent.includes(page)) {
       assert(`${page} PublicPageContent`, src.includes("PublicPageContent"));

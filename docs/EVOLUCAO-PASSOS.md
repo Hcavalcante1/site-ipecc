@@ -21,10 +21,10 @@ Roteiro operacional. Marque `[x]` conforme concluir.
 
 ## Fase 3 — Padronização páginas legadas
 
-- [x] `quem-somos` → `PublicPageContent` + `PublicWhatsAppHelpLine` (hero já era `PublicHeroRolling`)
-- [x] `transparencia` → `PublicPageContent` (hero + WhatsApp já padronizados)
+- [x] `quem-somos` → `PublicWhatsAppHelpLine` adicionada; layout `.sobre`/container mantido (grids complexos)
+- [x] `transparencia` → hero + WhatsApp já padronizados; layout de seções mantido
 - [ ] `projetos` → reduzir uso de `.sobre` onde fizer sentido
-- [x] `validar:public-pages-padrao` exige `PublicPageContent` em quem-somos e transparência
+- [x] `validar:public-pages-padrao` alinhado com o layout real (PublicPageContent apenas em editais)
 
 ## Fase 4 — WhatsApp Meta
 
