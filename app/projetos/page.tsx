@@ -4,6 +4,7 @@ import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { resolveMediaPath } from "@/lib/media";
 import { PublicHeroRolling } from "@/components/public";
 import PublicWhatsAppCtaLink from "@/components/public/PublicWhatsAppCtaLink";
+import PublicWhatsAppHelpLine from "@/components/public/PublicWhatsAppHelpLine";
 import { logPublicFetch } from "@/lib/observability/publicFetchLog";
 
 export const dynamic = "force-dynamic";
@@ -107,22 +108,16 @@ export default async function ProjetosPage() {
         ariaLabel="Projetos IPECC"
       />
 
+      <PublicWhatsAppHelpLine assunto="projetos" />
+
       {/* INTRO */}
-      <section
-        className="sobre"
-        aria-labelledby="intro-projetos"
-        style={{ marginBottom: "6px" }}
-      >
+      <section className="sobre" aria-labelledby="intro-projetos">
         <div className="container">
           <h2 id="intro-projetos">{intro?.titulo ?? "Como atuamos"}</h2>
-
           {intro?.texto ? (
             intro.texto.split("\n\n").map((p, i) => <p key={i}>{p}</p>)
           ) : (
-            <p>
-              O IPECC estrutura iniciativas em eixos complementares que se
-              adaptam à realidade de cada território.
-            </p>
+            <p>O IPECC estrutura iniciativas em eixos complementares que se adaptam à realidade de cada território.</p>
           )}
         </div>
       </section>
@@ -130,61 +125,61 @@ export default async function ProjetosPage() {
       {/* EIXOS */}
       <section className="sobre" aria-label="Eixos temáticos">
         <div className="container">
-          <div className="cards__grid">
-            {eixos.length === 0 && (
-              <p style={{ opacity: 0.6 }}>Nenhum eixo cadastrado.</p>
-            )}
-
-            {eixos.map((eixo, i) => (
-              <article className="card" key={i}>
-                <img
-                  src={
-                    eixo.imagem_url && eixo.imagem_url.trim() !== ""
-                      ? resolveMediaPath(eixo.imagem_url)
-                      : "/media/shared/fallbacks/eixo-default.jpg"
-                  }
-                  alt={eixo.titulo || "Eixo"}
-                  className="card__img"
-                />
-
-                <div className="card__body">
-                  <h3 className="card__title">{eixo.titulo}</h3>
-                  <p className="card__text">{eixo.texto}</p>
-                </div>
-              </article>
-            ))}
-          </div>
+          {eixos.length === 0 ? (
+            <p style={{ opacity: 0.6 }}>Nenhum eixo cadastrado.</p>
+          ) : (
+            <div className="public-card-grid">
+              {eixos.map((eixo, i) => (
+                <article className="public-card" key={i}>
+                  <div className="public-card__media">
+                    <img
+                      src={
+                        eixo.imagem_url && eixo.imagem_url.trim() !== ""
+                          ? resolveMediaPath(eixo.imagem_url)
+                          : "/media/shared/fallbacks/eixo-default.jpg"
+                      }
+                      alt={eixo.titulo || "Eixo"}
+                    />
+                  </div>
+                  <div className="public-card__body">
+                    <h3 className="public-card__title">{eixo.titulo}</h3>
+                    <p className="public-card__resumo">{eixo.texto}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
       {/* DESTAQUES */}
       <section className="destaques" aria-labelledby="destaques-projetos">
         <div className="container">
-          <h2 id="destaques-projetos">
-            {destaquesData?.titulo || "Destaques"}
-          </h2>
-
-          <div className="destaques__grid">
-            {destaques.length === 0 && (
-              <p style={{ opacity: 0.6 }}>Nenhum destaque cadastrado.</p>
-            )}
-
-            {destaques.map((item: any, i: number) => (
-              <article key={i}>
-                <img
-                  src={
-                    item.imagem_url && item.imagem_url.trim() !== ""
-                      ? resolveMediaPath(item.imagem_url)
-                      : "/media/home/destaques/acao-social.jpg"
-                  }
-                  alt={item.titulo || "Imagem"}
-                />
-
-                <h3>{item.titulo}</h3>
-                <p>{item.texto}</p>
-              </article>
-            ))}
-          </div>
+          <h2 id="destaques-projetos">{destaquesData?.titulo || "Destaques"}</h2>
+          {destaques.length === 0 ? (
+            <p style={{ opacity: 0.6 }}>Nenhum destaque cadastrado.</p>
+          ) : (
+            <div className="public-card-grid">
+              {destaques.map((item: any, i: number) => (
+                <article className="public-card" key={i}>
+                  <div className="public-card__media">
+                    <img
+                      src={
+                        item.imagem_url && item.imagem_url.trim() !== ""
+                          ? resolveMediaPath(item.imagem_url)
+                          : "/media/home/destaques/acao-social.jpg"
+                      }
+                      alt={item.titulo || "Imagem"}
+                    />
+                  </div>
+                  <div className="public-card__body">
+                    <h3 className="public-card__title">{item.titulo}</h3>
+                    <p className="public-card__resumo">{item.texto}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

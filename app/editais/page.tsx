@@ -170,53 +170,37 @@ export default async function EditaisPublicPage() {
           <h2 className="public-section__title">Editais e chamadas ativas</h2>
 
           {(editais as Edital[] | null)?.length ? (
-            <div className="cards__grid">
+            <div className="public-card-grid">
               {(editais as Edital[]).map((edital) => {
                 const periodo =
                   edital.periodo_envio || edital.periodo || "Não informado";
                 const downloadUrl = resolveEditalDownloadUrl(edital.arquivo_pdf);
+                const statusLabel = editalStatusLabel(edital.status);
 
                 return (
-                  <article
-                    key={edital.id}
-                    className="card public-edital-card"
-                  >
-                    <div className="card__body">
-                      <h3 className="card__title">{edital.titulo}</h3>
-                      <p className="card__text">
-                        <strong>Tipo:</strong>{" "}
-                        {edital.tipo || "Chamamento público"}
+                  <article key={edital.id} className="public-card public-edital-card">
+                    <div className="public-card__body">
+                      <span className={`public-edital-badge public-edital-badge--${edital.status}`}>
+                        {statusLabel}
+                      </span>
+                      <h3 className="public-card__title">{edital.titulo}</h3>
+                      <p className="public-card__resumo">
+                        <strong>Tipo:</strong> {edital.tipo || "Chamamento público"}
                       </p>
-                      <p className="card__text">
+                      <p className="public-card__resumo">
                         <strong>Período:</strong> {periodo}
                       </p>
-                      <p className="card__text">
-                        <strong>Status:</strong>{" "}
-                        {editalStatusLabel(edital.status)}
-                      </p>
                     </div>
-
                     <div className="public-page-actions">
-                      <Link
-                        href={`/editais/${edital.id}`}
-                        className="card__link"
-                      >
+                      <Link href={`/editais/${edital.id}`} className="card__link">
                         Ver detalhes
                       </Link>
                       {downloadUrl && (
-                        <a
-                          href={downloadUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="card__link"
-                        >
+                        <a href={downloadUrl} target="_blank" rel="noreferrer" className="card__link">
                           Baixar PDF
                         </a>
                       )}
-                      <Link
-                        href={`/propostas?codigo=${edital.id}`}
-                        className="card__link"
-                      >
+                      <Link href={`/propostas?codigo=${edital.id}`} className="card__link">
                         Enviar proposta
                       </Link>
                     </div>

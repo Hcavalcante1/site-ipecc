@@ -1411,8 +1411,35 @@ button.public-card__link{
 
 .public-edital-card .public-page-actions{
   padding: 0 16px 20px;
-  border-top: none;
-  margin-top: 0;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 8px;
+  padding-top: 14px;
+}
+
+.public-edital-badge{
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin-bottom: 10px;
+}
+
+.public-edital-badge--aberto{
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.public-edital-badge--encerrado{
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.public-edital-badge--em_breve{
+  background: #fef9c3;
+  color: #92400e;
 }
 
 /* ===== FORMULÁRIO PÚBLICO (propostas) ===== */
