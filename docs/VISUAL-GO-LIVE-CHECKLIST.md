@@ -1,6 +1,6 @@
 # Checklist visual — go-live (sem deploy)
 
-**Última validação:** 2026-05-25 · ambiente `http://localhost:3000` · BATCH 16 (mobile 375px)
+**Última validação:** 2026-05-26 · ambiente `http://localhost:3000` · split Portal (`/`) vs Início (`/inicio`)
 
 Conferir em staging/local antes de autorizar produção. Não substitui `PROD-PREP-CHECKLIST.md`.
 
@@ -16,11 +16,23 @@ Conferir em staging/local antes de autorizar produção. Não substitui `PROD-PR
 
 ---
 
-## Desktop (≥992px) — smoke 2026-05-25
+## Arquitetura de rotas (desde 2026-05-26)
+
+| URL | Menu | Conteúdo |
+|-----|------|----------|
+| `/` | Portal | Landing `ApresentacaoLanding` (captação, SEO, CTA) |
+| `/inicio` | Início | Home editorial (hero CMS, cards, notícias, eventos) |
+| `/portal` | — | 308 → `/inicio` |
+| `/apresentacao` | — | 308 → `/` |
+
+## Desktop (≥992px) — smoke 2026-05-26
 
 | Página | HTTP | Layout / hero | Observação |
 |--------|------|---------------|------------|
-| `/` | 200 | OK | Hero, cards, destaques, notícias/eventos embutidos, números, impacto, CTA |
+| `/` | 200 | Revisar | Landing nova — seções de captação, link para `/inicio` |
+| `/inicio` | 200 | Revisar | Ex-home: hero, cards, destaques, notícias/eventos, números, impacto, CTA |
+| `/portal` | 308 | OK | Redirect para `/inicio` |
+| `/apresentacao` | 308 | OK | Redirect para `/` |
 | `/propostas` | 200 | OK | Corrigido BATCH 13 (`head.tsx` → `layout.tsx` metadata) |
 | `/editais` | 200 | OK | Listagem e documentação; **títulos de teste no CMS** |
 | `/editais/[id]` | ver nota | OK (código) | Hero dinâmico; **se 500 no dev:** apagar `.next` e reiniciar `npm run dev` |
@@ -32,7 +44,8 @@ Conferir em staging/local antes de autorizar produção. Não substitui `PROD-PR
 | `/eventos` | 200 | OK | Grid + metadados |
 | `/contato` | 200 | OK | Smoke BATCH 14 (`validar:smoke-publico`) |
 
-- [x] Home: hero, cards, destaques, números, depoimentos, CTA
+- [ ] **Portal `/`:** landing (CTAs, SEO, link único para `/inicio`)
+- [ ] **Início `/inicio`:** hero, cards, destaques, números, depoimentos, CTA
 - [x] `/projetos` + 4 páginas filhas (`/projetos/*`)
 - [x] `/editais` + detalhe `/editais/[id]` (UUID staging)
 - [x] `/transparencia` (tabelas e links)
@@ -90,9 +103,11 @@ Validação automatizada + browser **375px** (BATCH 16); CSS defensivo em `globa
 
 ```bash
 npm run typecheck
+npm run validar:public-pages-padrao
+npm run validar:smoke-publico   # com npm run dev
 npm run validar:publico
 npm run validar:admin
-npm run validar:enterprise
+npm run guard:enterprise
 ```
 
 Runbook: `docs/runbook-staging-enterprise.md` · Pacote push: `docs/PUSH-PACKAGE-LOCAL.md`

@@ -1,6 +1,6 @@
 # Status enterprise — staging local
 
-Atualizado: 2026-05-26 · HEAD `7899f94` · M1–M4 + público + WhatsApp + landing `/` + `/inicio`.
+Atualizado: 2026-05-26 · HEAD `22f9978` · M1–M4 + público + WhatsApp + landing `/` + `/inicio`.
 
 ## Gates automatizados
 
@@ -23,7 +23,7 @@ Agendamento Windows (08:00): `scripts/agendar-enterprise-guard.ps1` → tarefa `
 | `validar:publico` | OK |
 | `validar:admin` | OK |
 | Mobile 375px (BATCH 16) | OK (código) |
-| Smoke 15 rotas (BATCH 15) | OK com dev |
+| Smoke HTTP (BATCH 14+) | OK com dev (`/`, `/inicio`, redirects legados) |
 | CMS limpeza (BATCH 17) | OK (`auditar:cms-staging` 0 suspeitos, 2026-05-26) |
 | Landing `/` + editorial `/inicio` | OK (`validar:public-pages-padrao`, redirects `/portal`→`/inicio`, `/apresentacao`→`/`) |
 | Pacote push | `docs/PUSH-PACKAGE-LOCAL.md` · push `ipecc-whatsapp-leads` + espelho `site-ipecc` |
@@ -35,7 +35,7 @@ Agendamento Windows (08:00): `scripts/agendar-enterprise-guard.ps1` → tarefa `
 |------|--------|
 | TypeScript + build | OK |
 | `proposta_anexos` M1–M4 | OK (19 propostas, 32 refs, 0 órfãos) |
-| CI workflow | OK (`site-ipecc` Actions run #3 em `7899f94`) |
+| CI workflow | OK (`site-ipecc` Actions em `7899f94`+) |
 | Upload público | OK (`validate:upload-proposta`) |
 | Storage propostas privado | OK |
 | **RLS `propostas` anon SELECT** | **OK** (após SQL + ajuste insert sem `.select()`) |
@@ -51,7 +51,7 @@ Guia: `docs/HARDENING-RLS-APLICAR-STAGING.md`
 
 ## GitHub
 
-Push realizado 2026-05-26 (`2a94f6d` site público, `7899f94` guard local). Guia: `docs/GITHUB-PUSH.md` · Guard local: `docs/ENTERPRISE-GUARD-LOCAL.md`
+Push realizado 2026-05-26 (`2a94f6d` site público, `7899f94` guard, `22f9978` status). Guia: `docs/GITHUB-PUSH.md` · Guard local: `docs/ENTERPRISE-GUARD-LOCAL.md`
 
 ## Go-live produção
 
@@ -72,4 +72,4 @@ Padrões: `docs/PUBLICO-PADROES.md` · componentes em `components/public/`
 
 ## Commits recentes (trilha)
 
-`7899f94` guard local · `2a94f6d` landing `/` + `/inicio` + SEO · `cfd0f19` `.cursorignore`
+`22f9978` status ops · `7899f94` guard local · `2a94f6d` landing `/` + `/inicio` + SEO
