@@ -1,5 +1,8 @@
 /** Conteúdo estático da landing (index) — escopo do portal IPECC. */
 
+/** Chamada principal (H1) da landing em /. */
+export const LANDING_CHAMADA = "Educação, esporte, cultura e cidadania";
+
 export const PROJETOS_DESTAQUE = [
   {
     slug: "valer-mais",

@@ -20,7 +20,7 @@ Conferir em staging/local antes de autorizar produção. Não substitui `PROD-PR
 
 | URL | Menu | Conteúdo |
 |-----|------|----------|
-| `/` | Portal | Landing `ApresentacaoLanding` (captação, SEO, CTA) |
+| `/` | Portal (menu) | Landing: H1 **Educação, esporte, cultura e cidadania** + subtítulo parcerias/editais |
 | `/inicio` | Início | Home editorial (hero CMS, cards, notícias, eventos) |
 | `/portal` | — | 308 → `/inicio` |
 | `/apresentacao` | — | 308 → `/` |

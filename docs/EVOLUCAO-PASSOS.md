@@ -10,6 +10,7 @@ Roteiro operacional. Marque `[x]` conforme concluir.
 - [x] Enterprise Guard local + agendamento 08:00
 - [x] Docs ops atualizados (`ENTERPRISE-STATUS`, `PUSH-PACKAGE-LOCAL`)
 - [x] Smoke HTTP com `/inicio` e redirects (18 rotas)
+- [x] Chamada H1 da landing `/`: **Educação, esporte, cultura e cidadania** (menu continua **Portal**)
 
 ## Fase 2 — Homologação visual (equipe)
 

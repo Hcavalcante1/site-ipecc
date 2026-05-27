@@ -70,6 +70,18 @@ function main() {
     read("app/page.tsx").includes("ApresentacaoLanding")
   );
 
+  const landing = read("components/public/ApresentacaoLanding.tsx");
+  const landingContent = read("lib/landing/content.ts");
+  assert(
+    "landing chamada H1",
+    landing.includes("{LANDING_CHAMADA}") &&
+      landingContent.includes('LANDING_CHAMADA = "Educação, esporte, cultura e cidadania"')
+  );
+  assert(
+    "menu label Portal (href /)",
+    /href="\/"[\s\S]{0,400}Portal/.test(read("app/layout.tsx"))
+  );
+
   const layout = read("app/layout.tsx");
   assert("layout PublicSiteFooter", layout.includes("PublicSiteFooter"));
   assert("layout PublicBreadcrumbs", layout.includes("PublicBreadcrumbs"));

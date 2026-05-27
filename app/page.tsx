@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 import ApresentacaoLanding from "@/components/public/ApresentacaoLanding";
+import { LANDING_CHAMADA } from "@/lib/landing/content";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title:
-    "IPECC | Educação, Cultura e Cidadania — Projetos e Parcerias em São Paulo",
+  title: `IPECC | ${LANDING_CHAMADA} — Projetos e Parcerias em São Paulo`,
   description:
-    "Instituto IPECC: projetos sociais, editais abertos, envio de propostas com checklist documental e transparência ativa. Valer Mais, oficinas de cidadania e parcerias no Estado de São Paulo.",
+    "Instituto IPECC: educação, esporte, cultura e cidadania em São Paulo. Editais, propostas com checklist documental e transparência ativa.",
   keywords: [
     "IPECC",
-    "instituto educação cultura cidadania",
+    "instituto educação esporte cultura cidadania",
     "projetos sociais São Paulo",
     "editais OSC",
     "envio de propostas",
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
         url: "/media/seo/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "IPECC — Educação, Cultura e Cidadania",
+        alt: `IPECC — ${LANDING_CHAMADA}`,
       },
     ],
   },

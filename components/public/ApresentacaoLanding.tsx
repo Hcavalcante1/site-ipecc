@@ -4,6 +4,7 @@ import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import ApresentacaoCta from "@/components/public/ApresentacaoCta";
 import {
   FALLBACK_NUMEROS,
+  LANDING_CHAMADA,
   MODULOS_PORTAL,
   PASSOS,
   PROJETOS_DESTAQUE,
@@ -51,8 +52,6 @@ export default async function ApresentacaoLanding() {
       .eq("status", "aberto"),
   ]);
 
-  const heroTitulo =
-    heroHome?.titulo?.trim() || "Educação, Cultura e Cidadania";
   const heroTexto =
     heroHome?.texto?.split("\n").filter(Boolean)[0]?.trim() ||
     "Projetos de impacto social, parcerias públicas e transparência ativa no Estado de São Paulo.";
@@ -83,11 +82,12 @@ export default async function ApresentacaoLanding() {
     "@context": "https://schema.org",
     "@type": "NGO",
     name: "Instituto IPECC",
-    description: heroTexto,
+    description: `${LANDING_CHAMADA}. ${heroTexto}`,
     url: "https://www.ipecc.org.br/",
     areaServed: "São Paulo, BR",
     knowsAbout: [
       "educação",
+      "esporte",
       "cultura",
       "cidadania",
       "projetos sociais",
@@ -111,7 +111,7 @@ export default async function ApresentacaoLanding() {
               Instituto IPECC · São Paulo
             </span>
             <h1 className={styles.heroTitle}>
-              {heroTitulo}
+              {LANDING_CHAMADA}
               <span className={styles.heroTitleSub}>
                 Parcerias, editais e projetos de impacto social
               </span>

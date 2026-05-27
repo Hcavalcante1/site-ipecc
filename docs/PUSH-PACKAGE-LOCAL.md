@@ -14,7 +14,7 @@ Pendente local (nunca commitar): .env.local, .cursor/, reports/, .next/
 
 | URL | Função |
 |-----|--------|
-| `/` | Landing de captação (`ApresentacaoLanding`) — menu **Portal** |
+| `/` | Landing (`ApresentacaoLanding`) — menu **Portal**; H1: *Educação, esporte, cultura e cidadania* |
 | `/inicio` | Home editorial (CMS) — menu **Início** |
 | `/apresentacao` | 308 → `/` |
 | `/portal` | 308 → `/inicio` |
