@@ -7,6 +7,8 @@ export { default as AdminTextarea } from "./AdminTextarea";
 export { default as AdminSelect } from "./AdminSelect";
 export { default as AdminFileInput } from "./AdminFileInput";
 export { default as AdminSectionHeader } from "./AdminSectionHeader";
+export { default as AdminSalvarButton } from "./AdminSalvarButton";
+export { default as AdminHubCard, AdminHubNavCard, AdminPaginasHubLayout } from "./AdminHubCard";
 
 // Design Tokens
 export {

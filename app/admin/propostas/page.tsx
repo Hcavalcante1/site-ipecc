@@ -165,9 +165,9 @@ export default function Page() {
                 style={{
                   color:
                     p.status === "aprovado"
-                      ? "#22c55e"
+                      ? adminTokens.colors.success.background
                       : p.status === "rejeitado"
-                      ? "#ef4444"
+                      ? adminTokens.colors.error.background
                       : "#facc15",
                   fontWeight: adminTokens.typography.fontWeight.bold,
                 }}
@@ -216,7 +216,7 @@ export default function Page() {
               <button
                 onClick={() => atualizarStatus(p.id, "aprovado")}
                 style={{
-                  background: "#22c55e",
+                  background: adminTokens.colors.success.background,
                   color: "#022c22",
                   ...btnPad,
                   borderRadius: 6,
@@ -231,8 +231,8 @@ export default function Page() {
               <button
                 onClick={() => atualizarStatus(p.id, "rejeitado")}
                 style={{
-                  background: "#ef4444",
-                  color: "#fff",
+                  background: adminTokens.colors.error.background,
+                  color: adminTokens.colors.error.text,
                   ...btnPad,
                   borderRadius: 6,
                   border: "none",

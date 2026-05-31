@@ -117,9 +117,9 @@ export default function AuditoriaAnexosPage() {
             <strong>Propostas:</strong> {resumo.propostas} ·{" "}
             <strong>Referências:</strong> {resumo.referencias} ·{" "}
             <strong>Disponíveis:</strong>{" "}
-            <span style={{ color: "#22c55e" }}>{resumo.disponiveis}</span> ·{" "}
+            <span style={{ color: adminTokens.colors.success.background }}>{resumo.disponiveis}</span> ·{" "}
             <strong>Órfãos:</strong>{" "}
-            <span style={{ color: resumo.orfaos ? "#f97316" : "#22c55e" }}>
+            <span style={{ color: resumo.orfaos ? "#f97316" : adminTokens.colors.success.background }}>
               {resumo.orfaos}
             </span>
           </p>

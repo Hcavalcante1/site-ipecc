@@ -63,8 +63,8 @@ const fullSpanStyle: CSSProperties = {
 };
 
 function corStatus(status?: string) {
-  if (status === "aprovado") return "#22c55e";
-  if (status === "rejeitado") return "#ef4444";
+  if (status === "aprovado") return adminTokens.colors.success.background;
+  if (status === "rejeitado") return adminTokens.colors.error.background;
   return "#facc15";
 }
 
@@ -386,8 +386,8 @@ export default function Page() {
           <button
             onClick={excluirProposta}
             style={{
-              background: "#ef4444",
-              color: "#fff",
+              background: adminTokens.colors.error.background,
+              color: adminTokens.colors.error.text,
               padding: `${adminTokens.spacing.xs}px ${adminTokens.spacing.base}px`,
               borderRadius: 6,
               border: "none",
