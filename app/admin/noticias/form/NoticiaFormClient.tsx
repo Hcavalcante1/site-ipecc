@@ -25,6 +25,7 @@ export default function NoticiaForm() {
   const [publicado, setPublicado] = useState(true);
 
   const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState("");
 
   async function carregar() {
     if (!id) return;
@@ -46,37 +47,36 @@ export default function NoticiaForm() {
 
   async function salvar() {
     setLoading(true);
+    setMsg("");
 
     if (!titulo) {
-      alert("Título é obrigatório");
+      setMsg("Título é obrigatório");
       setLoading(false);
       return;
     }
 
-    if (id) {
-      // EDITAR
-      await supabase
-        .from("noticias")
-        .update({
-          titulo,
-          resumo,
-          conteudo,
-          imagem_url: imagem,
-          publicado,
-        })
-        .eq("id", id);
-    } else {
-      // CRIAR
-      await supabase.from("noticias").insert({
-        titulo,
-        resumo,
-        conteudo,
-        imagem_url: imagem,
-        publicado,
-      });
+    const row = {
+      titulo,
+      resumo,
+      conteudo,
+      imagem_url: imagem,
+      publicado,
+    };
+
+    const { error } = id
+      ? await supabase.from("noticias").update(row).eq("id", id)
+      : await supabase.from("noticias").insert(row);
+
+    if (error) {
+      console.error(error);
+      setMsg(`Erro ao salvar: ${error.message}`);
+      setLoading(false);
+      return;
     }
 
-    router.push("/admin/noticias");
+    setMsg("Salvo com sucesso!");
+    setLoading(false);
+    setTimeout(() => router.push("/admin/noticias"), 600);
   }
 
   useEffect(() => {
@@ -135,8 +135,13 @@ export default function NoticiaForm() {
           <label>Publicado</label>
         </div>
 
+        {msg && (
+          <p style={{ marginTop: 12, fontWeight: 500 }}>{msg}</p>
+        )}
+
         <div className="admin-save-row">
           <button
+            type="button"
             onClick={salvar}
             className="admin-save-button"
             disabled={loading}

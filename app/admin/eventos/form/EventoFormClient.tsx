@@ -72,7 +72,7 @@ export default function EventoForm() {
         .update({
           titulo,
           descricao,
-          data_evento: dataEvento,
+          data_evento: dataEvento || null,
           local,
           imagem_url: imagem,
           horario,
@@ -92,7 +92,7 @@ export default function EventoForm() {
         .insert({
           titulo,
           descricao,
-          data_evento: dataEvento,
+          data_evento: dataEvento || null,
           local,
           imagem_url: imagem,
           horario,
@@ -208,6 +208,7 @@ export default function EventoForm() {
 
         <div className="admin-save-row">
           <button
+	type="button"
             onClick={salvar}
             className="admin-save-button"
             disabled={loading}

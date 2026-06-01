@@ -65,8 +65,20 @@ export default function NoticiasAdmin() {
     const confirmar = confirm("Deseja excluir esta notícia?");
     if (!confirmar) return;
 
-    await supabase.from("noticias").delete().eq("id", id);
-    carregarNoticias();
+    try {
+      const { error } = await supabase.from("noticias").delete().eq("id", id);
+      
+      if (error) {
+        console.error("Erro ao excluir notícia:", error.message);
+        alert(`Erro ao excluir notícia: ${error.message}`);
+        return;
+      }
+
+      await carregarNoticias();
+    } catch (e) {
+      console.error("Exceção ao excluir:", e);
+      alert("Erro ao excluir notícia");
+    }
   }
 
   useEffect(() => {

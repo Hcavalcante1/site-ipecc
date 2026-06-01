@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import EventoFormClient from "./EventoFormClient";
+import NoticiaFormClient from "./NoticiaFormClient";
 
 export default function Page() {
   return (
     <Suspense fallback={<div>Carregando...</div>}>
-      <EventoFormClient />
+      <NoticiaFormClient />
     </Suspense>
   );
 }
