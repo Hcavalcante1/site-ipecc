@@ -6,7 +6,7 @@ export function resolveEditalDownloadUrl(arquivoPdf?: string | null): string | n
     ? arquivoPdf.split("/docs/")[1]
     : arquivoPdf.replace(/^editais\//, "");
 
-  return path ? `/api/download/docs/${path}` : null;
+  return path ? `/api/download/editais/${path}` : null;
 }
 
 export function editalStatusLabel(status: string): string {
