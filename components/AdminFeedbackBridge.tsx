@@ -23,13 +23,9 @@ export default function AdminFeedbackBridge() {
       triggerToast(text, isError ? "error" : "success");
     };
 
-    // 🔥 CONFIRM → MODAL GLOBAL
-
-// 🔥 CONFIRM → MODAL GLOBAL (CORRIGIDO)
-window.confirm = (message?: string) => {
-  confirmAction(message || "");
-  return false;
-};
+    // 🔥 CONFIRM → usar o confirm nativo (síncrono) para manter comportamento esperado
+    // o modal assíncrono pode ser usado separadamente via `confirmAction` quando necessário
+    window.confirm = originalConfirm;
   
 
     // restaura ao desmontar

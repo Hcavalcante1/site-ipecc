@@ -1,26 +1,11 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { createSupabaseRouteClient } from "./supabaseRouteCookies";
 
 export type AdminSessionResult =
   | { ok: true; userId: string }
   | { ok: false; status: 401 | 403; message: string };
 
 export async function verifyAdminSession(): Promise<AdminSessionResult> {
-  const cookieStore = cookies();
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-        set() {},
-        remove() {},
-      },
-    }
-  );
+  const supabase = createSupabaseRouteClient();
 
   const {
     data: { user },
@@ -28,15 +13,19 @@ export async function verifyAdminSession(): Promise<AdminSessionResult> {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    return { ok: false, status: 401, message: "Não autorizado" };
+    return { ok: false, status: 401, message: "Não autorizado — faça login novamente." };
   }
 
   const { data: isAdmin, error } = await supabase.rpc("is_admin", {
     user_id: user.id,
   });
 
-  if (error || !isAdmin) {
-    return { ok: false, status: 403, message: "Acesso negado" };
+  if (error) {
+    return { ok: false, status: 403, message: `Erro ao validar admin: ${error.message}` };
+  }
+
+  if (!isAdmin) {
+    return { ok: false, status: 403, message: "Acesso negado — usuário sem permissão admin." };
   }
 
   return { ok: true, userId: user.id };
