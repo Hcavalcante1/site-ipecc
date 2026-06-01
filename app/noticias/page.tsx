@@ -1,6 +1,6 @@
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { resolveMediaPath } from "@/lib/media";
-import { PublicHeroRolling, PublicPageContent } from "@/components/public";
+import { PublicHeroRolling } from "@/components/public";
 import PublicWhatsAppHelpLine from "@/components/public/PublicWhatsAppHelpLine";
 import { logPublicFetch } from "@/lib/observability/publicFetchLog";
 
@@ -35,34 +35,38 @@ export default async function NoticiasPage() {
         assunto="outro"
         intro="Quer falar com a equipe sobre esta notícia?"
       />
-      <PublicPageContent>
+      <section className="sobre">
+        <div className="container">
           {!noticias || noticias.length === 0 ? (
             <p>Nenhuma notícia disponível.</p>
           ) : (
-            <div className="public-card-grid">
+            <div className="cards__grid">
               {noticias.map((n: any) => (
-                <a key={n.id} href={`/noticias/${n.id}`} className="public-card">
-                  <div className="public-card__media">
+                <article key={n.id} className="card">
+                  <a
+                    href={`/noticias/${n.id}`}
+                    style={{ textDecoration: "none", color: "inherit" }}
+                  >
                     <img
                       src={
                         resolveMediaPath(n.imagem_url) ||
                         "/media/home/cards/projetos.jpg"
                       }
                       alt={n.titulo}
+                      className="card__img"
                     />
-                  </div>
 
-                  <div className="public-card__body public-card__body--compact">
-                    <h3 className="public-card__title public-card__title--compact">
-                      {n.titulo}
-                    </h3>
-                    <p className="public-card__resumo">{n.resumo}</p>
-                  </div>
-                </a>
+                    <div className="card__body">
+                      <h3 className="card__title">{n.titulo}</h3>
+                      <p className="card__text">{n.resumo}</p>
+                    </div>
+                  </a>
+                </article>
               ))}
             </div>
           )}
-      </PublicPageContent>
+        </div>
+      </section>
     </>
   );
 }

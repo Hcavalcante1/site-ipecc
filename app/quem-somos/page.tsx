@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
+import {
+  fetchPaginaConteudo,
+  fetchPaginaConteudoPorPrefixo,
+  parsePaginaExtra,
+} from "@/lib/cms/paginasConteudo";
 import { resolveMediaPath } from "@/lib/media";
 import { PublicHeroRolling } from "@/components/public";
 import PublicWhatsAppCtaLink from "@/components/public/PublicWhatsAppCtaLink";
@@ -21,46 +26,40 @@ export default function QuemSomosPage() {
   useEffect(() => {
     async function loadData() {
 
-      const { data: heroData } = await supabase
-        .from("paginas_conteudo")
-        .select("titulo, texto")
-        .eq("pagina_slug", "quem-somos")
-        .eq("bloco", "hero")
-        .maybeSingle();
-
+      const heroData = await fetchPaginaConteudo(
+        supabase,
+        "quem-somos",
+        "hero",
+        "titulo, texto"
+      );
       if (heroData) setHero(heroData);
 
-      const { data: blocoData } = await supabase
-        .from("paginas_conteudo")
-        .select("titulo, texto")
-        .eq("pagina_slug", "quem-somos")
-        .eq("bloco", "bloco-principal")
-        .maybeSingle();
-
+      const blocoData = await fetchPaginaConteudo(
+        supabase,
+        "quem-somos",
+        "bloco-principal",
+        "titulo, texto"
+      );
       if (blocoData) setBloco(blocoData);
 
-      const { data: mvvData } = await supabase
-        .from("paginas_conteudo")
-        .select("extra")
-        .eq("pagina_slug", "quem-somos")
-        .eq("bloco", "mvv")
-        .maybeSingle();
-
+      const mvvData = await fetchPaginaConteudo(
+        supabase,
+        "quem-somos",
+        "mvv",
+        "extra"
+      );
       if (mvvData?.extra) {
-        setMvv(
-          typeof mvvData.extra === "string"
-            ? JSON.parse(mvvData.extra)
-            : mvvData.extra
-        );
+        setMvv(parsePaginaExtra(mvvData.extra, []));
       }
 
-      const { data: atuacaoData } = await supabase
-        .from("paginas_conteudo")
-        .select("bloco, titulo, texto, imagem_url")
-        .eq("pagina_slug", "quem-somos")
-        .like("bloco", "atuacao%");
+      const atuacaoData = await fetchPaginaConteudoPorPrefixo(
+        supabase,
+        "quem-somos",
+        "atuacao",
+        "bloco, titulo, texto, imagem_url"
+      );
 
-      if (atuacaoData) {
+      if (atuacaoData.length) {
         const cards: any[] = [];
 
         atuacaoData.forEach((item) => {
@@ -78,13 +77,12 @@ export default function QuemSomosPage() {
         setAtuacao(cards);
       }
 
-      const { data: ctaData } = await supabase
-        .from("paginas_conteudo")
-        .select("titulo, texto, extra")
-        .eq("pagina_slug", "quem-somos")
-        .eq("bloco", "cta")
-        .maybeSingle();
-
+      const ctaData = await fetchPaginaConteudo(
+        supabase,
+        "quem-somos",
+        "cta",
+        "titulo, texto, extra"
+      );
       if (ctaData) setCta(ctaData);
     }
 

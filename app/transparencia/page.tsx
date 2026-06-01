@@ -221,7 +221,13 @@ const FASE_PRESTACAO_ORDEM = [
 
 function getBlock(data: BlocoConteudo[] | null | undefined, bloco: string): BlocoConteudo | null {
   if (!data?.length) return null;
-  return data.find((item) => item.bloco === bloco) ?? null;
+  const matches = data.filter((item) => item.bloco === bloco);
+  if (!matches.length) return null;
+  return matches.sort(
+    (a, b) =>
+      new Date(b.updated_at || 0).getTime() -
+      new Date(a.updated_at || 0).getTime()
+  )[0];
 }
 
 function getGrupoExtra(block?: BlocoConteudo | null, key = "grupos"): CardGrupo[] {
@@ -459,8 +465,10 @@ export default async function TransparenciaPage() {
   ] = await Promise.all([
     supabase
       .from("paginas_conteudo")
-      .select("bloco,titulo,texto,extra,updated_at")
-      .eq("pagina_slug", "transparencia"),
+      .select("bloco,titulo,texto,extra,updated_at,created_at")
+      .eq("pagina_slug", "transparencia")
+      .order("updated_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false }),
 
     supabase
       .from("transparencia_convenios")

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabaseServer";
+import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { resolveMediaPath } from "@/lib/media";
 import { PublicHeroRolling, PublicPageContent } from "@/components/public";
 import PublicWhatsAppHelpLine from "@/components/public/PublicWhatsAppHelpLine";
@@ -12,8 +12,6 @@ type Props = {
 };
 
 export default async function NoticiaPage({ params }: Props) {
-  const supabase = createClient();
-
   const { data: noticia } = await supabase
     .from("noticias")
     .select("*")

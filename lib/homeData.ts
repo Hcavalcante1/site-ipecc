@@ -1,22 +1,21 @@
 import { createClient } from "./supabaseServer";
 import { HOME_QUERIES } from "./queries";
+import { fetchPaginaConteudo } from "./cms/paginasConteudo";
 
 export async function getHomeData() {
   const supabase = createClient();
 
-  const { data: hero } = await supabase
-    .from("paginas_conteudo")
-    .select("*")
-    .eq("pagina_slug", "home")
-    .eq("bloco", HOME_QUERIES.HERO)
-    .maybeSingle();
+  const hero = await fetchPaginaConteudo(
+    supabase,
+    "home",
+    HOME_QUERIES.HERO
+  );
 
-  const { data: sobre } = await supabase
-    .from("paginas_conteudo")
-    .select("*")
-    .eq("pagina_slug", "home")
-    .eq("bloco", HOME_QUERIES.SOBRE)
-    .maybeSingle();
+  const sobre = await fetchPaginaConteudo(
+    supabase,
+    "home",
+    HOME_QUERIES.SOBRE
+  );
 
   const { data: noticias } = await supabase
     .from("noticias")

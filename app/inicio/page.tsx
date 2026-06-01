@@ -10,6 +10,17 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
+function normalizePotentialMojibake(value?: string | null) {
+  if (!value) return value || "";
+  if (!/[ÃÂâ]/.test(value)) return value;
+
+  try {
+    return Buffer.from(value, "latin1").toString("utf8");
+  } catch {
+    return value;
+  }
+}
+
 
 type Card = {
   id: string;
@@ -512,10 +523,10 @@ const { data: eventos } = await supabase
       {/* ===== IMPACTO SOCIAL ===== */}
       <section className="impacto">
         <div className="container">
-          <h2>{impacto?.titulo || "Impacto Social"}</h2>
+          <h2>{normalizePotentialMojibake(impacto?.titulo) || "Impacto Social"}</h2>
           <p>
-            {impacto?.texto ||
-              pagina?.compromissos_texto ||
+            {normalizePotentialMojibake(impacto?.texto) ||
+              normalizePotentialMojibake(pagina?.compromissos_texto) ||
               "O IPECC promove inclusão, cidadania e transformação social por meio de projetos culturais, educacionais e comunitários que fortalecem o vínculo entre sociedade civil e poder público."}
           </p>
           <div className="impacto__imagem">
@@ -535,20 +546,20 @@ const { data: eventos } = await supabase
             {depoimentosRender && depoimentosRender.length > 0 ? (
               depoimentosRender.map((dep: any) => (
                 <blockquote key={dep.id}>
-                  “{dep.texto}”
+                  {dep.texto}
                   <cite>— {dep.autor}</cite>
                 </blockquote>
               ))
             ) : (
               <>
                 <blockquote>
-                  “Graças ao IPECC, nossa escola recebeu oficinas de arte e
-                  cidadania que transformaram nossos alunos.”
+                  Graças ao IPECC, nossa escola recebeu oficinas de arte e
+                  cidadania que transformaram nossos alunos.
                   <cite>— Diretora, Escola Municipal de Suzano</cite>
                 </blockquote>
                 <blockquote>
-                  “Os projetos do IPECC resgatam a autoestima e oferecem
-                  oportunidades reais nas comunidades.”
+                  Os projetos do IPECC resgatam a autoestima e oferecem
+                  oportunidades reais nas comunidades.
                   <cite>— Coordenadora Social</cite>
                 </blockquote>
               </>

@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
+import { fetchPaginaConteudo } from "@/lib/cms/paginasConteudo";
 import { PublicHeroRolling } from "@/components/public";
 import PublicWhatsAppCtaLink from "@/components/public/PublicWhatsAppCtaLink";
 import WhatsAppLeadTrigger from "@/components/public/WhatsAppLeadTrigger";
@@ -115,47 +116,32 @@ export default function ContatoPage() {
     async function load() {
       setLoading(true);
 
-      const [
-        { data: heroData },
-        { data: paginaData },
-        { data: enderecoData },
-        { data: ctaData },
-      ] = await Promise.all([
-        supabase
-          .from("paginas_conteudo")
-          .select("titulo, texto")
-          .eq("pagina_slug", "contato")
-          .eq("bloco", "hero")
-          .order("created_at", { ascending: false })
-          .limit(1),
+      const [heroData, { data: paginaData }, enderecoData, ctaData] =
+        await Promise.all([
+          fetchPaginaConteudo(supabase, "contato", "hero", "titulo, texto"),
+          supabase
+            .from("paginas")
+            .select("canais_oficiais")
+            .eq("slug", "contato")
+            .maybeSingle(),
+          fetchPaginaConteudo(
+            supabase,
+            "contato",
+            "endereco",
+            "titulo, texto, extra"
+          ),
+          fetchPaginaConteudo(
+            supabase,
+            "contato",
+            "cta",
+            "titulo, texto, extra"
+          ),
+        ]);
 
-        supabase
-          .from("paginas")
-          .select("canais_oficiais")
-          .eq("slug", "contato")
-          .maybeSingle(),
-
-        supabase
-          .from("paginas_conteudo")
-          .select("titulo, texto, extra")
-          .eq("pagina_slug", "contato")
-          .eq("bloco", "endereco")
-          .order("created_at", { ascending: false })
-          .limit(1),
-
-        supabase
-          .from("paginas_conteudo")
-          .select("titulo, texto, extra")
-          .eq("pagina_slug", "contato")
-          .eq("bloco", "cta")
-          .order("created_at", { ascending: false })
-          .limit(1),
-      ]);
-
-      setHero((heroData?.[0] as HeroBlock) || null);
+      setHero((heroData as HeroBlock) || null);
       setCanais((paginaData?.canais_oficiais as CanaisOficiais) ?? null);
-      setEndereco((enderecoData?.[0] as EnderecoBlock) || null);
-      setCTA((ctaData?.[0] as CtaBlock) || null);
+      setEndereco((enderecoData as EnderecoBlock) || null);
+      setCTA((ctaData as CtaBlock) || null);
       setLoading(false);
     }
 
