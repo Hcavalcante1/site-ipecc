@@ -5,6 +5,7 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { adminTokens } from "@/components/admin";
+import { adminCanonicalRoutes } from "@/lib/admin/canonicalAdminRoutes";
 
 // Normaliza nome do arquivo para storage
 function normalizarNomeArquivo(nome: string) {
@@ -147,7 +148,7 @@ export default function AdminEditais() {
         Cadastro e publicação de editais públicos.
       </p>
       <p className="admin-subtitle" style={{ marginTop: 8 }}>
-        <Link href="/admin/paginas/editais">
+        <Link href={adminCanonicalRoutes.editaisCms.hub}>
           Editar textos da página pública Editais →
         </Link>
       </p>
@@ -229,7 +230,8 @@ export default function AdminEditais() {
               className="admin-button"
               style={{ background: "#eab308", color: "#000" }}
               onClick={() =>
-                (window.location.href = `/admin/editais/${e.id}`)
+                (window.location.href =
+                  adminCanonicalRoutes.editaisCadastro.editar(e.id))
               }
             >
               Editar

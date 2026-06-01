@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { adminCanonicalRoutes } from "@/lib/admin/canonicalAdminRoutes";
 
 type Edital = {
   id: string;
@@ -187,7 +188,8 @@ export default function MuralEditaisAdmin() {
 
                 <button
                   onClick={() =>
-                    (window.location.href = `/admin/paginas/editais/${edital.id}`)
+                    (window.location.href =
+                      adminCanonicalRoutes.editaisCadastro.editar(edital.id))
                   }
                   style={{
                     background: "#2563eb",

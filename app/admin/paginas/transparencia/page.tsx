@@ -1,110 +1,64 @@
-"use client";
-
-import Link from "next/link";
-import type { CSSProperties } from "react";
-import { adminTokens } from "@/components/admin";
-
-const btnGreen: CSSProperties = {
-  background: adminTokens.colors.success.background,
-  color: adminTokens.colors.success.text,
-  border: "none",
-  borderRadius: adminTokens.borderRadius.full,
-  padding: `${adminTokens.spacing.sm}px ${adminTokens.spacing.xl}px`,
-  cursor: "pointer",
-  fontWeight: 600,
-};
+import {
+  AdminHubCard,
+  AdminPaginasHubLayout,
+} from "@/components/admin";
+import { adminCanonicalRoutes } from "@/lib/admin/canonicalAdminRoutes";
 
 export default function TransparenciaAdminIndex() {
+  const r = adminCanonicalRoutes.transparencia;
+
   return (
-    <div className="admin-card">
-      <h1>Página — Transparência</h1>
-      <p>
-        Escolha qual bloco da página pública <strong>Transparência</strong> você
-        deseja editar.
-      </p>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-          gap: adminTokens.spacing.sm * 2,
-          marginTop: adminTokens.spacing.xxxl,
-        }}
-      >
-        {/* HERO */}
-        <div className="admin-card">
-          <h3>Hero da página</h3>
-          <p>Título e texto principal do topo da página.</p>
-          <Link href="/admin/paginas/transparencia/hero">
-            <button style={{ ...btnGreen, marginTop: adminTokens.spacing.lg }}>Editar</button>
-          </Link>
-        </div>
-
-        {/* COMPROMISSOS */}
-        <div className="admin-card">
-          <h3>Compromissos e princípios</h3>
-          <p>Texto institucional sobre ética, transparência e governança.</p>
-          <Link href="/admin/paginas/transparencia/compromissos">
-            <button style={{ ...btnGreen, marginTop: adminTokens.spacing.lg }}>Editar</button>
-          </Link>
-        </div>
-
-        {/* DOCUMENTOS */}
-        <div className="admin-card">
-          <h3>Documentos institucionais</h3>
-          <p>
-            Estatuto, atas, CNDs, políticas e demais documentos públicos.
-          </p>
-          <Link href="/admin/paginas/transparencia/documentos">
-            <button style={{ ...btnGreen, marginTop: adminTokens.spacing.lg }}>Editar</button>
-          </Link>
-        </div>
-
-        {/* CONVÊNIOS */}
-        <div className="admin-card">
-          <h3>Termos e Convênios</h3>
-          <p>Cadastro e edição da tabela pública de convênios e instrumentos.</p>
-          <Link href="/admin/paginas/transparencia/convenios">
-            <button style={{ ...btnGreen, marginTop: adminTokens.spacing.lg }}>Editar</button>
-          </Link>
-        </div>
-
-        {/* EDITAIS */}
-        <div className="admin-card">
-          <h3>Editais e Chamamentos</h3>
-          <p>Cadastro e edição da tabela pública de editais e chamamentos.</p>
-          <Link href="/admin/paginas/transparencia/editais">
-            <button style={{ ...btnGreen, marginTop: adminTokens.spacing.lg }}>Editar</button>
-          </Link>
-        </div>
-
-        {/* PRESTAÇÃO DE CONTAS */}
-        <div className="admin-card">
-          <h3>Prestação de contas</h3>
-          <p>Relatórios técnicos e financeiros.</p>
-          <Link href="/admin/paginas/transparencia/prestacao">
-            <button style={{ ...btnGreen, marginTop: adminTokens.spacing.lg }}>Editar</button>
-          </Link>
-        </div>
-
-        {/* LGPD */}
-        <div className="admin-card">
-          <h3>LGPD</h3>
-          <p>Política de privacidade, contatos e proteção de dados.</p>
-          <Link href="/admin/paginas/transparencia/lgpd">
-            <button style={{ ...btnGreen, marginTop: adminTokens.spacing.lg }}>Editar</button>
-          </Link>
-        </div>
-
-        {/* CTA */}
-        <div className="admin-card">
-          <h3>CTA / Acesso rápido</h3>
-          <p>Bloco final com botão de acesso a documentos.</p>
-          <Link href="/admin/paginas/transparencia/cta">
-            <button style={{ ...btnGreen, marginTop: adminTokens.spacing.lg }}>Editar</button>
-          </Link>
-        </div>
+    <AdminPaginasHubLayout
+      titulo="Página — Transparência"
+      subtitulo={
+        <>
+          Escolha qual bloco da página pública <strong>Transparência</strong> você
+          deseja editar.
+        </>
+      }
+    >
+      <div className="admin-grid admin-grid--wide">
+        <AdminHubCard
+          titulo="Hero da página"
+          descricao="Título e texto principal do topo da página."
+          href={r.hero}
+        />
+        <AdminHubCard
+          titulo="Compromissos e princípios"
+          descricao="Texto institucional sobre ética, transparência e governança."
+          href={r.compromissos}
+        />
+        <AdminHubCard
+          titulo="Documentos institucionais"
+          descricao="Estatuto, atas, CNDs, políticas e demais documentos públicos."
+          href={r.documentos}
+        />
+        <AdminHubCard
+          titulo="Termos e Convênios"
+          descricao="Cadastro e edição da tabela pública de convênios e instrumentos."
+          href={r.convenios}
+        />
+        <AdminHubCard
+          titulo="Editais e Chamamentos"
+          descricao="Cadastro e edição da tabela pública de editais e chamamentos."
+          href={r.editais}
+        />
+        <AdminHubCard
+          titulo="Prestação de contas"
+          descricao="Relatórios técnicos e financeiros."
+          href={r.prestacao}
+        />
+        <AdminHubCard
+          titulo="LGPD"
+          descricao="Política de privacidade, contatos e proteção de dados."
+          href={r.lgpd}
+        />
+        <AdminHubCard
+          titulo="CTA / Acesso rápido"
+          descricao="Bloco final com botão de acesso a documentos."
+          href={r.cta}
+        />
       </div>
-    </div>
+    </AdminPaginasHubLayout>
   );
 }
