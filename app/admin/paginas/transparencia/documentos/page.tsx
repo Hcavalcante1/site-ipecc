@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+  parsePaginaExtra,
+} from "@/lib/supabaseClient";
 
 type Documento = {
   label: string;
@@ -36,6 +41,7 @@ const btnRed = {
 export default function TransparenciaDocumentosAdmin() {
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState("");
 
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -43,15 +49,15 @@ export default function TransparenciaDocumentosAdmin() {
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase
-        .from("paginas_conteudo")
-        .select("extra")
-        .eq("pagina_slug", "transparencia")
-        .eq("bloco", "docs_institucionais")
-        .maybeSingle();
-
-      if (data?.extra?.grupos) {
-        setGrupos(data.extra.grupos);
+      const data = await fetchPaginaConteudo(
+        supabase,
+        "transparencia",
+        "docs_institucionais",
+        "extra"
+      );
+      const extra = parsePaginaExtra<{ grupos?: Grupo[] }>(data?.extra, {});
+      if (extra.grupos) {
+        setGrupos(extra.grupos);
       }
 
       setLoading(false);
@@ -80,20 +86,20 @@ export default function TransparenciaDocumentosAdmin() {
   }
 
   async function salvar() {
+    setSalvando(true);
     setMsg("Salvando...");
 
-    const { error } = await supabase
-      .from("paginas_conteudo")
-      .upsert(
-        {
-          pagina_slug: "transparencia",
-          bloco: "docs_institucionais",
-          extra: { grupos },
-        },
-        { onConflict: "pagina_slug,bloco" }
-      );
+    try {
+      const { error } = await upsertPaginaConteudo(supabase, {
+        pagina_slug: "transparencia",
+        bloco: "docs_institucionais",
+        extra: { grupos },
+      });
 
-    setMsg(error ? "Erro ao salvar." : "Alterações salvas com sucesso.");
+      setMsg(error ? "Erro ao salvar." : "Alterações salvas com sucesso.");
+    } finally {
+      setSalvando(false);
+    }
   }
 
   if (loading) return <p>Carregando…</p>;
@@ -192,8 +198,8 @@ export default function TransparenciaDocumentosAdmin() {
 
       <hr />
 
-      <button style={btnGreen} onClick={salvar}>
-        Salvar alterações
+      <button style={btnGreen} onClick={salvar} disabled={salvando}>
+        {salvando ? "Salvando…" : "Salvar alterações"}
       </button>
 
       {msg && <p>{msg}</p>}

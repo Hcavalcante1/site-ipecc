@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+  parsePaginaExtra,
+} from "@/lib/supabaseClient";
 
 const btnGreen = {
   background: "#22c55e",
@@ -15,6 +20,7 @@ const btnGreen = {
 
 export default function EditaisCTAAdmin() {
   const [loading, setLoading] = useState(true);
+  const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState("");
   const [editando, setEditando] = useState(false);
 
@@ -33,21 +39,22 @@ export default function EditaisCTAAdmin() {
   }, []);
 
   async function carregar() {
-    const { data } = await supabase
-      .from("paginas_conteudo")
-      .select("*")
-      .eq("pagina_slug", "editais")
-      .eq("bloco", "cta")
-      .maybeSingle();
+    const data = await fetchPaginaConteudo(supabase, "editais", "cta");
+    const extra = parsePaginaExtra<{
+      titulo?: string;
+      descricao?: string;
+      botao_texto?: string;
+      botao_link?: string;
+    }>(data?.extra, {});
 
     if (data) {
       setTitulo(data.titulo || "");
       setTexto(data.texto || "");
 
-      setTitulo2(data.extra?.titulo || "");
-      setDescricao(data.extra?.descricao || "");
-      setBotaoTexto(data.extra?.botao_texto || "");
-      setBotaoLink(data.extra?.botao_link || "");
+      setTitulo2(extra.titulo || "");
+      setDescricao(extra.descricao || "");
+      setBotaoTexto(extra.botao_texto || "");
+      setBotaoLink(extra.botao_link || "");
     }
 
     setLoading(false);
@@ -55,34 +62,31 @@ export default function EditaisCTAAdmin() {
   }
 
   async function salvar() {
+    setSalvando(true);
     setMsg("Salvando...");
 
-    const { error } = await supabase
-      .from("paginas_conteudo")
-      .upsert(
-        {
-          pagina_slug: "editais",
-          bloco: "cta",
-          titulo,
-          texto,
-          extra: {
-            titulo: titulo2,
-            descricao,
-            botao_texto: botaoTexto,
-            botao_link: botaoLink,
-          },
-          updated_at: new Date().toISOString(),
+    try {
+      const { error } = await upsertPaginaConteudo(supabase, {
+        pagina_slug: "editais",
+        bloco: "cta",
+        titulo,
+        texto,
+        extra: {
+          titulo: titulo2,
+          descricao,
+          botao_texto: botaoTexto,
+          botao_link: botaoLink,
         },
-        {
-          onConflict: "pagina_slug,bloco",
-        }
-      );
+      });
 
-    if (error) {
-      setMsg(error.message);
-    } else {
-      setMsg("CTA salvo com sucesso.");
-      setEditando(false);
+      if (error) {
+        setMsg(error.message);
+      } else {
+        setMsg("CTA salvo com sucesso.");
+        setEditando(false);
+      }
+    } finally {
+      setSalvando(false);
     }
   }
 
@@ -150,8 +154,8 @@ export default function EditaisCTAAdmin() {
           )}
 
           {editando && (
-            <button className="admin-button" onClick={salvar}>
-              Salvar
+            <button className="admin-button" onClick={salvar} disabled={salvando}>
+              {salvando ? "Salvando…" : "Salvar"}
             </button>
           )}
         </div>

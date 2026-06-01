@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase, upsertPaginaConteudo } from "@/lib/supabaseClient";
 
 const btnGreen = {
   background: "#22c55e",
@@ -24,6 +24,7 @@ type Bloco = {
 export default function EditaisTextosPage() {
   const [dados, setDados] = useState<Bloco[]>([]);
   const [loading, setLoading] = useState(true);
+  const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState("");
 
   // ===============================
@@ -35,11 +36,21 @@ export default function EditaisTextosPage() {
         .from("paginas_conteudo")
         .select("*")
         .eq("pagina_slug", "editais")
-        .neq("bloco", "hero"); // 🔥 AQUI ESTÁ A CORREÇÃO
+        .neq("bloco", "hero")
+        .order("updated_at", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false });
 
       if (error) console.error(error);
 
-      setDados(data || []);
+      const seen = new Set<string>();
+      const deduped: Bloco[] = [];
+      for (const row of data || []) {
+        if (seen.has(row.bloco)) continue;
+        seen.add(row.bloco);
+        deduped.push(row as Bloco);
+      }
+
+      setDados(deduped);
       setLoading(false);
     }
 
@@ -62,31 +73,31 @@ export default function EditaisTextosPage() {
   // 🔥 SALVAR (BLOQUEIA HERO)
   // ===============================
   async function salvar() {
+    setSalvando(true);
     setMsg("Salvando...");
 
-    for (const item of dados) {
-      if (!item.id) continue;
+    try {
+      for (const item of dados) {
+        if (item.bloco === "hero") continue;
 
-      // 🔒 DUPLA PROTEÇÃO
-      if (item.bloco === "hero") continue;
-
-      const { error } = await supabase
-        .from("paginas_conteudo")
-        .update({
+        const { error } = await upsertPaginaConteudo(supabase, {
+          pagina_slug: item.pagina_slug || "editais",
+          bloco: item.bloco,
           titulo: item.titulo,
           texto: item.texto,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", item.id);
+        });
 
-      if (error) {
-        console.error(error);
-        setMsg("Erro ao salvar");
-        return;
+        if (error) {
+          console.error(error);
+          setMsg("Erro ao salvar");
+          return;
+        }
       }
-    }
 
-    setMsg("Salvo com sucesso");
+      setMsg("Salvo com sucesso");
+    } finally {
+      setSalvando(false);
+    }
   }
 
   if (loading) return <p>Carregando...</p>;
@@ -120,8 +131,8 @@ export default function EditaisTextosPage() {
         ))}
       </div>
 
-      <button style={btnGreen} onClick={salvar}>
-        Salvar alterações
+      <button style={btnGreen} onClick={salvar} disabled={salvando}>
+        {salvando ? "Salvando…" : "Salvar alterações"}
       </button>
 
       {msg && <p>{msg}</p>}

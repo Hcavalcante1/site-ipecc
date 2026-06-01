@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { AdminSalvarButton } from "@/components/admin";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+  parsePaginaExtra,
+} from "@/lib/supabaseClient";
 
 type Card = {
   id: string;
@@ -58,23 +64,15 @@ export default function CardsPage() {
       setMensagem("");
       setLoading(true);
 
-      const { data, error } = await supabase
-        .from("paginas_conteudo")
-        .select("extra")
-        .eq("pagina_slug", PAGINA_SLUG)
-        .eq("bloco", BLOCO)
-        .maybeSingle();
+      const data = await fetchPaginaConteudo(
+        supabase,
+        PAGINA_SLUG,
+        BLOCO,
+        "extra"
+      );
 
       if (!mounted) return;
-
-      if (error) {
-        console.error("Erro ao carregar cards:", error);
-        setMensagem("Não foi possível carregar do banco. Mantendo valores atuais.");
-        setLoading(false);
-        return;
-      }
-
-      const extra = (data as any)?.extra;
+      const extra = parsePaginaExtra<{ cards?: Card[] }>(data?.extra, {});
 
       // ✅ CORREÇÃO: validação segura da estrutura
       if (extra && typeof extra === "object" && Array.isArray(extra.cards)) {
@@ -98,8 +96,7 @@ export default function CardsPage() {
     });
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function salvar() {
     setMensagem("");
     setSalvando(true);
 
@@ -125,18 +122,16 @@ export default function CardsPage() {
       },
     };
 
-    const { error } = await supabase
-      .from("paginas_conteudo")
-      .upsert(payload, { onConflict: "pagina_slug,bloco" });
+    const { error } = await upsertPaginaConteudo(supabase, payload);
 
     if (error) {
       console.error("Erro ao salvar cards:", error);
-      setMensagem("Erro ao salvar no Supabase. Veja o console.");
+      setMensagem(`Erro ao salvar: ${error.message}`);
       setSalvando(false);
       return;
     }
 
-    setMensagem("✅ Cards salvos no Supabase com sucesso.");
+    setMensagem("Salvo com sucesso.");
     setSalvando(false);
   }
 
@@ -149,7 +144,12 @@ export default function CardsPage() {
         </p>
       </div>
 
-      <form className="admin-card" onSubmit={handleSubmit}>
+      <form
+        className="admin-card"
+        onSubmit={(e) => {
+          e.preventDefault();
+        }}
+      >
         {loading ? (
           <p style={{ margin: 0, color: "#e5e7eb" }}>Carregando…</p>
         ) : (
@@ -224,17 +224,7 @@ export default function CardsPage() {
               </div>
             ))}
 
-            <button
-              type="submit"
-              className="admin-button"
-              disabled={salvando}
-              style={{
-                opacity: salvando ? 0.7 : 1,
-                cursor: salvando ? "not-allowed" : "pointer",
-              }}
-            >
-              {salvando ? "Salvando…" : "Salvar alterações"}
-            </button>
+            <AdminSalvarButton salvando={salvando} onClick={salvar} />
 
             {mensagem && (
               <p style={{ marginTop: 10, fontSize: ".85rem", color: "#bbf7d0" }}>

@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { AdminSalvarButton } from "@/components/admin";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+  parsePaginaExtra,
+} from "@/lib/supabaseClient";
 
 export default function QuemSomosCtaAdminPage() {
 
@@ -29,6 +35,7 @@ export default function QuemSomosCtaAdminPage() {
   const [botaoLink, setBotaoLink] = useState("/contato");
 
   const [msg, setMsg] = useState("");
+  const [salvando, setSalvando] = useState(false);
 
   const inputStyle: React.CSSProperties = {
     width: "100%",
@@ -49,12 +56,13 @@ export default function QuemSomosCtaAdminPage() {
   // LOAD
   useEffect(() => {
     async function load() {
-      const { data } = await supabase
-        .from("paginas_conteudo")
-        .select("titulo, texto, extra")
-        .eq("pagina_slug", "quem-somos")
-        .eq("bloco", "cta")
-        .maybeSingle();
+      const data = await fetchPaginaConteudo(supabase, "quem-somos", "cta");
+      const extra = parsePaginaExtra<{
+        conviteTitulo?: string;
+        conviteTexto?: string;
+        botaoTexto?: string;
+        botaoLink?: string;
+      }>(data?.extra, {});
 
       if (data) {
         setTitulo(data.titulo || "");
@@ -62,11 +70,6 @@ export default function QuemSomosCtaAdminPage() {
         const partes = data.texto ? data.texto.split("\n\n") : [];
         setTexto1(partes[0] || "");
         setTexto2(partes[1] || "");
-
-        const extra =
-          typeof data.extra === "string"
-            ? JSON.parse(data.extra)
-            : data.extra || {};
 
         setConviteTitulo(extra.conviteTitulo || "");
         setConviteTexto(extra.conviteTexto || "");
@@ -79,38 +82,37 @@ export default function QuemSomosCtaAdminPage() {
   }, []);
 
   // SAVE
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function salvar() {
+    setSalvando(true);
 
-    const texto = `${texto1}\n\n${texto2}`;
+    try {
+      const texto = `${texto1}\n\n${texto2}`;
 
-    const extra = {
-      conviteTitulo,
-      conviteTexto,
-      botaoTexto,
-      botaoLink,
-    };
+      const extra = {
+        conviteTitulo,
+        conviteTexto,
+        botaoTexto,
+        botaoLink,
+      };
 
-    const { error } = await supabase
-      .from("paginas_conteudo")
-      .upsert(
-        {
-          pagina_slug: "quem-somos",
-          bloco: "cta",
-          titulo,
-          texto,
-          extra,
-        },
-        { onConflict: "pagina_slug,bloco" }
-      );
+      const { error } = await upsertPaginaConteudo(supabase, {
+        pagina_slug: "quem-somos",
+        bloco: "cta",
+        titulo,
+        texto,
+        extra,
+      });
 
-    if (error) {
-      console.error(error);
-      setMsg("Erro ao salvar");
-      return;
+      if (error) {
+        console.error(error);
+        setMsg("Erro ao salvar");
+        return;
+      }
+
+      setMsg("Salvo com sucesso.");
+    } finally {
+      setSalvando(false);
     }
-
-    setMsg("CTA atualizado com sucesso");
   }
 
   return (
@@ -122,7 +124,12 @@ export default function QuemSomosCtaAdminPage() {
         </p>
       </div>
 
-      <form className="admin-card" onSubmit={handleSubmit}>
+      <form
+        className="admin-card"
+        onSubmit={(e) => {
+          e.preventDefault();
+        }}
+      >
 
         <div style={{ marginBottom: 30 }}>
           <h2 style={{ marginBottom: 10 }}>Bloco institucional (lado esquerdo)</h2>
@@ -159,9 +166,7 @@ export default function QuemSomosCtaAdminPage() {
           </div>
         </div>
 
-        <button type="submit" className="admin-button">
-          Salvar CTA
-        </button>
+        <AdminSalvarButton salvando={salvando} onClick={salvar} />
 
         {msg && <p style={{ marginTop: 12, color: "#22c55e" }}>{msg}</p>}
       </form>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { AdminSalvarButton } from "@/components/admin";
 import { supabase } from "@/lib/supabaseClient";
 
 type Eixo = {
@@ -14,6 +15,7 @@ type Eixo = {
 export default function ProjetosEixosAdminPage() {
   const [eixos, setEixos] = useState<Eixo[]>([]);
   const [msg, setMsg] = useState("");
+  const [salvando, setSalvando] = useState(false);
 
   const sInput: React.CSSProperties = {
     width: "100%",
@@ -73,32 +75,39 @@ export default function ProjetosEixosAdminPage() {
   }
 
   // 🔥 SALVAR CORRETO
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-
+  async function salvar() {
     setMsg("Salvando...");
+    setSalvando(true);
 
-    // 🔴 limpa só esse bloco
-    await supabase
-      .from("paginas_eixos")
-      .delete()
-      .eq("pagina_slug", "projetos")
-      .eq("bloco", "eixos");
+    try {
+      const deleted = await supabase
+        .from("paginas_eixos")
+        .delete()
+        .eq("pagina_slug", "projetos")
+        .eq("bloco", "eixos");
 
-    // 🟢 reinsere ordenado
-    const novos = eixos.map((eixo, index) => ({
-      titulo: eixo.titulo,
-      texto: eixo.texto,
-      imagem_url: eixo.imagem_url || "/media/shared/fallbacks/eixo-default.jpg",
-      ordem: index + 1,
-      pagina_slug: "projetos",
-      bloco: "eixos",
-    }));
+      if (deleted.error) throw deleted.error;
 
-    await supabase.from("paginas_eixos").insert(novos);
+      const novos = eixos.map((eixo, index) => ({
+        titulo: eixo.titulo,
+        texto: eixo.texto,
+        imagem_url: eixo.imagem_url || "/media/shared/fallbacks/eixo-default.jpg",
+        ordem: index + 1,
+        pagina_slug: "projetos",
+        bloco: "eixos",
+      }));
 
-    setMsg("Salvo corretamente");
-    load();
+      const inserted = await supabase.from("paginas_eixos").insert(novos);
+      if (inserted.error) throw inserted.error;
+
+      setMsg("Salvo com sucesso.");
+      await load();
+    } catch (err) {
+      console.error(err);
+      setMsg("Erro ao salvar.");
+    } finally {
+      setSalvando(false);
+    }
   }
 
   return (
@@ -110,7 +119,12 @@ export default function ProjetosEixosAdminPage() {
         </p>
       </div>
 
-      <form className="admin-card" onSubmit={handleSubmit}>
+      <form
+        className="admin-card"
+        onSubmit={(e) => {
+          e.preventDefault();
+        }}
+      >
         <div
           style={{
             marginBottom: 10,
@@ -184,9 +198,7 @@ export default function ProjetosEixosAdminPage() {
           ))}
         </div>
 
-        <button className="admin-button" style={{ marginTop: 18 }}>
-          Salvar
-        </button>
+        <AdminSalvarButton salvando={salvando} onClick={salvar} />
 
         {msg && <p style={{ marginTop: 10 }}>{msg}</p>}
       </form>

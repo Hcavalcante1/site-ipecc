@@ -1,13 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { AdminSalvarButton } from "@/components/admin";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+} from "@/lib/supabaseClient";
 
 export default function ProjetosIntroducaoAdminPage() {
   const [titulo, setTitulo] = useState("");
   const [paragrafo1, setParagrafo1] = useState("");
   const [paragrafo2, setParagrafo2] = useState("");
   const [msg, setMsg] = useState("");
+  const [salvando, setSalvando] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const sInput: React.CSSProperties = {
@@ -29,12 +35,12 @@ export default function ProjetosIntroducaoAdminPage() {
   // 🔹 CARREGAR DO SUPABASE
   useEffect(() => {
     async function load() {
-      const { data } = await supabase
-        .from("paginas_conteudo")
-        .select("titulo, texto")
-        .eq("pagina_slug", "projetos")
-        .eq("bloco", "introducao")
-        .maybeSingle();
+      const data = await fetchPaginaConteudo(
+        supabase,
+        "projetos",
+        "introducao",
+        "titulo, texto"
+      );
 
       if (data) {
         setTitulo(data.titulo || "");
@@ -52,32 +58,28 @@ export default function ProjetosIntroducaoAdminPage() {
   }, []);
 
   // 🔹 SALVAR NO SUPABASE
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-
+  async function salvar() {
     setMsg("Salvando...");
+    setSalvando(true);
 
-    const textoCompleto = `${paragrafo1}\n\n${paragrafo2}`;
+    try {
+      const textoCompleto = `${paragrafo1}\n\n${paragrafo2}`;
 
-    const { error } = await supabase
-      .from("paginas_conteudo")
-      .upsert(
-        {
-          pagina_slug: "projetos",
-          bloco: "introducao",
-          titulo,
-          texto: textoCompleto,
-          updated_at: new Date().toISOString(),
-        },
-        {
-          onConflict: "pagina_slug,bloco",
-        }
-      );
+      const { error } = await upsertPaginaConteudo(supabase, {
+        pagina_slug: "projetos",
+        bloco: "introducao",
+        titulo,
+        texto: textoCompleto,
+      });
 
-    if (error) {
-      setMsg(error.message);
-    } else {
-      setMsg("Alterações salvas com sucesso.");
+      if (error) {
+        setMsg(`Erro ao salvar: ${error.message}`);
+        return;
+      }
+
+      setMsg("Salvo com sucesso.");
+    } finally {
+      setSalvando(false);
     }
   }
 
@@ -92,7 +94,12 @@ export default function ProjetosIntroducaoAdminPage() {
         </p>
       </div>
 
-      <form className="admin-card" onSubmit={handleSubmit}>
+      <form
+        className="admin-card"
+        onSubmit={(e) => {
+          e.preventDefault();
+        }}
+      >
         <label>Título do bloco:</label>
         <input
           value={titulo}
@@ -114,13 +121,7 @@ export default function ProjetosIntroducaoAdminPage() {
           style={sTextarea}
         />
 
-        <button
-          type="submit"
-          className="admin-button"
-          style={{ marginTop: 14 }}
-        >
-          Salvar alterações
-        </button>
+        <AdminSalvarButton salvando={salvando} onClick={salvar} />
 
         {msg && (
           <p

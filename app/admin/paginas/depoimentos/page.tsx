@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { AdminSalvarButton } from "@/components/admin";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+  parsePaginaExtra,
+} from "@/lib/supabaseClient";
 
 type Depoimento = {
   id: string;
@@ -27,23 +33,19 @@ const INICIAIS: Depoimento[] = [
 export default function DepoimentosPage() {
   const [lista, setLista] = useState<Depoimento[]>(INICIAIS);
   const [mensagem, setMensagem] = useState("");
+  const [salvando, setSalvando] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // 🔥 CORREÇÃO: carregar do banco
   useEffect(() => {
     async function carregar() {
-      const { data, error } = await supabase
-        .from("paginas_conteudo")
-        .select("extra")
-        .eq("pagina_slug", "home")
-        .eq("bloco", "depoimentos_home")
-        .maybeSingle();
-
-      if (error && error.code !== "PGRST116") {
-        console.error("Erro ao carregar depoimentos:", error);
-      }
-
-      const extra = (data as any)?.extra;
+      const data = await fetchPaginaConteudo(
+        supabase,
+        "home",
+        "depoimentos_home",
+        "extra"
+      );
+      const extra = parsePaginaExtra<{ depoimentos?: Depoimento[] }>(data?.extra, {});
 
       if (
         extra &&
@@ -67,34 +69,33 @@ export default function DepoimentosPage() {
     });
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setMensagem("");
+  async function salvar() {
+    setMensagem("Salvando...");
+    setSalvando(true);
 
-    const { error } = await supabase
-      .from("paginas_conteudo")
-      .upsert(
-        {
-          pagina_slug: "home",
-          bloco: "depoimentos_home",
-          extra: {
-            depoimentos: lista.map((d) => ({
-              id: d.id,
-              texto: d.texto,
-              autor: d.autor,
-            })),
-          },
+    try {
+      const { error } = await upsertPaginaConteudo(supabase, {
+        pagina_slug: "home",
+        bloco: "depoimentos_home",
+        extra: {
+          depoimentos: lista.map((d) => ({
+            id: d.id,
+            texto: d.texto,
+            autor: d.autor,
+          })),
         },
-        { onConflict: "pagina_slug,bloco" }
-      );
+      });
 
-    if (error) {
-      console.error("Erro ao salvar Depoimentos:", error);
-      setMensagem("❌ Erro ao salvar no Supabase. Veja o console.");
-      return;
+      if (error) {
+        console.error("Erro ao salvar Depoimentos:", error);
+        setMensagem(`Erro ao salvar: ${error.message}`);
+        return;
+      }
+
+      setMensagem("Salvo com sucesso.");
+    } finally {
+      setSalvando(false);
     }
-
-    setMensagem("✅ Depoimentos salvos no Supabase com sucesso.");
   }
 
   if (loading) {
@@ -110,7 +111,12 @@ export default function DepoimentosPage() {
         </p>
       </div>
 
-      <form className="admin-card" onSubmit={handleSubmit}>
+      <form
+        className="admin-card"
+        onSubmit={(e) => {
+          e.preventDefault();
+        }}
+      >
         {lista.map((d, index) => (
           <div
             key={d.id}
@@ -149,9 +155,7 @@ export default function DepoimentosPage() {
           </div>
         ))}
 
-        <button type="submit" className="admin-button">
-          Salvar alterações
-        </button>
+        <AdminSalvarButton salvando={salvando} onClick={salvar} />
 
         {mensagem && (
           <p style={{ marginTop: 10, fontSize: ".85rem", color: "#bbf7d0" }}>

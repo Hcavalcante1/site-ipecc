@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+} from "@/lib/supabaseClient";
 
 const btnGreen = {
   background: "#22c55e",
@@ -15,6 +19,7 @@ const btnGreen = {
 
 export default function TransparenciaCompromissosAdmin() {
   const [loading, setLoading] = useState(true);
+  const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState("");
 
   const [titulo, setTitulo] = useState("");
@@ -22,12 +27,12 @@ export default function TransparenciaCompromissosAdmin() {
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase
-        .from("paginas_conteudo")
-        .select("titulo, texto")
-        .eq("pagina_slug", "transparencia")
-        .eq("bloco", "compromissos")
-        .maybeSingle();
+      const data = await fetchPaginaConteudo(
+        supabase,
+        "transparencia",
+        "compromissos",
+        "titulo, texto"
+      );
 
       if (data) {
         setTitulo(data.titulo ?? "");
@@ -41,21 +46,21 @@ export default function TransparenciaCompromissosAdmin() {
   }, []);
 
   async function salvar() {
+    setSalvando(true);
     setMsg("Salvando...");
 
-    const { error } = await supabase
-      .from("paginas_conteudo")
-      .upsert(
-        {
-          pagina_slug: "transparencia",
-          bloco: "compromissos",
-          titulo,
-          texto,
-        },
-        { onConflict: "pagina_slug,bloco" }
-      );
+    try {
+      const { error } = await upsertPaginaConteudo(supabase, {
+        pagina_slug: "transparencia",
+        bloco: "compromissos",
+        titulo,
+        texto,
+      });
 
-    setMsg(error ? "Erro ao salvar." : "Alterações salvas com sucesso.");
+      setMsg(error ? "Erro ao salvar." : "Alterações salvas com sucesso.");
+    } finally {
+      setSalvando(false);
+    }
   }
 
   if (loading) return <p>Carregando…</p>;
@@ -81,8 +86,8 @@ export default function TransparenciaCompromissosAdmin() {
         onChange={(e) => setTexto(e.target.value)}
       />
 
-      <button style={btnGreen} onClick={salvar}>
-        Salvar alterações
+      <button style={btnGreen} onClick={salvar} disabled={salvando}>
+        {salvando ? "Salvando…" : "Salvar alterações"}
       </button>
 
       {msg && <p>{msg}</p>}

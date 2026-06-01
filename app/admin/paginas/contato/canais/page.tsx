@@ -60,6 +60,7 @@ function sanitizeCanais(input: CanaisData): CanaisData {
 
 export default function ContatoCanaisAdmin() {
   const [loading, setLoading] = useState(true);
+  const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState("");
 
   const [data, setData] = useState<CanaisData>({
@@ -99,19 +100,24 @@ export default function ContatoCanaisAdmin() {
 
   /* ===== SAVE ===== */
   async function salvar() {
+    setSalvando(true);
     setMsg("Salvando...");
 
-    const payload = sanitizeCanais(data);
+    try {
+      const payload = sanitizeCanais(data);
 
-    const { error } = await supabase
-      .from("paginas")
-      .update({
-        canais_oficiais: payload,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("slug", "contato");
+      const { error } = await supabase
+        .from("paginas")
+        .update({
+          canais_oficiais: payload,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("slug", "contato");
 
-    setMsg(error ? `Erro ao salvar: ${error.message}` : "Alterações salvas com sucesso.");
+      setMsg(error ? `Erro ao salvar: ${error.message}` : "Alterações salvas com sucesso.");
+    } finally {
+      setSalvando(false);
+    }
   }
 
   if (loading) return <p>Carregando…</p>;
@@ -245,8 +251,8 @@ export default function ContatoCanaisAdmin() {
 
       <hr />
 
-      <button style={btnGreen} onClick={salvar}>
-        Salvar alterações
+      <button style={btnGreen} onClick={salvar} disabled={salvando}>
+        {salvando ? "Salvando…" : "Salvar alterações"}
       </button>
 
       {msg && <p>{msg}</p>}

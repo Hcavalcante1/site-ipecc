@@ -1,7 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { useEffect, useState } from "react";
+import { AdminSalvarButton } from "@/components/admin";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+  parsePaginaExtra,
+} from "@/lib/supabaseClient";
 
 export default function ProjetosCtaAdminPage() {
   const [tituloBloco, setTituloBloco] = useState("Parcerias e editais");
@@ -17,6 +23,27 @@ export default function ProjetosCtaAdminPage() {
   const [linkBotao, setLinkBotao] = useState("/contato");
 
   const [msg, setMsg] = useState("");
+  const [salvando, setSalvando] = useState(false);
+
+  useEffect(() => {
+    async function load() {
+      const data = await fetchPaginaConteudo(supabase, "projetos", "cta");
+      if (!data) return;
+      if (data.titulo) setTituloBloco(data.titulo);
+      if (data.texto) setTextoPrincipal(data.texto);
+      const extra = parsePaginaExtra<{
+        tituloCta?: string;
+        textoCta?: string;
+        rotuloBotao?: string;
+        linkBotao?: string;
+      }>(data.extra, {});
+      if (extra.tituloCta) setTituloCta(extra.tituloCta);
+      if (extra.textoCta) setTextoCta(extra.textoCta);
+      if (extra.rotuloBotao) setRotuloBotao(extra.rotuloBotao);
+      if (extra.linkBotao) setLinkBotao(extra.linkBotao);
+    }
+    load();
+  }, []);
 
   const sInput: React.CSSProperties = {
     width: "100%",
@@ -35,8 +62,9 @@ export default function ProjetosCtaAdminPage() {
   };
 
   // ✅ ÚNICA ALTERAÇÃO: SALVAR NO SUPABASE
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function salvar() {
+    setMsg("Salvando...");
+    setSalvando(true);
 
     try {
       const payload = {
@@ -46,28 +74,23 @@ export default function ProjetosCtaAdminPage() {
         linkBotao,
       };
 
-      const { error } = await supabase
-        .from("paginas_conteudo")
-        .upsert(
-          {
-            pagina_slug: "projetos",
-            bloco: "cta",
-            titulo: tituloBloco,
-            texto: textoPrincipal,
-            imagem_url: null,
-            extra: payload,
-          },
-          {
-            onConflict: "pagina_slug,bloco",
-          }
-        );
+      const { error } = await upsertPaginaConteudo(supabase, {
+        pagina_slug: "projetos",
+        bloco: "cta",
+        titulo: tituloBloco,
+        texto: textoPrincipal,
+        imagem_url: null,
+        extra: payload,
+      });
 
       if (error) throw error;
 
-      setMsg("Alterações salvas com sucesso.");
+      setMsg("Salvo com sucesso.");
     } catch (err) {
       console.error(err);
       setMsg("Erro ao salvar.");
+    } finally {
+      setSalvando(false);
     }
   }
 
@@ -81,7 +104,12 @@ export default function ProjetosCtaAdminPage() {
         </p>
       </div>
 
-      <form className="admin-card" onSubmit={handleSubmit}>
+      <form
+        className="admin-card"
+        onSubmit={(e) => {
+          e.preventDefault();
+        }}
+      >
         <label>Título do bloco (esquerda):</label>
         <input
           value={tituloBloco}
@@ -134,13 +162,7 @@ export default function ProjetosCtaAdminPage() {
           style={sInput}
         />
 
-        <button
-          type="submit"
-          className="admin-button"
-          style={{ marginTop: 18 }}
-        >
-          Salvar alterações
-        </button>
+        <AdminSalvarButton salvando={salvando} onClick={salvar} />
 
         {msg && (
           <p style={{ marginTop: 10, color: "#bbf7d0", fontSize: ".8rem" }}>

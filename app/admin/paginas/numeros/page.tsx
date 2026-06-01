@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { AdminSalvarButton } from "@/components/admin";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+  parsePaginaExtra,
+} from "@/lib/supabaseClient";
 
 type Numero = {
   id: string;
@@ -19,23 +25,14 @@ const INICIAIS: Numero[] = [
 export default function NumerosPage() {
   const [numeros, setNumeros] = useState<Numero[]>(INICIAIS);
   const [mensagem, setMensagem] = useState("");
+  const [salvando, setSalvando] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // 🔥 CORREÇÃO: carregar do banco
   useEffect(() => {
     async function carregar() {
-      const { data, error } = await supabase
-        .from("paginas_conteudo")
-        .select("extra")
-        .eq("pagina_slug", "home")
-        .eq("bloco", "numeros")
-        .maybeSingle();
-
-      if (error && error.code !== "PGRST116") {
-        console.error("Erro ao carregar números:", error);
-      }
-
-      const extra = (data as any)?.extra;
+      const data = await fetchPaginaConteudo(supabase, "home", "numeros", "extra");
+      const extra = parsePaginaExtra<{ numeros?: Numero[] }>(data?.extra, {});
 
       if (extra && typeof extra === "object" && Array.isArray(extra.numeros)) {
         setNumeros(extra.numeros);
@@ -55,34 +52,33 @@ export default function NumerosPage() {
     });
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setMensagem("");
+  async function salvar() {
+    setMensagem("Salvando...");
+    setSalvando(true);
 
-    const { error } = await supabase
-      .from("paginas_conteudo")
-      .upsert(
-        {
-          pagina_slug: "home",
-          bloco: "numeros",
-          extra: {
-            numeros: numeros.map((n) => ({
-              id: n.id,
-              valor: n.valor,
-              descricao: n.descricao,
-            })),
-          },
+    try {
+      const { error } = await upsertPaginaConteudo(supabase, {
+        pagina_slug: "home",
+        bloco: "numeros",
+        extra: {
+          numeros: numeros.map((n) => ({
+            id: n.id,
+            valor: n.valor,
+            descricao: n.descricao,
+          })),
         },
-        { onConflict: "pagina_slug,bloco" }
-      );
+      });
 
-    if (error) {
-      console.error("Erro ao salvar Números:", error);
-      setMensagem("❌ Erro ao salvar no Supabase. Veja o console.");
-      return;
+      if (error) {
+        console.error("Erro ao salvar Números:", error);
+        setMensagem(`Erro ao salvar: ${error.message}`);
+        return;
+      }
+
+      setMensagem("Salvo com sucesso.");
+    } finally {
+      setSalvando(false);
     }
-
-    setMensagem("✅ Números salvos no Supabase com sucesso.");
   }
 
   if (loading) {
@@ -98,7 +94,12 @@ export default function NumerosPage() {
         </p>
       </div>
 
-      <form className="admin-card" onSubmit={handleSubmit}>
+      <form
+        className="admin-card"
+        onSubmit={(e) => {
+          e.preventDefault();
+        }}
+      >
         {numeros.map((n, index) => (
           <div
             key={n.id}
@@ -137,9 +138,7 @@ export default function NumerosPage() {
           </div>
         ))}
 
-        <button type="submit" className="admin-button">
-          Salvar alterações
-        </button>
+        <AdminSalvarButton salvando={salvando} onClick={salvar} />
 
         {mensagem && (
           <p style={{ marginTop: 10, fontSize: ".85rem", color: "#bbf7d0" }}>

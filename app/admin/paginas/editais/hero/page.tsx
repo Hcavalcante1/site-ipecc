@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+} from "@/lib/supabaseClient";
 
 // ✅ BOTÃO PADRÃO (mantido)
 const btnGreen = {
@@ -16,6 +20,7 @@ const btnGreen = {
 
 export default function EditaisHeroAdmin() {
   const [loading, setLoading] = useState(true);
+  const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState("");
 
   const [tituloHero, setTituloHero] = useState("");
@@ -26,12 +31,12 @@ export default function EditaisHeroAdmin() {
   // ===============================
   useEffect(() => {
     async function load() {
-      const { data } = await supabase
-        .from("paginas_conteudo")
-        .select("titulo, texto")
-        .eq("pagina_slug", "editais")
-        .eq("bloco", "hero")
-        .maybeSingle();
+      const data = await fetchPaginaConteudo(
+        supabase,
+        "editais",
+        "hero",
+        "titulo, texto"
+      );
 
       if (data) {
         setTituloHero(data.titulo ?? "");
@@ -48,28 +53,25 @@ export default function EditaisHeroAdmin() {
   // 🔹 SALVAR (AGORA FUNCIONA)
   // ===============================
   async function salvar() {
+    setSalvando(true);
     setMsg("Salvando...");
 
-    const { error } = await supabase
-      .from("paginas_conteudo")
-      .upsert(
-        {
-          pagina_slug: "editais",
-          bloco: "hero",
-          titulo: tituloHero,
-          texto: textoHero,
-          updated_at: new Date().toISOString(),
-        },
-        {
-          onConflict: "pagina_slug,bloco",
-        }
-      );
+    try {
+      const { error } = await upsertPaginaConteudo(supabase, {
+        pagina_slug: "editais",
+        bloco: "hero",
+        titulo: tituloHero,
+        texto: textoHero,
+      });
 
-    if (error) {
-      console.error(error);
-      setMsg("Erro ao salvar.");
-    } else {
-      setMsg("Alterações salvas com sucesso.");
+      if (error) {
+        console.error(error);
+        setMsg("Erro ao salvar.");
+      } else {
+        setMsg("Alterações salvas com sucesso.");
+      }
+    } finally {
+      setSalvando(false);
     }
   }
 
@@ -101,8 +103,9 @@ export default function EditaisHeroAdmin() {
         <button
           style={{ ...btnGreen, width: "fit-content" }}
           onClick={salvar}
+          disabled={salvando}
         >
-          Salvar alterações
+          {salvando ? "Salvando…" : "Salvar alterações"}
         </button>
       </div>
 

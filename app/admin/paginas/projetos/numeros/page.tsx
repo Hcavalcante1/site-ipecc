@@ -1,7 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { useEffect, useState } from "react";
+import { AdminSalvarButton } from "@/components/admin";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+  parsePaginaExtra,
+} from "@/lib/supabaseClient";
 
 type Resultado = {
   id: number;
@@ -39,6 +45,29 @@ export default function ProjetosResultadosAdminPage() {
   ]);
 
   const [msg, setMsg] = useState("");
+  const [salvando, setSalvando] = useState(false);
+
+  useEffect(() => {
+    async function load() {
+      const data = await fetchPaginaConteudo(supabase, "projetos", "numeros");
+      if (!data) return;
+      if (data.titulo) setTituloBloco(data.titulo);
+      if (data.texto) setTextoIntro(data.texto);
+      const items = parsePaginaExtra<
+        { valor?: string; label?: string; rotulo?: string }[]
+      >(data.extra, []);
+      if (Array.isArray(items) && items.length > 0) {
+        setResultados(
+          items.map((r, index) => ({
+            id: index + 1,
+            valor: r.valor || "",
+            rotulo: r.label || r.rotulo || "",
+          }))
+        );
+      }
+    }
+    load();
+  }, []);
 
   const sInput: React.CSSProperties = {
     width: "100%",
@@ -79,8 +108,9 @@ export default function ProjetosResultadosAdminPage() {
   }
 
   // ✅ CORREÇÃO (SALVA NO SUPABASE)
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function salvar() {
+    setMsg("Salvando...");
+    setSalvando(true);
 
     try {
       const payload = resultados.map((r, index) => ({
@@ -89,28 +119,23 @@ export default function ProjetosResultadosAdminPage() {
         ordem: index + 1,
       }));
 
-      const { error } = await supabase
-        .from("paginas_conteudo")
-        .upsert(
-          {
-            pagina_slug: "projetos",
-            bloco: "numeros",
-            titulo: tituloBloco,
-            texto: textoIntro,
-            imagem_url: null,
-            extra: payload,
-          },
-          {
-            onConflict: "pagina_slug,bloco",
-          }
-        );
+      const { error } = await upsertPaginaConteudo(supabase, {
+        pagina_slug: "projetos",
+        bloco: "numeros",
+        titulo: tituloBloco,
+        texto: textoIntro,
+        imagem_url: null,
+        extra: payload,
+      });
 
       if (error) throw error;
 
-      setMsg("Alterações salvas com sucesso.");
+      setMsg("Salvo com sucesso.");
     } catch (err) {
       console.error(err);
       setMsg("Erro ao salvar.");
+    } finally {
+      setSalvando(false);
     }
   }
 
@@ -124,7 +149,12 @@ export default function ProjetosResultadosAdminPage() {
         </p>
       </div>
 
-      <form className="admin-card" onSubmit={handleSubmit}>
+      <form
+        className="admin-card"
+        onSubmit={(e) => {
+          e.preventDefault();
+        }}
+      >
         <label>Título do bloco:</label>
         <input
           value={tituloBloco}
@@ -219,13 +249,7 @@ export default function ProjetosResultadosAdminPage() {
           ))}
         </div>
 
-        <button
-          type="submit"
-          className="admin-button"
-          style={{ marginTop: 18 }}
-        >
-          Salvar alterações
-        </button>
+        <AdminSalvarButton salvando={salvando} onClick={salvar} />
 
         {msg && (
           <p style={{ marginTop: 10, color: "#bbf7d0", fontSize: ".8rem" }}>

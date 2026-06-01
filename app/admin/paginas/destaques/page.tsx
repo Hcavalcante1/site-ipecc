@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { AdminSalvarButton } from "@/components/admin";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+  parsePaginaExtra,
+} from "@/lib/supabaseClient";
 
 type Destaque = {
   id: string;
@@ -45,23 +51,14 @@ const INICIAIS: Destaque[] = [
 export default function DestaquesPage() {
   const [destaques, setDestaques] = useState<Destaque[]>(INICIAIS);
   const [mensagem, setMensagem] = useState("");
+  const [salvando, setSalvando] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // 🔥 CORREÇÃO: carregar do banco
   useEffect(() => {
     async function carregar() {
-      const { data, error } = await supabase
-        .from("paginas_conteudo")
-        .select("extra")
-        .eq("pagina_slug", "home")
-        .eq("bloco", "destaques")
-        .maybeSingle();
-
-      if (error && error.code !== "PGRST116") {
-        console.error("Erro ao carregar destaques:", error);
-      }
-
-      const extra = (data as any)?.extra;
+      const data = await fetchPaginaConteudo(supabase, "home", "destaques", "extra");
+      const extra = parsePaginaExtra<{ destaques?: Destaque[] }>(data?.extra, {});
 
       if (extra && typeof extra === "object" && Array.isArray(extra.destaques)) {
         setDestaques(extra.destaques);
@@ -81,37 +78,36 @@ export default function DestaquesPage() {
     });
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setMensagem("");
+  async function salvar() {
+    setMensagem("Salvando...");
+    setSalvando(true);
 
-    const { error } = await supabase
-      .from("paginas_conteudo")
-      .upsert(
-        {
-          pagina_slug: "home",
-          bloco: "destaques",
-          extra: {
-            destaques: destaques.map((d) => ({
-              id: d.id,
-              titulo: d.titulo,
-              texto: d.texto,
-              linkTexto: d.linkTexto,
-              linkUrl: d.linkUrl,
-              imagem: d.imagem,
-            })),
-          },
-        },
-        { onConflict: "pagina_slug,bloco" }
-      );
+    try {
+    const { error } = await upsertPaginaConteudo(supabase, {
+      pagina_slug: "home",
+      bloco: "destaques",
+      extra: {
+        destaques: destaques.map((d) => ({
+          id: d.id,
+          titulo: d.titulo,
+          texto: d.texto,
+          linkTexto: d.linkTexto,
+          linkUrl: d.linkUrl,
+          imagem: d.imagem,
+        })),
+      },
+    });
 
     if (error) {
       console.error("Erro ao salvar destaques:", error);
-      setMensagem("❌ Erro ao salvar no Supabase. Veja o console.");
+      setMensagem(`Erro ao salvar: ${error.message}`);
       return;
     }
 
-    setMensagem("✅ Destaques salvos no Supabase com sucesso.");
+    setMensagem("Salvo com sucesso.");
+    } finally {
+      setSalvando(false);
+    }
   }
 
   if (loading) {
@@ -128,7 +124,12 @@ export default function DestaquesPage() {
         </p>
       </div>
 
-      <form className="admin-card" onSubmit={handleSubmit}>
+      <form
+        className="admin-card"
+        onSubmit={(e) => {
+          e.preventDefault();
+        }}
+      >
         {destaques.map((d, index) => (
           <div
             key={d.id}
@@ -201,9 +202,7 @@ export default function DestaquesPage() {
           </div>
         ))}
 
-        <button type="submit" className="admin-button">
-          Salvar alterações
-        </button>
+        <AdminSalvarButton salvando={salvando} onClick={salvar} />
 
         {mensagem && (
           <p style={{ marginTop: 10, fontSize: ".85rem", color: "#bbf7d0" }}>

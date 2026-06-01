@@ -1,7 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { useEffect, useState } from "react";
+import { AdminSalvarButton } from "@/components/admin";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+  parsePaginaExtra,
+} from "@/lib/supabaseClient";
 
 type Etapa = {
   id: number;
@@ -49,6 +55,30 @@ export default function ProjetosMetodologiaAdminPage() {
   ]);
 
   const [msg, setMsg] = useState("");
+  const [salvando, setSalvando] = useState(false);
+
+  useEffect(() => {
+    async function load() {
+      const data = await fetchPaginaConteudo(supabase, "projetos", "metodologia");
+      if (!data) return;
+      if (data.titulo) setTituloBloco(data.titulo);
+      if (data.texto) setTextoIntro(data.texto);
+      const items = parsePaginaExtra<{ titulo?: string; texto?: string }[]>(
+        data.extra,
+        []
+      );
+      if (Array.isArray(items) && items.length > 0) {
+        setEtapas(
+          items.map((e, index) => ({
+            id: index + 1,
+            titulo: e.titulo || "",
+            texto: e.texto || "",
+          }))
+        );
+      }
+    }
+    load();
+  }, []);
 
   const sInput: React.CSSProperties = {
     width: "100%",
@@ -89,8 +119,9 @@ export default function ProjetosMetodologiaAdminPage() {
   }
 
   // ✅ ÚNICA ALTERAÇÃO: AGORA SALVA NO SUPABASE
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function salvar() {
+    setMsg("Salvando...");
+    setSalvando(true);
 
     try {
       const payload = etapas.map((e, index) => ({
@@ -99,28 +130,23 @@ export default function ProjetosMetodologiaAdminPage() {
         ordem: index + 1,
       }));
 
-      const { error } = await supabase
-        .from("paginas_conteudo")
-        .upsert(
-          {
-            pagina_slug: "projetos",
-            bloco: "metodologia",
-            titulo: tituloBloco,
-            texto: textoIntro,
-            imagem_url: null,
-            extra: payload,
-          },
-          {
-            onConflict: "pagina_slug,bloco",
-          }
-        );
+      const { error } = await upsertPaginaConteudo(supabase, {
+        pagina_slug: "projetos",
+        bloco: "metodologia",
+        titulo: tituloBloco,
+        texto: textoIntro,
+        imagem_url: null,
+        extra: payload,
+      });
 
       if (error) throw error;
 
-      setMsg("Alterações salvas com sucesso.");
+      setMsg("Salvo com sucesso.");
     } catch (err) {
       console.error(err);
       setMsg("Erro ao salvar.");
+    } finally {
+      setSalvando(false);
     }
   }
 
@@ -134,7 +160,12 @@ export default function ProjetosMetodologiaAdminPage() {
         </p>
       </div>
 
-      <form className="admin-card" onSubmit={handleSubmit}>
+      <form
+        className="admin-card"
+        onSubmit={(e) => {
+          e.preventDefault();
+        }}
+      >
         <label>Título do bloco:</label>
         <input
           value={tituloBloco}
@@ -229,13 +260,7 @@ export default function ProjetosMetodologiaAdminPage() {
           ))}
         </div>
 
-        <button
-          type="submit"
-          className="admin-button"
-          style={{ marginTop: 18 }}
-        >
-          Salvar alterações
-        </button>
+        <AdminSalvarButton salvando={salvando} onClick={salvar} />
 
         {msg && (
           <p style={{ marginTop: 10, color: "#bbf7d0", fontSize: ".8rem" }}>

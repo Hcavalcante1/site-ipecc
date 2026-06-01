@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { AdminSalvarButton } from "@/components/admin";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+} from "@/lib/supabaseClient";
 
 export default function QuemSomosBlocoPrincipalAdminPage() {
   const [titulo, setTitulo] = useState(
@@ -14,6 +19,7 @@ export default function QuemSomosBlocoPrincipalAdminPage() {
     "Nosso propósito é tornar a cidadania uma experiência viva e acessível, com iniciativas que capacitam pessoas, fortalecem redes locais e promovem desenvolvimento humano em todas as suas dimensões."
   );
   const [msg, setMsg] = useState("");
+  const [salvando, setSalvando] = useState(false);
 
   const inputStyle: React.CSSProperties = {
     width: "100%",
@@ -34,12 +40,12 @@ export default function QuemSomosBlocoPrincipalAdminPage() {
   // ✅ CARREGAR DADOS DO BANCO
   useEffect(() => {
     async function loadData() {
-      const { data } = await supabase
-        .from("paginas_conteudo")
-        .select("titulo, texto")
-        .eq("pagina_slug", "quem-somos")
-        .eq("bloco", "bloco-principal")
-        .maybeSingle();
+      const data = await fetchPaginaConteudo(
+        supabase,
+        "quem-somos",
+        "bloco-principal",
+        "titulo, texto"
+      );
 
       if (data) {
         setTitulo(data.titulo || "");
@@ -54,32 +60,28 @@ export default function QuemSomosBlocoPrincipalAdminPage() {
   }, []);
 
   // ✅ SALVAR NO BANCO
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function salvar() {
+    setMsg("Salvando...");
+    setSalvando(true);
 
     try {
       const texto = `${texto1}\n\n${texto2}`;
 
-      const { error } = await supabase
-        .from("paginas_conteudo")
-        .upsert(
-          {
-            pagina_slug: "quem-somos",
-            bloco: "bloco-principal",
-            titulo,
-            texto,
-          },
-          {
-            onConflict: "pagina_slug,bloco",
-          }
-        );
+      const { error } = await upsertPaginaConteudo(supabase, {
+        pagina_slug: "quem-somos",
+        bloco: "bloco-principal",
+        titulo,
+        texto,
+      });
 
       if (error) throw error;
 
-      setMsg("Alterações salvas com sucesso.");
+      setMsg("Salvo com sucesso.");
     } catch (err) {
       console.error(err);
       setMsg("Erro ao salvar.");
+    } finally {
+      setSalvando(false);
     }
   }
 
@@ -92,7 +94,12 @@ export default function QuemSomosBlocoPrincipalAdminPage() {
         </p>
       </div>
 
-      <form className="admin-card" onSubmit={handleSubmit}>
+      <form
+        className="admin-card"
+        onSubmit={(e) => {
+          e.preventDefault();
+        }}
+      >
         <label>Título do bloco:</label>
         <input
           value={titulo}
@@ -114,13 +121,7 @@ export default function QuemSomosBlocoPrincipalAdminPage() {
           style={textAreaStyle}
         />
 
-        <button
-          type="submit"
-          className="admin-button"
-          style={{ marginTop: 14 }}
-        >
-          Salvar alterações
-        </button>
+        <AdminSalvarButton salvando={salvando} onClick={salvar} />
 
         {msg && (
           <p style={{ marginTop: 10, color: "#bbf7d0", fontSize: ".8rem" }}>

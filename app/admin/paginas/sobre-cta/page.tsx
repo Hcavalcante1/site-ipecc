@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { AdminSalvarButton } from "@/components/admin";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+  parsePaginaExtra,
+} from "@/lib/supabaseClient";
 
 export default function SobreCtaPage() {
   const [sobreTitulo, setSobreTitulo] = useState("Sobre o IPECC");
@@ -15,18 +21,14 @@ export default function SobreCtaPage() {
   const [ctaBotaoUrl, setCtaBotaoUrl] = useState("");
 
   const [mensagem, setMensagem] = useState("");
+  const [salvando, setSalvando] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // 🔥 CARREGAR DO BANCO
   useEffect(() => {
     async function carregar() {
       // SOBRE
-      const { data: sobreData } = await supabase
-        .from("paginas_conteudo")
-        .select("*")
-        .eq("pagina_slug", "home")
-        .eq("bloco", "sobre")
-        .maybeSingle();
+      const sobreData = await fetchPaginaConteudo(supabase, "home", "sobre");
 
       if (sobreData) {
         setSobreTitulo(sobreData.titulo || "Sobre o IPECC");
@@ -34,14 +36,10 @@ export default function SobreCtaPage() {
       }
 
       // CTA
-      const { data: ctaData } = await supabase
-        .from("paginas_conteudo")
-        .select("extra")
-        .eq("pagina_slug", "home")
-        .eq("bloco", "cta_final")
-        .maybeSingle();
-
-      const cta = (ctaData as any)?.extra?.cta;
+      const ctaData = await fetchPaginaConteudo(supabase, "home", "cta_final", "extra");
+      const cta = parsePaginaExtra<{
+        cta?: { titulo?: string; texto?: string; label?: string; url?: string };
+      }>(ctaData?.extra, {}).cta;
 
       if (cta && typeof cta === "object") {
         setCtaTitulo(cta.titulo || "");
@@ -56,55 +54,49 @@ export default function SobreCtaPage() {
     carregar();
   }, []);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setMensagem("");
+  async function salvar() {
+    setMensagem("Salvando...");
+    setSalvando(true);
 
+    try {
     // SOBRE
-    const { error: errorSobre } = await supabase
-      .from("paginas_conteudo")
-      .upsert(
-        {
-          pagina_slug: "home",
-          bloco: "sobre",
-          titulo: sobreTitulo,
-          texto: sobreTexto, // 🔥 mantém quebra de linha
-        },
-        { onConflict: "pagina_slug,bloco" }
-      );
+    const { error: errorSobre } = await upsertPaginaConteudo(supabase, {
+      pagina_slug: "home",
+      bloco: "sobre",
+      titulo: sobreTitulo,
+      texto: sobreTexto, // 🔥 mantém quebra de linha
+    });
 
     if (errorSobre) {
       console.error(errorSobre);
-      setMensagem("Erro ao salvar Sobre.");
+      setMensagem(`Erro ao salvar Sobre: ${errorSobre.message}`);
       return;
     }
 
     // CTA
-    const { error: errorCta } = await supabase
-      .from("paginas_conteudo")
-      .upsert(
-        {
-          pagina_slug: "home",
-          bloco: "cta_final",
-          extra: {
-            cta: {
-              titulo: ctaTitulo,
-              texto: ctaTexto, // 🔥 mantém quebra de linha
-              label: ctaBotaoTexto,
-              url: ctaBotaoUrl,
-            },
-          },
+    const { error: errorCta } = await upsertPaginaConteudo(supabase, {
+      pagina_slug: "home",
+      bloco: "cta_final",
+      extra: {
+        cta: {
+          titulo: ctaTitulo,
+          texto: ctaTexto, // 🔥 mantém quebra de linha
+          label: ctaBotaoTexto,
+          url: ctaBotaoUrl,
         },
-        { onConflict: "pagina_slug,bloco" }
-      );
+      },
+    });
 
     if (errorCta) {
       console.error(errorCta);
-      setMensagem("Erro ao salvar CTA.");
+      setMensagem(`Erro ao salvar CTA: ${errorCta.message}`);
       return;
     }
 
-    setMensagem("✅ Sobre + CTA salvos com sucesso.");
+    setMensagem("Salvo com sucesso.");
+    } finally {
+      setSalvando(false);
+    }
   }
 
   if (loading) {
@@ -120,7 +112,12 @@ export default function SobreCtaPage() {
         </p>
       </div>
 
-      <form className="admin-card" onSubmit={handleSubmit}>
+      <form
+        className="admin-card"
+        onSubmit={(e) => {
+          e.preventDefault();
+        }}
+      >
         <h2>Sobre</h2>
 
         <label style={{ fontSize: ".9rem", display: "block" }}>
@@ -171,9 +168,7 @@ export default function SobreCtaPage() {
           placeholder="URL do botão"
         />
 
-        <button className="admin-button" style={{ marginTop: 16 }}>
-          Salvar
-        </button>
+        <AdminSalvarButton salvando={salvando} onClick={salvar} />
 
         {mensagem && <p style={{ marginTop: 10 }}>{mensagem}</p>}
       </form>

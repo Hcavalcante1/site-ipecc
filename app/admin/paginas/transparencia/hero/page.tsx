@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+} from "@/lib/supabaseClient";
 
 const btnGreen = {
   background: "#22c55e",
@@ -15,6 +19,7 @@ const btnGreen = {
 
 export default function TransparenciaHeroAdmin() {
   const [loading, setLoading] = useState(true);
+  const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState("");
 
   const [tituloHero, setTituloHero] = useState("");
@@ -22,12 +27,12 @@ export default function TransparenciaHeroAdmin() {
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase
-        .from("paginas_conteudo")
-        .select("titulo, texto")
-        .eq("pagina_slug", "transparencia")
-        .eq("bloco", "hero")
-        .maybeSingle();
+      const data = await fetchPaginaConteudo(
+        supabase,
+        "transparencia",
+        "hero",
+        "titulo, texto"
+      );
 
       if (data) {
         setTituloHero(data.titulo ?? "");
@@ -41,19 +46,21 @@ export default function TransparenciaHeroAdmin() {
   }, []);
 
   async function salvar() {
+    setSalvando(true);
     setMsg("Salvando...");
 
-    const { error } = await supabase
-      .from("paginas_conteudo")
-      .update({
+    try {
+      const { error } = await upsertPaginaConteudo(supabase, {
+        pagina_slug: "transparencia",
+        bloco: "hero",
         titulo: tituloHero,
         texto: textoHero,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("pagina_slug", "transparencia")
-      .eq("bloco", "hero");
+      });
 
-    setMsg(error ? "Erro ao salvar." : "Alterações salvas com sucesso.");
+      setMsg(error ? "Erro ao salvar." : "Alterações salvas com sucesso.");
+    } finally {
+      setSalvando(false);
+    }
   }
 
   if (loading) return <p>Carregando…</p>;
@@ -78,8 +85,8 @@ export default function TransparenciaHeroAdmin() {
         onChange={(e) => setTextoHero(e.target.value)}
       />
 
-      <button style={btnGreen} onClick={salvar}>
-        Salvar alterações
+      <button style={btnGreen} onClick={salvar} disabled={salvando}>
+        {salvando ? "Salvando…" : "Salvar alterações"}
       </button>
 
       {msg && <p>{msg}</p>}

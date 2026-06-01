@@ -2,12 +2,18 @@
 
 import { useState, useEffect } from "react";
 import type { CSSProperties } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { AdminSalvarButton } from "@/components/admin";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+} from "@/lib/supabaseClient";
 
 export default function QuemSomosHeroAdminPage() {
   const [titulo, setTitulo] = useState("");
   const [texto, setTexto] = useState("");
   const [msg, setMsg] = useState("");
+  const [salvando, setSalvando] = useState(false);
 
   const textAreaStyle: CSSProperties = {
     resize: "vertical" as const,
@@ -24,12 +30,12 @@ export default function QuemSomosHeroAdminPage() {
   // ✅ CARREGAR DADOS EXISTENTES
   useEffect(() => {
     async function loadData() {
-      const { data } = await supabase
-        .from("paginas_conteudo")
-        .select("titulo, texto")
-        .eq("pagina_slug", "quem-somos")
-        .eq("bloco", "hero")
-        .maybeSingle();
+      const data = await fetchPaginaConteudo(
+        supabase,
+        "quem-somos",
+        "hero",
+        "titulo, texto"
+      );
 
       if (data) {
         setTitulo(data.titulo || "");
@@ -41,23 +47,17 @@ export default function QuemSomosHeroAdminPage() {
   }, []);
 
   // ✅ SALVAR
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function salvar() {
+    setMsg("Salvando...");
+    setSalvando(true);
 
     try {
-      const { error } = await supabase
-        .from("paginas_conteudo")
-        .upsert(
-          {
-            pagina_slug: "quem-somos",
-            bloco: "hero",
-            titulo,
-            texto,
-          },
-          {
-            onConflict: "pagina_slug,bloco",
-          }
-        );
+      const { error } = await upsertPaginaConteudo(supabase, {
+        pagina_slug: "quem-somos",
+        bloco: "hero",
+        titulo,
+        texto,
+      });
 
       if (error) throw error;
 
@@ -65,6 +65,8 @@ export default function QuemSomosHeroAdminPage() {
     } catch (err) {
       console.error(err);
       setMsg("Erro ao salvar.");
+    } finally {
+      setSalvando(false);
     }
   }
 
@@ -75,7 +77,9 @@ export default function QuemSomosHeroAdminPage() {
       <form
         className="admin-form"
         style={{ marginTop: 24 }}
-        onSubmit={handleSubmit}
+        onSubmit={(e) => {
+          e.preventDefault();
+        }}
       >
         <label>Título</label>
         <input
@@ -91,13 +95,7 @@ export default function QuemSomosHeroAdminPage() {
           style={textAreaStyle}
         />
 
-        <button
-          type="submit"
-          className="admin-button"
-          style={{ marginTop: 14 }}
-        >
-          Salvar
-        </button>
+        <AdminSalvarButton salvando={salvando} onClick={salvar} />
 
         {msg && (
           <p style={{ marginTop: 10, fontSize: "12px", color: "#86efac" }}>

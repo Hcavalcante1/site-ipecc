@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+  parsePaginaExtra,
+} from "@/lib/supabaseClient";
 
 const PAGINA = "contato";
 const BLOCO = "cta";
@@ -25,32 +30,19 @@ export default function AdminContatoCTA() {
   async function load() {
     setLoading(true);
 
-    const { data } = await supabase
-      .from("paginas_conteudo")
-      .select("titulo, texto, extra")
-      .eq("pagina_slug", PAGINA)
-      .eq("bloco", BLOCO)
-      .order("created_at", { ascending: false })
-      .limit(1);
+    const cta = await fetchPaginaConteudo(supabase, PAGINA, BLOCO);
+    const extra = parsePaginaExtra<{
+      botao_texto?: string;
+      botao_link?: string;
+      descricao?: string;
+    }>(cta?.extra, {});
 
-    if (data && data.length > 0) {
-      const cta = data[0];
-
-      let extra: any = {};
-      if (typeof cta.extra === "object") {
-        extra = cta.extra;
-      } else {
-        try {
-          extra = JSON.parse(cta.extra || "{}");
-        } catch {}
-      }
-
-      // 🔹 Cada campo recebe apenas o que lhe pertence
+    if (cta) {
       setTitulo(String(cta.titulo || ""));
       setTexto(String(cta.texto || ""));
       setBotaoTexto(String(extra.botao_texto || ""));
       setBotaoLink(String(extra.botao_link || ""));
-      setDescricao(String(extra.descricao || "")); // 🔥 NOVO
+      setDescricao(String(extra.descricao || ""));
     }
 
     setLoading(false);
@@ -73,20 +65,13 @@ export default function AdminContatoCTA() {
       descricao: descricao, // 🔥 NOVO
     };
 
-    const { error } = await supabase
-      .from("paginas_conteudo")
-      .upsert(
-        {
-          pagina_slug: PAGINA,
-          bloco: BLOCO,
-          titulo: titulo.trim(),
-          texto: texto.trim(),
-          extra: novoExtra,
-        },
-        {
-          onConflict: "pagina_slug,bloco",
-        }
-      );
+    const { error } = await upsertPaginaConteudo(supabase, {
+      pagina_slug: PAGINA,
+      bloco: BLOCO,
+      titulo: titulo.trim(),
+      texto: texto.trim(),
+      extra: novoExtra,
+    });
 
     if (error) {
       console.error(error);

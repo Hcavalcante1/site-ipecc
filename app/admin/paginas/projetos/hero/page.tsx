@@ -1,23 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { AdminSalvarButton } from "@/components/admin";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+} from "@/lib/supabaseClient";
 
 export default function ProjetosHeroAdmin() {
   const [titulo, setTitulo] = useState("");
   const [texto, setTexto] = useState("");
   const [msg, setMsg] = useState("");
+  const [salvando, setSalvando] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // 🔹 CARREGAR DADOS
   useEffect(() => {
     async function load() {
-      const { data } = await supabase
-        .from("paginas_conteudo")
-        .select("titulo, texto")
-        .eq("pagina_slug", "projetos")
-        .eq("bloco", "hero")
-        .maybeSingle();
+      const data = await fetchPaginaConteudo(
+        supabase,
+        "projetos",
+        "hero",
+        "titulo, texto"
+      );
 
       if (data) {
         setTitulo(data.titulo || "");
@@ -33,26 +39,24 @@ export default function ProjetosHeroAdmin() {
   // 🔹 SALVAR
   async function salvar() {
     setMsg("Salvando...");
+    setSalvando(true);
 
-    const { error } = await supabase
-      .from("paginas_conteudo")
-      .upsert(
-        {
-          pagina_slug: "projetos",
-          bloco: "hero",
-          titulo,
-          texto,
-          updated_at: new Date().toISOString(),
-        },
-        {
-          onConflict: "pagina_slug,bloco",
-        }
-      );
+    try {
+      const { error } = await upsertPaginaConteudo(supabase, {
+        pagina_slug: "projetos",
+        bloco: "hero",
+        titulo,
+        texto,
+      });
 
-    if (error) {
-      setMsg(error.message);
-    } else {
-      setMsg("Hero salvo com sucesso.");
+      if (error) {
+        setMsg(`Erro ao salvar: ${error.message}`);
+        return;
+      }
+
+      setMsg("Salvo com sucesso.");
+    } finally {
+      setSalvando(false);
     }
   }
 
@@ -78,12 +82,7 @@ export default function ProjetosHeroAdmin() {
         />
 
         {/* 🔥 BOTÃO PADRÃO */}
-        <button
-          className="admin-button"
-          onClick={salvar}
-        >
-          Salvar alterações
-        </button>
+        <AdminSalvarButton salvando={salvando} onClick={salvar} />
       </div>
 
       {msg && <p style={{ marginTop: 10 }}>{msg}</p>}

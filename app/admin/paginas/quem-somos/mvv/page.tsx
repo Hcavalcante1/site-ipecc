@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { AdminSalvarButton } from "@/components/admin";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+  parsePaginaExtra,
+} from "@/lib/supabaseClient";
 
 export default function QuemSomosMvvAdminPage() {
   const [missao, setMissao] = useState(
@@ -18,6 +24,7 @@ Transparência e ética: responsabilidade pública e gestão íntegra.
 Parceria e diálogo: pontes entre governo, sociedade civil e iniciativa privada.`
   );
   const [msg, setMsg] = useState("");
+  const [salvando, setSalvando] = useState(false);
 
   const inputStyle: React.CSSProperties = {
     width: "100%",
@@ -38,18 +45,12 @@ Parceria e diálogo: pontes entre governo, sociedade civil e iniciativa privada.
   // ✅ LOAD DO BANCO (ADICIONADO)
   useEffect(() => {
     async function loadData() {
-      const { data } = await supabase
-        .from("paginas_conteudo")
-        .select("extra")
-        .eq("pagina_slug", "quem-somos")
-        .eq("bloco", "mvv")
-        .maybeSingle();
+      const data = await fetchPaginaConteudo(supabase, "quem-somos", "mvv", "extra");
+      const mvv = parsePaginaExtra<
+        { titulo?: string; texto?: string }[]
+      >(data?.extra, []);
 
-      if (data?.extra) {
-        const mvv =
-          typeof data.extra === "string"
-            ? JSON.parse(data.extra)
-            : data.extra;
+      if (mvv.length) {
 
         setMissao(mvv[0]?.texto || "");
         setVisao(mvv[1]?.texto || "");
@@ -61,8 +62,9 @@ Parceria e diálogo: pontes entre governo, sociedade civil e iniciativa privada.
   }, []);
 
   // ✅ SAVE REAL (CORRIGIDO)
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function salvar() {
+    setMsg("Salvando...");
+    setSalvando(true);
 
     try {
       const extra = [
@@ -71,26 +73,21 @@ Parceria e diálogo: pontes entre governo, sociedade civil e iniciativa privada.
         { titulo: "Valores", texto: valores },
       ];
 
-      const { error } = await supabase
-        .from("paginas_conteudo")
-        .upsert(
-          {
-            pagina_slug: "quem-somos",
-            bloco: "mvv",
-            titulo: "Missão, Visão e Valores",
-            extra,
-          },
-          {
-            onConflict: "pagina_slug,bloco",
-          }
-        );
+      const { error } = await upsertPaginaConteudo(supabase, {
+        pagina_slug: "quem-somos",
+        bloco: "mvv",
+        titulo: "Missão, Visão e Valores",
+        extra,
+      });
 
       if (error) throw error;
 
-      setMsg("Alterações salvas com sucesso.");
+      setMsg("Salvo com sucesso.");
     } catch (err) {
       console.error(err);
       setMsg("Erro ao salvar.");
+    } finally {
+      setSalvando(false);
     }
   }
 
@@ -103,7 +100,12 @@ Parceria e diálogo: pontes entre governo, sociedade civil e iniciativa privada.
         </p>
       </div>
 
-      <form className="admin-card" onSubmit={handleSubmit}>
+      <form
+        className="admin-card"
+        onSubmit={(e) => {
+          e.preventDefault();
+        }}
+      >
         <h2 style={{ fontSize: ".95rem", marginBottom: 6 }}>Missão</h2>
         <textarea
           value={missao}
@@ -129,13 +131,7 @@ Parceria e diálogo: pontes entre governo, sociedade civil e iniciativa privada.
           style={{ ...textAreaStyle, minHeight: 180 }}
         />
 
-        <button
-          type="submit"
-          className="admin-button"
-          style={{ marginTop: 16 }}
-        >
-          Salvar alterações
-        </button>
+        <AdminSalvarButton salvando={salvando} onClick={salvar} />
 
         {msg && (
           <p style={{ marginTop: 10, color: "#bbf7d0", fontSize: ".8rem" }}>

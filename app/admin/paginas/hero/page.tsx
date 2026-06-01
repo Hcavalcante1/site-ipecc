@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { AdminSalvarButton } from "@/components/admin";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+} from "@/lib/supabaseClient";
 
 export default function HeroPage() {
   const [titulo, setTitulo] = useState("");
@@ -9,22 +14,14 @@ export default function HeroPage() {
   const [botaoTexto, setBotaoTexto] = useState("");
   const [botaoUrl, setBotaoUrl] = useState("");
   const [mensagem, setMensagem] = useState("");
+  const [salvando, setSalvando] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // 🔥 CARREGAR DADOS
   useEffect(() => {
     async function carregarHero() {
       try {
-        const { data, error } = await supabase
-          .from("paginas_conteudo")
-          .select("*")
-          .eq("pagina_slug", "home")
-          .eq("bloco", "hero")
-          .maybeSingle();
-
-        if (error && error.code !== "PGRST116") {
-          console.error("Erro ao carregar hero:", error);
-        }
+        const data = await fetchPaginaConteudo(supabase, "home", "hero");
 
         if (data) {
           setTitulo(data.titulo || "");
@@ -47,37 +44,32 @@ export default function HeroPage() {
     carregarHero();
   }, []);
 
-  // 🔥 SALVAR
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  // 🔥 SALVAR (mesmo padrão do hero de editais)
+  async function salvar() {
     setMensagem("Salvando...");
+    setSalvando(true);
 
     try {
       const textoCompleto = [texto, botaoTexto, botaoUrl].join("\n");
 
-      const { error } = await supabase
-        .from("paginas_conteudo")
-        .upsert(
-          {
-            pagina_slug: "home",
-            bloco: "hero",
-            titulo,
-            texto: textoCompleto,
-          },
-          {
-            onConflict: "pagina_slug,bloco",
-          }
-        );
+      const { error } = await upsertPaginaConteudo(supabase, {
+        pagina_slug: "home",
+        bloco: "hero",
+        titulo,
+        texto: textoCompleto,
+      });
 
       if (error) {
         console.error("Erro ao salvar:", error);
-        setMensagem("Erro ao salvar.");
+        setMensagem(`Erro ao salvar: ${error.message}`);
       } else {
         setMensagem("Salvo com sucesso.");
       }
     } catch (err) {
       console.error("Erro geral:", err);
       setMensagem("Erro inesperado.");
+    } finally {
+      setSalvando(false);
     }
   }
 
@@ -94,7 +86,12 @@ export default function HeroPage() {
         </p>
       </div>
 
-      <form className="admin-card" onSubmit={handleSubmit}>
+      <form
+        className="admin-card"
+        onSubmit={(e) => {
+          e.preventDefault();
+        }}
+      >
         <h2>Conteúdo</h2>
 
         <label>
@@ -134,9 +131,7 @@ export default function HeroPage() {
           />
         </label>
 
-        <button type="submit" className="admin-button">
-          Salvar
-        </button>
+        <AdminSalvarButton salvando={salvando} onClick={salvar} />
 
         {mensagem && <p style={{ marginTop: 10 }}>{mensagem}</p>}
       </form>

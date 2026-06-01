@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+  parsePaginaExtra,
+} from "@/lib/supabaseClient";
 
 const btnGreen = {
   background: "#22c55e",
@@ -15,6 +20,7 @@ const btnGreen = {
 
 export default function ContatoEnderecoAdmin() {
   const [loading, setLoading] = useState(true);
+  const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState("");
 
   const [titulo, setTitulo] = useState("");
@@ -27,18 +33,17 @@ export default function ContatoEnderecoAdmin() {
   // =========================
   useEffect(() => {
     async function load() {
-      const { data } = await supabase
-        .from("paginas_conteudo")
-        .select("*")
-        .eq("pagina_slug", "contato")
-        .eq("bloco", "endereco")
-        .maybeSingle();
+      const data = await fetchPaginaConteudo(supabase, "contato", "endereco");
+      const extra = parsePaginaExtra<{ horario?: string; mapa_url?: string }>(
+        data?.extra,
+        {}
+      );
 
       if (data) {
         setTitulo(data.titulo || "");
         setEndereco(data.texto || "");
-        setHorario(data.extra?.horario || "");
-        setMapaLink(data.extra?.mapa_url || "");
+        setHorario(extra.horario || "");
+        setMapaLink(extra.mapa_url || "");
       }
 
       setLoading(false);
@@ -51,23 +56,20 @@ export default function ContatoEnderecoAdmin() {
   // SAVE (CORRIGIDO)
   // =========================
   async function salvar() {
+    setSalvando(true);
     setMsg("Salvando...");
 
-    const { error } = await supabase.from("paginas_conteudo").upsert(
-      {
-        pagina_slug: "contato",
-        bloco: "endereco",
-        titulo,
-        texto: endereco,
-        extra: {
-          horario,
-          mapa_url: mapaLink,
-        },
+    try {
+    const { error } = await upsertPaginaConteudo(supabase, {
+      pagina_slug: "contato",
+      bloco: "endereco",
+      titulo,
+      texto: endereco,
+      extra: {
+        horario,
+        mapa_url: mapaLink,
       },
-      {
-        onConflict: "pagina_slug,bloco",
-      }
-    );
+    });
 
     if (error) {
       console.error(error);
@@ -76,21 +78,23 @@ export default function ContatoEnderecoAdmin() {
     }
 
     // 🔥 RECARREGA DO BANCO (faz os dados ficarem fixos)
-    const { data } = await supabase
-      .from("paginas_conteudo")
-      .select("*")
-      .eq("pagina_slug", "contato")
-      .eq("bloco", "endereco")
-      .maybeSingle();
+    const data = await fetchPaginaConteudo(supabase, "contato", "endereco");
+    const extraReload = parsePaginaExtra<{ horario?: string; mapa_url?: string }>(
+      data?.extra,
+      {}
+    );
 
     if (data) {
       setTitulo(data.titulo || "");
       setEndereco(data.texto || "");
-      setHorario(data.extra?.horario || "");
-      setMapaLink(data.extra?.mapa_url || "");
+      setHorario(extraReload.horario || "");
+      setMapaLink(extraReload.mapa_url || "");
     }
 
     setMsg("✅ Salvo com sucesso");
+    } finally {
+      setSalvando(false);
+    }
   }
 
   if (loading) return <p>Carregando...</p>;
@@ -128,8 +132,8 @@ export default function ContatoEnderecoAdmin() {
         }}
       />
 
-      <button style={btnGreen} onClick={salvar}>
-        Salvar
+      <button style={btnGreen} onClick={salvar} disabled={salvando}>
+        {salvando ? "Salvando…" : "Salvar"}
       </button>
 
       {msg && <p>{msg}</p>}

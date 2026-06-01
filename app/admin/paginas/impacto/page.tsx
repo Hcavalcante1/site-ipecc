@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { AdminSalvarButton } from "@/components/admin";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+} from "@/lib/supabaseClient";
 
 export default function ImpactoPage() {
   const [titulo, setTitulo] = useState("Impacto Social");
@@ -10,21 +15,13 @@ export default function ImpactoPage() {
   );
   const [imagem, setImagem] = useState("/media/home/impacto/impacto-social.jpg");
   const [mensagem, setMensagem] = useState("");
+  const [salvando, setSalvando] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // 🔥 CORREÇÃO: carregar do banco
   useEffect(() => {
     async function carregar() {
-      const { data, error } = await supabase
-        .from("paginas_conteudo")
-        .select("*")
-        .eq("pagina_slug", "home")
-        .eq("bloco", "impacto")
-        .maybeSingle();
-
-      if (error && error.code !== "PGRST116") {
-        console.error("Erro ao carregar impacto:", error);
-      }
+      const data = await fetchPaginaConteudo(supabase, "home", "impacto");
 
       if (data) {
         setTitulo(data.titulo || "Impacto Social");
@@ -38,30 +35,29 @@ export default function ImpactoPage() {
     carregar();
   }, []);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setMensagem("");
+  async function salvar() {
+    setMensagem("Salvando...");
+    setSalvando(true);
 
-    const { error } = await supabase
-      .from("paginas_conteudo")
-      .upsert(
-        {
-          pagina_slug: "home",
-          bloco: "impacto",
-          titulo,
-          texto,
-          imagem_url: imagem,
-        },
-        { onConflict: "pagina_slug,bloco" }
-      );
+    try {
+      const { error } = await upsertPaginaConteudo(supabase, {
+        pagina_slug: "home",
+        bloco: "impacto",
+        titulo,
+        texto,
+        imagem_url: imagem,
+      });
 
-    if (error) {
-      console.error("Erro ao salvar Impacto Social:", error);
-      setMensagem("❌ Erro ao salvar no Supabase. Veja o console.");
-      return;
+      if (error) {
+        console.error("Erro ao salvar Impacto Social:", error);
+        setMensagem(`Erro ao salvar: ${error.message}`);
+        return;
+      }
+
+      setMensagem("Salvo com sucesso.");
+    } finally {
+      setSalvando(false);
     }
-
-    setMensagem("✅ Impacto Social salvo no Supabase com sucesso.");
   }
 
   if (loading) {
@@ -77,7 +73,12 @@ export default function ImpactoPage() {
         </p>
       </div>
 
-      <form className="admin-card" onSubmit={handleSubmit}>
+      <form
+        className="admin-card"
+        onSubmit={(e) => {
+          e.preventDefault();
+        }}
+      >
         <h2 style={{ marginTop: 0 }}>Conteúdo</h2>
 
         <label style={{ fontSize: ".9rem", display: "block", marginBottom: 8 }}>
@@ -110,9 +111,7 @@ export default function ImpactoPage() {
           />
         </label>
 
-        <button type="submit" className="admin-button">
-          Salvar alterações
-        </button>
+        <AdminSalvarButton salvando={salvando} onClick={salvar} />
 
         {mensagem && (
           <p style={{ marginTop: 10, fontSize: ".85rem", color: "#bbf7d0" }}>

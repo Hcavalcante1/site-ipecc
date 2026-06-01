@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+  parsePaginaExtra,
+} from "@/lib/supabaseClient";
 
 const btnGreen = {
   background: "#22c55e",
@@ -25,6 +30,7 @@ const btnRed = {
 
 export default function TransparenciaCtaAdmin() {
   const [loading, setLoading] = useState(true);
+  const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState("");
   const [uploading, setUploading] = useState(false);
 
@@ -37,18 +43,22 @@ export default function TransparenciaCtaAdmin() {
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase
-        .from("paginas_conteudo")
-        .select("titulo,texto,extra")
-        .eq("pagina_slug", "transparencia")
-        .eq("bloco", "cta_docs")
-        .maybeSingle();
+      const data = await fetchPaginaConteudo(
+        supabase,
+        "transparencia",
+        "cta_docs",
+        "titulo,texto,extra"
+      );
+      const extra = parsePaginaExtra<{ botaoLabel?: string; botaoUrl?: string }>(
+        data?.extra,
+        {}
+      );
 
       if (data) {
         setTitulo(data.titulo ?? "");
         setTexto(data.texto ?? "");
-        setBotaoLabel(data.extra?.botaoLabel ?? "");
-        setBotaoUrl(data.extra?.botaoUrl ?? "");
+        setBotaoLabel(extra.botaoLabel ?? "");
+        setBotaoUrl(extra.botaoUrl ?? "");
       }
 
       setLoading(false);
@@ -97,26 +107,25 @@ export default function TransparenciaCtaAdmin() {
       return;
     }
 
+    setSalvando(true);
     setMsg("Salvando...");
 
-    const { error } = await supabase
-      .from("paginas_conteudo")
-      .upsert(
-        {
-          pagina_slug: "transparencia",
-          bloco: "cta_docs",
-          titulo,
-          texto,
-          extra: {
-            botaoLabel,
-            botaoUrl,
-          },
-          updated_at: new Date().toISOString(),
+    try {
+      const { error } = await upsertPaginaConteudo(supabase, {
+        pagina_slug: "transparencia",
+        bloco: "cta_docs",
+        titulo,
+        texto,
+        extra: {
+          botaoLabel,
+          botaoUrl,
         },
-        { onConflict: "pagina_slug,bloco" }
-      );
+      });
 
-    setMsg(error ? "Erro ao salvar." : "Alterações salvas com sucesso.");
+      setMsg(error ? "Erro ao salvar." : "Alterações salvas com sucesso.");
+    } finally {
+      setSalvando(false);
+    }
   }
 
   if (loading) return <p>Carregando…</p>;
@@ -176,8 +185,12 @@ export default function TransparenciaCtaAdmin() {
       </div>
 
       <div style={{ marginTop: 16 }}>
-        <button style={btnGreen} onClick={salvar} disabled={uploading}>
-          Salvar alterações
+        <button
+          style={btnGreen}
+          onClick={salvar}
+          disabled={uploading || salvando}
+        >
+          {salvando ? "Salvando…" : "Salvar alterações"}
         </button>
       </div>
 

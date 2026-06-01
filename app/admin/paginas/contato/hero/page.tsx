@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+} from "@/lib/supabaseClient";
 
 const btnGreen = {
   background: "#22c55e",
@@ -15,6 +19,7 @@ const btnGreen = {
 
 export default function ContatoHeroAdmin() {
   const [loading, setLoading] = useState(true);
+  const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState("");
 
   const [tituloHero, setTituloHero] = useState("");
@@ -25,16 +30,12 @@ export default function ContatoHeroAdmin() {
   // ===============================
   useEffect(() => {
     async function load() {
-      const { data, error } = await supabase
-        .from("paginas_conteudo")
-        .select("titulo, texto")
-        .eq("pagina_slug", "contato")
-        .eq("bloco", "hero")
-        .maybeSingle();
-
-      if (error) {
-        console.error("Erro ao carregar:", error);
-      }
+      const data = await fetchPaginaConteudo(
+        supabase,
+        "contato",
+        "hero",
+        "titulo, texto"
+      );
 
       if (data) {
         setTituloHero(data.titulo ?? "");
@@ -51,29 +52,26 @@ export default function ContatoHeroAdmin() {
   // SALVAR (UPSERT CORRETO)
   // ===============================
   async function salvar() {
+    setSalvando(true);
     setMsg("Salvando...");
 
-    const { error } = await supabase
-      .from("paginas_conteudo")
-      .upsert(
-        {
-          pagina_slug: "contato",
-          bloco: "hero",
-          titulo: tituloHero,
-          texto: textoHero,
-          updated_at: new Date().toISOString(),
-        },
-        {
-          onConflict: "pagina_slug,bloco",
-        }
-      );
+    try {
+      const { error } = await upsertPaginaConteudo(supabase, {
+        pagina_slug: "contato",
+        bloco: "hero",
+        titulo: tituloHero,
+        texto: textoHero,
+      });
 
-    if (error) {
-      setMsg("Erro ao salvar: " + error.message);
-      return;
+      if (error) {
+        setMsg("Erro ao salvar: " + error.message);
+        return;
+      }
+
+      setMsg("Alterações salvas com sucesso.");
+    } finally {
+      setSalvando(false);
     }
-
-    setMsg("Alterações salvas com sucesso.");
   }
 
   if (loading) return <p>Carregando…</p>;
@@ -95,8 +93,8 @@ export default function ContatoHeroAdmin() {
         onChange={(e) => setTextoHero(e.target.value)}
       />
 
-      <button style={btnGreen} onClick={salvar}>
-        Salvar alterações
+      <button style={btnGreen} onClick={salvar} disabled={salvando}>
+        {salvando ? "Salvando…" : "Salvar alterações"}
       </button>
 
       {msg && <p style={{ marginTop: 10 }}>{msg}</p>}

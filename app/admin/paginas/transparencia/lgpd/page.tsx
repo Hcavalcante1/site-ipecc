@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import {
+  supabase,
+  fetchPaginaConteudo,
+  upsertPaginaConteudo,
+  parsePaginaExtra,
+} from "@/lib/supabaseClient";
 
 type LinkItem = { label: string; url: string };
 
@@ -27,6 +32,7 @@ const btnRed = {
 
 export default function TransparenciaLgpdAdmin() {
   const [loading, setLoading] = useState(true);
+  const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState("");
 
   const [titulo, setTitulo] = useState("");
@@ -38,17 +44,18 @@ export default function TransparenciaLgpdAdmin() {
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase
-        .from("paginas_conteudo")
-        .select("titulo,texto,extra")
-        .eq("pagina_slug", "transparencia")
-        .eq("bloco", "lgpd_integridade")
-        .maybeSingle();
+      const data = await fetchPaginaConteudo(
+        supabase,
+        "transparencia",
+        "lgpd_integridade",
+        "titulo,texto,extra"
+      );
+      const extra = parsePaginaExtra<{ links?: LinkItem[] }>(data?.extra, {});
 
       if (data) {
         setTitulo(data.titulo ?? "");
         setTexto(data.texto ?? "");
-        setLinks(data.extra?.links ?? []);
+        setLinks(extra.links ?? []);
       }
 
       setLoading(false);
@@ -77,22 +84,22 @@ export default function TransparenciaLgpdAdmin() {
   }
 
   async function salvar() {
+    setSalvando(true);
     setMsg("Salvando...");
 
-    const { error } = await supabase
-      .from("paginas_conteudo")
-      .upsert(
-        {
-          pagina_slug: "transparencia",
-          bloco: "lgpd_integridade",
-          titulo,
-          texto,
-          extra: { links },
-        },
-        { onConflict: "pagina_slug,bloco" }
-      );
+    try {
+      const { error } = await upsertPaginaConteudo(supabase, {
+        pagina_slug: "transparencia",
+        bloco: "lgpd_integridade",
+        titulo,
+        texto,
+        extra: { links },
+      });
 
-    setMsg(error ? "Erro ao salvar." : "Alterações salvas com sucesso.");
+      setMsg(error ? "Erro ao salvar." : "Alterações salvas com sucesso.");
+    } finally {
+      setSalvando(false);
+    }
   }
 
   if (loading) return <p>Carregando…</p>;
@@ -174,8 +181,8 @@ export default function TransparenciaLgpdAdmin() {
 
       <hr />
 
-      <button style={btnGreen} onClick={salvar}>
-        Salvar alterações
+      <button style={btnGreen} onClick={salvar} disabled={salvando}>
+        {salvando ? "Salvando…" : "Salvar alterações"}
       </button>
 
       {msg && <p>{msg}</p>}

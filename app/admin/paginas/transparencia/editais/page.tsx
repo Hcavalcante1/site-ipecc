@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { createClient } from "@supabase/supabase-js";
 import { AdminButton, AdminLoadingButton, AdminInput, AdminTextarea, AdminSelect, AdminFileInput, AdminSectionHeader, spacing, borderRadius, shadows, sizes, typography } from "@/components/admin";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 type Edital = {
   id?: string;

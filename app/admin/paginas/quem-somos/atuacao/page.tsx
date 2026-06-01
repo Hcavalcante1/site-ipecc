@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { AdminSalvarButton } from "@/components/admin";
+import {
+  supabase,
+  fetchPaginaConteudoPorPrefixo,
+  upsertPaginaConteudoBatch,
+} from "@/lib/supabaseClient";
 
 type Bloco = {
   pagina_slug: string;
@@ -39,15 +44,18 @@ export default function QuemSomosAtuacaoAdminPage() {
 
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
+  const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
     async function load() {
-      const { data, error } = await supabase
-        .from("paginas_conteudo")
-        .select("bloco, texto, imagem_url")
-        .eq("pagina_slug", PAGINA);
+      const data = await fetchPaginaConteudoPorPrefixo(
+        supabase,
+        PAGINA,
+        "atuacao",
+        "bloco, texto, imagem_url"
+      );
 
-      if (error || !data) {
+      if (!data.length) {
         setLoading(false);
         return;
       }
@@ -79,6 +87,7 @@ export default function QuemSomosAtuacaoAdminPage() {
 
   async function salvar() {
     setMsg("Salvando...");
+    setSalvando(true);
 
     try {
       const payload: Bloco[] = [
@@ -111,18 +120,16 @@ export default function QuemSomosAtuacaoAdminPage() {
         },
       ];
 
-      const { error } = await supabase
-        .from("paginas_conteudo")
-        .upsert(payload, {
-          onConflict: "pagina_slug,bloco",
-        });
+      const { error } = await upsertPaginaConteudoBatch(supabase, payload);
 
       if (error) throw error;
 
-      setMsg("Conteúdo salvo com sucesso");
+      setMsg("Salvo com sucesso.");
     } catch (err) {
       console.error(err);
       setMsg("Erro ao salvar");
+    } finally {
+      setSalvando(false);
     }
   }
 
@@ -186,20 +193,7 @@ export default function QuemSomosAtuacaoAdminPage() {
         style={{ width: "100%", marginBottom: 32 }}
       />
 
-      <button
-        onClick={salvar}
-        style={{
-          background: "#22c55e",
-          color: "#062e1b",
-          border: "none",
-          borderRadius: 999,
-          padding: "10px 24px",
-          fontWeight: 600,
-          cursor: "pointer",
-        }}
-      >
-        Salvar
-      </button>
+      <AdminSalvarButton salvando={salvando} onClick={salvar} />
 
       {msg && <p style={{ marginTop: 16 }}>{msg}</p>}
     </div>
