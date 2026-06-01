@@ -34,9 +34,20 @@ SEO canônico: `https://www.ipecc.org.br`
 
 ```bash
 npm run validar:push-prep
+npm run validar:enterprise-ops
 npm run validar:public-pages-padrao
 npm run auditar:cms-staging          # conteúdo Supabase staging
 npm run guard:enterprise             # completo (ou -- --no-build)
+```
+
+Lista de arquivos para commit (enterprise): `docs/COMMIT-PACOTE-ENTERPRISE.md`
+
+Opcional (trilha enterprise + Fase 4 WhatsApp):
+
+```bash
+npm run validar:enterprise:fase4
+# ou (diagnóstico + execução + atualização do status da Fase 4)
+npm run fase4:whatsapp-meta:full
 ```
 
 Com `npm run dev` em `http://localhost:3000`:

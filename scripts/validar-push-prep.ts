@@ -5,8 +5,9 @@
 
 import { execSync } from "child_process";
 
-const steps: { label: string; cmd: string }[] = [
+const steps: { label: string; cmd: string; optional?: boolean }[] = [
   { label: "typecheck", cmd: "npm run typecheck" },
+  { label: "validar:enterprise-ops", cmd: "npm run validar:enterprise-ops" },
   { label: "validar:publico", cmd: "npm run validar:publico" },
   { label: "validar:admin", cmd: "npm run validar:admin" },
   { label: "validar:whatsapp-webhook", cmd: "npm run validar:whatsapp-webhook" },
@@ -14,6 +15,11 @@ const steps: { label: string; cmd: string }[] = [
   { label: "validar:whatsapp-fase2", cmd: "npm run validar:whatsapp-fase2" },
   { label: "validar:whatsapp-public-chat", cmd: "npm run validar:whatsapp-public-chat" },
   { label: "validar:whatsapp-public-pages", cmd: "npm run validar:whatsapp-public-pages" },
+  {
+    label: "validar:dod-whatsapp-meta (se reports recentes)",
+    cmd: "npm run validar:dod-whatsapp-meta",
+    optional: true,
+  },
 ];
 
 function main() {
@@ -27,7 +33,11 @@ function main() {
     try {
       execSync(step.cmd, { stdio: "inherit", cwd: process.cwd() });
     } catch {
-      falhas.push(step.label);
+      if (step.optional) {
+        console.warn(`WARN: ${step.label} (opcional, ignorado)`);
+      } else {
+        falhas.push(step.label);
+      }
     }
   }
 
@@ -40,6 +50,9 @@ function main() {
   console.log("OK: gate push prep (código).");
   console.log(
     "Próximo: npm run auditar:cms-staging (conteúdo) e npm run validar:enterprise (completo)."
+  );
+  console.log(
+    "Enterprise fase4 opcional: npm run validar:enterprise:fase4 (ou npm run fase4:whatsapp-meta:full)."
   );
   console.log("Smoke HTTP: npm run dev && npm run validar:smoke-publico");
 }

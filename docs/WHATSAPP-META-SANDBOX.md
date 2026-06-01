@@ -2,6 +2,14 @@
 
 Sem deploy e **sem tokens reais no repositório**. Use apenas em `.env.local`.
 
+## Execução rápida (ordem segura)
+
+- [ ] Configurar `.env.local` com `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_APP_SECRET`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`
+- [ ] Rodar validações locais (`validar:whatsapp-meta` e `validar:whatsapp-webhook`)
+- [ ] Expor `localhost:3000` por túnel e registrar callback na Meta
+- [ ] Validar handshake `GET` e depois evento `POST` assinado
+- [ ] Confirmar handoff em `/admin/whatsapp`
+
 ## 1. Variáveis (`.env.local`)
 
 ```env
@@ -60,6 +68,110 @@ GET /api/whatsapp/webhook?hub.mode=subscribe&hub.verify_token=ipecc_verify_stagi
 ```
 
 Resposta esperada: corpo `12345` e HTTP 200.
+
+### Resultado esperado dos scripts (pass/fail)
+
+- `npm run validar:whatsapp-meta`
+  - `OK: subscribe válido retorna challenge`
+  - `OK: token errado → forbidden`
+  - `OK: sem WHATSAPP_VERIFY_TOKEN → missing_config`
+- `npm run validar:whatsapp-webhook`
+  - `OK: 503 sem WHATSAPP_APP_SECRET`
+  - `OK: 401 assinatura inválida`
+  - `OK: 400 JSON inválido`
+  - `OK: 200 fixture processado`
+  - `OK: idempotência no mesmo messageId`
+- `npm run validar:whatsapp-webhook-http` (com `npm run dev`)
+  - handshake GET retorna `200` com o challenge
+  - POST assinado retorna `200` e JSON com `processed=1`
+
+## Coleta de evidências (PowerShell)
+
+Com `npm run dev` ativo em outro terminal, execute:
+
+```powershell
+npm run coletar:evidencias-whatsapp-meta
+```
+
+O script de coleta agora faz preflight em `http://localhost:3000` e falha cedo se o dev server não estiver ativo.
+
+Arquivos gerados:
+
+- `reports/whatsapp-meta.txt`
+- `reports/whatsapp-webhook.txt`
+- `reports/whatsapp-webhook-http.txt`
+- `reports/whatsapp-handoff-fase4.txt`
+
+Para gerar um resumo pronto para colar no status:
+
+```bash
+npm run resumo:whatsapp-meta-evidencias
+```
+
+Sequência completa (copiar/colar):
+
+```powershell
+# Terminal 1
+npm run dev
+
+# Terminal 2
+npm run coletar:evidencias-whatsapp-meta
+npm run resumo:whatsapp-meta-evidencias
+npm run validar:dod-whatsapp-meta
+```
+
+Atalho (Terminal 2):
+
+```powershell
+npm run fase4:whatsapp-meta
+npm run atualizar:status-fase4-whatsapp
+```
+
+Atalho completo (fase + atualização do status):
+
+```powershell
+npm run diagnostico:fase4-whatsapp-meta
+npm run fase4:whatsapp-meta:status
+```
+
+Atalho único (tudo em sequência):
+
+```powershell
+npm run fase4:whatsapp-meta:full
+```
+
+Observação: o pipeline agora inicia com `npm run validar:env-whatsapp-meta` e falha cedo se o `.env.local` estiver incompleto.
+
+## Falhas comuns (ação rápida)
+
+- `validar:whatsapp-meta` falha no handshake:
+  - conferir `WHATSAPP_VERIFY_TOKEN` no `.env.local`
+  - repetir `npm run coletar:evidencias-whatsapp-meta`
+- `validar:whatsapp-webhook` falha em assinatura:
+  - conferir `WHATSAPP_APP_SECRET` e reiniciar `npm run dev`
+  - repetir coleta
+- `validar:whatsapp-webhook-http` sem `processed=1`:
+  - garantir servidor local ativo em `http://localhost:3000`
+  - confirmar fixture `scripts/fixtures/whatsapp-text-inbound.json`
+  - repetir coleta
+
+Se qualquer report vier com `FALHA`/`ERROR`, não marcar DoD da Fase 4 como concluído.
+
+`npm run validar:dod-whatsapp-meta` também falha com `SKIP` por padrão.
+Se houver justificativa operacional aprovada, rode com override explícito:
+
+```powershell
+$env:WHATSAPP_DOD_ALLOW_SKIP="1"
+npm run validar:dod-whatsapp-meta
+```
+
+Também valida frescor dos reports (padrão: até 6h).
+Para ajustar janela de validade:
+
+```powershell
+$env:WHATSAPP_DOD_MAX_AGE_HOURS="12"
+npm run validar:dod-whatsapp-meta
+```
 
 ## 4. POST assinado (após `WHATSAPP_APP_SECRET`)
 

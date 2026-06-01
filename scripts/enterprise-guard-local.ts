@@ -15,6 +15,7 @@ const ROOT = process.cwd();
 const REPORTS = path.join(ROOT, "reports");
 const LOCK = path.join(REPORTS, ".enterprise-guard.lock");
 const SKIP_BUILD = process.argv.includes("--no-build");
+const INCLUDE_FASE4 = process.argv.includes("--include-fase4");
 
 function stamp(): string {
   const d = new Date();
@@ -54,6 +55,10 @@ function runGate(report: fs.WriteStream): number {
   if (SKIP_BUILD) {
     env.ENTERPRISE_GUARD_SKIP_BUILD = "1";
     log("Modo --no-build: ci:local será ignorado pelo validar:enterprise", report);
+  }
+  if (INCLUDE_FASE4) {
+    env.ENTERPRISE_INCLUDE_WHATSAPP_FASE4 = "1";
+    log("Modo --include-fase4: validação enterprise inclui Fase 4 WhatsApp", report);
   }
 
   const r = spawnSync("npm", ["run", "validar:enterprise"], {
