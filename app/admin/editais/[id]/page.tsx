@@ -20,6 +20,7 @@ export default function EditarEdital() {
   );
 
   const [loading, setLoading] = useState(true);
+  const [salvando, setSalvando] = useState(false);
 
   // =========================
   // CARREGAR DADOS
@@ -52,25 +53,31 @@ export default function EditarEdital() {
   // SALVAR
   // =========================
   async function salvar() {
-    const { error } = await supabase
-      .from("editais")
-      .update({
-        titulo,
-        descricao,
-        periodo,
-        tipo, // 🔥 AGORA SALVA
-        status,
-      })
-      .eq("id", id);
+    setSalvando(true);
 
-    if (error) {
-      console.error(error);
-      alert("Erro ao atualizar");
-      return;
+    try {
+      const { error } = await supabase
+        .from("editais")
+        .update({
+          titulo,
+          descricao,
+          periodo,
+          tipo, // 🔥 AGORA SALVA
+          status,
+        })
+        .eq("id", id);
+
+      if (error) {
+        console.error(error);
+        alert("Erro ao atualizar");
+        return;
+      }
+
+      alert("Edital atualizado com sucesso");
+      router.push("/admin/editais");
+    } finally {
+      setSalvando(false);
     }
-
-    alert("Edital atualizado com sucesso");
-    router.push("/admin/editais");
   }
 
   if (loading) return <p style={{ padding: 20 }}>Carregando...</p>;
@@ -122,8 +129,8 @@ export default function EditarEdital() {
           <option value="em_breve">Em breve</option>
         </select>
 
-        <button className="admin-button" onClick={salvar}>
-          Salvar alterações
+        <button className="admin-button" onClick={salvar} disabled={salvando}>
+          {salvando ? "Salvando…" : "Salvar alterações"}
         </button>
       </div>
     </div>
