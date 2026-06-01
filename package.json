@@ -56,6 +56,7 @@
     "validar:whatsapp-fase2": "npx --yes tsx scripts/validar-whatsapp-fase2.ts",
     "validar:whatsapp-webhook": "npx --yes tsx scripts/validar-whatsapp-webhook-route.ts",
     "validar:whatsapp-webhook-http": "npx --yes tsx scripts/validar-whatsapp-webhook-http.ts",
+    "validar:whatsapp-handoff-fase4": "npx --yes tsx scripts/validar-whatsapp-handoff-fase4.ts",
     "validar:smoke-publico": "npx --yes tsx scripts/validar-smoke-publico-http.ts",
     "validar:whatsapp-fase3": "npx --yes tsx scripts/validar-whatsapp-fase3.ts",
     "validar:whatsapp-meta": "npx --yes tsx scripts/validar-whatsapp-meta.ts",
