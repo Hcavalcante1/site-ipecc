@@ -1,11 +1,25 @@
 "use client";
 
 import { createBrowserClient } from "@supabase/ssr";
+import { patchSupabaseMutations } from "@/lib/admin/supabaseMutationProxy";
+
+export {
+  fetchPaginaConteudo,
+  fetchPaginaConteudoPorPrefixo,
+  parsePaginaExtra,
+} from "./cms/paginasConteudo";
+export type { PaginaConteudoRow, PaginaConteudoUpsert } from "./cms/paginasConteudo";
+export {
+  upsertPaginaConteudo,
+  upsertPaginaConteudoBatch,
+} from "./cms/paginasConteudoClient";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-const client = createBrowserClient(supabaseUrl, supabaseKey);
+const client = patchSupabaseMutations(
+  createBrowserClient(supabaseUrl, supabaseKey)
+);
 
 // 🔥 CLIENTE ORIGINAL EXPORTADO
 export const supabase = client;
