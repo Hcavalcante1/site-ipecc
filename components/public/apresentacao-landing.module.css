@@ -44,11 +44,11 @@
   background:
     linear-gradient(
       115deg,
-      rgba(4, 18, 48, 0.94) 0%,
-      rgba(11, 42, 107, 0.84) 48%,
-      rgba(4, 18, 48, 0.62) 100%
+      rgba(4, 18, 48, 0.42) 0%,
+      rgba(11, 42, 107, 0.26) 48%,
+      rgba(4, 18, 48, 0.2) 100%
     ),
-    url("/media/heroes/home/hero.webp") center / cover no-repeat;
+    url("/media/heroes/home/hero.webp?v=sem-texto-20260602") center / cover no-repeat;
 }
 
 .heroGrid {
@@ -101,7 +101,10 @@
   letter-spacing: -0.03em;
   margin-bottom: 16px;
   color: #fff;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.42);
+  -webkit-text-stroke: 0.35px rgba(3, 12, 34, 0.72);
+  text-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.7),
+    0 0 18px rgba(0, 0, 0, 0.44);
 }
 
 .heroTitleSub {
@@ -118,7 +121,9 @@
   line-height: var(--leading);
   color: #fff;
   margin-bottom: 14px;
-  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42);
+  text-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.78),
+    0 0 14px rgba(0, 0, 0, 0.48);
 }
 
 .heroPitch {
@@ -127,7 +132,9 @@
   color: #fff;
   margin-bottom: 24px;
   max-width: 520px;
-  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42);
+  text-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.78),
+    0 0 14px rgba(0, 0, 0, 0.48);
 }
 
 .heroPitch strong {
@@ -1125,11 +1132,11 @@
     background:
       linear-gradient(
         115deg,
-        rgba(3, 12, 34, 0.94) 0%,
-        rgba(11, 42, 107, 0.86) 58%,
-        rgba(3, 12, 34, 0.72) 100%
+        rgba(3, 12, 34, 0.56) 0%,
+        rgba(11, 42, 107, 0.38) 58%,
+        rgba(3, 12, 34, 0.36) 100%
       ),
-      url("/media/heroes/home/hero.webp") center / cover no-repeat;
+      url("/media/heroes/home/hero.webp?v=sem-texto-20260602") center / cover no-repeat;
   }
 
   .hero {
