@@ -44,9 +44,9 @@
   background:
     linear-gradient(
       115deg,
-      rgba(4, 18, 48, 0.42) 0%,
-      rgba(11, 42, 107, 0.26) 48%,
-      rgba(4, 18, 48, 0.2) 100%
+      rgba(11, 42, 107, 0.92) 0%,
+      rgba(19, 135, 214, 0.78) 48%,
+      rgba(1, 194, 164, 0.55) 100%
     ),
     url("/media/heroes/home/hero.webp?v=sem-texto-20260602") center / cover no-repeat;
 }
@@ -100,11 +100,6 @@
   line-height: 1.08;
   letter-spacing: -0.03em;
   margin-bottom: 16px;
-  color: #fff;
-  -webkit-text-stroke: 0.35px rgba(3, 12, 34, 0.72);
-  text-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.7),
-    0 0 18px rgba(0, 0, 0, 0.44);
 }
 
 .heroTitleSub {
@@ -119,22 +114,16 @@
 .heroLead {
   font-size: clamp(var(--text-md), 1.8vw, var(--text-lg));
   line-height: var(--leading);
-  color: #fff;
+  color: rgba(255, 255, 255, 0.92);
   margin-bottom: 14px;
-  text-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.78),
-    0 0 14px rgba(0, 0, 0, 0.48);
 }
 
 .heroPitch {
   font-size: var(--text-base);
   line-height: var(--leading);
-  color: #fff;
+  color: rgba(255, 255, 255, 0.88);
   margin-bottom: 24px;
   max-width: 520px;
-  text-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.78),
-    0 0 14px rgba(0, 0, 0, 0.48);
 }
 
 .heroPitch strong {
@@ -1128,17 +1117,6 @@
 }
 
 @media (max-width: 960px) {
-  .heroBg {
-    background:
-      linear-gradient(
-        115deg,
-        rgba(3, 12, 34, 0.56) 0%,
-        rgba(11, 42, 107, 0.38) 58%,
-        rgba(3, 12, 34, 0.36) 100%
-      ),
-      url("/media/heroes/home/hero.webp?v=sem-texto-20260602") center / cover no-repeat;
-  }
-
   .hero {
     margin-bottom: 32px;
   }

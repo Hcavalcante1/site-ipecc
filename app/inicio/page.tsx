@@ -314,7 +314,7 @@ const { data: eventos } = await supabase
   return (
     <>
       <PublicHeroRolling
-        bgImage="/media/heroes/home/hero.webp"
+        bgImage="/media/heroes/home/hero.webp?v=sem-texto-20260602"
         title={hero?.titulo || "Educação, Cultura e Cidadania"}
         text={
           partesHero[0] ||
@@ -608,4 +608,3 @@ const { data: eventos } = await supabase
     </>
   );
 }
-
