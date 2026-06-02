@@ -396,6 +396,11 @@ export default function TransparenciaConveniosAdmin() {
     <div className={classes.page}>
       <section className={classes.sectionCard}>
         <AdminSectionHeader level={1} style={styles.title}>Tabela de Convênios</AdminSectionHeader>
+        <p style={styles.msg}>
+          Cadastre aqui os instrumentos gerados apos a selecao e homologacao.
+          A referencia ao edital deve ser preenchida pela equipe responsavel,
+          conforme o processo formalizado.
+        </p>
 
         <div className={classes.toolbar}>
           <AdminButton type="button" variant="primary" className={classes.greenBtn} onClick={adicionarBloco}>

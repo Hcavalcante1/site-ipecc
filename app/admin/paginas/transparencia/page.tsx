@@ -35,17 +35,17 @@ export default function TransparenciaAdminIndex() {
         />
         <AdminHubCard
           titulo="Termos e Convênios"
-          descricao="Cadastro e edição da tabela pública de convênios e instrumentos."
+          descricao="Cadastro dos instrumentos gerados apos selecao, homologacao e formalizacao."
           href={r.convenios}
         />
         <AdminHubCard
           titulo="Editais e Chamamentos"
-          descricao="Cadastro e edição da tabela pública de editais e chamamentos."
+          descricao="Registro manual das fases de selecao, recurso, resultado, homologacao e contrato."
           href={r.editais}
         />
         <AdminHubCard
           titulo="Prestação de contas"
-          descricao="Relatórios técnicos e financeiros."
+          descricao="Documentos de execucao e prestacao vinculados aos convenios cadastrados."
           href={r.prestacao}
         />
         <AdminHubCard

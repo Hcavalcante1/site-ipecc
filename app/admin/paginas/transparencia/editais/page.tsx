@@ -491,6 +491,11 @@ return (
   <div style={styles.page}>
     <section style={styles.sectionCard}>
       <AdminSectionHeader level={1} style={styles.title}>Tabela de Editais e Chamamentos</AdminSectionHeader>
+      <p style={styles.msg}>
+        Use esta area para registrar manualmente a continuidade do edital ja publicado:
+        selecao, recursos, resultados, homologacao e contrato. A analise continua
+        sendo humana e deve seguir os criterios de cada edital.
+      </p>
 
       <div style={styles.toolbar}>
         <AdminButton type="button" variant="primary" style={styles.greenBtn} onClick={adicionarBloco}>
@@ -514,7 +519,7 @@ return (
 
           <div style={styles.grid2}>
             <div style={styles.fieldWrap}>
-              <label style={styles.label}>Edital / Chamamento</label>
+              <label style={styles.label}>Referencia do edital publicado</label>
               <AdminInput
                 style={styles.input}
                 value={item.edital_id ?? ""}

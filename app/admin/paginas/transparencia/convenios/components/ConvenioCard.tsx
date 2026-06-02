@@ -119,7 +119,7 @@ export default function ConvenioCard({
 
       <div style={styles.grid2}>
         <div style={styles.fieldWrap}>
-          <label style={styles.label}>Edital ID (UUID)</label>
+          <label style={styles.label}>Referencia do edital publicado</label>
           <AdminInput className={classes.input} value={item.edital_id ?? ""} onChange={(e) => updateConvenio(index, "edital_id", e.target.value)} />
         </div>
 
