@@ -44,9 +44,9 @@
   background:
     linear-gradient(
       115deg,
-      rgba(11, 42, 107, 0.92) 0%,
-      rgba(19, 135, 214, 0.78) 48%,
-      rgba(1, 194, 164, 0.55) 100%
+      rgba(4, 18, 48, 0.94) 0%,
+      rgba(11, 42, 107, 0.84) 48%,
+      rgba(4, 18, 48, 0.62) 100%
     ),
     url("/media/heroes/home/hero.webp") center / cover no-repeat;
 }
@@ -100,6 +100,8 @@
   line-height: 1.08;
   letter-spacing: -0.03em;
   margin-bottom: 16px;
+  color: #fff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.42);
 }
 
 .heroTitleSub {
@@ -114,16 +116,18 @@
 .heroLead {
   font-size: clamp(var(--text-md), 1.8vw, var(--text-lg));
   line-height: var(--leading);
-  color: rgba(255, 255, 255, 0.92);
+  color: #fff;
   margin-bottom: 14px;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42);
 }
 
 .heroPitch {
   font-size: var(--text-base);
   line-height: var(--leading);
-  color: rgba(255, 255, 255, 0.88);
+  color: #fff;
   margin-bottom: 24px;
   max-width: 520px;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42);
 }
 
 .heroPitch strong {
@@ -1117,6 +1121,17 @@
 }
 
 @media (max-width: 960px) {
+  .heroBg {
+    background:
+      linear-gradient(
+        115deg,
+        rgba(3, 12, 34, 0.94) 0%,
+        rgba(11, 42, 107, 0.86) 58%,
+        rgba(3, 12, 34, 0.72) 100%
+      ),
+      url("/media/heroes/home/hero.webp") center / cover no-repeat;
+  }
+
   .hero {
     margin-bottom: 32px;
   }
