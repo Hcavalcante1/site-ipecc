@@ -3,105 +3,183 @@
 << /Type /Catalog /Pages 2 0 R >>
 endobj
 2 0 obj
-<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+<< /Type /Pages /Kids [5 0 R 7 0 R] /Count 2 >>
 endobj
 3 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>
-endobj
-4 0 obj
 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
 endobj
-5 0 obj
+4 0 obj
 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
 endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 6 0 R >>
+endobj
 6 0 obj
-<< /Length 2576 >>
+<< /Length 2302 >>
 stream
 BT
-/F2 16 Tf
-1 0 0 1 72 770 Tm (CHECKLIST PARA COTACOES E FORNECEDORES) Tj
-/F1 11 Tf
-1 0 0 1 72 747 Tm (IPECC - Instituto Paulista de Esporte, Cultura e Cidadania) Tj
+/F2 15 Tf
+1 0 0 1 58 770 Tm (CHECKLIST PARA COTACOES E FORNECEDORES) Tj
 /F1 10 Tf
-1 0 0 1 72 729 Tm () Tj
-/F2 13 Tf
-1 0 0 1 72 717 Tm (Canais de atendimento) Tj
+1 0 0 1 58 750 Tm (IPECC - Instituto Paulista de Esporte, Cultura e Cidadania) Tj
 /F1 10 Tf
-1 0 0 1 72 697 Tm (E-mail: cotacoes@ipecc.org.br) Tj
+1 0 0 1 58 735 Tm (Envio de propostas comerciais e documentos de habilitacao) Tj
 /F1 10 Tf
-1 0 0 1 72 680 Tm (Telefone: 1194331-2119) Tj
-/F1 10 Tf
-1 0 0 1 72 663 Tm () Tj
-/F2 13 Tf
-1 0 0 1 72 651 Tm (Finalidade) Tj
-/F1 10 Tf
-1 0 0 1 72 631 Tm (Orientar o envio de propostas comerciais e documentos de habilitacao para cotacoes e fornecedores.) Tj
-/F1 10 Tf
-1 0 0 1 72 614 Tm () Tj
+1 0 0 1 58 720 Tm () Tj
 /F2 12 Tf
-1 0 0 1 72 602 Tm (1. Identificacao do fornecedor) Tj
+1 0 0 1 58 710 Tm (Canais de atendimento) Tj
 /F1 10 Tf
-1 0 0 1 72 583 Tm (- Razao social, CNPJ, endereco e contatos atualizados.) Tj
+1 0 0 1 58 693 Tm (E-mail: cotacoes@ipecc.org.br) Tj
 /F1 10 Tf
-1 0 0 1 72 566 Tm (- Nome do responsavel pela proposta e dados para contato.) Tj
+1 0 0 1 58 678 Tm (Telefone: 1194331-2119) Tj
 /F1 10 Tf
-1 0 0 1 72 549 Tm () Tj
+1 0 0 1 58 663 Tm () Tj
 /F2 12 Tf
-1 0 0 1 72 537 Tm (2. Proposta comercial) Tj
+1 0 0 1 58 653 Tm (1. Identificacao do fornecedor) Tj
 /F1 10 Tf
-1 0 0 1 72 518 Tm (- Descricao clara dos produtos ou servicos ofertados.) Tj
+1 0 0 1 58 636 Tm ([ ] Razao social completa.) Tj
 /F1 10 Tf
-1 0 0 1 72 501 Tm (- Valores, prazos, validade da proposta e condicoes de pagamento.) Tj
+1 0 0 1 58 621 Tm ([ ] Nome fantasia, se houver.) Tj
 /F1 10 Tf
-1 0 0 1 72 484 Tm (- Dados bancarios, quando solicitados pela equipe responsavel.) Tj
+1 0 0 1 58 606 Tm ([ ] CNPJ.) Tj
 /F1 10 Tf
-1 0 0 1 72 467 Tm () Tj
+1 0 0 1 58 591 Tm ([ ] Endereco completo.) Tj
+/F1 10 Tf
+1 0 0 1 58 576 Tm ([ ] Nome do responsavel pela proposta.) Tj
+/F1 10 Tf
+1 0 0 1 58 561 Tm ([ ] Telefone, WhatsApp e e-mail de contato.) Tj
+/F1 10 Tf
+1 0 0 1 58 546 Tm ([ ] Dados bancarios, quando solicitados.) Tj
+/F1 10 Tf
+1 0 0 1 58 531 Tm () Tj
 /F2 12 Tf
-1 0 0 1 72 455 Tm (3. Habilitacao juridica) Tj
+1 0 0 1 58 521 Tm (2. Proposta comercial) Tj
 /F1 10 Tf
-1 0 0 1 72 436 Tm (- Contrato social, estatuto, ata ou documento equivalente.) Tj
+1 0 0 1 58 504 Tm ([ ] Descricao clara do produto ou servico ofertado.) Tj
 /F1 10 Tf
-1 0 0 1 72 419 Tm (- Documento de identificacao do representante legal ou procurador.) Tj
+1 0 0 1 58 489 Tm ([ ] Quantidade, unidade de medida e especificacoes tecnicas.) Tj
 /F1 10 Tf
-1 0 0 1 72 402 Tm () Tj
+1 0 0 1 58 474 Tm ([ ] Valor unitario e valor total.) Tj
+/F1 10 Tf
+1 0 0 1 58 459 Tm ([ ] Prazo de entrega ou prazo de execucao.) Tj
+/F1 10 Tf
+1 0 0 1 58 444 Tm ([ ] Validade da proposta.) Tj
+/F1 10 Tf
+1 0 0 1 58 429 Tm ([ ] Condicoes de pagamento.) Tj
+/F1 10 Tf
+1 0 0 1 58 414 Tm ([ ] Frete, impostos, taxas e despesas inclusas ou destacadas.) Tj
+/F1 10 Tf
+1 0 0 1 58 399 Tm ([ ] Garantia, suporte ou manutencao, quando aplicavel.) Tj
+/F1 10 Tf
+1 0 0 1 58 384 Tm ([ ] Assinatura do responsavel ou identificacao formal do emissor.) Tj
+/F1 10 Tf
+1 0 0 1 58 369 Tm () Tj
 /F2 12 Tf
-1 0 0 1 72 390 Tm (4. Regularidade fiscal, trabalhista e previdenciaria) Tj
+1 0 0 1 58 359 Tm (3. Habilitacao juridica) Tj
 /F1 10 Tf
-1 0 0 1 72 371 Tm (- Comprovante de inscricao e situacao cadastral do CNPJ.) Tj
+1 0 0 1 58 342 Tm ([ ] Contrato social, estatuto, requerimento de empresario ou documento equivalente.) Tj
 /F1 10 Tf
-1 0 0 1 72 354 Tm (- Certidoes fiscais e trabalhistas exigidas para a cotacao.) Tj
+1 0 0 1 58 327 Tm ([ ] Ultima alteracao contratual consolidada, se houver.) Tj
 /F1 10 Tf
-1 0 0 1 72 337 Tm () Tj
+1 0 0 1 58 312 Tm ([ ] Documento de identificacao do representante legal.) Tj
+/F1 10 Tf
+1 0 0 1 58 297 Tm ([ ] Procuracao e documento do procurador, quando aplicavel.) Tj
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 8 0 R >>
+endobj
+8 0 obj
+<< /Length 2915 >>
+stream
+BT
+/F2 15 Tf
+1 0 0 1 58 770 Tm (CHECKLIST PARA COTACOES E FORNECEDORES) Tj
+/F1 10 Tf
+1 0 0 1 58 750 Tm (Continuidade dos documentos de habilitacao) Tj
+/F1 10 Tf
+1 0 0 1 58 735 Tm () Tj
 /F2 12 Tf
-1 0 0 1 72 325 Tm (5. Capacidade tecnica e operacional) Tj
+1 0 0 1 58 725 Tm (4. Regularidade fiscal) Tj
 /F1 10 Tf
-1 0 0 1 72 306 Tm (- Atestados, portfolio, referencias ou comprovantes de experiencia, quando aplicavel.) Tj
+1 0 0 1 58 708 Tm ([ ] Cartao CNPJ / comprovante de inscricao e situacao cadastral.) Tj
 /F1 10 Tf
-1 0 0 1 72 289 Tm (- Licencas, registros ou autorizacoes especificas, quando exigidos.) Tj
+1 0 0 1 58 693 Tm ([ ] Certidao de regularidade perante a Receita Federal e PGFN.) Tj
 /F1 10 Tf
-1 0 0 1 72 272 Tm () Tj
+1 0 0 1 58 678 Tm ([ ] Certidao estadual, quando aplicavel ao objeto.) Tj
+/F1 10 Tf
+1 0 0 1 58 663 Tm ([ ] Certidao municipal, quando aplicavel ao objeto.) Tj
+/F1 10 Tf
+1 0 0 1 58 648 Tm ([ ] Comprovante de inscricao estadual ou municipal, se exigido.) Tj
+/F1 10 Tf
+1 0 0 1 58 633 Tm () Tj
 /F2 12 Tf
-1 0 0 1 72 260 Tm (6. Observacoes importantes) Tj
+1 0 0 1 58 623 Tm (5. Regularidade trabalhista e previdenciaria) Tj
 /F1 10 Tf
-1 0 0 1 72 241 Tm (- Cada cotacao pode exigir documentos complementares conforme o objeto contratado.) Tj
+1 0 0 1 58 606 Tm ([ ] Certidao Negativa de Debitos Trabalhistas - CNDT.) Tj
 /F1 10 Tf
-1 0 0 1 72 224 Tm (- A analise e feita pela equipe responsavel, considerando criterios tecnicos e institucionais.) Tj
+1 0 0 1 58 591 Tm ([ ] Certificado de Regularidade do FGTS - CRF, quando aplicavel.) Tj
 /F1 10 Tf
-1 0 0 1 72 207 Tm (- O envio dos documentos nao garante contratacao automatica.) Tj
+1 0 0 1 58 576 Tm ([ ] Declaracao de cumprimento das normas trabalhistas, quando solicitada.) Tj
+/F1 10 Tf
+1 0 0 1 58 561 Tm () Tj
+/F2 12 Tf
+1 0 0 1 58 551 Tm (6. Capacidade tecnica e operacional) Tj
+/F1 10 Tf
+1 0 0 1 58 534 Tm ([ ] Atestados, referencias, portfolio ou comprovantes de experiencia.) Tj
+/F1 10 Tf
+1 0 0 1 58 519 Tm ([ ] Registro profissional, licenca ou autorizacao especifica, quando exigido.) Tj
+/F1 10 Tf
+1 0 0 1 58 504 Tm ([ ] Equipe tecnica, equipamentos ou estrutura necessaria, quando aplicavel.) Tj
+/F1 10 Tf
+1 0 0 1 58 489 Tm ([ ] Cronograma, plano de entrega ou metodologia de execucao, quando solicitado.) Tj
+/F1 10 Tf
+1 0 0 1 58 474 Tm () Tj
+/F2 12 Tf
+1 0 0 1 58 464 Tm (7. Declaracoes e documentos complementares) Tj
+/F1 10 Tf
+1 0 0 1 58 447 Tm ([ ] Declaracao de inexistencia de impedimento para contratar, quando solicitada.) Tj
+/F1 10 Tf
+1 0 0 1 58 432 Tm ([ ] Declaracao de ausencia de conflito de interesses, quando solicitada.) Tj
+/F1 10 Tf
+1 0 0 1 58 417 Tm ([ ] Documentos complementares previstos na cotacao ou solicitados pela equipe.) Tj
+/F1 10 Tf
+1 0 0 1 58 402 Tm () Tj
+/F2 12 Tf
+1 0 0 1 58 392 Tm (8. Forma de envio) Tj
+/F1 10 Tf
+1 0 0 1 58 375 Tm ([ ] Enviar a proposta e os documentos para cotacoes@ipecc.org.br.) Tj
+/F1 10 Tf
+1 0 0 1 58 360 Tm ([ ] Informar no assunto do e-mail: Cotacao - nome da empresa - objeto.) Tj
+/F1 10 Tf
+1 0 0 1 58 345 Tm ([ ] Preferir arquivos em PDF, legiveis e nomeados por tipo de documento.) Tj
+/F1 10 Tf
+1 0 0 1 58 330 Tm ([ ] Incluir telefone/WhatsApp para contato: 1194331-2119.) Tj
+/F1 10 Tf
+1 0 0 1 58 315 Tm () Tj
+/F2 12 Tf
+1 0 0 1 58 305 Tm (Observacao importante) Tj
+/F1 10 Tf
+1 0 0 1 58 288 Tm (Cada cotacao pode exigir documentos adicionais conforme o objeto, valor, risco e criterios internos.) Tj
+/F1 10 Tf
+1 0 0 1 58 273 Tm (A analise e humana, documental e tecnica. O envio nao garante contratacao automatica.) Tj
 ET
 endstream
 endobj
 xref
-0 7
+0 9
 0000000000 65535 f 
 0000000009 00000 n 
 0000000058 00000 n 
-0000000115 00000 n 
-0000000251 00000 n 
-0000000321 00000 n 
-0000000396 00000 n 
+0000000121 00000 n 
+0000000191 00000 n 
+0000000266 00000 n 
+0000000402 00000 n 
+0000002756 00000 n 
+0000002892 00000 n 
 trailer
-<< /Size 7 /Root 1 0 R >>
+<< /Size 9 /Root 1 0 R >>
 startxref
-3024
+5859
 %%EOF
