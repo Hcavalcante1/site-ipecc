@@ -244,22 +244,12 @@ button.menu__link{
   font-size: 2rem;
   font-weight: 800;
   margin-bottom: 10px;
-  color: #06245c;
-  -webkit-text-stroke: 0.35px rgba(255, 255, 255, 0.9);
-  text-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.95),
-    0 0 16px rgba(255, 255, 255, 0.86);
 }
 
 .hero__text{
   margin: 0 auto 18px;
   max-width: 720px;
   line-height: 1.55;
-  color: #06245c;
-  font-weight: 650;
-  text-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.95),
-    0 0 14px rgba(255, 255, 255, 0.84);
 }
 
 .btn.btn--light{
