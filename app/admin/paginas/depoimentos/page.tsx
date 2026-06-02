@@ -19,13 +19,13 @@ const INICIAIS: Depoimento[] = [
   {
     id: "1",
     texto:
-      "“Graças à APECC, nossa escola recebeu oficinas de arte e cidadania que transformaram nossos alunos.”",
+      "“Graças ao IPECC, nossa escola recebeu oficinas de arte e cidadania que transformaram nossos alunos.”",
     autor: "— Diretora, Escola Municipal de Suzano",
   },
   {
     id: "2",
     texto:
-      "“Os projetos da APECC resgatam a autoestima e oferecem oportunidades reais nas comunidades.”",
+      "“Os projetos do IPECC resgatam a autoestima e oferecem oportunidades reais nas comunidades.”",
     autor: "— Coordenadora Social",
   },
 ];

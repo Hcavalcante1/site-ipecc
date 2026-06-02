@@ -18,7 +18,7 @@ type Resultado = {
 export default function ProjetosResultadosAdminPage() {
   const [tituloBloco, setTituloBloco] = useState("Resultados");
   const [textoIntro, setTextoIntro] = useState(
-    "Indicadores sintéticos que mostram o alcance e o impacto dos projetos da APECC."
+    "Indicadores sintéticos que mostram o alcance e o impacto dos projetos do IPECC."
   );
 
   const [resultados, setResultados] = useState<Resultado[]>([

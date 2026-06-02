@@ -195,10 +195,10 @@ const FALLBACK_LGPD = {
       label: "Política de Privacidade e Proteção de Dados",
       url: "/docs/politica-lgpd.pdf",
     },
-    { label: "Canal LGPD — lgpd@apecc.org.br", url: "mailto:lgpd@apecc.org.br" },
+    { label: "Canal LGPD — lgpd@ipecc.org.br", url: "mailto:lgpd@ipecc.org.br" },
     {
-      label: "Canal de Integridade — integridade@apecc.org.br",
-      url: "mailto:integridade@apecc.org.br",
+      label: "Canal de Integridade — integridade@ipecc.org.br",
+      url: "mailto:integridade@ipecc.org.br",
     },
   ] as LinkItem[],
 };

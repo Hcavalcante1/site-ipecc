@@ -11,7 +11,7 @@ import {
 export default function ImpactoPage() {
   const [titulo, setTitulo] = useState("Impacto Social");
   const [texto, setTexto] = useState(
-    "A APECC promove inclusão, cidadania e transformação social por meio de projetos culturais, educacionais e comunitários que fortalecem o vínculo entre sociedade civil e poder público."
+    "O IPECC promove inclusão, cidadania e transformação social por meio de projetos culturais, educacionais e comunitários que fortalecem o vínculo entre sociedade civil e poder público."
   );
   const [imagem, setImagem] = useState("/media/home/impacto/impacto-social.jpg");
   const [mensagem, setMensagem] = useState("");

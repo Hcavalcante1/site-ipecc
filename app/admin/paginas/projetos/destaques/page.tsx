@@ -19,7 +19,7 @@ type Destaque = {
 export default function ProjetosDestaquesAdminPage() {
   const [tituloBloco, setTituloBloco] = useState("Destaques dos nossos projetos");
   const [textoIntro, setTextoIntro] = useState(
-    "Alguns dos projetos da APECC se destacam pela sua capacidade de mobilização, inovação e impacto social em diferentes territórios."
+    "Alguns dos projetos do IPECC se destacam pela sua capacidade de mobilização, inovação e impacto social em diferentes territórios."
   );
 
   const [destaques, setDestaques] = useState<Destaque[]>([

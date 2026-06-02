@@ -90,7 +90,7 @@ export default function QuemSomosBlocoPrincipalAdminPage() {
       <div className="admin-header-block">
         <h1 className="admin-title">Quem Somos — Bloco principal</h1>
         <p className="admin-subtitle">
-          Edite o título e os parágrafos centrais de apresentação da APECC.
+          Edite o título e os parágrafos centrais de apresentação do IPECC.
         </p>
       </div>
 

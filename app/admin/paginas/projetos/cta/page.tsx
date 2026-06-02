@@ -12,14 +12,14 @@ import {
 export default function ProjetosCtaAdminPage() {
   const [tituloBloco, setTituloBloco] = useState("Parcerias e editais");
   const [textoPrincipal, setTextoPrincipal] = useState(
-    "Atuamos com Termo de Colaboração, convênios, patrocínios e cooperações técnicas. Se a sua instituição busca um parceiro qualificado para execução de políticas públicas e projetos socioculturais, fale com a APECC."
+    "Atuamos com Termo de Colaboração, convênios, patrocínios e cooperações técnicas. Se a sua instituição busca um parceiro qualificado para execução de políticas públicas e projetos socioculturais, fale com o IPECC."
   );
 
   const [tituloCta, setTituloCta] = useState("Vamos construir juntos");
   const [textoCta, setTextoCta] = useState(
     "Apresente sua demanda, edital ou proposta de parceria."
   );
-  const [rotuloBotao, setRotuloBotao] = useState("Fale com a APECC");
+  const [rotuloBotao, setRotuloBotao] = useState("Fale com o IPECC");
   const [linkBotao, setLinkBotao] = useState("/contato");
 
   const [msg, setMsg] = useState("");

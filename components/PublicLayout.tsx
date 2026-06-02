@@ -12,7 +12,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
           <div className="container topbar__inner">
             <nav className="social" aria-label="Redes sociais">
               <a
-                href="https://facebook.com/apecc"
+                href="https://facebook.com/ipecc"
                 target="_blank"
                 rel="noreferrer"
                 aria-label="Facebook"
@@ -23,7 +23,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
               </a>
 
               <a
-                href="https://instagram.com/apecc"
+                href="https://instagram.com/ipecc"
                 target="_blank"
                 rel="noreferrer"
                 aria-label="Instagram"
@@ -34,7 +34,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
               </a>
 
               <a
-                href="https://youtube.com/@apecc"
+                href="https://youtube.com/@ipecc"
                 target="_blank"
                 rel="noreferrer"
                 aria-label="YouTube"
@@ -102,4 +102,3 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
     </>
   );
 }
-

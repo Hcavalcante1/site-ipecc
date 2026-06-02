@@ -21,7 +21,7 @@ type Destaque = {
 const INICIAIS: Destaque[] = [
   {
     id: "festival",
-    titulo: "Festival Cultural APECC",
+    titulo: "Festival Cultural IPECC",
     texto:
       "Apresentações artísticas, oficinas e atividades educativas em parceria com escolas e OSCs locais.",
     linkTexto: "Saiba mais",
