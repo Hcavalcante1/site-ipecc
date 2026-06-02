@@ -176,7 +176,9 @@ export default function AdminEditais() {
       <h1 className="admin-h1">Editais e Chamadas Públicas</h1>
 
       <p className="admin-subtitle">
-        Cadastro e publicação de editais públicos.
+        Cadastre aqui a abertura oficial do edital e o PDF publicado em /editais.
+        As fases posteriores de seleção, recurso, homologação e contrato são
+        registradas na área de Transparência.
       </p>
       <p className="admin-subtitle" style={{ marginTop: 8 }}>
         <Link href={adminCanonicalRoutes.editaisCms.hub}>

@@ -88,7 +88,10 @@ export default function EventosAdmin() {
   return (
     <>
       <h1 className="admin-h1">Eventos</h1>
-      <p className="admin-subtitle">Gerencie os eventos do site.</p>
+      <p className="admin-subtitle">
+        Gerencie os eventos exibidos em /eventos e nos blocos públicos relacionados.
+        Use esta tela para publicar agenda, local, horário e canal de contato do evento.
+      </p>
 
       <div style={wrapTopStyle}>
         <a href="/admin/eventos/form">

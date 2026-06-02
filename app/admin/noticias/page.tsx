@@ -88,7 +88,10 @@ export default function NoticiasAdmin() {
   return (
     <>
       <h1 className="admin-h1">Notícias</h1>
-      <p className="admin-subtitle">Gerencie as notícias do site.</p>
+      <p className="admin-subtitle">
+        Gerencie as notícias publicadas em /noticias e nos destaques da página inicial.
+        Use esta tela para criar, editar, publicar ou retirar notícias do ar.
+      </p>
 
       <div style={wrapTopStyle}>
         <a href="/admin/noticias/form">
