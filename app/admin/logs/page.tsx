@@ -89,6 +89,11 @@ export default function LogsPage() {
   return (
     <div style={styles.wrapper}>
       <h1 style={styles.title}>Logs do Sistema</h1>
+      <p style={styles.subtitle}>
+        Consulte os registros de operacao do admin para auditoria, revisao de
+        alteracoes e investigacao de falhas. Esta tela e somente de consulta e
+        exportacao.
+      </p>
 
       <button onClick={exportCSV} style={styles.exportBtn}>
         Exportar CSV
@@ -163,6 +168,13 @@ const styles: { [key: string]: React.CSSProperties } = {
   title: {
     fontSize: typography.fontSize.xl,
     fontWeight: typography.fontWeight.bold,
+    marginBottom: spacing.xs,
+  },
+
+  subtitle: {
+    color: colors.text.secondary,
+    maxWidth: 820,
+    marginTop: 0,
     marginBottom: spacing.md,
   },
 

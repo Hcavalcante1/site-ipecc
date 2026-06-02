@@ -89,9 +89,9 @@ export default function WhatsAppAdminPage() {
     <div style={{ padding: 24, color: "#e5e7eb" }}>
       <h1 style={{ margin: 0, fontSize: 24 }}>WhatsApp — atendimentos</h1>
       <p style={{ color: "#94a3b8", marginTop: 8, maxWidth: 720 }}>
-        Lista conversas persistidas pelo bot (requer SQL em staging e{" "}
-        <code>WHATSAPP_PERSIST_SUPABASE=1</code>). Respostas automáticas
-        continuam via webhook; este painel é para handoff e encerramento.
+        Acompanhe conversas persistidas pelo bot e assuma atendimentos que
+        exigem equipe humana. As respostas automaticas continuam pelo webhook;
+        este painel serve para handoff, responsavel e encerramento.
       </p>
 
       <div

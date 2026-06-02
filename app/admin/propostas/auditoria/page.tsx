@@ -103,8 +103,9 @@ export default function AuditoriaAnexosPage() {
       </div>
 
       <p style={{ color: adminTokens.colors.text.muted, marginTop: adminTokens.spacing.md }}>
-        Verificação em tempo real no bucket <strong>propostas</strong>. Não altera banco nem
-        storage. Para exportar CSV: <code>npm run audit:anexos</code>.
+        Verificacao em tempo real no bucket <strong>propostas</strong>. Esta tela
+        apenas confirma se os anexos existem no storage; nao altera banco,
+        status ou arquivos.
       </p>
 
       {erro && (

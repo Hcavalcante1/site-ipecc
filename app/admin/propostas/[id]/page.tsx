@@ -213,7 +213,8 @@ export default function Page() {
               fontSize: 14,
             }}
           >
-            Dados, classificação, anexos e checklist no mesmo padrão da listagem.
+            Revise dados, anexos, checklist documental e regularidade antes de
+            decidir manualmente pela aprovacao ou rejeicao da proposta.
           </p>
         </div>
         <a

@@ -160,8 +160,9 @@ export default function CertidoesAdminPage() {
     <>
       <h1 className="admin-h1">Certidões e Regularidade Fiscal</h1>
       <p className="admin-subtitle">
-        Gestão institucional de certidões e regularidade fiscal (versões
-        correntes).
+        Controle manual das certidoes usadas na analise de propostas,
+        convenios e prestacao de contas. Mantenha apenas as versoes correntes
+        visiveis para apoiar a decisao administrativa.
       </p>
 
       <div className="admin-save-row" style={{ marginTop: 0 }}>

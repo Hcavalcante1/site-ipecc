@@ -211,8 +211,9 @@ export default function NovaCertidaoPage() {
     <>
       <h1 className="admin-h1">Nova certidão</h1>
       <p className="admin-subtitle">
-        Cadastro manual de metadados. O anexo em PDF será habilitado em etapa
-        posterior.
+        Cadastre manualmente uma certidao da entidade para apoiar a analise de
+        regularidade fiscal. Este registro nao aprova proposta sozinho; ele
+        serve como evidencia para conferencia humana.
       </p>
 
       <p style={styles.voltar}>

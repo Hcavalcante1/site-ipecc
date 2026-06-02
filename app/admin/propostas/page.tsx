@@ -128,6 +128,17 @@ export default function Page() {
           Auditoria de anexos (read-only)
         </a>
       </div>
+      <p
+        style={{
+          color: adminTokens.colors.text.muted,
+          marginTop: adminTokens.spacing.sm,
+          maxWidth: 860,
+        }}
+      >
+        Acompanhe aqui as propostas enviadas pelo site, confira documentos e
+        registre a decisao humana de aprovar ou rejeitar. A analise nao e
+        automatica: cada edital pode exigir criterios e documentos diferentes.
+      </p>
 
       {propostas.length === 0 ? (
         <div style={{ ...cardStyle, marginTop: adminTokens.spacing.md }}>
