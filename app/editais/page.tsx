@@ -241,7 +241,7 @@ export default async function EditaisPublicPage() {
                           {subgrupo.itens.map((doc) => (
                             <li key={doc.id}>
                               <strong>{doc.titulo}</strong>
-                              {doc.descricao ? ` ? ${doc.descricao}` : ""}
+                              {doc.descricao ? `: ${doc.descricao}` : ""}
                             </li>
                           ))}
                         </ul>
