@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
+import { adminStorageUpload } from "@/lib/admin/storageUploadClient";
 import { adminTokens } from "@/components/admin";
 import { adminCanonicalRoutes } from "@/lib/admin/canonicalAdminRoutes";
 
@@ -78,12 +79,15 @@ export default function AdminEditais() {
       const nomeSeguro = normalizarNomeArquivo(arquivo.name);
       nomeArquivoEdital = `${Date.now()}-${nomeSeguro}`;
 
-      const { error } = await supabase.storage
-        .from("editais")
-        .upload(nomeArquivoEdital, arquivo, {
+      const { error } = await adminStorageUpload(
+        "editais",
+        nomeArquivoEdital,
+        arquivo,
+        {
           upsert: true,
           contentType: "application/pdf",
-        });
+        }
+      );
 
       if (error) {
         console.error("UPLOAD PDF:", error);
