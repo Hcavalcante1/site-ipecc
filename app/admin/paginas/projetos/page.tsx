@@ -12,45 +12,46 @@ export default function ProjetosAdminIndex() {
       titulo="Página — Projetos"
       subtitulo={
         <>
-          Escolha qual bloco da página pública <strong>Projetos</strong> você deseja
-          editar.
+          Edite os blocos exibidos na página pública <strong>Projetos</strong>.
+          Use esta área para apresentar eixos, iniciativas, metodologia e chamadas
+          relacionadas aos projetos do IPECC.
         </>
       }
     >
       <div className="admin-grid admin-grid--wide">
         <AdminHubCard
           titulo="Hero"
-          descricao="Título e texto do topo da página."
+          descricao="Título e texto principal do topo da página pública /projetos."
           href={r.hero}
         />
         <AdminHubCard
           titulo="Introdução"
-          descricao="Texto inicial da página."
+          descricao="Texto inicial que contextualiza a atuação em projetos."
           href={r.introducao}
         />
         <AdminHubCard
           titulo="Eixos"
-          descricao="Cards de atuação do projeto."
+          descricao="Cards de eixos de atuação exibidos na página /projetos."
           href={r.eixos}
         />
         <AdminHubCard
           titulo="Destaques"
-          descricao="Projetos em evidência com imagem."
+          descricao="Projetos em evidência com imagem e texto público."
           href={r.destaques}
         />
         <AdminHubCard
           titulo="Metodologia"
-          descricao="Texto e estrutura de execução."
+          descricao="Texto sobre metodologia, execução e organização dos projetos."
           href={r.metodologia}
         />
         <AdminHubCard
           titulo="Números"
-          descricao="Indicadores e métricas."
+          descricao="Indicadores e métricas públicas relacionados aos projetos."
           href={r.numeros}
         />
         <AdminHubCard
           titulo="CTA Final"
-          descricao="Bloco verde final da página."
+          descricao="Chamada final da página /projetos, com texto e ação."
           href={r.cta}
         />
       </div>

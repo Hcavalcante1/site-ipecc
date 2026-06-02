@@ -12,35 +12,36 @@ export default function ContatoAdminIndex() {
       titulo="Página — Contato"
       subtitulo={
         <>
-          Escolha qual bloco da página pública <strong>Contato</strong> você deseja
-          editar.
+          Edite os blocos exibidos na página pública <strong>Contato</strong>.
+          Use esta área para manter canais oficiais, endereço e orientações de
+          atendimento atualizados.
         </>
       }
     >
       <div className="admin-grid admin-grid--wide">
         <AdminHubCard
           titulo="Hero da página"
-          descricao="Título e texto principal do topo da página."
+          descricao="Título e texto principal do topo da página pública /contato."
           href={r.hero}
         />
         <AdminHubCard
           titulo="Canais oficiais"
-          descricao="E-mails e telefones exibidos nos cards."
+          descricao="E-mails, telefones e canais exibidos nos cards de contato."
           href={r.canais}
         />
         <AdminHubCard
           titulo="Endereço e mapa"
-          descricao="Endereço físico e embed do Google Maps."
+          descricao="Endereço físico e mapa exibidos na página /contato."
           href={r.endereco}
         />
         <AdminHubCard
           titulo="Formulário"
-          descricao="Texto introdutório acima do formulário público."
+          descricao="Texto de orientação exibido acima do formulário público."
           href={r.formulario}
         />
         <AdminHubCard
           titulo="CTA Final"
-          descricao="Bloco verde final da página."
+          descricao="Chamada final da página /contato, com texto e ação."
           href={r.cta}
         />
       </div>

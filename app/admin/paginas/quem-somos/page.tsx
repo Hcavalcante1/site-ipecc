@@ -10,36 +10,36 @@ export default function QuemSomosAdminIndexPage() {
   return (
     <AdminPaginasHubLayout
       titulo="Quem Somos — Blocos da Página"
-      subtitulo='Escolha qual parte da página "Quem Somos" você deseja editar.'
+      subtitulo='Edite os blocos institucionais exibidos na página pública "/quem-somos". Use esta área para manter apresentação, identidade e atuação do IPECC atualizadas.'
     >
       <div className="admin-grid admin-grid--wide">
         <AdminHubCard
           titulo="Hero"
-          descricao='Título e parágrafo inicial da página "Quem Somos".'
+          descricao='Título e parágrafo inicial da página pública "/quem-somos".'
           href={r.hero}
           label="Editar Hero"
         />
         <AdminHubCard
           titulo="Bloco Principal"
-          descricao="Título e textos principais de apresentação institucional."
+          descricao="Apresentação institucional principal exibida em /quem-somos."
           href={r.blocoPrincipal}
           label="Editar bloco principal"
         />
         <AdminHubCard
           titulo="Missão, Visão e Valores"
-          descricao="Textos institucionais de missão, visão e valores."
+          descricao="Diretrizes institucionais que orientam a atuação pública do IPECC."
           href={r.mvv}
           label="Editar missão, visão e valores"
         />
         <AdminHubCard
           titulo="Nossa atuação"
-          descricao="Texto geral de atuação e os eixos (3 cards)."
+          descricao="Texto geral e eixos de atuação exibidos em cards na página /quem-somos."
             href={adminCanonicalRoutes.quemSomos.atuacao}
           label="Editar atuação e eixos"
         />
         <AdminHubCard
           titulo="CTA Final"
-          descricao="Bloco de compromisso, convite e botão de contato."
+          descricao="Chamada final da página, com convite e botão de contato."
           href={r.cta}
           label="Editar CTA final"
         />
