@@ -49,6 +49,7 @@ export default function AdminEditais() {
 
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState("");
   const [editais, setEditais] = useState<any[]>([]);
 
   useEffect(() => {
@@ -69,17 +70,39 @@ export default function AdminEditais() {
     setEditais(data || []);
   }
 
-  async function salvarEdital(e: React.FormEvent) {
-    e.preventDefault();
+  async function salvarEdital() {
     setLoading(true);
+    setMsg("");
 
-    let nomeArquivoEdital: string | null = null;
+    try {
+      if (!titulo.trim()) {
+        setMsg("Preencha o titulo do edital.");
+        setLoading(false);
+        return;
+      }
 
-    if (arquivo) {
+      if (!descricao.trim()) {
+        setMsg("Preencha a descricao do edital.");
+        setLoading(false);
+        return;
+      }
+
+      if (!periodo.trim()) {
+        setMsg("Preencha o periodo do edital.");
+        setLoading(false);
+        return;
+      }
+
+      if (!arquivo) {
+        setMsg("Selecione o arquivo PDF do edital.");
+        setLoading(false);
+        return;
+      }
+
       const nomeSeguro = normalizarNomeArquivo(arquivo.name);
-      nomeArquivoEdital = `${Date.now()}-${nomeSeguro}`;
+      const nomeArquivoEdital = `${Date.now()}-${nomeSeguro}`;
 
-      const { error } = await adminStorageUpload(
+      const { error: uploadError } = await adminStorageUpload(
         "editais",
         nomeArquivoEdital,
         arquivo,
@@ -89,29 +112,28 @@ export default function AdminEditais() {
         }
       );
 
-      if (error) {
-        console.error("UPLOAD PDF:", error);
-        alert(error.message);
-        setLoading(false);
+      if (uploadError) {
+        console.error("UPLOAD PDF:", uploadError);
+        setMsg(`Erro ao enviar PDF: ${uploadError.message}`);
         return;
       }
-    }
 
-    const { error } = await supabase.from("editais").insert({
-      titulo,
-      descricao,
-      periodo,
-      tipo,
-      status,
-      arquivo_pdf: nomeArquivoEdital,
-    });
+      const { error } = await supabase.from("editais").insert({
+        titulo,
+        descricao,
+        periodo,
+        tipo,
+        status,
+        arquivo_pdf: nomeArquivoEdital,
+      });
 
-    if (error) {
-      console.error("INSERT:", error);
-      alert(error.message);
-    } else {
-      alert("Edital salvo com sucesso");
+      if (error) {
+        console.error("INSERT:", error);
+        setMsg(`Erro ao salvar edital: ${error.message}`);
+        return;
+      }
 
+      setMsg("Edital salvo com sucesso.");
       setTitulo("");
       setDescricao("");
       setPeriodo("");
@@ -120,9 +142,12 @@ export default function AdminEditais() {
       setArquivo(null);
 
       await carregar();
+    } catch (error) {
+      console.error("ERRO AO SALVAR EDITAL:", error);
+      setMsg("Erro inesperado ao salvar edital.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   async function excluir(id: string) {
@@ -159,12 +184,11 @@ export default function AdminEditais() {
 
       <h2 className="admin-h2">Cadastrar novo edital</h2>
 
-      <form onSubmit={salvarEdital} className="admin-card">
+      <form className="admin-card">
         <label>Título do edital</label>
         <input
           value={titulo}
           onChange={(e) => setTitulo(e.target.value)}
-          required
         />
 
         <label>Descrição / Texto do edital</label>
@@ -172,7 +196,6 @@ export default function AdminEditais() {
           value={descricao}
           onChange={(e) => setDescricao(e.target.value)}
           rows={4}
-          required
         />
 
         <label>Período</label>
@@ -208,7 +231,14 @@ export default function AdminEditais() {
           onChange={(e) => setArquivo(e.target.files?.[0] ?? null)}
         />
 
-        <button className="admin-button" disabled={loading}>
+        {msg && <p>{msg}</p>}
+
+        <button
+          type="button"
+          className="admin-button"
+          disabled={loading}
+          onClick={salvarEdital}
+        >
           {loading ? "Salvando..." : "Salvar edital"}
         </button>
       </form>
