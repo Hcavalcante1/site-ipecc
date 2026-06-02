@@ -48,7 +48,7 @@
       rgba(19, 135, 214, 0.72) 46%,
       rgba(1, 194, 164, 0.7) 100%
     ),
-    url("/media/heroes/home/hero.webp?v=sem-texto-20260602") center / cover no-repeat;
+    url("/media/heroes/home/hero.webp") center / cover no-repeat;
 }
 
 .heroGrid {
