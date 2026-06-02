@@ -21,6 +21,7 @@ export default function EditarEdital() {
 
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
+  const [msg, setMsg] = useState("");
 
   // =========================
   // CARREGAR DADOS
@@ -54,14 +55,31 @@ export default function EditarEdital() {
   // =========================
   async function salvar() {
     setSalvando(true);
+    setMsg("");
 
     try {
+      if (!titulo.trim()) {
+        setMsg("Preencha o titulo do edital.");
+        return;
+      }
+
+      if (!descricao.trim()) {
+        setMsg("Preencha a descricao do edital.");
+        return;
+      }
+
+      if (!periodo.trim()) {
+        setMsg("Preencha o periodo do edital.");
+        return;
+      }
+
       const { error } = await supabase
         .from("editais")
         .update({
           titulo,
           descricao,
           periodo,
+          periodo_envio: periodo,
           tipo, // 🔥 AGORA SALVA
           status,
         })
@@ -69,12 +87,15 @@ export default function EditarEdital() {
 
       if (error) {
         console.error(error);
-        alert("Erro ao atualizar");
+        setMsg(`Erro ao atualizar edital: ${error.message}`);
         return;
       }
 
-      alert("Edital atualizado com sucesso");
+      setMsg("Edital atualizado com sucesso.");
       router.push("/admin/editais");
+    } catch (error) {
+      console.error(error);
+      setMsg("Erro inesperado ao atualizar edital.");
     } finally {
       setSalvando(false);
     }
@@ -129,7 +150,14 @@ export default function EditarEdital() {
           <option value="em_breve">Em breve</option>
         </select>
 
-        <button className="admin-button" onClick={salvar} disabled={salvando}>
+        {msg && <p>{msg}</p>}
+
+        <button
+          type="button"
+          className="admin-button"
+          onClick={salvar}
+          disabled={salvando}
+        >
           {salvando ? "Salvando…" : "Salvar alterações"}
         </button>
       </div>

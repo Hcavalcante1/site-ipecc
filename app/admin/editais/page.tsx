@@ -122,8 +122,10 @@ export default function AdminEditais() {
         titulo,
         descricao,
         periodo,
+        periodo_envio: periodo,
         tipo,
         status,
+        ativo: true,
         arquivo_pdf: nomeArquivoEdital,
       });
 
