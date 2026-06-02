@@ -44,9 +44,9 @@
   background:
     linear-gradient(
       115deg,
-      rgba(11, 42, 107, 0.92) 0%,
-      rgba(19, 135, 214, 0.78) 48%,
-      rgba(1, 194, 164, 0.55) 100%
+      rgba(11, 42, 107, 0.88) 0%,
+      rgba(19, 135, 214, 0.72) 46%,
+      rgba(1, 194, 164, 0.7) 100%
     ),
     url("/media/heroes/home/hero.webp?v=sem-texto-20260602") center / cover no-repeat;
 }
