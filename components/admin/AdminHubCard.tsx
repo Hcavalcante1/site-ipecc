@@ -29,6 +29,7 @@ export default function AdminHubCard({
 
 export type AdminHubNavCardProps = {
   titulo: string;
+  descricao?: string;
   href: string;
   label?: string;
 };
@@ -36,12 +37,14 @@ export type AdminHubNavCardProps = {
 /** Card inteiro clicável (hub principal /admin/paginas). */
 export function AdminHubNavCard({
   titulo,
+  descricao,
   href,
   label = "Editar",
 }: AdminHubNavCardProps) {
   return (
     <Link href={href} className="admin-card admin-card-link">
       <h3>{titulo}</h3>
+      {descricao ? <p>{descricao}</p> : null}
       <span className="admin-button">{label}</span>
     </Link>
   );

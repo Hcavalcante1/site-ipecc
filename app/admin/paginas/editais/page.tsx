@@ -12,7 +12,8 @@ export default function EditaisAdminIndex() {
       subtitulo={
         <>
           Escolha qual bloco da página pública <strong>Editais</strong> você deseja
-          editar.
+          editar. Esta área controla textos e orientações da página; o cadastro
+          do edital e do PDF fica no link de gerenciamento.
         </>
       }
       extra={
@@ -26,27 +27,27 @@ export default function EditaisAdminIndex() {
       <div className="admin-grid admin-grid--wide">
         <AdminHubCard
           titulo="Hero da página"
-          descricao="Título e texto principal do topo da página."
+          descricao="Título e texto principal do topo da página pública /editais."
           href={adminCanonicalRoutes.editaisCms.hero}
         />
         <AdminHubCard
           titulo="Textos da página"
-          descricao="Blocos textuais e conteúdo institucional da página."
+          descricao="Blocos textuais e conteúdo institucional da página /editais."
           href={adminCanonicalRoutes.editaisCms.textos}
         />
         <AdminHubCard
           titulo="Documentos"
-          descricao="Documentação exigida e lista de documentos para participação."
+          descricao="Checklist de documentos exigidos para participação nos editais."
           href={adminCanonicalRoutes.editaisCms.documentos}
         />
         <AdminHubCard
           titulo="Mural"
-          descricao="Bloco de destaques, avisos ou conteúdos complementares."
+          descricao="Avisos, destaques ou conteúdos complementares da página /editais."
           href={adminCanonicalRoutes.editaisCms.mural}
         />
         <AdminHubCard
           titulo="CTA / Chamada final"
-          descricao="Bloco final com texto de apoio e botão de ação."
+          descricao="Bloco final com texto de apoio e botão de ação para propostas."
           href={adminCanonicalRoutes.editaisCms.cta}
         />
       </div>
