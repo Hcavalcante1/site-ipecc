@@ -22,6 +22,9 @@ const ALLOWED_TABLES = new Set([
   "logs_atividade",
 ]);
 
+const ALLOWED_FILTER_OPERATORS = new Set(["eq"]);
+const IDENTIFIER_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+
 type Filter = { column: string; value: unknown };
 
 type Body = {
@@ -68,6 +71,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "Ação inválida" }, { status: 400 });
     }
 
+    if ((action === "update" || action === "delete") && filters.length === 0) {
+      return NextResponse.json(
+        { ok: false, error: "Filtros sao obrigatorios para update/delete" },
+        { status: 400 }
+      );
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query: any = supabaseAdmin.from(table);
 
@@ -94,6 +104,20 @@ export async function POST(req: Request) {
       const op = (f as any).operator ?? (f as any).op ?? "eq";
 
       if (!col) continue;
+
+      if (typeof col !== "string" || !IDENTIFIER_PATTERN.test(col)) {
+        return NextResponse.json(
+          { ok: false, error: "Filtro invalido" },
+          { status: 400 }
+        );
+      }
+
+      if (!ALLOWED_FILTER_OPERATORS.has(op)) {
+        return NextResponse.json(
+          { ok: false, error: "Operador de filtro nao permitido" },
+          { status: 400 }
+        );
+      }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const qAny: any = query;

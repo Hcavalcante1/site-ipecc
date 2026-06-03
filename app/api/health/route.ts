@@ -9,9 +9,9 @@ export async function GET() {
   const env = {
     supabaseUrl: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL),
     anonKey: Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
-    serviceRole: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
   };
-  const envOk = Object.values(env).every(Boolean);
+  const serverHasServiceRole = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const envOk = Object.values(env).every(Boolean) && serverHasServiceRole;
 
   let database: "ok" | "error" | "skipped" = "skipped";
   let databaseError: string | undefined;

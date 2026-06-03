@@ -525,7 +525,6 @@ async function handleUploadPrestacao(
         return;
       }
 
-console.log("LOG EXECUTANDO");
 
 await logAction({
   acao: item.id ? "UPDATE" : "INSERT",

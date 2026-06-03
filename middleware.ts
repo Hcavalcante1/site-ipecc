@@ -32,6 +32,16 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
+  if (user && req.nextUrl.pathname.startsWith("/admin")) {
+    const { data: isAdmin, error } = await supabase.rpc("is_admin", {
+      user_id: user.id,
+    });
+
+    if (error || !isAdmin) {
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
+  }
+
   return res;
 }
 

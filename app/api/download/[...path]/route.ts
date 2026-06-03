@@ -3,6 +3,19 @@ import { assertDownloadAllowed } from "@/lib/downloadAuth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { downloadArquivoProposta } from "@/lib/storage/propostasBucket";
 
+const ALLOWED_BUCKETS = new Set(["docs", "editais", "media", "propostas"]);
+
+function isSafeStoragePath(path: string) {
+  return (
+    path.length > 0 &&
+    path.length <= 300 &&
+    !path.startsWith("/") &&
+    !path.includes("\\") &&
+    !path.includes("//") &&
+    !path.split("/").some((part) => part === "." || part === ".." || part === "")
+  );
+}
+
 function contentTypeFromPath(filePath: string) {
   const ext = filePath.split(".").pop()?.toLowerCase();
   if (ext === "pdf") return "application/pdf";
@@ -33,6 +46,10 @@ export async function GET(
 
     filePath = filePath.replace(/^public\//, "");
     filePath = filePath.replace(/public\/public/g, "public");
+
+    if (!ALLOWED_BUCKETS.has(bucket) || !isSafeStoragePath(filePath)) {
+      return new Response("Caminho invalido", { status: 400 });
+    }
 
     const denied = await assertDownloadAllowed(bucket);
     if (denied) return denied;
