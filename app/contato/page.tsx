@@ -101,6 +101,11 @@ function safeText(value?: string | null): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function isDocumentLink(value: string): boolean {
+  const normalized = value.toLowerCase();
+  return normalized.startsWith("/docs/") || normalized.endsWith(".pdf");
+}
+
 export default function ContatoPage() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [hero, setHero] = useState<HeroBlock | null>(null);
@@ -243,12 +248,23 @@ export default function ContatoPage() {
                               {valor}
                             </a>
                           ) : item.tipo === "link" && valor ? (
-                            <PublicWhatsAppCtaLink
-                              href={valor}
-                              className="card__link"
-                            >
-                              {valor}
-                            </PublicWhatsAppCtaLink>
+                            isDocumentLink(valor) ? (
+                              <a
+                                className="card__link"
+                                href={valor}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {valor}
+                              </a>
+                            ) : (
+                              <PublicWhatsAppCtaLink
+                                href={valor}
+                                className="card__link"
+                              >
+                                {valor}
+                              </PublicWhatsAppCtaLink>
+                            )
                           ) : (
                             valor
                           )}
