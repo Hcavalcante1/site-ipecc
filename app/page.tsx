@@ -38,6 +38,13 @@ export const metadata: Metadata = {
       },
     ],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: `IPECC | ${LANDING_CHAMADA}`,
+    description:
+      "Parcerias, editais e projetos de educação, cultura e cidadania. Conheça o IPECC.",
+    images: ["/media/seo/og-image.jpg"],
+  },
   robots: {
     index: true,
     follow: true,

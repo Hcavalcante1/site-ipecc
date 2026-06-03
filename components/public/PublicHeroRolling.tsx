@@ -16,7 +16,7 @@ export default function PublicHeroRolling({
   children,
 }: PublicHeroRollingProps) {
   return (
-    <section className="hero-rolling" aria-label={ariaLabel}>
+    <section className="hero-rolling" aria-label={ariaLabel ?? title}>
       <div
         className="hero-rolling__inner"
         style={{
