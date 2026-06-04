@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 
 import {
@@ -41,6 +42,8 @@ type AdminLog = {
 export default function AdminDashboardClient({ userEmail }: Props) {
   const [totalPropostas, setTotalPropostas] = useState(0);
   const [editaisAtivos, setEditaisAtivos] = useState(0);
+  const [noticiasPublicadas, setNoticiasPublicadas] = useState(0);
+  const [eventosPublicados, setEventosPublicados] = useState(0);
   const [logs, setLogs] = useState<AdminLog[]>([]);
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState("-");
 
@@ -61,6 +64,20 @@ export default function AdminDashboardClient({ userEmail }: Props) {
       .eq("status", "aberto");
 
     setEditaisAtivos(editaisCount || 0);
+
+    const { count: noticiasCount } = await supabase
+      .from("noticias")
+      .select("*", { count: "exact", head: true })
+      .eq("publicado", true);
+
+    setNoticiasPublicadas(noticiasCount || 0);
+
+    const { count: eventosCount } = await supabase
+      .from("eventos")
+      .select("*", { count: "exact", head: true })
+      .eq("publicado", true);
+
+    setEventosPublicados(eventosCount || 0);
 
     const { data } = await supabase
       .from("admin_logs")
@@ -132,12 +149,22 @@ export default function AdminDashboardClient({ userEmail }: Props) {
   };
 
   const recentes = logs.slice(0, 8);
+  const temAtividade = values.some((value) => value > 0);
 
   return (
     <div style={styles.wrapper}>
+      <div style={styles.quickGrid}>
+        <QuickLink href="/admin/noticias/form" title="Nova noticia" text="Publicar comunicado" />
+        <QuickLink href="/admin/eventos/form" title="Novo evento" text="Cadastrar agenda" />
+        <QuickLink href="/admin/editais" title="Editais" text="Gerenciar documentos" />
+        <QuickLink href="/admin/paginas/transparencia" title="Transparencia" text="Atualizar prestacao" />
+      </div>
+
       <div style={styles.kpiGrid}>
         <MetricCard title="Propostas recebidas" value={totalPropostas} tone="green" />
         <MetricCard title="Editais abertos" value={editaisAtivos} tone="blue" />
+        <MetricCard title="Noticias publicadas" value={noticiasPublicadas} tone="slate" />
+        <MetricCard title="Eventos publicados" value={eventosPublicados} tone="cyan" />
         <MetricCard title="Acoes registradas" value={totalAcoes} tone="slate" />
         <MetricCard title="Ultima atualizacao" value={ultimaAtualizacao} tone="cyan" compact />
       </div>
@@ -151,9 +178,17 @@ export default function AdminDashboardClient({ userEmail }: Props) {
             </div>
             <span style={styles.lightBadge}>7 dias</span>
           </div>
-          <div style={styles.chartBox}>
-            <Line data={chartData} options={chartOptions as any} />
-          </div>
+          {temAtividade ? (
+            <div style={styles.chartBox}>
+              <Line data={chartData} options={chartOptions as any} />
+            </div>
+          ) : (
+            <div style={styles.emptyChart}>
+              <div style={styles.emptyIcon}>0</div>
+              <strong>Nenhuma atividade recente</strong>
+              <span>Quando houver salvamentos no admin, o grafico aparece aqui.</span>
+            </div>
+          )}
         </section>
 
         <section style={styles.actionPanel}>
@@ -248,6 +283,15 @@ function SmallCard({ title, value, color }: { title: string; value: number; colo
   );
 }
 
+function QuickLink({ href, title, text }: { href: string; title: string; text: string }) {
+  return (
+    <Link href={href} style={styles.quickLink}>
+      <span style={styles.quickTitle}>{title}</span>
+      <span style={styles.quickText}>{text}</span>
+    </Link>
+  );
+}
+
 function badgeStyle(acao?: string) {
   const color =
     acao === "INSERT" ? "#16a34a" : acao === "UPDATE" ? "#0284c7" : acao === "DELETE" ? "#dc2626" : "#64748b";
@@ -284,6 +328,36 @@ const styles: any = {
     display: "flex",
     flexDirection: "column",
     gap: 18,
+  },
+
+  quickGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+    gap: 12,
+  },
+
+  quickLink: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 4,
+    minHeight: 72,
+    padding: "14px 16px",
+    borderRadius: 16,
+    textDecoration: "none",
+    color: "#e0f2fe",
+    background: "rgba(15, 23, 42, 0.58)",
+    border: "1px solid rgba(125, 211, 252, 0.28)",
+    boxShadow: "0 14px 28px rgba(2, 6, 23, 0.24)",
+  },
+
+  quickTitle: {
+    fontSize: 14,
+    fontWeight: 900,
+  },
+
+  quickText: {
+    color: "#bfdbfe",
+    fontSize: 12,
   },
 
   kpiGrid: {
@@ -369,6 +443,34 @@ const styles: any = {
 
   chartBox: {
     height: 260,
+  },
+
+  emptyChart: {
+    minHeight: 260,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderRadius: 18,
+    background: "linear-gradient(135deg, #eef6ff, #f8fafc)",
+    border: "1px dashed #cbd5e1",
+    color: "#0f172a",
+    textAlign: "center",
+    padding: 20,
+  },
+
+  emptyIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 999,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "#dbeafe",
+    color: "#1d4ed8",
+    fontWeight: 900,
+    fontSize: 20,
   },
 
   actionPanel: {

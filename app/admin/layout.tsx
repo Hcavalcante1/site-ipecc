@@ -3,18 +3,21 @@
 import "./globals.css";
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import AdminToast from "@/components/AdminToast";
 import AdminFeedbackBridge from "@/components/AdminFeedbackBridge";
 import AdminConfirmModal from "@/components/AdminConfirmModal";
 import AdminButtonBridge from "@/components/AdminButtonBridge";
 import AdminFormBridge from "@/components/AdminFormBridge";
+
+const ADMIN_ACTIVE_KEY = "ipecc_admin_active";
+const ADMIN_CLOSED_KEY = "ipecc_admin_closed";
+
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [checking, setChecking] = useState(true);
-  const ADMIN_ACTIVE_KEY = "ipecc_admin_active";
-  const ADMIN_CLOSED_KEY = "ipecc_admin_closed";
 
   useEffect(() => {
     let mounted = true;
@@ -122,36 +125,55 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </div>
 
           <nav className="admin-nav">
-            <Link href="/admin" className="admin-nav-item">🏠 Dashboard</Link>
-            <Link href="/admin/paginas" className="admin-nav-item">📄 Páginas</Link>
-            <Link href="/admin/editais" className="admin-nav-item">📑 Editais</Link>
-            <Link href="/admin/propostas" className="admin-nav-item">📨 Propostas</Link>
-            <Link href="/admin/certidoes" className="admin-nav-item">📋 Certidões</Link>
-            <Link href="/admin/noticias" className="admin-nav-item">📰 Notícias</Link>
-            <Link href="/admin/eventos" className="admin-nav-item">📅 Eventos</Link>
-            <Link href="/admin/whatsapp" className="admin-nav-item">
-              💬 WhatsApp
+            <Link href="/admin" className={navClass(pathname, "/admin", true)}>
+              Dashboard
             </Link>
-	    <Link href="/admin/logs" className="admin-nav-item">
- 		📊 Logs
-	    </Link>
+
+            <div className="admin-nav-section-title">Conteudo</div>
+            <Link href="/admin/paginas" className={navClass(pathname, "/admin/paginas")}>
+              Paginas
+            </Link>
+            <Link href="/admin/editais" className={navClass(pathname, "/admin/editais")}>
+              Editais
+            </Link>
+            <Link href="/admin/noticias" className={navClass(pathname, "/admin/noticias")}>
+              Noticias
+            </Link>
+            <Link href="/admin/eventos" className={navClass(pathname, "/admin/eventos")}>
+              Eventos
+            </Link>
+
+            <div className="admin-nav-section-title">Operacao</div>
+            <Link href="/admin/propostas" className={navClass(pathname, "/admin/propostas")}>
+              Propostas
+            </Link>
+            <Link href="/admin/certidoes" className={navClass(pathname, "/admin/certidoes")}>
+              Certidoes
+            </Link>
+            <Link href="/admin/whatsapp" className={navClass(pathname, "/admin/whatsapp")}>
+              WhatsApp
+            </Link>
+            <Link href="/admin/logs" className={navClass(pathname, "/admin/logs")}>
+              Logs
+            </Link>
           </nav>
         </aside>
 
         <main className="admin-main">
-          <section className="admin-content-shell">
-            {children}
-          </section>
+          <section className="admin-content-shell">{children}</section>
         </main>
       </div>
 
-      {/* 🔥 TOAST GLOBAL */}
-
-<AdminToast />
-<AdminFeedbackBridge />
-<AdminConfirmModal />
-<AdminButtonBridge />
-<AdminFormBridge />     
+      <AdminToast />
+      <AdminFeedbackBridge />
+      <AdminConfirmModal />
+      <AdminButtonBridge />
+      <AdminFormBridge />
     </div>
   );
+}
+
+function navClass(pathname: string, href: string, exact = false) {
+  const active = exact ? pathname === href : pathname.startsWith(href);
+  return active ? "admin-nav-item admin-nav-item--active" : "admin-nav-item";
 }

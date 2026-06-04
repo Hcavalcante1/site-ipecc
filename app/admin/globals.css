@@ -113,6 +113,13 @@
   opacity: 1;
 }
 
+.admin-nav-item--active {
+  background: linear-gradient(90deg, rgba(14, 165, 233, 0.28), rgba(34, 197, 94, 0.16));
+  border: 1px solid rgba(125, 211, 252, 0.34);
+  color: #ffffff;
+  opacity: 1;
+}
+
 .admin-nav-icon {
   width: 20px;
   text-align: center;
