@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
-/* ===== CHART ===== */
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,6 +11,7 @@ import {
   LineElement,
   Tooltip,
   Legend,
+  Filler,
 } from "chart.js";
 
 import { Line } from "react-chartjs-2";
@@ -22,17 +22,26 @@ ChartJS.register(
   PointElement,
   LineElement,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
 type Props = {
   userEmail: string;
 };
 
+type AdminLog = {
+  id?: string;
+  acao?: string;
+  tabela?: string;
+  user_email?: string;
+  created_at?: string;
+};
+
 export default function AdminDashboardClient({ userEmail }: Props) {
   const [totalPropostas, setTotalPropostas] = useState(0);
   const [editaisAtivos, setEditaisAtivos] = useState(0);
-  const [logs, setLogs] = useState<any[]>([]);
+  const [logs, setLogs] = useState<AdminLog[]>([]);
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState("-");
 
   useEffect(() => {
@@ -74,9 +83,12 @@ export default function AdminDashboardClient({ userEmail }: Props) {
   const del = logs.filter((l) => l.acao === "DELETE").length;
 
   const logsPorDia: Record<string, number> = {};
-
   logs.forEach((log) => {
-    const data = new Date(log.created_at).toLocaleDateString();
+    if (!log.created_at) return;
+    const data = new Date(log.created_at).toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+    });
     logsPorDia[data] = (logsPorDia[data] || 0) + 1;
   });
 
@@ -89,52 +101,145 @@ export default function AdminDashboardClient({ userEmail }: Props) {
       {
         label: "Atividade",
         data: values,
-        borderColor: "#38bdf8",
-        backgroundColor: "rgba(56,189,248,0.2)",
-        tension: 0.4,
+        borderColor: "#0ea5e9",
+        backgroundColor: "rgba(14, 165, 233, 0.16)",
+        pointBackgroundColor: "#22c55e",
+        pointBorderColor: "#ffffff",
+        pointRadius: 4,
+        fill: true,
+        tension: 0.42,
       },
     ],
   };
 
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { color: "#475569" },
+      },
+      y: {
+        beginAtZero: true,
+        grid: { color: "rgba(148, 163, 184, 0.24)" },
+        ticks: { color: "#475569", precision: 0 },
+      },
+    },
+  };
+
+  const recentes = logs.slice(0, 8);
+
   return (
     <div style={styles.wrapper}>
-      <div style={styles.userBox}>Usuário: {userEmail}</div>
-
       <div style={styles.kpiGrid}>
-        <BigCard title="Propostas" value={totalPropostas} />
-        <BigCard title="Editais Ativos" value={editaisAtivos} />
-        <BigCard title="Ações" value={totalAcoes} />
-        <BigCard title="Atualização" value={ultimaAtualizacao} />
+        <MetricCard title="Propostas recebidas" value={totalPropostas} tone="green" />
+        <MetricCard title="Editais abertos" value={editaisAtivos} tone="blue" />
+        <MetricCard title="Acoes registradas" value={totalAcoes} tone="slate" />
+        <MetricCard title="Ultima atualizacao" value={ultimaAtualizacao} tone="cyan" compact />
       </div>
 
-      <div style={styles.chartBlock}>
-        <h3 style={styles.sectionTitle}>Atividade Recente</h3>
-        <Line data={chartData} />
+      <div style={styles.mainGrid}>
+        <section style={styles.chartCard}>
+          <div style={styles.cardHeader}>
+            <div>
+              <h3 style={styles.darkTitle}>Atividade recente</h3>
+              <p style={styles.darkSub}>Movimentacao dos ultimos registros administrativos.</p>
+            </div>
+            <span style={styles.lightBadge}>7 dias</span>
+          </div>
+          <div style={styles.chartBox}>
+            <Line data={chartData} options={chartOptions as any} />
+          </div>
+        </section>
+
+        <section style={styles.actionPanel}>
+          <h3 style={styles.panelTitle}>Atividade do Sistema</h3>
+          <p style={styles.panelSub}>Resumo rapido por tipo de alteracao.</p>
+
+          <div style={styles.smallGrid}>
+            <SmallCard title="INSERT" value={insert} color="#22c55e" />
+            <SmallCard title="UPDATE" value={update} color="#38bdf8" />
+            <SmallCard title="DELETE" value={del} color="#ef4444" />
+          </div>
+
+          <div style={styles.userBox}>
+            <span style={styles.userLabel}>Operador</span>
+            <strong>{userEmail}</strong>
+          </div>
+        </section>
       </div>
 
-      <div style={styles.section}>
-        <h3 style={styles.sectionTitle}>Atividade do Sistema</h3>
-
-        <div style={styles.smallGrid}>
-          <SmallCard title="INSERT" value={insert} color="#22c55e" />
-          <SmallCard title="UPDATE" value={update} color="#38bdf8" />
-          <SmallCard title="DELETE" value={del} color="#ef4444" />
+      <section style={styles.tableCard}>
+        <div style={{ ...styles.cardHeader, ...styles.tableHeader }}>
+          <div>
+            <h3 style={styles.tableTitle}>Ultimas acoes administrativas</h3>
+            <p style={styles.tableSub}>Auditoria resumida dos registros mais recentes.</p>
+          </div>
         </div>
-      </div>
+
+        <div style={styles.tableWrap}>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Acao</th>
+                <th style={styles.th}>Tabela</th>
+                <th style={styles.th}>Usuario</th>
+                <th style={styles.th}>Data</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentes.length === 0 ? (
+                <tr>
+                  <td style={styles.emptyCell} colSpan={4}>
+                    Nenhuma atividade encontrada.
+                  </td>
+                </tr>
+              ) : (
+                recentes.map((log, index) => (
+                  <tr key={log.id ?? index} style={index % 2 ? styles.trAlt : styles.tr}>
+                    <td style={styles.td}>
+                      <span style={badgeStyle(log.acao)}>{log.acao || "-"}</span>
+                    </td>
+                    <td style={styles.td}>{log.tabela || "-"}</td>
+                    <td style={styles.td}>{log.user_email || "-"}</td>
+                    <td style={styles.td}>
+                      {log.created_at ? new Date(log.created_at).toLocaleString() : "-"}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   );
 }
 
-function BigCard({ title, value }: any) {
+function MetricCard({
+  title,
+  value,
+  tone,
+  compact,
+}: {
+  title: string;
+  value: string | number;
+  tone: "green" | "blue" | "slate" | "cyan";
+  compact?: boolean;
+}) {
   return (
-    <div style={styles.bigCard}>
-      <div style={styles.bigValue}>{value}</div>
-      <div style={styles.bigLabel}>{title}</div>
+    <div style={{ ...styles.metricCard, ...metricTone[tone] }}>
+      <div style={styles.metricLabel}>{title}</div>
+      <div style={compact ? styles.metricValueCompact : styles.metricValue}>{value}</div>
     </div>
   );
 }
 
-function SmallCard({ title, value, color }: any) {
+function SmallCard({ title, value, color }: { title: string; value: number; color: string }) {
   return (
     <div style={styles.smallCard}>
       <div style={{ ...styles.smallValue, color }}>{value}</div>
@@ -143,83 +248,268 @@ function SmallCard({ title, value, color }: any) {
   );
 }
 
+function badgeStyle(acao?: string) {
+  const color =
+    acao === "INSERT" ? "#16a34a" : acao === "UPDATE" ? "#0284c7" : acao === "DELETE" ? "#dc2626" : "#64748b";
+
+  return {
+    ...styles.badge,
+    color,
+    borderColor: `${color}55`,
+    background: `${color}14`,
+  };
+}
+
+const metricTone = {
+  green: {
+    background: "linear-gradient(135deg, #0f7a4a, #166534)",
+    borderColor: "rgba(134, 239, 172, 0.44)",
+  },
+  blue: {
+    background: "linear-gradient(135deg, #075985, #1d4ed8)",
+    borderColor: "rgba(125, 211, 252, 0.44)",
+  },
+  slate: {
+    background: "linear-gradient(135deg, #334155, #1e293b)",
+    borderColor: "rgba(203, 213, 225, 0.28)",
+  },
+  cyan: {
+    background: "linear-gradient(135deg, #155e75, #0891b2)",
+    borderColor: "rgba(103, 232, 249, 0.42)",
+  },
+};
+
 const styles: any = {
   wrapper: {
     display: "flex",
     flexDirection: "column",
-    gap: 28,
-  },
-
-  userBox: {
-    color: "#94a3b8",
-    fontSize: 13,
+    gap: 18,
   },
 
   kpiGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: 18,
+    gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+    gap: 14,
   },
 
-  bigCard: {
-    background: "#020617",
-    border: "1px solid #1e293b",
-    borderRadius: 18,
-    padding: 22,
+  metricCard: {
+    minHeight: 92,
+    border: "1px solid rgba(255,255,255,0.18)",
+    borderRadius: 16,
+    padding: "15px 18px",
+    boxShadow: "0 16px 34px rgba(2, 6, 23, 0.35)",
   },
 
-  bigValue: {
-    fontSize: 28,
-    fontWeight: 700,
-    color: "#e5e7eb",
-  },
-
-  bigLabel: {
+  metricLabel: {
+    color: "#e0f2fe",
     fontSize: 13,
-    color: "#94a3b8",
-    marginTop: 6,
+    fontWeight: 800,
   },
 
-  chartBlock: {
-    background: "#020617",
-    border: "1px solid #1e293b",
-    borderRadius: 18,
-    padding: 20,
+  metricValue: {
+    marginTop: 8,
+    color: "#ffffff",
+    fontSize: 30,
+    lineHeight: 1,
+    fontWeight: 900,
+    letterSpacing: "0.02em",
   },
 
-  section: {
-    background: "#020617",
-    border: "1px solid #1e293b",
-    borderRadius: 18,
-    padding: 20,
+  metricValueCompact: {
+    marginTop: 10,
+    color: "#ffffff",
+    fontSize: 15,
+    lineHeight: 1.35,
+    fontWeight: 800,
   },
 
-  sectionTitle: {
-    marginBottom: 14,
-    color: "#e5e7eb",
-    fontWeight: 600,
+  mainGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))",
+    gap: 16,
+  },
+
+  chartCard: {
+    background: "#f8fafc",
+    border: "1px solid rgba(226, 232, 240, 0.95)",
+    borderRadius: 22,
+    padding: 18,
+    boxShadow: "0 18px 34px rgba(15, 23, 42, 0.24)",
+  },
+
+  cardHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 12,
+    alignItems: "flex-start",
+    marginBottom: 12,
+  },
+
+  darkTitle: {
+    margin: 0,
+    color: "#0f172a",
+    fontSize: 18,
+    fontWeight: 900,
+  },
+
+  darkSub: {
+    margin: "5px 0 0",
+    color: "#64748b",
+    fontSize: 12,
+  },
+
+  lightBadge: {
+    padding: "6px 10px",
+    borderRadius: 999,
+    background: "#dbeafe",
+    color: "#1d4ed8",
+    fontSize: 12,
+    fontWeight: 900,
+  },
+
+  chartBox: {
+    height: 260,
+  },
+
+  actionPanel: {
+    background: "rgba(15, 23, 42, 0.82)",
+    border: "1px solid rgba(148, 163, 184, 0.38)",
+    borderRadius: 22,
+    padding: 18,
+    boxShadow: "0 18px 34px rgba(2, 6, 23, 0.35)",
+  },
+
+  panelTitle: {
+    margin: 0,
+    color: "#f8fafc",
+    fontSize: 18,
+    fontWeight: 900,
+  },
+
+  panelSub: {
+    margin: "6px 0 16px",
+    color: "#cbd5e1",
+    fontSize: 12,
   },
 
   smallGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-    gap: 14,
+    gridTemplateColumns: "1fr",
+    gap: 10,
   },
 
   smallCard: {
-    background: "#020617",
-    border: "1px solid #334155",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    background: "rgba(2, 6, 23, 0.54)",
+    border: "1px solid rgba(148, 163, 184, 0.28)",
     borderRadius: 14,
-    padding: 14,
+    padding: "12px 14px",
   },
 
   smallValue: {
-    fontSize: 20,
-    fontWeight: 700,
+    fontSize: 24,
+    fontWeight: 900,
   },
 
   smallLabel: {
+    color: "#cbd5e1",
     fontSize: 12,
-    color: "#94a3b8",
+    fontWeight: 800,
+  },
+
+  userBox: {
+    marginTop: 16,
+    padding: 14,
+    borderRadius: 16,
+    background: "rgba(14, 165, 233, 0.12)",
+    border: "1px solid rgba(125, 211, 252, 0.32)",
+    color: "#e0f2fe",
+    display: "flex",
+    flexDirection: "column",
+    gap: 4,
+    fontSize: 12,
+  },
+
+  userLabel: {
+    color: "#93c5fd",
+    fontWeight: 800,
+  },
+
+  tableCard: {
+    overflow: "hidden",
+    background: "#f8fafc",
+    border: "1px solid rgba(226, 232, 240, 0.95)",
+    borderRadius: 22,
+    padding: 0,
+    boxShadow: "0 18px 34px rgba(15, 23, 42, 0.24)",
+  },
+
+  tableHeader: {
+    padding: "18px 18px 0",
+  },
+
+  tableTitle: {
+    margin: 0,
+    color: "#0f172a",
+    fontSize: 17,
+    fontWeight: 900,
+  },
+
+  tableSub: {
+    margin: "5px 0 0",
+    color: "#64748b",
+    fontSize: 12,
+  },
+
+  tableWrap: {
+    overflowX: "auto",
+  },
+
+  table: {
+    width: "100%",
+    borderCollapse: "collapse",
+    color: "#0f172a",
+    fontSize: 13,
+  },
+
+  th: {
+    background: "#1f2937",
+    color: "#ffffff",
+    padding: "10px 12px",
+    textAlign: "left",
+    fontSize: 12,
+    whiteSpace: "nowrap",
+  },
+
+  tr: {
+    background: "#ffffff",
+  },
+
+  trAlt: {
+    background: "#f1f5f9",
+  },
+
+  td: {
+    padding: "11px 12px",
+    borderTop: "1px solid #e2e8f0",
+    verticalAlign: "top",
+  },
+
+  emptyCell: {
+    padding: 18,
+    color: "#64748b",
+    textAlign: "center",
+  },
+
+  badge: {
+    display: "inline-flex",
+    padding: "4px 8px",
+    borderRadius: 999,
+    border: "1px solid",
+    fontSize: 11,
+    fontWeight: 900,
   },
 };
