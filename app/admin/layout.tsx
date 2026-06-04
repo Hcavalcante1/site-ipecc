@@ -18,6 +18,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [checking, setChecking] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -108,8 +109,33 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="admin-body">
+      <header className="admin-mobile-header">
+        <img src="/media/ipecc_logo_v2.png" alt="IPECC" className="admin-mobile-logo" />
+        <button
+          type="button"
+          className="admin-mobile-menu-button"
+          onClick={() => setMenuOpen((value) => !value)}
+          aria-expanded={menuOpen}
+          aria-controls="admin-mobile-menu"
+        >
+          {menuOpen ? "Fechar" : "Menu"}
+        </button>
+      </header>
+
+      {menuOpen && (
+        <button
+          type="button"
+          className="admin-mobile-backdrop"
+          aria-label="Fechar menu"
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
+
       <div className="admin-wrapper">
-        <aside className="admin-sidebar">
+        <aside
+          id="admin-mobile-menu"
+          className={`admin-sidebar ${menuOpen ? "admin-sidebar--open" : ""}`}
+        >
           <div className="admin-logo" style={{ justifyContent: "center" }}>
             <img
               src="/media/ipecc_logo_v2.png"
@@ -125,35 +151,35 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </div>
 
           <nav className="admin-nav">
-            <Link href="/admin" className={navClass(pathname, "/admin", true)}>
+            <Link href="/admin" className={navClass(pathname, "/admin", true)} onClick={() => setMenuOpen(false)}>
               Dashboard
             </Link>
 
             <div className="admin-nav-section-title">Conteudo</div>
-            <Link href="/admin/paginas" className={navClass(pathname, "/admin/paginas")}>
+            <Link href="/admin/paginas" className={navClass(pathname, "/admin/paginas")} onClick={() => setMenuOpen(false)}>
               Paginas
             </Link>
-            <Link href="/admin/editais" className={navClass(pathname, "/admin/editais")}>
+            <Link href="/admin/editais" className={navClass(pathname, "/admin/editais")} onClick={() => setMenuOpen(false)}>
               Editais
             </Link>
-            <Link href="/admin/noticias" className={navClass(pathname, "/admin/noticias")}>
+            <Link href="/admin/noticias" className={navClass(pathname, "/admin/noticias")} onClick={() => setMenuOpen(false)}>
               Noticias
             </Link>
-            <Link href="/admin/eventos" className={navClass(pathname, "/admin/eventos")}>
+            <Link href="/admin/eventos" className={navClass(pathname, "/admin/eventos")} onClick={() => setMenuOpen(false)}>
               Eventos
             </Link>
 
             <div className="admin-nav-section-title">Operacao</div>
-            <Link href="/admin/propostas" className={navClass(pathname, "/admin/propostas")}>
+            <Link href="/admin/propostas" className={navClass(pathname, "/admin/propostas")} onClick={() => setMenuOpen(false)}>
               Propostas
             </Link>
-            <Link href="/admin/certidoes" className={navClass(pathname, "/admin/certidoes")}>
+            <Link href="/admin/certidoes" className={navClass(pathname, "/admin/certidoes")} onClick={() => setMenuOpen(false)}>
               Certidoes
             </Link>
-            <Link href="/admin/whatsapp" className={navClass(pathname, "/admin/whatsapp")}>
+            <Link href="/admin/whatsapp" className={navClass(pathname, "/admin/whatsapp")} onClick={() => setMenuOpen(false)}>
               WhatsApp
             </Link>
-            <Link href="/admin/logs" className={navClass(pathname, "/admin/logs")}>
+            <Link href="/admin/logs" className={navClass(pathname, "/admin/logs")} onClick={() => setMenuOpen(false)}>
               Logs
             </Link>
           </nav>
