@@ -134,6 +134,7 @@
 
 .admin-main {
   padding: 4px 6px 8px;
+  min-width: 0;
 }
 
 /* Barra degradê no topo (por trás do conteúdo) */
@@ -166,6 +167,7 @@
   padding: 10px 10px 12px;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.56);
   border: 1px solid rgba(148, 163, 184, 0.28);
+  min-width: 0;
 }
 
 /* ===== Tipografia / títulos ===== */
@@ -379,7 +381,7 @@ a.admin-button {
   .admin-mobile-header {
     position: sticky;
     top: 0;
-    z-index: 30;
+    z-index: 800;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -412,7 +414,7 @@ a.admin-button {
   .admin-mobile-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 20;
+    z-index: 900;
     display: block;
     width: 100%;
     min-height: 100vh;
@@ -432,7 +434,7 @@ a.admin-button {
     top: 76px;
     left: 12px;
     bottom: auto;
-    z-index: 40;
+    z-index: 1000;
     width: min(84vw, 310px);
     max-height: calc(100vh - 96px);
     display: block;
@@ -450,10 +452,12 @@ a.admin-button {
 
   .admin-main {
     padding: 14px 12px 18px;
+    overflow-x: hidden;
   }
 
   .admin-content-shell {
     padding: 14px 12px 16px;
+    overflow-x: hidden;
   }
 }
 /* ================= BOTÕES ADMIN PADRÃO ================= */
