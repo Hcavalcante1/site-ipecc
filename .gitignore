@@ -14,3 +14,17 @@ reports/
 *.webp1
 h site-ipecc*
 hboard operacional*
+
+# Local diagnostic scripts generated during production hardening
+scripts/analisar-env-local.ts
+scripts/comparar-cms-anon-admin.ts
+scripts/contar-duplicatas-cms.ts
+scripts/diagnostico-admin-gravacao.ts
+scripts/diagnostico-cms-home-inicio.ts
+scripts/diagnostico-cms-paginas.ts
+scripts/patch-admin-paginas-cms.mjs
+scripts/patch-admin-paginas-cms.ts
+scripts/restaurar-hero-home.ts
+scripts/testar-rls-noticias-eventos.ts
+scripts/testar-upsert-cms-anon.ts
+scripts/testar-upsert-cms.ts
