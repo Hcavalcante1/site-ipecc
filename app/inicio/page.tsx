@@ -355,7 +355,7 @@ const { data: eventos } = await supabase
       </section>
 
       {/* ===== DESTAQUES ===== */}
-      <section className="destaques">
+      <section className="destaques inicio-destaques">
         <div className="container">
           <h2>Destaques da Semana</h2>
           <div className="destaques__grid">
@@ -376,7 +376,7 @@ const { data: eventos } = await supabase
         </div>
 </section>
 
-      <section className="public-section">
+      <section className="public-section inicio-feed-section">
         <div className="public-section__inner">
           <h2 className="public-section__title">Últimas notícias</h2>
 
@@ -420,7 +420,7 @@ const { data: eventos } = await supabase
         </div>
       </section>
 
-      <section className="public-section public-section--alt">
+      <section className="public-section public-section--alt inicio-feed-section">
         <div className="public-section__inner">
           <h2 className="public-section__title">Próximos eventos</h2>
 

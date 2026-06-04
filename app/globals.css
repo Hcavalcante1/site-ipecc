@@ -1928,3 +1928,47 @@ main.page .card[style*="padding: 32px"]{
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Ajustes especificos da pagina Inicio: alinhamento com o hero e respiro nos cards. */
+.inicio-feed-section .public-section__inner{
+  width: min(90%, var(--container-w));
+  max-width: var(--container-w);
+}
+
+.inicio-destaques .destaques__grid article{
+  overflow: hidden;
+}
+
+.inicio-destaques .destaques__grid article > h3,
+.inicio-destaques .destaques__grid article > p,
+.inicio-destaques .destaques__grid article > .btn-vermais{
+  margin-left: 18px;
+  margin-right: 18px;
+}
+
+.inicio-destaques .destaques__grid article > h3{
+  margin-top: 2px;
+  margin-bottom: 8px;
+}
+
+.inicio-destaques .destaques__grid article > p{
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+.inicio-destaques .destaques__grid article > .btn-vermais{
+  margin-bottom: 18px;
+}
+
+@media (max-width: 640px){
+  .inicio-feed-section .public-section__inner{
+    width: min(94%, var(--container-w));
+  }
+
+  .inicio-destaques .destaques__grid article > h3,
+  .inicio-destaques .destaques__grid article > p,
+  .inicio-destaques .destaques__grid article > .btn-vermais{
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+}
