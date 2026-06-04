@@ -9,3 +9,8 @@ automation/
 !.env.example
 *.tsbuildinfo
 reports/
+
+# Local accidental artifacts
+*.webp1
+h site-ipecc*
+hboard operacional*
