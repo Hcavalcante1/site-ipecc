@@ -1455,3 +1455,476 @@ button.public-card__link{
   border-radius: 16px;
   padding: 32px;
 }
+
+/* ===== AJUSTE FINAL DE ESPAÇAMENTO PÚBLICO RESPONSIVO ===== */
+@media (max-width: 992px){
+  .page{
+    padding: 18px 0 32px;
+  }
+
+  .hero-rolling{
+    padding: 16px 0;
+    margin-top: 6px;
+  }
+
+  .hero-rolling__inner{
+    padding: 30px 20px;
+    min-height: 200px;
+  }
+
+  .cards__grid,
+  .destaques__grid,
+  .depoimentos__grid,
+  .public-card-grid,
+  .public-event-list{
+    gap: 20px;
+  }
+
+  .destaques,
+  .impacto,
+  .depoimentos,
+  .sobre-cta,
+  .public-section{
+    padding-top: 44px;
+    padding-bottom: 44px;
+  }
+
+  .public-form-shell{
+    padding-bottom: 44px;
+  }
+}
+
+@media (max-width: 640px){
+  .page{
+    padding: 10px 0 24px;
+  }
+
+  .hero-rolling{
+    padding: 10px 0 12px;
+    margin-top: 2px;
+  }
+
+  .hero-rolling__inner{
+    width: min(94%, var(--container-w));
+    min-height: 168px;
+    padding: 22px 16px;
+    border-radius: 16px;
+  }
+
+  .hero-rolling .hero__title{
+    margin-bottom: 8px;
+    font-size: 1.32rem;
+    line-height: 1.22;
+  }
+
+  .hero-rolling .hero__text{
+    margin-bottom: 12px;
+    font-size: .92rem;
+    line-height: 1.45;
+  }
+
+  .hero-rolling .btn--light{
+    margin-top: 8px !important;
+    padding: 10px 14px;
+  }
+
+  .cards__grid,
+  .destaques__grid,
+  .depoimentos__grid,
+  .public-card-grid,
+  .public-event-list,
+  .grid-2-public,
+  .grid-3-public{
+    gap: 14px;
+  }
+
+  .card__body{
+    padding: 12px 14px 16px;
+  }
+
+  .card__title,
+  .public-section__title{
+    margin-bottom: 10px;
+  }
+
+  .card__text{
+    margin-bottom: 8px;
+    line-height: 1.55;
+  }
+
+  .sobre,
+  .projetos-eixos{
+    padding: 12px 0;
+  }
+
+  .destaques,
+  .impacto,
+  .depoimentos,
+  .sobre-cta,
+  .public-section{
+    padding-top: 28px;
+    padding-bottom: 28px;
+  }
+
+  .destaques h2,
+  .depoimentos h2,
+  .sobre h2{
+    margin-bottom: 14px !important;
+  }
+
+  .numeros{
+    padding: 16px 0;
+  }
+
+  .numeros .container{
+    padding: 24px 16px;
+  }
+
+  .impacto p{
+    margin-bottom: 12px;
+  }
+
+  .impacto__imagem{
+    height: 200px;
+  }
+
+  .cta-green__inner,
+  .public-event-card,
+  .public-docs-group,
+  .public-docs-category{
+    padding: 16px;
+  }
+
+  .public-docs-panel{
+    padding: 18px 14px;
+    margin-bottom: 24px;
+  }
+
+  .public-docs-panel__lead,
+  .public-docs-group,
+  .public-docs-group__title,
+  .public-docs-category__title{
+    margin-bottom: 12px;
+  }
+
+  .public-docs-categories{
+    gap: 14px;
+  }
+
+  .public-docs-category li{
+    margin-bottom: 6px;
+  }
+
+  .public-edital-card .public-page-actions{
+    padding: 0 14px 14px;
+  }
+
+  .public-form-shell{
+    padding: 0 12px 32px;
+  }
+
+  .public-form-shell__inner{
+    padding: 18px 14px;
+    border-radius: 14px;
+  }
+
+  .public-form-shell form[style]{
+    gap: 16px !important;
+  }
+
+  .public-form-grid-2{
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .public-form-shell div[style*="padding: 24px"],
+  .public-form-shell div[style*="padding: 20px"]{
+    padding: 16px !important;
+  }
+
+  .public-form-shell h2[style]{
+    margin-bottom: 10px !important;
+    font-size: 1.25rem !important;
+  }
+
+  .public-form-shell button[style*="margin-top"]{
+    margin-top: 12px !important;
+  }
+
+  main.page > section[style*="margin-top: 60px"]{
+    margin-top: 28px !important;
+  }
+
+  main.page > section[style*="margin-top: 100px"]{
+    margin-top: 40px !important;
+  }
+
+  main.page h2[style*="margin-bottom: 40px"],
+  main.page p[style*="margin-bottom: 40px"]{
+    margin-bottom: 20px !important;
+  }
+
+  main.page form[style*="padding: 40px"]{
+    padding: 22px 16px !important;
+  }
+
+  main.page .card[style*="padding: 32px"]{
+    padding: 20px 16px !important;
+  }
+
+  .site-footer{
+    margin-top: 24px;
+  }
+
+  .site-footer__grid{
+    gap: 20px;
+    padding: 28px 0 20px;
+  }
+}
+
+/* ===== CADÊNCIA PÚBLICA DE ESPAÇAMENTO ===== */
+:root{
+  --public-space-xs: 8px;
+  --public-space-sm: 14px;
+  --public-space-md: 24px;
+  --public-space-lg: 40px;
+  --public-space-xl: 56px;
+  --public-space-2xl: 72px;
+}
+
+.page{
+  padding-top: var(--public-space-md);
+  padding-bottom: var(--public-space-xl);
+}
+
+.hero-rolling{
+  padding: var(--public-space-md) 0;
+  margin-top: var(--public-space-xs);
+}
+
+.hero-rolling__inner{
+  padding: var(--public-space-lg) var(--public-space-md);
+  min-height: 220px;
+}
+
+.hero-rolling .hero__title,
+.public-section__title,
+.card__title,
+.public-event-card__title,
+.public-docs-group__title,
+.public-docs-category__title{
+  margin-bottom: var(--public-space-sm);
+}
+
+.hero-rolling .hero__text{
+  margin-bottom: var(--public-space-md);
+}
+
+.cards__grid,
+.destaques__grid,
+.depoimentos__grid,
+.public-card-grid,
+.public-event-list,
+.public-docs-categories{
+  gap: var(--public-space-md);
+}
+
+.destaques,
+.impacto,
+.depoimentos,
+.sobre-cta,
+.public-section{
+  padding-top: var(--public-space-xl);
+  padding-bottom: var(--public-space-xl);
+}
+
+.sobre,
+.projetos-eixos,
+.numeros{
+  padding-top: var(--public-space-lg);
+  padding-bottom: var(--public-space-lg);
+}
+
+.destaques h2,
+.depoimentos h2,
+.sobre h2{
+  margin-bottom: var(--public-space-md);
+}
+
+.card__body,
+.public-event-card,
+.public-docs-category{
+  padding: var(--public-space-md);
+}
+
+.public-docs-panel{
+  padding: var(--public-space-lg);
+  margin-bottom: var(--public-space-lg);
+}
+
+.public-docs-panel__lead,
+.public-docs-group,
+.public-docs-group__title,
+.public-docs-category__title{
+  margin-bottom: var(--public-space-md);
+}
+
+.public-docs-group{
+  padding: var(--public-space-md);
+}
+
+.public-form-shell{
+  padding: 0 var(--public-space-md) var(--public-space-xl);
+}
+
+.public-form-shell__inner{
+  padding: var(--public-space-lg);
+}
+
+main.page > section[style*="margin-top: 60px"]{
+  margin-top: var(--public-space-xl) !important;
+}
+
+main.page > section[style*="margin-top: 100px"]{
+  margin-top: var(--public-space-2xl) !important;
+}
+
+main.page h2[style*="margin-bottom: 40px"],
+main.page p[style*="margin-bottom: 40px"]{
+  margin-bottom: var(--public-space-md) !important;
+}
+
+main.page form[style*="padding: 40px"],
+main.page .card[style*="padding: 32px"]{
+  padding: var(--public-space-lg) !important;
+}
+
+@media (max-width: 992px){
+  :root{
+    --public-space-md: 22px;
+    --public-space-lg: 34px;
+    --public-space-xl: 48px;
+    --public-space-2xl: 60px;
+  }
+
+  .hero-rolling__inner{
+    padding: var(--public-space-lg) 20px;
+    min-height: 208px;
+  }
+}
+
+@media (max-width: 640px){
+  :root{
+    --public-space-sm: 10px;
+    --public-space-md: 16px;
+    --public-space-lg: 26px;
+    --public-space-xl: 36px;
+    --public-space-2xl: 44px;
+  }
+
+  .page{
+    padding-top: var(--public-space-sm);
+    padding-bottom: var(--public-space-lg);
+  }
+
+  .hero-rolling{
+    padding: var(--public-space-sm) 0 var(--public-space-md);
+    margin-top: 2px;
+  }
+
+  .hero-rolling__inner{
+    width: min(94%, var(--container-w));
+    min-height: 190px;
+    padding: var(--public-space-lg) var(--public-space-md);
+    border-radius: 16px;
+  }
+
+  .hero-rolling .hero__title{
+    font-size: 1.35rem;
+    line-height: 1.24;
+  }
+
+  .hero-rolling .hero__text{
+    font-size: .95rem;
+    line-height: 1.5;
+  }
+
+  .btn.btn--light,
+  .btn-cta{
+    padding: 10px 16px;
+    line-height: 1.35;
+  }
+
+  .card__body,
+  .public-event-card,
+  .public-docs-group,
+  .public-docs-category,
+  .cta-green__inner{
+    padding: var(--public-space-md);
+  }
+
+  .public-docs-panel{
+    padding: var(--public-space-md);
+  }
+
+  .public-form-shell{
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .public-form-shell__inner{
+    padding: var(--public-space-md);
+    border-radius: 14px;
+  }
+
+  .public-form-grid-2{
+    gap: var(--public-space-sm);
+    margin-bottom: var(--public-space-md);
+  }
+
+  .public-form-shell form[style]{
+    gap: var(--public-space-md) !important;
+  }
+
+  .public-form-shell div[style*="padding: 24px"],
+  .public-form-shell div[style*="padding: 20px"]{
+    padding: var(--public-space-md) !important;
+  }
+
+  .public-form-shell h2[style]{
+    margin-bottom: var(--public-space-sm) !important;
+    font-size: 1.3rem !important;
+  }
+
+  .public-form-shell button[style*="margin-top"]{
+    margin-top: var(--public-space-md) !important;
+  }
+
+  .numeros .container{
+    padding: var(--public-space-lg) var(--public-space-md);
+  }
+
+  .impacto__imagem{
+    height: 220px;
+  }
+
+  .site-footer{
+    margin-top: var(--public-space-lg);
+  }
+
+  .site-footer__grid{
+    gap: var(--public-space-md);
+    padding: var(--public-space-lg) 0 var(--public-space-md);
+  }
+}
+
+/* Garante cards empilhados em celular/tablet nas vitrines de noticias e eventos. */
+@media (max-width: 900px){
+  .public-card-grid,
+  .public-event-list,
+  .public-section__inner > .public-card-grid,
+  .public-section__inner > .public-event-list{
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+}
