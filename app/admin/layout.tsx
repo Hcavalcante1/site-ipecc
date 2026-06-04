@@ -13,9 +13,30 @@ import AdminFormBridge from "@/components/AdminFormBridge";
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
+  const ADMIN_ACTIVE_KEY = "ipecc_admin_active";
+  const ADMIN_CLOSED_KEY = "ipecc_admin_closed";
 
   useEffect(() => {
+    let mounted = true;
+
+    async function encerrarSessaoAdmin() {
+      sessionStorage.removeItem(ADMIN_ACTIVE_KEY);
+      await fetch("/api/logout", { method: "POST", keepalive: true }).catch(
+        () => null
+      );
+      await supabase.auth.signOut().catch(() => null);
+    }
+
     async function checkAuth() {
+      if (
+        localStorage.getItem(ADMIN_CLOSED_KEY) === "1" ||
+        sessionStorage.getItem(ADMIN_ACTIVE_KEY) !== "1"
+      ) {
+        await encerrarSessaoAdmin();
+        router.replace("/login");
+        return;
+      }
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -30,14 +51,37 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       });
 
       if (error || !isAdmin) {
+        await encerrarSessaoAdmin();
         router.replace("/");
         return;
       }
 
-      setChecking(false);
+      if (mounted) setChecking(false);
+    }
+
+    async function renovarEntradaAdmin() {
+      if (sessionStorage.getItem(ADMIN_ACTIVE_KEY) !== "1") return;
+      await fetch("/api/admin/session", { method: "POST" }).catch(() => null);
     }
 
     checkAuth();
+    const heartbeat = window.setInterval(renovarEntradaAdmin, 4000);
+
+    function marcarAdminComoFechado() {
+      localStorage.setItem(ADMIN_CLOSED_KEY, "1");
+      sessionStorage.removeItem(ADMIN_ACTIVE_KEY);
+      navigator.sendBeacon?.("/api/logout");
+    }
+
+    window.addEventListener("pagehide", marcarAdminComoFechado);
+    window.addEventListener("beforeunload", marcarAdminComoFechado);
+
+    return () => {
+      mounted = false;
+      window.clearInterval(heartbeat);
+      window.removeEventListener("pagehide", marcarAdminComoFechado);
+      window.removeEventListener("beforeunload", marcarAdminComoFechado);
+    };
   }, [router]);
 
   if (checking) {

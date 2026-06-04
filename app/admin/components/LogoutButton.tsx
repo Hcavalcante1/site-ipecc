@@ -7,6 +7,9 @@ export default function LogoutButton() {
   const router = useRouter();
 
   async function handleLogout() {
+    sessionStorage.removeItem("ipecc_admin_active");
+    localStorage.removeItem("ipecc_admin_closed");
+    await fetch("/api/logout", { method: "POST" }).catch(() => null);
     await supabase.auth.signOut();
     router.replace("/login");
   }

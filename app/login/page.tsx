@@ -26,8 +26,17 @@ export default function LoginPage() {
         return;
       }
 
-      // 🔥 CORREÇÃO: força persistência da sessão
-      await supabase.auth.getSession();
+      const gate = await fetch("/api/admin/session", { method: "POST" });
+
+      if (!gate.ok) {
+        await supabase.auth.signOut();
+        setMsg("Acesso admin nao autorizado.");
+        setLoading(false);
+        return;
+      }
+
+      localStorage.removeItem("ipecc_admin_closed");
+      sessionStorage.setItem("ipecc_admin_active", "1");
 
       // mantém seu fluxo original
       window.location.href = "/admin";

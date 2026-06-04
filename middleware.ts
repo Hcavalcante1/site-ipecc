@@ -2,8 +2,26 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+const ADMIN_GATE_COOKIE = "ipecc_admin_gate";
+
 export async function middleware(req: NextRequest) {
+  const pathname = req.nextUrl.pathname;
+  const isAdminPath = pathname.startsWith("/admin");
   const res = NextResponse.next();
+
+  if (!isAdminPath) {
+    if (req.cookies.has(ADMIN_GATE_COOKIE)) {
+      res.cookies.set(ADMIN_GATE_COOKIE, "", { path: "/", maxAge: 0 });
+    }
+
+    return res;
+  }
+
+  if (req.cookies.get(ADMIN_GATE_COOKIE)?.value !== "1") {
+    const redirect = NextResponse.redirect(new URL("/login", req.url));
+    redirect.cookies.set(ADMIN_GATE_COOKIE, "", { path: "/", maxAge: 0 });
+    return redirect;
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -27,24 +45,36 @@ export async function middleware(req: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // 🔒 protege /admin
-  if (!user && req.nextUrl.pathname.startsWith("/admin")) {
+  if (!user) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  if (user && req.nextUrl.pathname.startsWith("/admin")) {
-    const { data: isAdmin, error } = await supabase.rpc("is_admin", {
-      user_id: user.id,
-    });
+  const { data: isAdmin, error } = await supabase.rpc("is_admin", {
+    user_id: user.id,
+  });
 
-    if (error || !isAdmin) {
-      return NextResponse.redirect(new URL("/login", req.url));
-    }
+  if (error || !isAdmin) {
+    const redirect = NextResponse.redirect(new URL("/login", req.url));
+    redirect.cookies.set(ADMIN_GATE_COOKIE, "", { path: "/", maxAge: 0 });
+    return redirect;
   }
 
   return res;
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: [
+    "/",
+    "/login",
+    "/inicio/:path*",
+    "/quem-somos/:path*",
+    "/projetos/:path*",
+    "/eventos/:path*",
+    "/noticias/:path*",
+    "/transparencia/:path*",
+    "/editais/:path*",
+    "/contato/:path*",
+    "/propostas/:path*",
+    "/admin/:path*",
+  ],
 };
