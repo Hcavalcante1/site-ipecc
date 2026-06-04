@@ -107,9 +107,13 @@ export default function QuemSomosPage() {
         <div className="container">
           <h2>{bloco.titulo}</h2>
 
-          {(bloco.texto || "").split("\n\n").map((p, i) => (
-            <p key={i}>{p}</p>
-          ))}
+          {(bloco.texto || "")
+            .split(/\r?\n\s*\r?\n/)
+            .map((p) => p.trim())
+            .filter(Boolean)
+            .map((p, i) => (
+              <p key={i}>{p}</p>
+            ))}
         </div>
       </section>
 

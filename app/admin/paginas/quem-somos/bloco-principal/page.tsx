@@ -50,9 +50,9 @@ export default function QuemSomosBlocoPrincipalAdminPage() {
       if (data) {
         setTitulo(data.titulo || "");
 
-        const partes = data.texto ? data.texto.split("\n\n") : [];
+        const partes = data.texto ? data.texto.split(/\r?\n\s*\r?\n/) : [];
         setTexto1(partes[0] || "");
-        setTexto2(partes[1] || "");
+        setTexto2(partes.slice(1).join("\n\n") || "");
       }
     }
 
@@ -65,7 +65,10 @@ export default function QuemSomosBlocoPrincipalAdminPage() {
     setSalvando(true);
 
     try {
-      const texto = `${texto1}\n\n${texto2}`;
+      const texto = [texto1, texto2]
+        .map((parte) => parte.trim())
+        .filter(Boolean)
+        .join("\n\n");
 
       const { error } = await upsertPaginaConteudo(supabase, {
         pagina_slug: "quem-somos",
