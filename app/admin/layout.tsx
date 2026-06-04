@@ -2,7 +2,7 @@
 
 import "./globals.css";
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import AdminToast from "@/components/AdminToast";
@@ -107,6 +107,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     );
   }
 
+  function handleMobileNav(event: MouseEvent<HTMLAnchorElement>, href: string) {
+    if (window.innerWidth > 900) return;
+    event.preventDefault();
+    setMenuOpen(false);
+    router.push(href);
+  }
+
   return (
     <div className="admin-body">
       <header className="admin-mobile-header">
@@ -151,35 +158,35 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </div>
 
           <nav className="admin-nav">
-            <Link href="/admin" className={navClass(pathname, "/admin", true)} onClick={() => setMenuOpen(false)}>
+            <Link href="/admin" className={navClass(pathname, "/admin", true)} onClick={(event) => handleMobileNav(event, "/admin")}>
               Dashboard
             </Link>
 
             <div className="admin-nav-section-title">Conteudo</div>
-            <Link href="/admin/paginas" className={navClass(pathname, "/admin/paginas")} onClick={() => setMenuOpen(false)}>
+            <Link href="/admin/paginas" className={navClass(pathname, "/admin/paginas")} onClick={(event) => handleMobileNav(event, "/admin/paginas")}>
               Paginas
             </Link>
-            <Link href="/admin/editais" className={navClass(pathname, "/admin/editais")} onClick={() => setMenuOpen(false)}>
+            <Link href="/admin/editais" className={navClass(pathname, "/admin/editais")} onClick={(event) => handleMobileNav(event, "/admin/editais")}>
               Editais
             </Link>
-            <Link href="/admin/noticias" className={navClass(pathname, "/admin/noticias")} onClick={() => setMenuOpen(false)}>
+            <Link href="/admin/noticias" className={navClass(pathname, "/admin/noticias")} onClick={(event) => handleMobileNav(event, "/admin/noticias")}>
               Noticias
             </Link>
-            <Link href="/admin/eventos" className={navClass(pathname, "/admin/eventos")} onClick={() => setMenuOpen(false)}>
+            <Link href="/admin/eventos" className={navClass(pathname, "/admin/eventos")} onClick={(event) => handleMobileNav(event, "/admin/eventos")}>
               Eventos
             </Link>
 
             <div className="admin-nav-section-title">Operacao</div>
-            <Link href="/admin/propostas" className={navClass(pathname, "/admin/propostas")} onClick={() => setMenuOpen(false)}>
+            <Link href="/admin/propostas" className={navClass(pathname, "/admin/propostas")} onClick={(event) => handleMobileNav(event, "/admin/propostas")}>
               Propostas
             </Link>
-            <Link href="/admin/certidoes" className={navClass(pathname, "/admin/certidoes")} onClick={() => setMenuOpen(false)}>
+            <Link href="/admin/certidoes" className={navClass(pathname, "/admin/certidoes")} onClick={(event) => handleMobileNav(event, "/admin/certidoes")}>
               Certidoes
             </Link>
-            <Link href="/admin/whatsapp" className={navClass(pathname, "/admin/whatsapp")} onClick={() => setMenuOpen(false)}>
+            <Link href="/admin/whatsapp" className={navClass(pathname, "/admin/whatsapp")} onClick={(event) => handleMobileNav(event, "/admin/whatsapp")}>
               WhatsApp
             </Link>
-            <Link href="/admin/logs" className={navClass(pathname, "/admin/logs")} onClick={() => setMenuOpen(false)}>
+            <Link href="/admin/logs" className={navClass(pathname, "/admin/logs")} onClick={(event) => handleMobileNav(event, "/admin/logs")}>
               Logs
             </Link>
           </nav>

@@ -37,8 +37,14 @@
   background: linear-gradient(150deg, #020617 0%, #020617 45%, #041a3b 100%);
   padding: 20px 14px 22px;
   box-shadow: 10px 0 40px rgba(0, 0, 0, 0.7);
-  position: relative;
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: auto;
+  max-height: 100vh;
+  overflow-y: auto;
   z-index: 10;
+  border-radius: 0 18px 18px 0;
 }
 
 /* Logo do painel */
@@ -381,7 +387,7 @@ a.admin-button {
   .admin-mobile-header {
     position: sticky;
     top: 0;
-    z-index: 800;
+    z-index: 2147483000;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -414,7 +420,7 @@ a.admin-button {
   .admin-mobile-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 900;
+    z-index: 2147483001;
     display: block;
     width: 100%;
     min-height: 100vh;
@@ -434,7 +440,7 @@ a.admin-button {
     top: 76px;
     left: 12px;
     bottom: auto;
-    z-index: 1000;
+    z-index: 2147483002;
     width: min(84vw, 310px);
     max-height: calc(100vh - 96px);
     display: block;
@@ -444,10 +450,12 @@ a.admin-button {
     border: 1px solid rgba(125, 211, 252, 0.28);
     border-radius: 18px;
     box-shadow: 0 24px 60px rgba(2, 6, 23, 0.72);
+    pointer-events: none;
   }
 
   .admin-sidebar--open {
     transform: translateX(0);
+    pointer-events: auto;
   }
 
   .admin-main {
