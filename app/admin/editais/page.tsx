@@ -275,6 +275,14 @@ export default function AdminEditais() {
               Editar
             </button>
 
+            <Link
+              className="admin-button"
+              style={{ background: "#0ea5e9", color: "#fff", textDecoration: "none" }}
+              href={`/admin/editais/${e.id}/governanca`}
+            >
+              Governança
+            </Link>
+
             {/* 🔴 EXCLUIR */}
             <button
               className="admin-button"

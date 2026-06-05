@@ -7,6 +7,8 @@ const TABLE_PATHS: Record<string, string[]> = {
   paginas_eixos: ["/projetos", "/"],
   editais: ["/editais", "/transparencia"],
   editais_documentos: ["/editais"],
+  documentos_publicos: ["/transparencia"],
+  editais_logs: [],
   transparencia_editais: ["/transparencia"],
   transparencia_convenios: ["/transparencia"],
   transparencia_prestacao_contas: ["/transparencia"],

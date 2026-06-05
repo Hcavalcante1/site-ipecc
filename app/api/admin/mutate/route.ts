@@ -11,6 +11,8 @@ const ALLOWED_TABLES = new Set([
   "paginas",
   "editais",
   "editais_documentos",
+  "documentos_publicos",
+  "editais_logs",
   "transparencia_editais",
   "transparencia_convenios",
   "transparencia_prestacao_contas",

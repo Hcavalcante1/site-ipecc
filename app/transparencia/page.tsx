@@ -94,6 +94,29 @@ type TransparenciaEdital = {
   updated_at?: string | null;
 };
 
+type DocumentoGovernancaEdital = {
+  id: string;
+  edital_id?: string | null;
+  tipo?: string | null;
+  fase?: string | null;
+  titulo?: string | null;
+  descricao?: string | null;
+  arquivo_url?: string | null;
+  publicado?: boolean | null;
+  publicado_em?: string | null;
+  created_at?: string | null;
+};
+
+type EditalGovernanca = {
+  id: string;
+  titulo?: string | null;
+  tipo?: string | null;
+  status?: string | null;
+  fase_atual?: string | null;
+  periodo?: string | null;
+  periodo_envio?: string | null;
+};
+
 type PrestacaoConvenioRef = {
   id: string;
   titulo?: string | null;
@@ -305,6 +328,20 @@ function safeText(value?: string | null): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function labelFase(value?: string | null): string {
+  const clean = safeText(value);
+  if (!clean) return "";
+  return clean.replace(/_/g, " ");
+}
+
+function getGovernancaDownloadUrl(url?: string | null): string {
+  const clean = safeText(url);
+  if (!clean) return "";
+  if (/^https?:\/\//i.test(clean)) return getDownloadUrl(clean);
+  if (clean.startsWith("/api/download/")) return clean;
+  return `/api/download/docs/${clean}`;
+}
+
 function parseLinkArray(input: any): LinkItem[] {
   if (!Array.isArray(input)) return [];
   return input.filter(
@@ -462,6 +499,7 @@ export default async function TransparenciaPage() {
     { data: conveniosData, error: conveniosError },
     { data: contratacoesData, error: contratacoesError },
     { data: prestacoesData, error: prestacoesError },
+    { data: documentosGovernancaData, error: documentosGovernancaError },
   ] = await Promise.all([
     supabase
       .from("paginas_conteudo")
@@ -503,21 +541,51 @@ export default async function TransparenciaPage() {
       .eq("publicado", true)
       .order("ordem", { ascending: true })
       .order("created_at", { ascending: true }),
+
+    supabase
+      .from("documentos_publicos")
+      .select("id,edital_id,tipo,fase,titulo,descricao,arquivo_url,publicado,publicado_em,created_at")
+      .eq("publicado", true)
+      .order("publicado_em", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false }),
   ]);
+
+  const documentosGovernanca = documentosGovernancaError
+    ? []
+    : ((documentosGovernancaData ?? []) as DocumentoGovernancaEdital[]);
+
+  const editalIdsGovernanca = Array.from(
+    new Set(
+      documentosGovernanca
+        .map((item) => safeText(item.edital_id))
+        .filter((id) => id.length > 0)
+    )
+  );
+
+  const { data: editaisGovernancaData, error: editaisGovernancaError } =
+    editalIdsGovernanca.length > 0
+      ? await supabase
+          .from("editais")
+          .select("id,titulo,tipo,status,fase_atual,periodo,periodo_envio")
+          .in("id", editalIdsGovernanca)
+      : { data: [], error: null };
 
   logPublicFetch({
     page: "/transparencia",
-    table: "paginas_conteudo+transparencia_*",
+    table: "paginas_conteudo+transparencia_*+documentos_publicos",
     count:
       (data?.length ?? 0) +
       (conveniosData?.length ?? 0) +
       (contratacoesData?.length ?? 0) +
-      (prestacoesData?.length ?? 0),
+      (prestacoesData?.length ?? 0) +
+      (documentosGovernancaData?.length ?? 0),
     error:
       error?.message ||
       conveniosError?.message ||
       contratacoesError?.message ||
-      prestacoesError?.message,
+      prestacoesError?.message ||
+      documentosGovernancaError?.message ||
+      editaisGovernancaError?.message,
   });
 
   const blocos = error ? [] : (data ?? []);
@@ -526,6 +594,25 @@ export default async function TransparenciaPage() {
   const prestacoes = prestacoesError
     ? []
     : ((prestacoesData ?? []) as TransparenciaPrestacaoConta[]);
+  const editaisGovernanca = editaisGovernancaError
+    ? []
+    : ((editaisGovernancaData ?? []) as EditalGovernanca[]);
+  const editaisGovernancaPorId = new Map(
+    editaisGovernanca.map((item) => [item.id, item])
+  );
+  const documentosGovernancaAgrupados = editalIdsGovernanca
+    .map((editalId) => ({
+      editalId,
+      edital: editaisGovernancaPorId.get(editalId) ?? null,
+      documentos: documentosGovernanca.filter((doc) => doc.edital_id === editalId),
+    }))
+    .filter((grupo) => grupo.documentos.length > 0)
+    .sort((a, b) =>
+      (a.edital?.titulo || a.editalId).localeCompare(
+        b.edital?.titulo || b.editalId,
+        "pt-BR"
+      )
+    );
 
   const heroBlock = getBlock(blocos, "hero");
   const compromissosBlock = getBlock(blocos, "compromissos");
@@ -892,7 +979,73 @@ export default async function TransparenciaPage() {
               <div className="card__body">
                 <h3 className="card__title">Editais e Chamamentos</h3>
 
-                {contratacoes.length === 0 ? (
+                {documentosGovernancaAgrupados.length > 0 && (
+                  <div style={{ display: "grid", gap: 20, marginBottom: 24 }}>
+                    {documentosGovernancaAgrupados.map((grupo) => (
+                      <div
+                        key={grupo.editalId}
+                        style={{
+                          padding: "18px 0",
+                          borderBottom: "1px solid rgba(255,255,255,0.08)",
+                        }}
+                      >
+                        <h4
+                          style={{
+                            marginBottom: 12,
+                            fontSize: "1.05rem",
+                            fontWeight: 700,
+                          }}
+                        >
+                          {grupo.edital?.titulo || "Edital / Chamamento"}
+                        </h4>
+
+                        {safeText(grupo.edital?.fase_atual) && (
+                          <p>
+                            <strong>Fase atual:</strong>{" "}
+                            {labelFase(grupo.edital?.fase_atual)}
+                          </p>
+                        )}
+
+                        {safeText(grupo.edital?.periodo || grupo.edital?.periodo_envio) && (
+                          <p>
+                            <strong>Periodo:</strong>{" "}
+                            {grupo.edital?.periodo || grupo.edital?.periodo_envio}
+                          </p>
+                        )}
+
+                        <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+                          {grupo.documentos.map((doc) => (
+                            <div key={doc.id}>
+                              <a
+                                href={getGovernancaDownloadUrl(doc.arquivo_url)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="card__link"
+                              >
+                                {doc.titulo || labelFase(doc.tipo) || "Documento oficial"}
+                              </a>
+                              <p style={{ marginTop: 4 }}>
+                                {safeText(doc.fase) && (
+                                  <>
+                                    <strong>Fase:</strong> {labelFase(doc.fase)}{" "}
+                                  </>
+                                )}
+                                {safeText(doc.tipo) && (
+                                  <>
+                                    <strong>Tipo:</strong> {labelFase(doc.tipo)}
+                                  </>
+                                )}
+                              </p>
+                              {safeText(doc.descricao) && <p>{doc.descricao}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {contratacoes.length === 0 && documentosGovernancaAgrupados.length === 0 ? (
                   <p>Nenhum processo publicado no momento.</p>
                 ) : (
                   <div style={{ display: "grid", gap: 20 }}>
