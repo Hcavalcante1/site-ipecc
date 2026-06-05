@@ -264,16 +264,13 @@ export default function AdminEditais() {
           <div style={acoesRowStyle}>
             
             {/* 🟡 EDITAR */}
-            <button
+            <Link
               className="admin-button"
-              style={{ background: "#eab308", color: "#000" }}
-              onClick={() =>
-                (window.location.href =
-                  adminCanonicalRoutes.editaisCadastro.editar(e.id))
-              }
+              style={{ background: "#eab308", color: "#000", textDecoration: "none" }}
+              href={adminCanonicalRoutes.editaisCadastro.editar(e.id)}
             >
               Editar
-            </button>
+            </Link>
 
             <Link
               className="admin-button"

@@ -358,6 +358,73 @@ export default function GovernancaEditalPage() {
     }
   }
 
+  async function excluirDocumento(doc: DocumentoPublico) {
+    setSaving(true);
+    setMsg("");
+    setDocMsg("");
+
+    try {
+      const podeExcluir = await confirmAction(
+        `Excluir o documento "${doc.titulo}" da governanca deste edital? O registro deixara de aparecer na Transparencia.`
+      );
+
+      if (!podeExcluir) {
+        setDocMsg("Exclusao de documento cancelada.");
+        return;
+      }
+
+      const { error } = await supabase
+        .from("documentos_publicos")
+        .delete()
+        .eq("id", doc.id);
+
+      if (error) {
+        setDocMsg(`Erro ao excluir documento: ${error.message}`);
+        triggerToast("Erro ao excluir documento.", "error");
+        return;
+      }
+
+      setDocMsg("Documento excluido da governanca.");
+      triggerToast("Documento excluido com sucesso.", "success");
+      await carregar();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function excluirLog(log: EditalLog) {
+    setSaving(true);
+    setMsg("");
+
+    try {
+      const podeExcluir = await confirmAction(
+        `Excluir este registro do historico institucional? Use apenas para remover testes ou registros lancados por engano.`
+      );
+
+      if (!podeExcluir) {
+        setMsg("Exclusao de registro cancelada.");
+        return;
+      }
+
+      const { error } = await supabase
+        .from("editais_logs")
+        .delete()
+        .eq("id", log.id);
+
+      if (error) {
+        setMsg(`Erro ao excluir registro: ${error.message}`);
+        triggerToast("Erro ao excluir registro.", "error");
+        return;
+      }
+
+      setMsg("Registro removido do historico.");
+      triggerToast("Registro excluido com sucesso.", "success");
+      await carregar();
+    } finally {
+      setSaving(false);
+    }
+  }
+
   if (loading) return <p style={{ padding: 24 }}>Carregando governanca...</p>;
 
   if (!edital) {
@@ -520,9 +587,20 @@ export default function GovernancaEditalPage() {
               <strong>{doc.titulo}</strong>
               <p><strong>Tipo:</strong> {label(doc.tipo)} | <strong>Fase:</strong> {label(doc.fase)}</p>
               {doc.descricao && <p>{doc.descricao}</p>}
-              <a href={downloadUrl(doc.arquivo_url)} target="_blank" rel="noreferrer">
-                Abrir documento
-              </a>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 10 }}>
+                <a href={downloadUrl(doc.arquivo_url)} target="_blank" rel="noreferrer">
+                  Abrir documento
+                </a>
+                <button
+                  type="button"
+                  className="admin-button"
+                  style={{ background: "#ef4444", color: "#fff" }}
+                  disabled={saving}
+                  onClick={() => excluirDocumento(doc)}
+                >
+                  Excluir documento
+                </button>
+              </div>
             </div>
           ))
         )}
@@ -559,6 +637,15 @@ export default function GovernancaEditalPage() {
                 </p>
               )}
               {log.observacao && <p>{log.observacao}</p>}
+              <button
+                type="button"
+                className="admin-button"
+                style={{ background: "#ef4444", color: "#fff", marginTop: 8 }}
+                disabled={saving}
+                onClick={() => excluirLog(log)}
+              >
+                Excluir registro
+              </button>
             </div>
           ))
         )}
