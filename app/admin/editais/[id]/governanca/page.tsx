@@ -74,6 +74,23 @@ const FASES = [
   "encerrado",
 ];
 
+const FASE_LABELS: Record<string, string> = {
+  rascunho: "Rascunho",
+  publicado: "Publicado",
+  recebimento_propostas: "Recebimento de propostas",
+  analise: "Analise tecnica",
+  resultado_preliminar: "Resultado preliminar",
+  recurso: "Recursos",
+  julgamento_recurso: "Julgamento dos recursos",
+  resultado_final: "Resultado final",
+  homologado: "Homologacao",
+  adjudicado: "Adjudicacao",
+  contratado: "Contrato / termo",
+  execucao: "Execucao",
+  prestacao_contas: "Prestacao de contas",
+  encerrado: "Encerramento",
+};
+
 const TIPOS_DOCUMENTO = [
   "edital",
   "anexo",
@@ -91,9 +108,31 @@ const TIPOS_DOCUMENTO = [
   "encerramento",
 ];
 
+const TIPO_DOCUMENTO_LABELS: Record<string, string> = {
+  edital: "Edital",
+  anexo: "Anexo",
+  ata: "Ata",
+  parecer: "Parecer",
+  recurso: "Recurso",
+  julgamento: "Julgamento",
+  resultado_preliminar: "Resultado preliminar",
+  resultado_final: "Resultado final",
+  homologacao: "Homologacao",
+  adjudicacao: "Adjudicacao",
+  contrato: "Contrato",
+  termo_parceria: "Termo de parceria",
+  prestacao_de_contas: "Prestacao de contas",
+  encerramento: "Encerramento",
+};
+
 function label(valor?: string | null) {
   if (!valor) return "-";
-  return valor.replace(/_/g, " ");
+  return FASE_LABELS[valor] || valor.replace(/_/g, " ");
+}
+
+function labelTipoDocumento(valor?: string | null) {
+  if (!valor) return "-";
+  return TIPO_DOCUMENTO_LABELS[valor] || valor.replace(/_/g, " ");
 }
 
 function formatDate(value?: string | null) {
@@ -143,6 +182,56 @@ export default function GovernancaEditalPage() {
   const [docArquivo, setDocArquivo] = useState<File | null>(null);
 
   const faseAtual = edital?.fase_atual || "rascunho";
+  const faseAtualIndex = Math.max(FASES.indexOf(faseAtual), 0);
+  const documentosOrdenados = useMemo(() => {
+    return [...documentos].sort((a, b) => {
+      const faseA = FASES.indexOf(a.fase || "");
+      const faseB = FASES.indexOf(b.fase || "");
+      const ordemFaseA = faseA === -1 ? 999 : faseA;
+      const ordemFaseB = faseB === -1 ? 999 : faseB;
+
+      if (ordemFaseA !== ordemFaseB) return ordemFaseA - ordemFaseB;
+
+      const dataA = new Date(a.publicado_em || a.created_at || 0).getTime();
+      const dataB = new Date(b.publicado_em || b.created_at || 0).getTime();
+      return dataB - dataA;
+    });
+  }, [documentos]);
+  const checklistGovernanca = useMemo(() => {
+    const temDocumento = (tipo: string) =>
+      documentos.some((doc) => doc.tipo === tipo);
+
+    return [
+      {
+        label: "Edital publicado",
+        done: !!edital?.arquivo_pdf || temDocumento("edital"),
+      },
+      {
+        label: "Resultado preliminar publicado",
+        done: temDocumento("resultado_preliminar"),
+      },
+      {
+        label: "Fase de recursos registrada",
+        done: faseAtualIndex >= FASES.indexOf("recurso"),
+      },
+      {
+        label: "Resultado final publicado",
+        done: temDocumento("resultado_final"),
+      },
+      {
+        label: "Homologacao publicada",
+        done: temDocumento("homologacao"),
+      },
+      {
+        label: "Contrato ou termo publicado",
+        done: temDocumento("contrato") || temDocumento("termo_parceria"),
+      },
+      {
+        label: "Prestacao de contas vinculada",
+        done: temDocumento("prestacao_de_contas"),
+      },
+    ];
+  }, [documentos, edital?.arquivo_pdf, faseAtualIndex]);
 
   const pendencias = useMemo(() => {
     const itens: string[] = [];
@@ -471,6 +560,79 @@ export default function GovernancaEditalPage() {
       </section>
 
       <section className="admin-card">
+        <h2 className="admin-h2">Linha do tempo institucional</h2>
+        <p>
+          Acompanhe a posicao atual do edital. A linha do tempo e apenas
+          orientativa; cada mudanca continua dependendo de decisao humana.
+        </p>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            gap: 12,
+            marginTop: 16,
+          }}
+        >
+          {FASES.map((fase, index) => {
+            const concluida = index < faseAtualIndex;
+            const atual = index === faseAtualIndex;
+
+            return (
+              <div
+                key={fase}
+                style={{
+                  borderRadius: 12,
+                  border: atual
+                    ? "1px solid rgba(34,197,94,.72)"
+                    : "1px solid rgba(255,255,255,.16)",
+                  background: atual
+                    ? "rgba(34,197,94,.16)"
+                    : concluida
+                    ? "rgba(14,165,233,.12)"
+                    : "rgba(15,23,42,.36)",
+                  padding: 14,
+                }}
+              >
+                <strong>{label(fase)}</strong>
+                <p style={{ marginTop: 6, marginBottom: 0 }}>
+                  {atual ? "Fase atual" : concluida ? "Etapa anterior" : "Etapa futura"}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="admin-card">
+        <h2 className="admin-h2">Checklist operacional</h2>
+        <p>
+          Use este resumo para conferir se os marcos documentais principais ja
+          foram registrados. Ele nao substitui a analise humana do edital.
+        </p>
+        <div style={{ display: "grid", gap: 10, marginTop: 16 }}>
+          {checklistGovernanca.map((item) => (
+            <div
+              key={item.label}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 12,
+                border: "1px solid rgba(255,255,255,.16)",
+                borderRadius: 12,
+                padding: "12px 14px",
+                background: item.done
+                  ? "rgba(34,197,94,.12)"
+                  : "rgba(245,158,11,.10)",
+              }}
+            >
+              <span>{item.label}</span>
+              <strong>{item.done ? "OK" : "Pendente"}</strong>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="admin-card">
         <h2 className="admin-h2">Avancar fase manualmente</h2>
         <label>Nova fase</label>
         <select value={novaFase} onChange={(e) => setNovaFase(e.target.value)}>
@@ -531,7 +693,7 @@ export default function GovernancaEditalPage() {
         <select value={docTipo} onChange={(e) => setDocTipo(e.target.value)}>
           {TIPOS_DOCUMENTO.map((tipo) => (
             <option key={tipo} value={tipo}>
-              {label(tipo)}
+              {labelTipoDocumento(tipo)}
             </option>
           ))}
         </select>
@@ -579,13 +741,18 @@ export default function GovernancaEditalPage() {
 
       <section className="admin-card">
         <h2 className="admin-h2">Documentos oficiais</h2>
-        {documentos.length === 0 ? (
+        <p>
+          Documentos publicados aqui aparecem na pagina publica Transparencia,
+          dentro de Editais e Chamamentos.
+        </p>
+        {documentosOrdenados.length === 0 ? (
           <p>Nenhum documento publicado neste edital.</p>
         ) : (
-          documentos.map((doc) => (
+          documentosOrdenados.map((doc) => (
             <div key={doc.id} style={{ borderTop: "1px solid rgba(255,255,255,.15)", paddingTop: 12, marginTop: 12 }}>
               <strong>{doc.titulo}</strong>
-              <p><strong>Tipo:</strong> {label(doc.tipo)} | <strong>Fase:</strong> {label(doc.fase)}</p>
+              <p><strong>Tipo:</strong> {labelTipoDocumento(doc.tipo)} | <strong>Fase:</strong> {label(doc.fase)}</p>
+              <p><strong>Publicado em:</strong> {formatDate(doc.publicado_em || doc.created_at)}</p>
               {doc.descricao && <p>{doc.descricao}</p>}
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 10 }}>
                 <a href={downloadUrl(doc.arquivo_url)} target="_blank" rel="noreferrer">

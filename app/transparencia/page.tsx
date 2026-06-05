@@ -117,6 +117,53 @@ type EditalGovernanca = {
   periodo_envio?: string | null;
 };
 
+const FASE_GOVERNANCA_LABELS: Record<string, string> = {
+  rascunho: "Rascunho",
+  publicado: "Publicado",
+  recebimento_propostas: "Recebimento de propostas",
+  analise: "Analise tecnica",
+  resultado_preliminar: "Resultado preliminar",
+  recurso: "Recursos",
+  julgamento_recurso: "Julgamento dos recursos",
+  resultado_final: "Resultado final",
+  homologado: "Homologacao",
+  adjudicado: "Adjudicacao",
+  contratado: "Contrato / termo",
+  execucao: "Execucao",
+  prestacao_contas: "Prestacao de contas",
+  encerrado: "Encerramento",
+};
+
+const FASE_GOVERNANCA_ORDEM = Object.keys(FASE_GOVERNANCA_LABELS);
+const FASES_PUBLICAS_TIMELINE = [
+  "publicado",
+  "resultado_preliminar",
+  "recurso",
+  "resultado_final",
+  "homologado",
+  "contratado",
+  "execucao",
+  "prestacao_contas",
+  "encerrado",
+];
+
+const TIPO_DOCUMENTO_GOVERNANCA_LABELS: Record<string, string> = {
+  edital: "Edital",
+  anexo: "Anexo",
+  ata: "Ata",
+  parecer: "Parecer",
+  recurso: "Recurso",
+  julgamento: "Julgamento",
+  resultado_preliminar: "Resultado preliminar",
+  resultado_final: "Resultado final",
+  homologacao: "Homologacao",
+  adjudicacao: "Adjudicacao",
+  contrato: "Contrato",
+  termo_parceria: "Termo de parceria",
+  prestacao_de_contas: "Prestacao de contas",
+  encerramento: "Encerramento",
+};
+
 type PrestacaoConvenioRef = {
   id: string;
   titulo?: string | null;
@@ -331,7 +378,13 @@ function safeText(value?: string | null): string {
 function labelFase(value?: string | null): string {
   const clean = safeText(value);
   if (!clean) return "";
-  return clean.replace(/_/g, " ");
+  return FASE_GOVERNANCA_LABELS[clean] || clean.replace(/_/g, " ");
+}
+
+function labelTipoDocumentoGovernanca(value?: string | null): string {
+  const clean = safeText(value);
+  if (!clean) return "";
+  return TIPO_DOCUMENTO_GOVERNANCA_LABELS[clean] || clean.replace(/_/g, " ");
 }
 
 function getGovernancaDownloadUrl(url?: string | null): string {
@@ -604,7 +657,20 @@ export default async function TransparenciaPage() {
     .map((editalId) => ({
       editalId,
       edital: editaisGovernancaPorId.get(editalId) ?? null,
-      documentos: documentosGovernanca.filter((doc) => doc.edital_id === editalId),
+      documentos: documentosGovernanca
+        .filter((doc) => doc.edital_id === editalId)
+        .sort((a, b) => {
+          const faseA = FASE_GOVERNANCA_ORDEM.indexOf(safeText(a.fase));
+          const faseB = FASE_GOVERNANCA_ORDEM.indexOf(safeText(b.fase));
+          const ordemFaseA = faseA === -1 ? 999 : faseA;
+          const ordemFaseB = faseB === -1 ? 999 : faseB;
+
+          if (ordemFaseA !== ordemFaseB) return ordemFaseA - ordemFaseB;
+
+          const dataA = new Date(a.publicado_em || a.created_at || 0).getTime();
+          const dataB = new Date(b.publicado_em || b.created_at || 0).getTime();
+          return dataB - dataA;
+        }),
     }))
     .filter((grupo) => grupo.documentos.length > 0)
     .sort((a, b) =>
@@ -813,7 +879,7 @@ export default async function TransparenciaPage() {
             className="cards__grid"
             style={{
               marginTop: 20,
-              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 360px), 1fr))",
               gap: 24,
               alignItems: "start",
             }}
@@ -1013,6 +1079,57 @@ export default async function TransparenciaPage() {
                           </p>
                         )}
 
+                        <p>
+                          <strong>Documentos institucionais publicados:</strong>{" "}
+                          {grupo.documentos.length}
+                        </p>
+
+                        <div
+                          aria-label="Linha do tempo do edital"
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+                            gap: 8,
+                            marginTop: 14,
+                          }}
+                        >
+                          {FASES_PUBLICAS_TIMELINE.map((fase) => {
+                            const faseAtual = safeText(grupo.edital?.fase_atual);
+                            const indiceAtual = FASE_GOVERNANCA_ORDEM.indexOf(faseAtual);
+                            const indiceFase = FASE_GOVERNANCA_ORDEM.indexOf(fase);
+                            const etapaAtual = faseAtual === fase;
+                            const etapaConcluida =
+                              indiceAtual >= 0 && indiceFase >= 0 && indiceFase < indiceAtual;
+                            const temDocumento = grupo.documentos.some(
+                              (doc) => safeText(doc.fase) === fase || safeText(doc.tipo) === fase
+                            );
+
+                            return (
+                              <span
+                                key={fase}
+                                style={{
+                                  borderRadius: 999,
+                                  border: etapaAtual
+                                    ? "1px solid rgba(34,197,94,.55)"
+                                    : "1px solid rgba(148,163,184,.24)",
+                                  background: etapaAtual
+                                    ? "rgba(34,197,94,.14)"
+                                    : etapaConcluida || temDocumento
+                                    ? "rgba(14,165,233,.12)"
+                                    : "rgba(15,23,42,.06)",
+                                  color: etapaAtual ? "#166534" : "#0f172a",
+                                  padding: "7px 10px",
+                                  fontSize: ".78rem",
+                                  fontWeight: 700,
+                                  textAlign: "center",
+                                }}
+                              >
+                                {labelFase(fase)}
+                              </span>
+                            );
+                          })}
+                        </div>
+
                         <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
                           {grupo.documentos.map((doc) => (
                             <div key={doc.id}>
@@ -1032,7 +1149,7 @@ export default async function TransparenciaPage() {
                                 )}
                                 {safeText(doc.tipo) && (
                                   <>
-                                    <strong>Tipo:</strong> {labelFase(doc.tipo)}
+                                    <strong>Tipo:</strong> {labelTipoDocumentoGovernanca(doc.tipo)}
                                   </>
                                 )}
                               </p>
@@ -1277,7 +1394,7 @@ export default async function TransparenciaPage() {
                     <div
   style={{
     display: "grid",
-    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))",
     gap: 14,
     alignItems: "start",
   }}
