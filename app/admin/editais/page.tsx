@@ -280,7 +280,7 @@ export default function AdminEditais() {
               style={{ background: "#0ea5e9", color: "#fff", textDecoration: "none" }}
               href={`/admin/editais/${e.id}/governanca`}
             >
-              Governança
+              Governança / fases
             </Link>
 
             {/* 🔴 EXCLUIR */}

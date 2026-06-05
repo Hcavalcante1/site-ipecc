@@ -156,7 +156,7 @@ export default function AdminDashboardClient({ userEmail }: Props) {
       <div style={styles.quickGrid}>
         <QuickLink href="/admin/noticias/form" title="Nova noticia" text="Publicar comunicado" />
         <QuickLink href="/admin/eventos/form" title="Novo evento" text="Cadastrar agenda" />
-        <QuickLink href="/admin/editais" title="Editais" text="Gerenciar documentos" />
+        <QuickLink href="/admin/editais" title="Editais e governanca" text="Publicacao, fases e documentos" />
         <QuickLink href="/admin/paginas/transparencia" title="Transparencia" text="Atualizar prestacao" />
       </div>
 
