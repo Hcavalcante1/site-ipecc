@@ -233,6 +233,27 @@ export default function GovernancaEditalPage() {
     ];
   }, [documentos, edital?.arquivo_pdf, faseAtualIndex]);
 
+  const resumoPropostas = useMemo(() => {
+    const porStatus = (status: string) =>
+      propostas.filter((proposta) => (proposta.status || "pendente") === status)
+        .length;
+
+    const ultima = [...propostas]
+      .sort((a, b) => {
+        const dataA = new Date(a.criado_em || a.created_at || 0).getTime();
+        const dataB = new Date(b.criado_em || b.created_at || 0).getTime();
+        return dataB - dataA;
+      })[0];
+
+    return {
+      total: propostas.length,
+      pendentes: porStatus("pendente"),
+      aprovadas: porStatus("aprovado"),
+      rejeitadas: porStatus("rejeitado"),
+      ultimaData: ultima?.criado_em || ultima?.created_at || null,
+    };
+  }, [propostas]);
+
   const pendencias = useMemo(() => {
     const itens: string[] = [];
     if (!edital?.arquivo_pdf) itens.push("PDF oficial do edital ainda nao identificado.");
@@ -775,17 +796,115 @@ export default function GovernancaEditalPage() {
 
       <section className="admin-card">
         <h2 className="admin-h2">Propostas vinculadas</h2>
+        <p>
+          Resumo das propostas recebidas para este edital. A decisao continua
+          sendo humana e registrada no detalhe de cada proposta.
+        </p>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+            gap: 12,
+            marginTop: 16,
+            marginBottom: 18,
+          }}
+        >
+          {[
+            { label: "Total", value: resumoPropostas.total, color: "#38bdf8" },
+            { label: "Pendentes", value: resumoPropostas.pendentes, color: "#facc15" },
+            { label: "Aprovadas", value: resumoPropostas.aprovadas, color: "#22c55e" },
+            { label: "Rejeitadas", value: resumoPropostas.rejeitadas, color: "#ef4444" },
+          ].map((item) => (
+            <div
+              key={item.label}
+              style={{
+                border: "1px solid rgba(255,255,255,.16)",
+                borderRadius: 14,
+                padding: 14,
+                background: "rgba(15,23,42,.34)",
+              }}
+            >
+              <span style={{ display: "block", color: "rgba(255,255,255,.72)" }}>
+                {item.label}
+              </span>
+              <strong style={{ color: item.color, fontSize: 28 }}>{item.value}</strong>
+            </div>
+          ))}
+          <div
+            style={{
+              border: "1px solid rgba(255,255,255,.16)",
+              borderRadius: 14,
+              padding: 14,
+              background: "rgba(15,23,42,.34)",
+            }}
+          >
+            <span style={{ display: "block", color: "rgba(255,255,255,.72)" }}>
+              Ultima proposta
+            </span>
+            <strong>{formatDate(resumoPropostas.ultimaData)}</strong>
+          </div>
+        </div>
         {propostas.length === 0 ? (
           <p>Nenhuma proposta vinculada a este edital.</p>
         ) : (
-          propostas.map((proposta) => (
-            <div key={proposta.id} style={{ borderTop: "1px solid rgba(255,255,255,.15)", paddingTop: 12, marginTop: 12 }}>
-              <strong>{proposta.nome || "Proposta"}</strong>
-              <p>{proposta.email || "-"} | {proposta.telefone || "-"}</p>
-              <p><strong>Status:</strong> {proposta.status || "pendente"}</p>
-              <Link href={`/admin/propostas/${proposta.id}`}>Ver detalhes</Link>
-            </div>
-          ))
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
+              gap: 12,
+            }}
+          >
+            {propostas.map((proposta) => {
+              const status = proposta.status || "pendente";
+              const statusColor =
+                status === "aprovado"
+                  ? "#22c55e"
+                  : status === "rejeitado"
+                  ? "#ef4444"
+                  : "#facc15";
+
+              return (
+                <div
+                  key={proposta.id}
+                  style={{
+                    border: "1px solid rgba(255,255,255,.16)",
+                    borderRadius: 14,
+                    padding: 14,
+                    background: "rgba(15,23,42,.28)",
+                  }}
+                >
+                  <strong>{proposta.nome || "Proposta"}</strong>
+                  <p style={{ marginTop: 8, marginBottom: 0 }}>
+                    {proposta.email || "-"}
+                  </p>
+                  <p style={{ marginTop: 6, marginBottom: 0 }}>
+                    {proposta.telefone || "-"}
+                  </p>
+                  <p style={{ marginTop: 6, marginBottom: 0 }}>
+                    <strong>Status:</strong>{" "}
+                    <span style={{ color: statusColor, fontWeight: 700 }}>
+                      {status}
+                    </span>
+                  </p>
+                  <p style={{ marginTop: 6, marginBottom: 0 }}>
+                    <strong>Enviada em:</strong>{" "}
+                    {formatDate(proposta.criado_em || proposta.created_at)}
+                  </p>
+                  <Link
+                    href={`/admin/propostas/${proposta.id}`}
+                    className="admin-button"
+                    style={{
+                      display: "inline-flex",
+                      marginTop: 12,
+                      textDecoration: "none",
+                    }}
+                  >
+                    Ver proposta
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
         )}
       </section>
 
