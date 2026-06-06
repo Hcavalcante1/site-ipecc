@@ -387,6 +387,18 @@ function labelTipoDocumentoGovernanca(value?: string | null): string {
   return TIPO_DOCUMENTO_GOVERNANCA_LABELS[clean] || clean.replace(/_/g, " ");
 }
 
+function getProximaFaseGovernanca(value?: string | null): string {
+  const clean = safeText(value);
+  const atualIndex = FASE_GOVERNANCA_ORDEM.indexOf(clean);
+  if (atualIndex < 0) return "";
+
+  const proxima = FASES_PUBLICAS_TIMELINE.find(
+    (fase) => FASE_GOVERNANCA_ORDEM.indexOf(fase) > atualIndex
+  );
+
+  return proxima ? labelFase(proxima) : "";
+}
+
 function getGovernancaDownloadUrl(url?: string | null): string {
   const clean = safeText(url);
   if (!clean) return "";
@@ -1047,17 +1059,25 @@ export default async function TransparenciaPage() {
 
                 {documentosGovernancaAgrupados.length > 0 && (
                   <div style={{ display: "grid", gap: 20, marginBottom: 24 }}>
-                    {documentosGovernancaAgrupados.map((grupo) => (
+                    {documentosGovernancaAgrupados.map((grupo) => {
+                      const faseAtual = safeText(grupo.edital?.fase_atual);
+                      const proximaFase = getProximaFaseGovernanca(faseAtual);
+
+                      return (
                       <div
                         key={grupo.editalId}
                         style={{
-                          padding: "18px 0",
-                          borderBottom: "1px solid rgba(255,255,255,0.08)",
+                          padding: 18,
+                          borderRadius: 18,
+                          border: "1px solid rgba(15,23,42,.12)",
+                          background:
+                            "linear-gradient(180deg, rgba(248,250,252,.96), rgba(241,245,249,.9))",
+                          boxShadow: "0 18px 40px rgba(15,23,42,.08)",
                         }}
                       >
                         <h4
                           style={{
-                            marginBottom: 12,
+                            marginBottom: 10,
                             fontSize: "1.05rem",
                             fontWeight: 700,
                           }}
@@ -1065,24 +1085,105 @@ export default async function TransparenciaPage() {
                           {grupo.edital?.titulo || "Edital / Chamamento"}
                         </h4>
 
-                        {safeText(grupo.edital?.fase_atual) && (
-                          <p>
-                            <strong>Fase atual:</strong>{" "}
-                            {labelFase(grupo.edital?.fase_atual)}
-                          </p>
-                        )}
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
+                            gap: 10,
+                            marginTop: 12,
+                          }}
+                        >
+                          {faseAtual && (
+                            <div
+                              style={{
+                                borderRadius: 14,
+                                background: "rgba(34,197,94,.12)",
+                                border: "1px solid rgba(34,197,94,.25)",
+                                padding: "10px 12px",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  display: "block",
+                                  fontSize: ".76rem",
+                                  fontWeight: 700,
+                                  color: "#166534",
+                                }}
+                              >
+                                Fase atual
+                              </span>
+                              <strong>{labelFase(faseAtual)}</strong>
+                            </div>
+                          )}
 
-                        {safeText(grupo.edital?.periodo || grupo.edital?.periodo_envio) && (
-                          <p>
-                            <strong>Periodo:</strong>{" "}
-                            {grupo.edital?.periodo || grupo.edital?.periodo_envio}
-                          </p>
-                        )}
+                          {safeText(grupo.edital?.periodo || grupo.edital?.periodo_envio) && (
+                            <div
+                              style={{
+                                borderRadius: 14,
+                                background: "rgba(14,165,233,.10)",
+                                border: "1px solid rgba(14,165,233,.20)",
+                                padding: "10px 12px",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  display: "block",
+                                  fontSize: ".76rem",
+                                  fontWeight: 700,
+                                  color: "#075985",
+                                }}
+                              >
+                                Periodo
+                              </span>
+                              <strong>{grupo.edital?.periodo || grupo.edital?.periodo_envio}</strong>
+                            </div>
+                          )}
 
-                        <p>
-                          <strong>Documentos institucionais publicados:</strong>{" "}
-                          {grupo.documentos.length}
-                        </p>
+                          <div
+                            style={{
+                              borderRadius: 14,
+                              background: "rgba(15,23,42,.06)",
+                              border: "1px solid rgba(15,23,42,.10)",
+                              padding: "10px 12px",
+                            }}
+                          >
+                            <span
+                              style={{
+                                display: "block",
+                                fontSize: ".76rem",
+                                fontWeight: 700,
+                                color: "#334155",
+                              }}
+                            >
+                              Documentos
+                            </span>
+                            <strong>{grupo.documentos.length} publicados</strong>
+                          </div>
+
+                          {proximaFase && (
+                            <div
+                              style={{
+                                borderRadius: 14,
+                                background: "rgba(245,158,11,.10)",
+                                border: "1px solid rgba(245,158,11,.24)",
+                                padding: "10px 12px",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  display: "block",
+                                  fontSize: ".76rem",
+                                  fontWeight: 700,
+                                  color: "#92400e",
+                                }}
+                              >
+                                Proxima etapa
+                              </span>
+                              <strong>{proximaFase}</strong>
+                            </div>
+                          )}
+                        </div>
 
                         <div
                           aria-label="Linha do tempo do edital"
@@ -1090,11 +1191,10 @@ export default async function TransparenciaPage() {
                             display: "grid",
                             gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
                             gap: 8,
-                            marginTop: 14,
+                            marginTop: 16,
                           }}
                         >
                           {FASES_PUBLICAS_TIMELINE.map((fase) => {
-                            const faseAtual = safeText(grupo.edital?.fase_atual);
                             const indiceAtual = FASE_GOVERNANCA_ORDEM.indexOf(faseAtual);
                             const indiceFase = FASE_GOVERNANCA_ORDEM.indexOf(fase);
                             const etapaAtual = faseAtual === fase;
@@ -1118,10 +1218,14 @@ export default async function TransparenciaPage() {
                                     ? "rgba(14,165,233,.12)"
                                     : "rgba(15,23,42,.06)",
                                   color: etapaAtual ? "#166534" : "#0f172a",
-                                  padding: "7px 10px",
+                                  padding: "8px 10px",
                                   fontSize: ".78rem",
                                   fontWeight: 700,
                                   textAlign: "center",
+                                  minHeight: 36,
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
                                 }}
                               >
                                 {labelFase(fase)}
@@ -1130,9 +1234,17 @@ export default async function TransparenciaPage() {
                           })}
                         </div>
 
-                        <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+                        <div style={{ display: "grid", gap: 10, marginTop: 16 }}>
                           {grupo.documentos.map((doc) => (
-                            <div key={doc.id}>
+                            <div
+                              key={doc.id}
+                              style={{
+                                borderRadius: 14,
+                                border: "1px solid rgba(15,23,42,.10)",
+                                background: "rgba(255,255,255,.72)",
+                                padding: 12,
+                              }}
+                            >
                               <a
                                 href={getGovernancaDownloadUrl(doc.arquivo_url)}
                                 target="_blank"
@@ -1158,7 +1270,8 @@ export default async function TransparenciaPage() {
                           ))}
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
 
