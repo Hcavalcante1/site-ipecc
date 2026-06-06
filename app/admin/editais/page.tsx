@@ -37,6 +37,28 @@ const excluirBtnStyle: CSSProperties = {
   color: adminTokens.colors.error.text,
 };
 
+const FASE_LABELS: Record<string, string> = {
+  rascunho: "Rascunho",
+  publicado: "Publicado",
+  recebimento_propostas: "Recebimento de propostas",
+  analise: "Analise tecnica",
+  resultado_preliminar: "Resultado preliminar",
+  recurso: "Recursos",
+  julgamento_recurso: "Julgamento dos recursos",
+  resultado_final: "Resultado final",
+  homologado: "Homologacao",
+  adjudicado: "Adjudicacao",
+  contratado: "Contrato / termo",
+  execucao: "Execucao",
+  prestacao_contas: "Prestacao de contas",
+  encerrado: "Encerramento",
+};
+
+function labelFase(valor?: string | null) {
+  if (!valor) return "Rascunho";
+  return FASE_LABELS[valor] || valor.replace(/_/g, " ");
+}
+
 export default function AdminEditais() {
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
@@ -260,6 +282,28 @@ export default function AdminEditais() {
           <p><strong>Tipo:</strong> {e.tipo}</p>
           <p><strong>Período:</strong> {e.periodo || "-"}</p>
           <p><strong>Status:</strong> {e.status}</p>
+          <p>
+            <strong>Fase de governanca:</strong>{" "}
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                borderRadius: 999,
+                padding: "4px 10px",
+                background:
+                  e.fase_atual === "rascunho"
+                    ? "rgba(245,158,11,.18)"
+                    : "rgba(34,197,94,.16)",
+                color:
+                  e.fase_atual === "rascunho"
+                    ? "#facc15"
+                    : "#86efac",
+                fontWeight: 800,
+              }}
+            >
+              {labelFase(e.fase_atual)}
+            </span>
+          </p>
 
           <div style={acoesRowStyle}>
             

@@ -183,6 +183,7 @@ export default function GovernancaEditalPage() {
 
   const faseAtual = edital?.fase_atual || "rascunho";
   const faseAtualIndex = Math.max(FASES.indexOf(faseAtual), 0);
+  const proximaFase = FASES[faseAtualIndex + 1] || null;
   const documentosOrdenados = useMemo(() => {
     return [...documentos].sort((a, b) => {
       const faseA = FASES.indexOf(a.fase || "");
@@ -567,6 +568,45 @@ export default function GovernancaEditalPage() {
         <p><strong>Status publico:</strong> {edital.status || "-"}</p>
         <p><strong>Periodo:</strong> {edital.periodo || edital.periodo_envio || "-"}</p>
         <p><strong>Fase atual:</strong> {label(faseAtual)}</p>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: 12,
+            marginTop: 14,
+          }}
+        >
+          <div
+            style={{
+              border: "1px solid rgba(255,255,255,.16)",
+              borderRadius: 14,
+              padding: "12px 14px",
+              background: "rgba(15,23,42,.34)",
+            }}
+          >
+            <strong>Visibilidade publica</strong>
+            <p style={{ marginBottom: 0 }}>
+              {faseAtual === "rascunho"
+                ? "Interno: nao aparece na Transparencia."
+                : "Publicado: aparece na Transparencia."}
+            </p>
+          </div>
+          <div
+            style={{
+              border: "1px solid rgba(255,255,255,.16)",
+              borderRadius: 14,
+              padding: "12px 14px",
+              background: "rgba(15,23,42,.34)",
+            }}
+          >
+            <strong>Proximo passo</strong>
+            <p style={{ marginBottom: 0 }}>
+              {proximaFase
+                ? `Avaliar avanco para ${label(proximaFase)}.`
+                : "Fluxo institucional encerrado."}
+            </p>
+          </div>
+        </div>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 12 }}>
           <Link className="admin-button" href={`/editais/${edital.id}`} target="_blank">
             Ver edital publico
