@@ -89,7 +89,10 @@ export default function Page() {
     if (!id) return;
 
     setLoading(true);
-    const { data } = await supabase.from("propostas").select("*").eq("id", id);
+    const { data } = await supabase
+      .from("propostas")
+      .select("*, editais(titulo, periodo, periodo_envio, fase_atual)")
+      .eq("id", id);
 
     if (data && data.length > 0) {
       setProposta(data[0]);
@@ -262,6 +265,12 @@ export default function Page() {
           </p>
           <p style={tightParaStyle}>
             <strong>Categoria:</strong> {categoria}
+          </p>
+          <p style={tightParaStyle}>
+            <strong>Edital vinculado:</strong>{" "}
+            {Array.isArray(proposta.editais)
+              ? proposta.editais[0]?.titulo || "sem vínculo"
+              : proposta.editais?.titulo || "sem vínculo"}
           </p>
         </div>
 

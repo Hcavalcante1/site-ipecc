@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import type { CSSProperties } from "react";
 import { adminTokens } from "@/components/admin";
 import { formatarCategoria, formatarTipoPessoa } from "@/lib/documental";
@@ -17,6 +18,8 @@ type Proposta = {
   tipo?: string;
   status?: string;
   categoria?: string | null;
+  edital_id?: string | null;
+  editais?: { titulo?: string | null } | { titulo?: string | null }[] | null;
   [key: string]: unknown;
 };
 
@@ -81,7 +84,7 @@ export default function Page() {
 
     const { data } = await supabase
       .from("propostas")
-      .select("*")
+      .select("*, editais(titulo)")
       .order("criado_em", { ascending: false });
 
     setPropostas(data || []);
@@ -171,6 +174,13 @@ export default function Page() {
             </p>
 
             <p style={tightParaStyle}>
+              <strong>Edital:</strong>{" "}
+              {Array.isArray(p.editais)
+                ? p.editais[0]?.titulo || "sem vínculo"
+                : p.editais?.titulo || "sem vínculo"}
+            </p>
+
+            <p style={tightParaStyle}>
               <strong>Status:</strong>{" "}
               <span
                 style={{
@@ -209,8 +219,8 @@ export default function Page() {
             ) : null}
 
             <div style={acoesRowStyle}>
-              <button
-                onClick={() => (window.location.href = `/admin/propostas/${p.id}`)}
+              <Link
+                href={`/admin/propostas/${p.id}`}
                 style={{
                   background: "#2563eb",
                   color: "#fff",
@@ -219,10 +229,13 @@ export default function Page() {
                   border: "none",
                   cursor: "pointer",
                   fontWeight: 600,
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
                 }}
               >
                 Ver
-              </button>
+              </Link>
 
               <button
                 onClick={() => atualizarStatus(p.id, "aprovado")}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { PublicHeroRolling } from "@/components/public";
 import PublicWhatsAppHelpLine from "@/components/public/PublicWhatsAppHelpLine";
@@ -23,6 +23,15 @@ type DocumentoChecklist = {
   label: string;
   nivel: NivelDocumento;
   hint?: string;
+};
+
+type EditalOpcao = {
+  id: string;
+  titulo?: string | null;
+  periodo?: string | null;
+  periodo_envio?: string | null;
+  status?: string | null;
+  fase_atual?: string | null;
 };
 
 const inputStyle: React.CSSProperties = {
@@ -520,6 +529,9 @@ export default function PropostasPage() {
   const [tipoPessoa, setTipoPessoa] = useState<TipoPessoa>("pessoa_juridica");
   const [etapa, setEtapa] = useState<EtapaFormulario>("dados");
   const [arquivos, setArquivos] = useState<Record<string, File | null>>({});
+  const [editais, setEditais] = useState<EditalOpcao[]>([]);
+  const [editalId, setEditalId] = useState("");
+  const [carregandoEditais, setCarregandoEditais] = useState(true);
   const [secoesSalvasLocal, setSecoesSalvasLocal] = useState<
     Partial<Record<CategoriaDocumento, boolean>>
   >({});
@@ -540,6 +552,42 @@ export default function PropostasPage() {
       documentos: DOCUMENTOS_POR_TIPO[tipoPessoa][cat] || [],
     }));
   }, [tipoPessoa]);
+
+  const editalSelecionado = useMemo(
+    () => editais.find((edital) => edital.id === editalId) ?? null,
+    [editais, editalId]
+  );
+
+  useEffect(() => {
+    async function carregarEditaisAbertos() {
+      setCarregandoEditais(true);
+
+      const { data } = await supabase
+        .from("editais")
+        .select("id,titulo,periodo,periodo_envio,status,fase_atual")
+        .order("created_at", { ascending: false });
+
+      const abertos = ((data || []) as EditalOpcao[]).filter((edital) => {
+        const fase = String(edital.fase_atual || "").trim();
+        const status = String(edital.status || "").trim();
+        return (
+          fase === "publicado" ||
+          fase === "recebimento_propostas" ||
+          status === "aberto"
+        );
+      });
+
+      setEditais(abertos);
+      setEditalId((atual) =>
+        atual && abertos.some((edital) => edital.id === atual)
+          ? atual
+          : abertos[0]?.id ?? ""
+      );
+      setCarregandoEditais(false);
+    }
+
+    carregarEditaisAbertos();
+  }, []);
 
   function setArquivo(key: string, file: File | null) {
     setArquivos((prev) => ({ ...prev, [key]: file }));
@@ -588,6 +636,12 @@ export default function PropostasPage() {
 
   async function handleEnviarProposta(e: React.FormEvent) {
     e.preventDefault();
+
+    if (!editalId) {
+      alert("Selecione o edital ou chamamento vinculado antes de enviar.");
+      setEtapa("dados");
+      return;
+    }
 
     if (!dados.nome.trim() || !dados.documento.trim() || !dados.email.trim()) {
       alert("Preencha os dados da proponente antes de enviar.");
@@ -647,6 +701,7 @@ export default function PropostasPage() {
         tipo: tipoPessoa,
         categoria: "habilitacao_juridica",
         arquivo_url,
+        edital_id: editalId,
       };
 
       aplicarUrlsNoInsert(data, arquivosEnviados);
@@ -677,6 +732,7 @@ export default function PropostasPage() {
 
       alert("Proposta enviada com sucesso!");
       setTipoPessoa("pessoa_juridica");
+      setEditalId("");
       limparDocumentosEMensagem();
     } catch (err: unknown) {
       console.error(err);
@@ -819,6 +875,10 @@ export default function PropostasPage() {
         >
           <p style={{ margin: "0 0 8px", fontWeight: 700 }}>Dados da proponente</p>
           <p style={{ margin: "4px 0", fontSize: 14 }}>
+            <strong>Edital / chamamento:</strong>{" "}
+            {editalSelecionado?.titulo || "—"}
+          </p>
+          <p style={{ margin: "4px 0", fontSize: 14 }}>
             <strong>Tipo:</strong> {LABEL_TIPO_PESSOA[tipoPessoa]}
           </p>
           <p style={{ margin: "4px 0", fontSize: 14 }}>
@@ -929,6 +989,42 @@ export default function PropostasPage() {
                 >
                   Dados da proponente
                 </h2>
+                <div
+                  style={{
+                    marginBottom: 16,
+                    padding: 14,
+                    borderRadius: 12,
+                    border: "1px solid #bfdbfe",
+                    background: "#eff6ff",
+                  }}
+                >
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 14 }}>
+                    Edital ou chamamento vinculado
+                  </label>
+                  <select
+                    value={editalId}
+                    onChange={(e) => setEditalId(e.target.value)}
+                    disabled={carregandoEditais || editais.length === 0}
+                    required
+                    style={{ ...inputStyle, cursor: "pointer", background: "#fff" }}
+                  >
+                    {carregandoEditais ? (
+                      <option value="">Carregando editais...</option>
+                    ) : editais.length === 0 ? (
+                      <option value="">Nenhum edital aberto para propostas</option>
+                    ) : (
+                      editais.map((edital) => (
+                        <option key={edital.id} value={edital.id}>
+                          {edital.titulo || "Edital / Chamamento"}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  <p style={{ margin: "8px 0 0", fontSize: 13, color: "#1e3a8a" }}>
+                    A proposta ficará vinculada ao edital selecionado para análise
+                    humana e registro na governança institucional.
+                  </p>
+                </div>
                 <div style={{ marginBottom: 16 }}>
                   <label style={{ display: "block", marginBottom: 6, fontSize: 14 }}>
                     Tipo de participante
