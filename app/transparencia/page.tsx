@@ -399,6 +399,17 @@ function getProximaFaseGovernanca(value?: string | null): string {
   return proxima ? labelFase(proxima) : "";
 }
 
+function isGovernancaPublicavel(edital?: EditalGovernanca | null): boolean {
+  if (!edital) return false;
+  const fase = safeText(edital.fase_atual);
+  const status = safeText(edital.status);
+
+  if (fase === "rascunho") return false;
+  if (fase) return true;
+
+  return status === "aberto" || status === "encerrado";
+}
+
 function getGovernancaDownloadUrl(url?: string | null): string {
   const clean = safeText(url);
   if (!clean) return "";
@@ -684,7 +695,10 @@ export default async function TransparenciaPage() {
           return dataB - dataA;
         }),
     }))
-    .filter((grupo) => grupo.documentos.length > 0)
+    .filter(
+      (grupo) =>
+        grupo.documentos.length > 0 && isGovernancaPublicavel(grupo.edital)
+    )
     .sort((a, b) =>
       (a.edital?.titulo || a.editalId).localeCompare(
         b.edital?.titulo || b.editalId,
