@@ -656,7 +656,16 @@ export default function GovernancaEditalPage() {
       <section className="admin-card">
         <h2 className="admin-h2">Avancar fase manualmente</h2>
         <label>Nova fase</label>
-        <select value={novaFase} onChange={(e) => setNovaFase(e.target.value)}>
+        <select
+          value={novaFase}
+          onChange={(e) => setNovaFase(e.target.value)}
+          style={{
+            minHeight: 48,
+            padding: "12px 14px",
+            fontSize: "1rem",
+            fontWeight: 700,
+          }}
+        >
           {FASES.map((fase) => (
             <option key={fase} value={fase}>
               {label(fase)}
@@ -672,10 +681,23 @@ export default function GovernancaEditalPage() {
           placeholder="Descreva o motivo da mudanca de fase."
         />
 
-        <label style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 12 }}>
+        <label
+          style={{
+            display: "flex",
+            gap: 10,
+            alignItems: "center",
+            marginTop: 14,
+            padding: "12px 14px",
+            border: "1px solid rgba(148, 163, 184, 0.38)",
+            borderRadius: 12,
+            background: "rgba(15, 23, 42, 0.45)",
+            lineHeight: 1.45,
+          }}
+        >
           <input
             type="checkbox"
             checked={confirmado}
+            style={{ width: 18, height: 18, flex: "0 0 auto" }}
             onChange={(e) => setConfirmado(e.target.checked)}
           />
           Confirmo que esta mudanca representa uma decisao humana e institucional.
