@@ -111,10 +111,12 @@ export default async function EditalDetalhePage({ params }: Props) {
         text="Chamamentos públicos, editais e oportunidades de parceria."
       />
 
-      <PublicWhatsAppHelpLine
-        assunto="editais"
-        intro="Precisa de orientação sobre este edital?"
-      />
+      <div className="container public-detail-page__intro">
+        <PublicWhatsAppHelpLine
+          assunto="editais"
+          intro="Precisa de orientação sobre este edital?"
+        />
+      </div>
 
       <PublicPageContent className="public-content--detail">
         <article className="public-detail-card">
