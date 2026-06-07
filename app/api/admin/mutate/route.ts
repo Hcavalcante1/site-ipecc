@@ -1,17 +1,7 @@
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
 import { verifyAdminSession } from "@/lib/auth/adminSession";
 import { revalidateForTable } from "@/lib/admin/revalidateTables";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import {
-  isEditalFaseRascunho,
-  MSG_EXCLUSAO_SOMENTE_RASCUNHO,
-  normalizarFaseEdital,
-} from "@/lib/editais/governancaRules";
-import {
-  contarPropostasAprovadasEdital,
-  MSG_REVERTER_RASCUNHO_BLOQUEADO,
-} from "@/lib/propostas/enviarPropostaPublica";
 
 const ALLOWED_TABLES = new Set([
   "noticias",
@@ -49,81 +39,6 @@ type Body = {
   upsertOptions?: { onConflict?: string; ignoreDuplicates?: boolean };
 };
 
-type EditalDeletePrep =
-  | { ok: true; arquivoPdf: string | null }
-  | { ok: false; message: string; status: 404 | 409 | 500 };
-
-async function prepareEditalDelete(editalId: string): Promise<EditalDeletePrep> {
-  const { data: edital, error: editalError } = await supabaseAdmin
-    .from("editais")
-    .select("id, fase_atual, arquivo_pdf")
-    .eq("id", editalId)
-    .maybeSingle();
-
-  if (editalError) {
-    return { ok: false, message: editalError.message, status: 500 };
-  }
-
-  if (!edital) {
-    return {
-      ok: false,
-      message: "Edital nao encontrado para exclusao.",
-      status: 404,
-    };
-  }
-
-  if (!isEditalFaseRascunho(edital.fase_atual)) {
-    return {
-      ok: false,
-      message: MSG_EXCLUSAO_SOMENTE_RASCUNHO,
-      status: 409,
-    };
-  }
-
-  const { data: propostas, error: fetchError } = await supabaseAdmin
-    .from("propostas")
-    .select("id")
-    .eq("edital_id", editalId);
-
-  if (fetchError) {
-    return { ok: false, message: fetchError.message, status: 500 };
-  }
-
-  if (!propostas?.length) {
-    return {
-      ok: true,
-      arquivoPdf: String(edital.arquivo_pdf || "").trim() || null,
-    };
-  }
-
-  const { error: unlinkError } = await supabaseAdmin
-    .from("propostas")
-    .update({ edital_id: null })
-    .eq("edital_id", editalId);
-
-  if (unlinkError) {
-    return { ok: false, message: unlinkError.message, status: 500 };
-  }
-
-  return {
-    ok: true,
-    arquivoPdf: String(edital.arquivo_pdf || "").trim() || null,
-  };
-}
-
-function friendlyDeleteError(message: string, table: string) {
-  if (
-    message.includes("violates foreign key constraint") ||
-    message.includes("still referenced")
-  ) {
-    if (table === "editais") {
-      return "Nao foi possivel excluir o edital porque ainda existem registros vinculados. Remova ou desvincule propostas e documentos antes de tentar novamente.";
-    }
-    return "Nao foi possivel excluir porque ainda existem registros vinculados.";
-  }
-  return message;
-}
-
 export async function POST(req: Request) {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
     return NextResponse.json(
@@ -145,9 +60,6 @@ export async function POST(req: Request) {
     const body = (await req.json()) as Body;
     const { table, action, payload, filters = [], select, single, upsertOptions } = body;
 
-    let editalPdfParaRemover: string | null = null;
-    let revertingToRascunho: { editalId: string; faseAnterior: string } | null = null;
-
     // no debug logs
 
     if (!table || !ALLOWED_TABLES.has(table)) {
@@ -166,69 +78,6 @@ export async function POST(req: Request) {
         { ok: false, error: "Filtros sao obrigatorios para update/delete" },
         { status: 400 }
       );
-    }
-
-    if (table === "editais" && action === "delete") {
-      const idFilter = filters.find((filter) => filter.column === "id");
-      const editalId = idFilter?.value;
-
-      if (typeof editalId !== "string" || !editalId.trim()) {
-        return NextResponse.json(
-          { ok: false, error: "ID do edital e obrigatorio para exclusao." },
-          { status: 400 }
-        );
-      }
-
-      const prep = await prepareEditalDelete(editalId);
-      if (prep.ok === false) {
-        return NextResponse.json(
-          {
-            ok: false,
-            error: friendlyDeleteError(prep.message, table),
-            data: null,
-          },
-          { status: prep.status }
-        );
-      }
-      editalPdfParaRemover = prep.arquivoPdf;
-    }
-
-    if (table === "editais" && action === "update" && payload && typeof payload === "object") {
-      const dados = payload as Record<string, unknown>;
-      if (dados.fase_atual === "rascunho") {
-        const idFilter = filters.find((filter) => filter.column === "id");
-        const editalId = idFilter?.value;
-
-        if (typeof editalId === "string" && editalId.trim()) {
-          const { data: atual, error: atualError } = await supabaseAdmin
-            .from("editais")
-            .select("fase_atual")
-            .eq("id", editalId)
-            .maybeSingle();
-
-          if (atualError) {
-            return NextResponse.json(
-              { ok: false, error: atualError.message, data: null },
-              { status: 500 }
-            );
-          }
-
-          if (atual && !isEditalFaseRascunho(atual.fase_atual)) {
-            const aprovadas = await contarPropostasAprovadasEdital(editalId);
-            if (aprovadas > 0) {
-              return NextResponse.json(
-                { ok: false, error: MSG_REVERTER_RASCUNHO_BLOQUEADO, data: null },
-                { status: 409 }
-              );
-            }
-
-            revertingToRascunho = {
-              editalId,
-              faseAnterior: normalizarFaseEdital(atual.fase_atual),
-            };
-          }
-        }
-      }
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -297,11 +146,7 @@ export async function POST(req: Request) {
 
     if (result.error) {
       return NextResponse.json(
-        {
-          ok: false,
-          error: friendlyDeleteError(result.error.message, table),
-          data: null,
-        },
+        { ok: false, error: result.error.message, data: null },
         { status: 500 }
       );
     }
@@ -323,33 +168,9 @@ export async function POST(req: Request) {
           { status: 404 }
         );
       }
-
-      if (table === "editais" && editalPdfParaRemover) {
-        await supabaseAdmin.storage
-          .from("editais")
-          .remove([editalPdfParaRemover])
-          .catch(() => null);
-      }
-    }
-
-    if (revertingToRascunho) {
-      await supabaseAdmin.from("editais_logs").insert({
-        edital_id: revertingToRascunho.editalId,
-        acao: "fase_alterada",
-        fase_anterior: revertingToRascunho.faseAnterior,
-        fase_nova: "rascunho",
-        observacao:
-          "Retorno para Rascunho (operacao admin — testes ou limpeza).",
-      });
     }
 
     revalidateForTable(table);
-    if (table === "editais") {
-      const idFilter = filters.find((filter) => filter.column === "id");
-      if (typeof idFilter?.value === "string" && idFilter.value.trim()) {
-        revalidatePath(`/editais/${idFilter.value}`);
-      }
-    }
 
     return NextResponse.json({
       ok: true,

@@ -1,14 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 /* ================= CONTROLADOR GLOBAL ================= */
 
 let openConfirm: ((msg: string) => Promise<boolean>) | null = null;
-
-export function isConfirmModalReady() {
-  return openConfirm !== null;
-}
 
 export function confirmAction(message: string): Promise<boolean> {
   if (!openConfirm) {
@@ -23,29 +19,25 @@ export function confirmAction(message: string): Promise<boolean> {
 export default function AdminConfirmModal() {
   const [visible, setVisible] = useState(false);
   const [message, setMessage] = useState("");
-  const resolverRef = useRef<((value: boolean) => void) | null>(null);
+  const [resolver, setResolver] = useState<((value: boolean) => void) | null>(null);
 
   useEffect(() => {
     openConfirm = (msg: string) => {
-      return new Promise((resolve) => {
-        resolverRef.current = resolve;
-        setMessage(msg);
-        setVisible(true);
-      });
-    };
+      setMessage(msg);
+      setVisible(true);
 
-    return () => {
-      openConfirm = null;
-      resolverRef.current?.(false);
-      resolverRef.current = null;
+      return new Promise((resolve) => {
+        setResolver(() => resolve);
+      });
     };
   }, []);
 
   function handleConfirm(value: boolean) {
-    const resolve = resolverRef.current;
-    resolverRef.current = null;
+    if (resolver) {
+      resolver(value);
+    }
     setVisible(false);
-    resolve?.(value);
+    setResolver(null);
   }
 
   if (!visible) return null;
@@ -57,11 +49,11 @@ export default function AdminConfirmModal() {
         <p style={text}>{message}</p>
 
         <div style={actions}>
-          <button type="button" style={cancelBtn} onClick={() => handleConfirm(false)}>
+          <button style={cancelBtn} onClick={() => handleConfirm(false)}>
             Cancelar
           </button>
 
-          <button type="button" style={confirmBtn} onClick={() => handleConfirm(true)}>
+          <button style={confirmBtn} onClick={() => handleConfirm(true)}>
             Confirmar
           </button>
         </div>

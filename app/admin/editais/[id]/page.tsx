@@ -3,33 +3,34 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { triggerToast } from "@/components/AdminToast";
-import { FASES_GOVERNANCA, labelFaseAdmin } from "@/lib/editais/fasesAdmin";
-import { isEditalFaseRascunho } from "@/lib/editais/governancaRules";
 
 export default function EditarEdital() {
-  const params = useParams();
-  const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  const { id } = useParams();
   const router = useRouter();
 
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [periodo, setPeriodo] = useState("");
+
+  // 🔥 NOVO CAMPO
   const [tipo, setTipo] = useState("Chamamento público");
-  const [faseAtual, setFaseAtual] = useState("rascunho");
+
   const [status, setStatus] = useState<"aberto" | "encerrado" | "em_breve">(
-    "em_breve"
+    "aberto"
   );
 
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState("");
 
+  // =========================
+  // CARREGAR DADOS
+  // =========================
   useEffect(() => {
     async function carregar() {
       if (!id) return;
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("editais")
         .select("*")
         .eq("id", id)
@@ -39,9 +40,8 @@ export default function EditarEdital() {
         setTitulo(data.titulo || "");
         setDescricao(data.descricao || "");
         setPeriodo(data.periodo || "");
-        setTipo(data.tipo || "Chamamento público");
-        setFaseAtual(data.fase_atual || "rascunho");
-        setStatus(data.status || "em_breve");
+        setTipo(data.tipo || "Chamamento público"); // 🔥 IMPORTANTE
+        setStatus(data.status || "aberto");
       }
 
       setLoading(false);
@@ -50,17 +50,14 @@ export default function EditarEdital() {
     carregar();
   }, [id]);
 
-  async function salvarEditalCadastrado() {
+  // =========================
+  // SALVAR
+  // =========================
+  async function salvar() {
     setSalvando(true);
     setMsg("");
 
     try {
-      if (!id) {
-        setMsg("Edital nao identificado.");
-        triggerToast("Edital nao identificado.", "error");
-        return;
-      }
-
       if (!titulo.trim()) {
         setMsg("Preencha o titulo do edital.");
         return;
@@ -76,47 +73,29 @@ export default function EditarEdital() {
         return;
       }
 
-      const res = await fetch("/api/admin/mutate", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          table: "editais",
-          action: "update",
-          payload: {
-            titulo,
-            descricao,
-            periodo,
-            periodo_envio: periodo,
-            tipo,
-            status,
-            fase_atual: faseAtual,
-          },
-          filters: [{ column: "id", value: id }],
-          select: "id",
-          single: true,
-        }),
-      });
+      const { error } = await supabase
+        .from("editais")
+        .update({
+          titulo,
+          descricao,
+          periodo,
+          periodo_envio: periodo,
+          tipo, // 🔥 AGORA SALVA
+          status,
+        })
+        .eq("id", id);
 
-      const json = (await res.json().catch(() => ({}))) as {
-        ok?: boolean;
-        error?: string;
-      };
-
-      if (!res.ok || !json.ok) {
-        const erro = json.error || "Erro ao atualizar edital.";
-        setMsg(`Erro ao atualizar edital: ${erro}`);
-        triggerToast(erro, "error");
+      if (error) {
+        console.error(error);
+        setMsg(`Erro ao atualizar edital: ${error.message}`);
         return;
       }
 
       setMsg("Edital atualizado com sucesso.");
-      triggerToast("Edital atualizado com sucesso.", "success");
       router.push("/admin/editais");
     } catch (error) {
       console.error(error);
       setMsg("Erro inesperado ao atualizar edital.");
-      triggerToast("Erro inesperado ao atualizar edital.", "error");
     } finally {
       setSalvando(false);
     }
@@ -127,10 +106,6 @@ export default function EditarEdital() {
   return (
     <div className="admin-box">
       <h1 className="admin-h1">Editar Edital</h1>
-      <p className="admin-subtitle">
-        Para excluir editais de teste, defina a fase como <strong>Rascunho</strong> e salve.
-        Depois use o botao Excluir na listagem.
-      </p>
 
       <div className="admin-card">
         <label>Título do edital</label>
@@ -152,6 +127,7 @@ export default function EditarEdital() {
           onChange={(e) => setPeriodo(e.target.value)}
         />
 
+        {/* 🔥 TIPO (NOVO) */}
         <label>Tipo</label>
         <select
           value={tipo}
@@ -162,23 +138,6 @@ export default function EditarEdital() {
           <option value="Credenciamento">Credenciamento</option>
         </select>
 
-        <label>Fase de governanca</label>
-        <select
-          value={faseAtual}
-          onChange={(e) => setFaseAtual(e.target.value)}
-        >
-          {FASES_GOVERNANCA.map((fase) => (
-            <option key={fase} value={fase}>
-              {labelFaseAdmin(fase)}
-            </option>
-          ))}
-        </select>
-        <p style={{ marginTop: 8, fontSize: 13, color: "#94a3b8" }}>
-          {isEditalFaseRascunho(faseAtual)
-            ? "Fase Rascunho: edital de teste — exclusao permitida na listagem."
-            : "Fora de Rascunho: processo institucional — exclusao bloqueada na listagem."}
-        </p>
-
         <label>Status</label>
         <select
           value={status}
@@ -186,9 +145,9 @@ export default function EditarEdital() {
             setStatus(e.target.value as "aberto" | "encerrado" | "em_breve")
           }
         >
-          <option value="em_breve">Em breve</option>
-          <option value="aberto">Aberto (testes em /propostas se Rascunho)</option>
+          <option value="aberto">Aberto</option>
           <option value="encerrado">Encerrado</option>
+          <option value="em_breve">Em breve</option>
         </select>
 
         {msg && <p>{msg}</p>}
@@ -196,7 +155,7 @@ export default function EditarEdital() {
         <button
           type="button"
           className="admin-button"
-          onClick={salvarEditalCadastrado}
+          onClick={salvar}
           disabled={salvando}
         >
           {salvando ? "Salvando…" : "Salvar alterações"}

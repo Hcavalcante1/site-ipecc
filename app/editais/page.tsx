@@ -4,8 +4,10 @@ import Link from "next/link";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { PublicHeroRolling, PublicPageContent } from "@/components/public";
 import PublicWhatsAppHelpLine from "@/components/public/PublicWhatsAppHelpLine";
-import { editalStatusLabel, resolveEditalDownloadUrl } from "@/lib/editais/download";
-import { editalVisivelNoSitePublico } from "@/lib/editais/governancaRules";
+import {
+  editalStatusLabel,
+  resolveEditalDownloadUrl,
+} from "@/lib/editais/download";
 import { logPublicFetch } from "@/lib/observability/publicFetchLog";
 import { fetchPaginaConteudo } from "@/lib/cms/paginasConteudoServer";
 
@@ -25,7 +27,6 @@ type Edital = {
   periodo_envio?: string;
   status: EditalStatus;
   arquivo_pdf?: string;
-  fase_atual?: string | null;
 };
 
 type TipoPessoa = "pessoa_juridica" | "osc" | "pessoa_fisica";
@@ -60,19 +61,13 @@ const TITULOS_CATEGORIA: Record<CategoriaDocumento, string> = {
 export default async function EditaisPublicPage() {
   const { data: editais, error: editaisError } = await supabase
     .from("editais")
-    .select(
-      "id, titulo, descricao, tipo, periodo_envio, periodo, status, arquivo_pdf, fase_atual"
-    )
+    .select("id, titulo, descricao, tipo, periodo_envio, periodo, status, arquivo_pdf")
     .order("created_at", { ascending: false });
-
-  const editaisPublicos = ((editais || []) as Edital[]).filter((edital) =>
-    editalVisivelNoSitePublico(edital)
-  );
 
   logPublicFetch({
     page: "/editais",
     table: "editais",
-    count: editaisPublicos.length,
+    count: editais?.length ?? 0,
     error: editaisError?.message,
   });
 
@@ -167,9 +162,9 @@ export default async function EditaisPublicPage() {
         <div className="container">
           <h2 style={{ marginBottom: 24 }}>Editais e chamadas ativas</h2>
 
-          {editaisPublicos.length ? (
+          {(editais as Edital[] | null)?.length ? (
             <div className="cards__grid">
-              {editaisPublicos.map((edital) => {
+              {(editais as Edital[]).map((edital) => {
                 const periodo =
                   edital.periodo_envio || edital.periodo || "Não informado";
                 const downloadUrl = resolveEditalDownloadUrl(edital.arquivo_pdf);

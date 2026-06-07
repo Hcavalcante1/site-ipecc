@@ -19,7 +19,6 @@ import {
   type DocumentoPublicoEdital,
   type EditalPublicoDetalhe,
 } from "@/lib/editais/publicDetail";
-import { editalVisivelNoSitePublico } from "@/lib/editais/governancaRules";
 import { logPublicFetch } from "@/lib/observability/publicFetchLog";
 
 export const dynamic = "force-dynamic";
@@ -66,7 +65,7 @@ export default async function EditalDetalhePage({ params }: Props) {
     error: error?.message || docsError?.message,
   });
 
-  if (!edital || !editalVisivelNoSitePublico(edital as EditalPublicoDetalhe)) {
+  if (!edital) {
     return (
       <>
         <PublicHeroRolling

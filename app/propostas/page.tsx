@@ -4,10 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { PublicHeroRolling } from "@/components/public";
 import PublicWhatsAppHelpLine from "@/components/public/PublicWhatsAppHelpLine";
-import {
-  editalAceitaEnvioProposta,
-  isEnvioPropostaModoTeste,
-} from "@/lib/editais/governancaRules";
 
 type TipoPessoa = "pessoa_juridica" | "osc" | "pessoa_fisica";
 type CategoriaDocumento =
@@ -571,9 +567,15 @@ export default function PropostasPage() {
         .select("id,titulo,periodo,periodo_envio,status,fase_atual")
         .order("created_at", { ascending: false });
 
-      const abertos = ((data || []) as EditalOpcao[]).filter((edital) =>
-        editalAceitaEnvioProposta(edital)
-      );
+      const abertos = ((data || []) as EditalOpcao[]).filter((edital) => {
+        const fase = String(edital.fase_atual || "").trim();
+        const status = String(edital.status || "").trim();
+        return (
+          fase === "publicado" ||
+          fase === "recebimento_propostas" ||
+          status === "aberto"
+        );
+      });
 
       setEditais(abertos);
       setEditalId((atual) =>
@@ -641,14 +643,6 @@ export default function PropostasPage() {
       return;
     }
 
-    if (!editalSelecionado || !editalAceitaEnvioProposta(editalSelecionado)) {
-      alert(
-        "Este edital nao esta aceitando propostas no momento. Atualize a pagina ou selecione outro edital."
-      );
-      setEtapa("dados");
-      return;
-    }
-
     if (!dados.nome.trim() || !dados.documento.trim() || !dados.email.trim()) {
       alert("Preencha os dados da proponente antes de enviar.");
       setEtapa("dados");
@@ -712,20 +706,9 @@ export default function PropostasPage() {
 
       aplicarUrlsNoInsert(data, arquivosEnviados);
 
-      const res = await fetch("/api/propostas/enviar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
+      const { error } = await supabase.from("propostas").insert(data);
 
-      const json = (await res.json().catch(() => ({}))) as {
-        ok?: boolean;
-        error?: string;
-      };
-
-      if (!res.ok || !json.ok) {
-        throw new Error(json.error || "Erro ao enviar proposta.");
-      }
+      if (error) throw error;
 
       if (process.env.NEXT_PUBLIC_USE_PROPOSTA_ANEXOS_ESCRITA === "true") {
         try {
@@ -1033,16 +1016,13 @@ export default function PropostasPage() {
                       editais.map((edital) => (
                         <option key={edital.id} value={edital.id}>
                           {edital.titulo || "Edital / Chamamento"}
-                          {isEnvioPropostaModoTeste(edital) ? " [teste interno]" : ""}
                         </option>
                       ))
                     )}
                   </select>
                   <p style={{ margin: "8px 0 0", fontSize: 13, color: "#1e3a8a" }}>
-                    A proposta ficara registrada com referencia ao edital selecionado.
-                    {editalSelecionado && isEnvioPropostaModoTeste(editalSelecionado)
-                      ? " Ambiente de testes (Rascunho): nao aparece no site publico."
-                      : " A analise e a decisao (aprovar ou rejeitar) sao humanas."}
+                    A proposta ficará vinculada ao edital selecionado para análise
+                    humana e registro na governança institucional.
                   </p>
                 </div>
                 <div style={{ marginBottom: 16 }}>
