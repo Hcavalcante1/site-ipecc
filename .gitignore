@@ -14,8 +14,6 @@ reports/
 *.webp1
 h site-ipecc*
 hboard operacional*
-arquivos.txt
-diagnostico.txt
 
 # Local diagnostic scripts generated during production hardening
 scripts/analisar-env-local.ts

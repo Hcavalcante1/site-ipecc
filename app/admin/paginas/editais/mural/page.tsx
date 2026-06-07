@@ -187,7 +187,6 @@ export default function MuralEditaisAdmin() {
                 )}
 
                 <button
-                  type="button"
                   onClick={() =>
                     (window.location.href =
                       adminCanonicalRoutes.editaisCadastro.editar(edital.id))
@@ -214,7 +213,6 @@ export default function MuralEditaisAdmin() {
                 </button>
 
                 <button
-                  type="button"
                   onClick={() => excluir(edital.id)}
                   style={{
                     background: "#dc2626",
