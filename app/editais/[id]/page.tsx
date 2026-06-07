@@ -4,10 +4,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
-import {
-  PublicHeroRolling,
-  PublicPageContent,
-} from "@/components/public";
+import { PublicPageContent } from "@/components/public";
 import PublicWhatsAppHelpLine from "@/components/public/PublicWhatsAppHelpLine";
 import {
   editalStatusLabel,
@@ -19,6 +16,7 @@ type EditalStatus = "aberto" | "encerrado" | "em_breve";
 type Edital = {
   id: string;
   titulo: string;
+  descricao?: string | null;
   tipo?: string | null;
   periodo?: string | null;
   periodo_envio?: string | null;
@@ -43,7 +41,7 @@ export default function EditalDetalhePage() {
       const { data } = await supabase
         .from("editais")
         .select(
-          "id, titulo, tipo, periodo, periodo_envio, status, arquivo_pdf"
+          "id, titulo, descricao, tipo, periodo, periodo_envio, status, arquivo_pdf"
         )
         .eq("id", id)
         .maybeSingle();
@@ -63,14 +61,11 @@ export default function EditalDetalhePage() {
   const periodo =
     edital?.periodo_envio || edital?.periodo || "Não informado";
 
+  const descricao = edital?.descricao?.trim();
+
   if (loading) {
     return (
       <>
-        <PublicHeroRolling
-          bgImage="/media/heroes/editais/hero.webp"
-          title="Editais"
-          text="Carregando informações do edital…"
-        />
         <PublicPageContent>
           <p>Carregando edital…</p>
         </PublicPageContent>
@@ -81,11 +76,6 @@ export default function EditalDetalhePage() {
   if (!edital) {
     return (
       <>
-        <PublicHeroRolling
-          bgImage="/media/heroes/editais/hero.webp"
-          title="Editais"
-          text="Chamamento não encontrado."
-        />
         <PublicPageContent>
           <h1 className="public-article__title">Edital não encontrado</h1>
           <p className="public-page-lead">
@@ -101,12 +91,6 @@ export default function EditalDetalhePage() {
 
   return (
     <>
-      <PublicHeroRolling
-        bgImage="/media/heroes/editais/hero.webp"
-        title={edital.titulo}
-        text="Detalhes do chamamento público e links para documentação e proposta."
-      />
-
       <PublicWhatsAppHelpLine
         assunto="editais"
         intro="Precisa de orientação sobre este edital?"
@@ -115,6 +99,12 @@ export default function EditalDetalhePage() {
       <PublicPageContent>
         <article className="public-detail-card">
           <div className="public-detail-card__body">
+            <h1 className="public-article__title">{edital.titulo}</h1>
+            {descricao && (
+              <p className="public-detail-card__meta">
+                <strong>Descrição:</strong> {descricao}
+              </p>
+            )}
             <p className="public-detail-card__meta">
               <strong>Tipo:</strong> {edital.tipo || "Chamamento público"}
             </p>

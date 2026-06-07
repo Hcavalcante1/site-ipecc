@@ -21,6 +21,7 @@ type EditalStatus = "aberto" | "encerrado" | "em_breve";
 type Edital = {
   id: string;
   titulo: string;
+  descricao?: string | null;
   tipo?: string;
   periodo?: string;
   periodo_envio?: string;
@@ -60,7 +61,7 @@ const TITULOS_CATEGORIA: Record<CategoriaDocumento, string> = {
 export default async function EditaisPublicPage() {
   const { data: editais, error: editaisError } = await supabase
     .from("editais")
-    .select("id, titulo, tipo, periodo_envio, periodo, status, arquivo_pdf")
+    .select("id, titulo, descricao, tipo, periodo_envio, periodo, status, arquivo_pdf")
     .order("created_at", { ascending: false });
 
   logPublicFetch({
@@ -167,6 +168,7 @@ export default async function EditaisPublicPage() {
                 const periodo =
                   edital.periodo_envio || edital.periodo || "Não informado";
                 const downloadUrl = resolveEditalDownloadUrl(edital.arquivo_pdf);
+                const descricao = edital.descricao?.trim();
 
                 return (
                   <article
@@ -175,6 +177,11 @@ export default async function EditaisPublicPage() {
                   >
                     <div className="card__body">
                       <h3 className="card__title">{edital.titulo}</h3>
+                      {descricao && (
+                        <p className="card__text">
+                          <strong>Descrição:</strong> {descricao}
+                        </p>
+                      )}
                       <p className="card__text">
                         <strong>Tipo:</strong>{" "}
                         {edital.tipo || "Chamamento público"}
