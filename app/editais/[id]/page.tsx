@@ -33,6 +33,13 @@ function normalizarTexto(valor?: string | null) {
   return valor?.trim() ?? "";
 }
 
+function descricaoDiferenteDoTitulo(titulo: string, descricao: string) {
+  if (!descricao) return false;
+  return (
+    descricao.localeCompare(titulo, "pt-BR", { sensitivity: "accent" }) !== 0
+  );
+}
+
 function renderParagrafos(texto: string) {
   return texto
     .split("\n")
@@ -81,6 +88,8 @@ export default async function EditalDetalhePage({ params }: Props) {
   const registro = edital as Edital;
   const titulo = normalizarTexto(registro.titulo);
   const descricao = normalizarTexto(registro.descricao);
+  const exibirDescricao = descricaoDiferenteDoTitulo(titulo, descricao);
+  const descricaoMultilinha = exibirDescricao && descricao.includes("\n");
   const periodo =
     registro.periodo_envio || registro.periodo || "Não informado";
   const downloadUrl = resolveEditalDownloadUrl(registro.arquivo_pdf);
@@ -98,26 +107,37 @@ export default async function EditalDetalhePage({ params }: Props) {
         intro="Precisa de orientação sobre este edital?"
       />
 
-      <PublicPageContent className="public-content--article">
+      <PublicPageContent className="public-content--detail">
         <article className="public-detail-card">
           <div className="public-detail-card__body">
-            <h1 className="public-article__title">{titulo}</h1>
+            <header className="public-detail-card__header">
+              <h2 className="public-detail-card__title">{titulo}</h2>
 
-            {descricao && (
-              <div className="public-article__body">
-                {renderParagrafos(descricao)}
+              {exibirDescricao && descricaoMultilinha && (
+                <div className="public-detail-card__text">
+                  {renderParagrafos(descricao)}
+                </div>
+              )}
+
+              {exibirDescricao && !descricaoMultilinha && (
+                <p className="public-detail-card__lead">{descricao}</p>
+              )}
+            </header>
+
+            <dl className="public-detail-card__facts">
+              <div className="public-detail-card__fact">
+                <dt>Tipo</dt>
+                <dd>{registro.tipo || "Chamamento público"}</dd>
               </div>
-            )}
-
-            <p className="public-detail-card__meta">
-              <strong>Tipo:</strong> {registro.tipo || "Chamamento público"}
-            </p>
-            <p className="public-detail-card__meta">
-              <strong>Período:</strong> {periodo}
-            </p>
-            <p className="public-detail-card__meta">
-              <strong>Status:</strong> {editalStatusLabel(registro.status)}
-            </p>
+              <div className="public-detail-card__fact">
+                <dt>Período</dt>
+                <dd>{periodo}</dd>
+              </div>
+              <div className="public-detail-card__fact">
+                <dt>Status</dt>
+                <dd>{editalStatusLabel(registro.status)}</dd>
+              </div>
+            </dl>
           </div>
 
           <div className="public-page-actions">
