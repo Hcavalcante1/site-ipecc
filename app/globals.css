@@ -1081,6 +1081,23 @@ button:focus-visible{
     white-space: normal;
   }
 
+  .public-edital-card .public-page-actions{
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .public-edital-card .public-page-actions a{
+    width: auto;
+    flex: 1 1 0;
+    min-width: 0;
+    font-size: var(--public-text-xs);
+    line-height: 1.35;
+    white-space: normal;
+    text-align: center;
+  }
+
   .public-content--detail .public-content__inner{
     width: min(94%, var(--container-w));
   }
