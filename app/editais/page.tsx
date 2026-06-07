@@ -168,7 +168,6 @@ export default async function EditaisPublicPage() {
                 const periodo =
                   edital.periodo_envio || edital.periodo || "Não informado";
                 const downloadUrl = resolveEditalDownloadUrl(edital.arquivo_pdf);
-                const descricao = edital.descricao?.trim();
 
                 return (
                   <article
@@ -177,19 +176,9 @@ export default async function EditaisPublicPage() {
                   >
                     <div className="card__body">
                       <h3 className="card__title">{edital.titulo}</h3>
-                      {descricao && (
-                        <p className="card__text">
-                          <strong>Descrição:</strong> {descricao}
-                        </p>
-                      )}
-                      <p className="card__text">
-                        <strong>Tipo:</strong>{" "}
-                        {edital.tipo || "Chamamento público"}
-                      </p>
                       <p className="card__text">
                         <strong>Período:</strong> {periodo}
-                      </p>
-                      <p className="card__text">
+                        {" · "}
                         <strong>Status:</strong>{" "}
                         {editalStatusLabel(edital.status)}
                       </p>
@@ -227,7 +216,11 @@ export default async function EditaisPublicPage() {
             <p className="public-page-lead">Nenhum edital publicado no momento.</p>
           )}
 
-          <section className="public-docs-panel" style={{ marginTop: 40 }}>
+          <section
+            id="documentacao-exigida"
+            className="public-docs-panel"
+            style={{ marginTop: 40 }}
+          >
             <h2 className="public-section__title">{tituloDocumentos}</h2>
             <p className="public-docs-panel__lead">{textoDocumentos}</p>
 
