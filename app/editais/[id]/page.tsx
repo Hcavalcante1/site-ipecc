@@ -1,15 +1,16 @@
-"use client";
-
-import { useParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
-import { PublicPageContent } from "@/components/public";
+import { PublicHeroRolling, PublicPageContent } from "@/components/public";
 import PublicWhatsAppHelpLine from "@/components/public/PublicWhatsAppHelpLine";
 import {
   editalStatusLabel,
   resolveEditalDownloadUrl,
 } from "@/lib/editais/download";
+import { logPublicFetch } from "@/lib/observability/publicFetchLog";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 type EditalStatus = "aberto" | "encerrado" | "em_breve";
 
@@ -24,58 +25,46 @@ type Edital = {
   arquivo_pdf?: string | null;
 };
 
-export default function EditalDetalhePage() {
-  const params = useParams();
-  const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
+type Props = {
+  params: { id: string };
+};
 
-  const [edital, setEdital] = useState<Edital | null>(null);
-  const [loading, setLoading] = useState(true);
+function normalizarTexto(valor?: string | null) {
+  return valor?.trim() ?? "";
+}
 
-  useEffect(() => {
-    async function loadEdital() {
-      if (!id) {
-        setLoading(false);
-        return;
-      }
+function renderParagrafos(texto: string) {
+  return texto
+    .split("\n")
+    .map((linha) => linha.trim())
+    .filter(Boolean)
+    .map((linha, index) => <p key={index}>{linha}</p>);
+}
 
-      const { data } = await supabase
-        .from("editais")
-        .select(
-          "id, titulo, descricao, tipo, periodo, periodo_envio, status, arquivo_pdf"
-        )
-        .eq("id", id)
-        .maybeSingle();
+export default async function EditalDetalhePage({ params }: Props) {
+  const { data: edital, error } = await supabase
+    .from("editais")
+    .select(
+      "id, titulo, descricao, tipo, periodo, periodo_envio, status, arquivo_pdf"
+    )
+    .eq("id", params.id)
+    .maybeSingle();
 
-      if (data) setEdital(data as Edital);
-      setLoading(false);
-    }
-
-    loadEdital();
-  }, [id]);
-
-  const downloadUrl = useMemo(
-    () => resolveEditalDownloadUrl(edital?.arquivo_pdf),
-    [edital?.arquivo_pdf]
-  );
-
-  const periodo =
-    edital?.periodo_envio || edital?.periodo || "Não informado";
-
-  const descricao = edital?.descricao?.trim();
-
-  if (loading) {
-    return (
-      <>
-        <PublicPageContent>
-          <p>Carregando edital…</p>
-        </PublicPageContent>
-      </>
-    );
-  }
+  logPublicFetch({
+    page: `/editais/${params.id}`,
+    table: "editais",
+    count: edital ? 1 : 0,
+    error: error?.message,
+  });
 
   if (!edital) {
     return (
       <>
+        <PublicHeroRolling
+          bgImage="/media/heroes/editais/hero.webp"
+          title="Editais"
+          text="Chamamentos públicos, editais e oportunidades de parceria."
+        />
         <PublicPageContent>
           <h1 className="public-article__title">Edital não encontrado</h1>
           <p className="public-page-lead">
@@ -89,45 +78,56 @@ export default function EditalDetalhePage() {
     );
   }
 
+  const registro = edital as Edital;
+  const titulo = normalizarTexto(registro.titulo);
+  const descricao = normalizarTexto(registro.descricao);
+  const periodo =
+    registro.periodo_envio || registro.periodo || "Não informado";
+  const downloadUrl = resolveEditalDownloadUrl(registro.arquivo_pdf);
+
   return (
     <>
+      <PublicHeroRolling
+        bgImage="/media/heroes/editais/hero.webp"
+        title="Editais"
+        text="Chamamentos públicos, editais e oportunidades de parceria."
+      />
+
       <PublicWhatsAppHelpLine
         assunto="editais"
         intro="Precisa de orientação sobre este edital?"
       />
 
-      <PublicPageContent>
+      <PublicPageContent className="public-content--article">
         <article className="public-detail-card">
           <div className="public-detail-card__body">
-            <h1 className="public-article__title">{edital.titulo}</h1>
+            <h1 className="public-article__title">{titulo}</h1>
+
             {descricao && (
-              <p className="public-detail-card__meta">
-                <strong>Descrição:</strong> {descricao}
-              </p>
+              <div className="public-article__body">
+                {renderParagrafos(descricao)}
+              </div>
             )}
+
             <p className="public-detail-card__meta">
-              <strong>Tipo:</strong> {edital.tipo || "Chamamento público"}
+              <strong>Tipo:</strong> {registro.tipo || "Chamamento público"}
             </p>
             <p className="public-detail-card__meta">
               <strong>Período:</strong> {periodo}
             </p>
             <p className="public-detail-card__meta">
-              <strong>Status:</strong> {editalStatusLabel(edital.status)}
+              <strong>Status:</strong> {editalStatusLabel(registro.status)}
             </p>
           </div>
 
           <div className="public-page-actions">
             {downloadUrl && (
-              <a
-                href={downloadUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <a href={downloadUrl} target="_blank" rel="noopener noreferrer">
                 Baixar edital (PDF)
               </a>
             )}
 
-            <Link href={`/propostas?codigo=${edital.id}`}>
+            <Link href={`/propostas?codigo=${registro.id}`}>
               Enviar proposta
             </Link>
 
