@@ -1,6 +1,7 @@
 // app/transparencia/page.tsx
 
 import { getDownloadUrl, isValidFileUrl } from "@/lib/storage";
+import { resolveEditalDownloadUrl } from "@/lib/editais/download";
 import { createClient } from "@/lib/supabaseServer";
 import { logPublicFetch } from "@/lib/observability/publicFetchLog";
 import { PublicHeroRolling } from "@/components/public";
@@ -115,6 +116,7 @@ type EditalGovernanca = {
   fase_atual?: string | null;
   periodo?: string | null;
   periodo_envio?: string | null;
+  arquivo_pdf?: string | null;
 };
 
 const FASE_GOVERNANCA_LABELS: Record<string, string> = {
@@ -410,6 +412,31 @@ function isGovernancaPublicavel(edital?: EditalGovernanca | null): boolean {
   return status === "aberto" || status === "encerrado";
 }
 
+function editalTemConteudoTransparencia(
+  edital: EditalGovernanca,
+  documentos: DocumentoGovernancaEdital[]
+): boolean {
+  if (documentos.length > 0) return true;
+  return !!resolveEditalDownloadUrl(edital.arquivo_pdf);
+}
+
+function ordenarDocumentosGovernanca(
+  documentos: DocumentoGovernancaEdital[]
+): DocumentoGovernancaEdital[] {
+  return [...documentos].sort((a, b) => {
+    const faseA = FASE_GOVERNANCA_ORDEM.indexOf(safeText(a.fase));
+    const faseB = FASE_GOVERNANCA_ORDEM.indexOf(safeText(b.fase));
+    const ordemFaseA = faseA === -1 ? 999 : faseA;
+    const ordemFaseB = faseB === -1 ? 999 : faseB;
+
+    if (ordemFaseA !== ordemFaseB) return ordemFaseA - ordemFaseB;
+
+    const dataA = new Date(a.publicado_em || a.created_at || 0).getTime();
+    const dataB = new Date(b.publicado_em || b.created_at || 0).getTime();
+    return dataB - dataA;
+  });
+}
+
 function getGovernancaDownloadUrl(url?: string | null): string {
   const clean = safeText(url);
   if (!clean) return "";
@@ -576,6 +603,7 @@ export default async function TransparenciaPage() {
     { data: contratacoesData, error: contratacoesError },
     { data: prestacoesData, error: prestacoesError },
     { data: documentosGovernancaData, error: documentosGovernancaError },
+    { data: editaisGovernancaData, error: editaisGovernancaError },
   ] = await Promise.all([
     supabase
       .from("paginas_conteudo")
@@ -624,37 +652,51 @@ export default async function TransparenciaPage() {
       .eq("publicado", true)
       .order("publicado_em", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false }),
+
+    supabase
+      .from("editais")
+      .select("id,titulo,tipo,status,fase_atual,periodo,periodo_envio,arquivo_pdf")
+      .order("created_at", { ascending: false }),
   ]);
 
   const documentosGovernanca = documentosGovernancaError
     ? []
     : ((documentosGovernancaData ?? []) as DocumentoGovernancaEdital[]);
 
-  const editalIdsGovernanca = Array.from(
-    new Set(
-      documentosGovernanca
-        .map((item) => safeText(item.edital_id))
-        .filter((id) => id.length > 0)
-    )
-  );
+  const editaisGovernanca = editaisGovernancaError
+    ? []
+    : ((editaisGovernancaData ?? []) as EditalGovernanca[]);
 
-  const { data: editaisGovernancaData, error: editaisGovernancaError } =
-    editalIdsGovernanca.length > 0
-      ? await supabase
-          .from("editais")
-          .select("id,titulo,tipo,status,fase_atual,periodo,periodo_envio")
-          .in("id", editalIdsGovernanca)
-      : { data: [], error: null };
+  const documentosGovernancaAgrupados = editaisGovernanca
+    .filter(isGovernancaPublicavel)
+    .map((edital) => {
+      const documentos = ordenarDocumentosGovernanca(
+        documentosGovernanca.filter((doc) => doc.edital_id === edital.id)
+      );
+      return {
+        editalId: edital.id,
+        edital,
+        documentos,
+      };
+    })
+    .filter((grupo) => editalTemConteudoTransparencia(grupo.edital, grupo.documentos))
+    .sort((a, b) =>
+      (a.edital?.titulo || a.editalId).localeCompare(
+        b.edital?.titulo || b.editalId,
+        "pt-BR"
+      )
+    );
 
   logPublicFetch({
     page: "/transparencia",
-    table: "paginas_conteudo+transparencia_*+documentos_publicos",
+    table: "paginas_conteudo+transparencia_*+documentos_publicos+editais",
     count:
       (data?.length ?? 0) +
       (conveniosData?.length ?? 0) +
       (contratacoesData?.length ?? 0) +
       (prestacoesData?.length ?? 0) +
-      (documentosGovernancaData?.length ?? 0),
+      (documentosGovernancaData?.length ?? 0) +
+      (editaisGovernancaData?.length ?? 0),
     error:
       error?.message ||
       conveniosError?.message ||
@@ -670,41 +712,6 @@ export default async function TransparenciaPage() {
   const prestacoes = prestacoesError
     ? []
     : ((prestacoesData ?? []) as TransparenciaPrestacaoConta[]);
-  const editaisGovernanca = editaisGovernancaError
-    ? []
-    : ((editaisGovernancaData ?? []) as EditalGovernanca[]);
-  const editaisGovernancaPorId = new Map(
-    editaisGovernanca.map((item) => [item.id, item])
-  );
-  const documentosGovernancaAgrupados = editalIdsGovernanca
-    .map((editalId) => ({
-      editalId,
-      edital: editaisGovernancaPorId.get(editalId) ?? null,
-      documentos: documentosGovernanca
-        .filter((doc) => doc.edital_id === editalId)
-        .sort((a, b) => {
-          const faseA = FASE_GOVERNANCA_ORDEM.indexOf(safeText(a.fase));
-          const faseB = FASE_GOVERNANCA_ORDEM.indexOf(safeText(b.fase));
-          const ordemFaseA = faseA === -1 ? 999 : faseA;
-          const ordemFaseB = faseB === -1 ? 999 : faseB;
-
-          if (ordemFaseA !== ordemFaseB) return ordemFaseA - ordemFaseB;
-
-          const dataA = new Date(a.publicado_em || a.created_at || 0).getTime();
-          const dataB = new Date(b.publicado_em || b.created_at || 0).getTime();
-          return dataB - dataA;
-        }),
-    }))
-    .filter(
-      (grupo) =>
-        grupo.documentos.length > 0 && isGovernancaPublicavel(grupo.edital)
-    )
-    .sort((a, b) =>
-      (a.edital?.titulo || a.editalId).localeCompare(
-        b.edital?.titulo || b.editalId,
-        "pt-BR"
-      )
-    );
 
   const heroBlock = getBlock(blocos, "hero");
   const compromissosBlock = getBlock(blocos, "compromissos");
@@ -1214,9 +1221,14 @@ export default async function TransparenciaPage() {
                             const etapaAtual = faseAtual === fase;
                             const etapaConcluida =
                               indiceAtual >= 0 && indiceFase >= 0 && indiceFase < indiceAtual;
-                            const temDocumento = grupo.documentos.some(
-                              (doc) => safeText(doc.fase) === fase || safeText(doc.tipo) === fase
-                            );
+                            const temDocumento =
+                              grupo.documentos.some(
+                                (doc) =>
+                                  safeText(doc.fase) === fase ||
+                                  safeText(doc.tipo) === fase
+                              ) ||
+                              (fase === "publicado" &&
+                                !!resolveEditalDownloadUrl(grupo.edital?.arquivo_pdf));
 
                             return (
                               <span
@@ -1282,6 +1294,33 @@ export default async function TransparenciaPage() {
                               {safeText(doc.descricao) && <p>{doc.descricao}</p>}
                             </div>
                           ))}
+                          {grupo.documentos.length === 0 &&
+                            resolveEditalDownloadUrl(grupo.edital?.arquivo_pdf) && (
+                              <div
+                                style={{
+                                  borderRadius: 14,
+                                  border: "1px solid rgba(15,23,42,.10)",
+                                  background: "rgba(255,255,255,.72)",
+                                  padding: 12,
+                                }}
+                              >
+                                <a
+                                  href={
+                                    resolveEditalDownloadUrl(grupo.edital?.arquivo_pdf) ||
+                                    undefined
+                                  }
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="card__link"
+                                >
+                                  PDF oficial do edital
+                                </a>
+                                <p style={{ marginTop: 4 }}>
+                                  <strong>Fase:</strong> {labelFase(faseAtual)}{" "}
+                                  <strong>Tipo:</strong> Edital
+                                </p>
+                              </div>
+                            )}
                         </div>
                       </div>
                       );
