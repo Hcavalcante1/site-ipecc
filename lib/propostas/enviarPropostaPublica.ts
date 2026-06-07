@@ -137,5 +137,3 @@ export async function contarPropostasAprovadasEdital(editalId: string) {
   return count ?? 0;
 }
 
-export const MSG_REVERTER_RASCUNHO_BLOQUEADO =
-  "Nao e possivel voltar para Rascunho: existem propostas aprovadas vinculadas. Encerre o processo pela governanca em vez de reverter fase de teste.";

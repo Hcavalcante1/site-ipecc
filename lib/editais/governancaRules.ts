@@ -19,13 +19,16 @@ export function normalizarStatusEdital(status?: string | null): string {
   return String(status ?? "").trim();
 }
 
-/** Fase sandbox — unica em que Excluir e permitido. */
+/** Fase sandbox — unica em que Excluir e permitido (valor explicito no banco). */
 export function isEditalFaseRascunho(faseAtual?: string | null): boolean {
-  return normalizarFaseEdital(faseAtual) === "rascunho";
+  return String(faseAtual ?? "").trim() === "rascunho";
 }
 
 export const MSG_EXCLUSAO_SOMENTE_RASCUNHO =
   "Exclusao permitida apenas na fase Rascunho (testes). Editais publicados ou em processo institucional devem ser encerrados pela governanca, nao excluidos.";
+
+export const MSG_REVERTER_RASCUNHO_BLOQUEADO =
+  "Nao e possivel voltar para Rascunho: existem propostas aprovadas vinculadas. Encerre o processo pela governanca em vez de reverter fase de teste.";
 
 export const MSG_SAIDA_RASCUNHO =
   "Ao sair da fase Rascunho, o edital passa a processo institucional: nao podera mais ser excluido e passara a aparecer no site publico conforme a fase.";

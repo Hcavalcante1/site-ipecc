@@ -6,12 +6,10 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   isEditalFaseRascunho,
   MSG_EXCLUSAO_SOMENTE_RASCUNHO,
+  MSG_REVERTER_RASCUNHO_BLOQUEADO,
   normalizarFaseEdital,
 } from "@/lib/editais/governancaRules";
-import {
-  contarPropostasAprovadasEdital,
-  MSG_REVERTER_RASCUNHO_BLOQUEADO,
-} from "@/lib/propostas/enviarPropostaPublica";
+import { contarPropostasAprovadasEdital } from "@/lib/propostas/enviarPropostaPublica";
 
 const ALLOWED_TABLES = new Set([
   "noticias",

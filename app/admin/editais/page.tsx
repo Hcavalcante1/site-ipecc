@@ -12,8 +12,8 @@ import { adminCanonicalRoutes } from "@/lib/admin/canonicalAdminRoutes";
 import {
   isEditalFaseRascunho,
   MSG_EXCLUSAO_SOMENTE_RASCUNHO,
+  MSG_REVERTER_RASCUNHO_BLOQUEADO,
 } from "@/lib/editais/governancaRules";
-import { MSG_REVERTER_RASCUNHO_BLOQUEADO } from "@/lib/propostas/enviarPropostaPublica";
 
 // Normaliza nome do arquivo para storage
 function normalizarNomeArquivo(nome: string) {
