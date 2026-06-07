@@ -1,5 +1,9 @@
 import { getDownloadUrl, isValidFileUrl } from "@/lib/storage";
 import { editalStatusLabel } from "@/lib/editais/download";
+import {
+  editalAceitaEnvioProposta,
+  getMensagemEnvioPropostaInstitucional,
+} from "@/lib/editais/governancaRules";
 
 export type EditalPublicoDetalhe = {
   id: string;
@@ -146,47 +150,13 @@ export function getDocumentoPublicoDownloadUrl(url?: string | null) {
 }
 
 export function podeEnviarProposta(edital: Pick<EditalPublicoDetalhe, "status" | "fase_atual">) {
-  const fase = normalizarTextoEdital(edital.fase_atual);
-  const status = normalizarTextoEdital(edital.status);
-
-  return (
-    fase === "publicado" ||
-    fase === "recebimento_propostas" ||
-    status === "aberto"
-  );
+  return editalAceitaEnvioProposta(edital);
 }
 
 export function getMensagemEnvioProposta(
   edital: Pick<EditalPublicoDetalhe, "status" | "fase_atual">
 ) {
-  if (podeEnviarProposta(edital)) {
-    return {
-      tipo: "ok" as const,
-      texto: "O envio de propostas está aberto para este edital.",
-    };
-  }
-
-  const status = normalizarTextoEdital(edital.status);
-  const fase = normalizarTextoEdital(edital.fase_atual);
-
-  if (status === "em_breve" || fase === "rascunho") {
-    return {
-      tipo: "info" as const,
-      texto: "O período de envio de propostas ainda não está aberto para este edital.",
-    };
-  }
-
-  if (status === "encerrado" || fase === "encerrado") {
-    return {
-      tipo: "aviso" as const,
-      texto: "O período de envio de propostas está encerrado para este edital.",
-    };
-  }
-
-  return {
-    tipo: "info" as const,
-    texto: "O envio de propostas não está disponível nesta fase do processo.",
-  };
+  return getMensagemEnvioPropostaInstitucional(edital);
 }
 
 export function getFaseAtualPublica(edital: Pick<EditalPublicoDetalhe, "status" | "fase_atual">) {
