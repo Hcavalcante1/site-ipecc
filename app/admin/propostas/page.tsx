@@ -7,6 +7,11 @@ import { adminTokens } from "@/components/admin";
 import { formatarCategoria, formatarTipoPessoa } from "@/lib/documental";
 import { useResumoAnexosListagem } from "@/components/admin/propostas/useResumoAnexosListagem";
 import { supabase } from "@/lib/supabaseClient";
+import {
+  getRotuloVinculoProposta,
+  getUrlConsultaEditalAdmin,
+  propostaTemVinculoOficial,
+} from "@/lib/editais/governancaRules";
 
 type Proposta = {
   id: string;
@@ -19,7 +24,7 @@ type Proposta = {
   status?: string;
   categoria?: string | null;
   edital_id?: string | null;
-  editais?: { titulo?: string | null } | { titulo?: string | null }[] | null;
+  editais?: { titulo?: string | null; fase_atual?: string | null } | { titulo?: string | null; fase_atual?: string | null }[] | null;
   [key: string]: unknown;
 };
 
@@ -61,12 +66,24 @@ const tightParaStyle: CSSProperties = {
 
 const acoesRowStyle: CSSProperties = {
   display: "flex",
+  flexWrap: "wrap",
   gap: adminTokens.spacing.md,
   marginTop: adminTokens.spacing.lg,
 };
 
 const btnPad: Pick<CSSProperties, "padding"> = {
   padding: `${adminTokens.spacing.xs}px ${adminTokens.spacing.base}px`,
+};
+
+const linkBtnBase: CSSProperties = {
+  ...btnPad,
+  borderRadius: 6,
+  border: "none",
+  cursor: "pointer",
+  fontWeight: 600,
+  textDecoration: "none",
+  display: "inline-flex",
+  alignItems: "center",
 };
 
 export default function Page() {
@@ -84,7 +101,7 @@ export default function Page() {
 
     const { data } = await supabase
       .from("propostas")
-      .select("*, editais(titulo)")
+      .select("*, editais(titulo, fase_atual)")
       .order("criado_em", { ascending: false });
 
     setPropostas(data || []);
@@ -139,8 +156,9 @@ export default function Page() {
         }}
       >
         Acompanhe aqui as propostas enviadas pelo site, confira documentos e
-        registre a decisao humana de aprovar ou rejeitar. A analise nao e
-        automatica: cada edital pode exigir criterios e documentos diferentes.
+        registre a decisao humana de aprovar ou rejeitar. Use <strong>Ver edital</strong> antes
+        de decidir. Aprovacao registra vinculo oficial; rejeicao mantem historico sem bloquear
+        exclusao do edital em fase Rascunho.
       </p>
 
       {propostas.length === 0 ? (
@@ -149,7 +167,13 @@ export default function Page() {
         </div>
       ) : (
         <div style={listGridStyle}>
-        {propostas.map((p) => (
+        {propostas.map((p) => {
+          const editalRelacionado = Array.isArray(p.editais) ? p.editais[0] : p.editais;
+          const urlEdital =
+            p.edital_id && getUrlConsultaEditalAdmin(p.edital_id, editalRelacionado);
+          const abreNovaAba = urlEdital?.startsWith("/editais/");
+
+          return (
           <div key={p.id} style={cardStyle}>
             <strong style={{ fontSize: 18 }}>{p.nome}</strong>
 
@@ -175,9 +199,21 @@ export default function Page() {
 
             <p style={tightParaStyle}>
               <strong>Edital:</strong>{" "}
-              {Array.isArray(p.editais)
-                ? p.editais[0]?.titulo || "sem vínculo"
-                : p.editais?.titulo || "sem vínculo"}
+              {editalRelacionado?.titulo || "sem vínculo"}
+            </p>
+
+            <p style={tightParaStyle}>
+              <strong>Vinculo:</strong>{" "}
+              <span
+                style={{
+                  color: propostaTemVinculoOficial(p.status)
+                    ? adminTokens.colors.success.background
+                    : adminTokens.colors.text.muted,
+                  fontWeight: adminTokens.typography.fontWeight.bold,
+                }}
+              >
+                {getRotuloVinculoProposta(p.status)}
+              </span>
             </p>
 
             <p style={tightParaStyle}>
@@ -219,25 +255,34 @@ export default function Page() {
             ) : null}
 
             <div style={acoesRowStyle}>
+              {p.edital_id && urlEdital && (
+                <Link
+                  href={urlEdital}
+                  target={abreNovaAba ? "_blank" : undefined}
+                  rel={abreNovaAba ? "noopener noreferrer" : undefined}
+                  style={{
+                    ...linkBtnBase,
+                    background: "#0ea5e9",
+                    color: "#fff",
+                  }}
+                >
+                  Ver edital
+                </Link>
+              )}
+
               <Link
                 href={`/admin/propostas/${p.id}`}
                 style={{
+                  ...linkBtnBase,
                   background: "#2563eb",
                   color: "#fff",
-                  ...btnPad,
-                  borderRadius: 6,
-                  border: "none",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                  textDecoration: "none",
-                  display: "inline-flex",
-                  alignItems: "center",
                 }}
               >
-                Ver
+                Ver proposta
               </Link>
 
               <button
+                type="button"
                 onClick={() => atualizarStatus(p.id, "aprovado")}
                 style={{
                   background: adminTokens.colors.success.background,
@@ -253,6 +298,7 @@ export default function Page() {
               </button>
 
               <button
+                type="button"
                 onClick={() => atualizarStatus(p.id, "rejeitado")}
                 style={{
                   background: adminTokens.colors.error.background,
@@ -268,7 +314,8 @@ export default function Page() {
               </button>
             </div>
           </div>
-        ))}
+          );
+        })}
         </div>
       )}
     </div>

@@ -8,6 +8,10 @@ import { triggerToast } from "@/components/AdminToast";
 import { AdminLoadingButton } from "@/components/admin";
 import { adminStorageUpload } from "@/lib/admin/storageUploadClient";
 import { supabase } from "@/lib/supabaseClient";
+import {
+  isEditalFaseRascunho,
+  MSG_SAIDA_RASCUNHO,
+} from "@/lib/editais/governancaRules";
 
 type Edital = {
   id: string;
@@ -350,8 +354,13 @@ export default function GovernancaEditalPage() {
         return;
       }
 
+      const avisoRascunho =
+        isEditalFaseRascunho(faseAtual) && !isEditalFaseRascunho(novaFase)
+          ? ` ${MSG_SAIDA_RASCUNHO}`
+          : "";
+
       const podeAvancar = await confirmAction(
-        `Confirmar mudanca de fase para "${label(novaFase)}"? Esta acao sera registrada no historico institucional do edital.`
+        `Confirmar mudanca de fase para "${label(novaFase)}"? Esta acao sera registrada no historico institucional do edital.${avisoRascunho}`
       );
 
       if (!podeAvancar) {

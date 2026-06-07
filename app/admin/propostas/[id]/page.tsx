@@ -5,6 +5,13 @@ import type { CSSProperties } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { adminTokens } from "@/components/admin";
 import { supabase } from "@/lib/supabaseClient";
+import { triggerToast } from "@/components/AdminToast";
+import {
+  getRotuloVinculoProposta,
+  getUrlConsultaEditalAdmin,
+  isEditalFaseRascunho,
+  propostaTemVinculoOficial,
+} from "@/lib/editais/governancaRules";
 import {
   btn,
   ChecklistDocumentalProposta,
@@ -178,6 +185,26 @@ export default function Page() {
     router.push("/admin/propostas");
   }
 
+  async function atualizarStatus(status: "aprovado" | "rejeitado") {
+    if (!id) return;
+
+    const { error } = await supabase
+      .from("propostas")
+      .update({ status })
+      .eq("id", id);
+
+    if (error) {
+      triggerToast("Erro ao atualizar status da proposta.", "error");
+      return;
+    }
+
+    triggerToast(
+      status === "aprovado" ? "Proposta aprovada." : "Proposta rejeitada.",
+      "success"
+    );
+    await carregarProposta();
+  }
+
   function url(caminho: string | null) {
     if (!caminho) return null;
 
@@ -192,6 +219,14 @@ export default function Page() {
     return (
       <p style={{ padding: adminTokens.spacing.xxxl }}>Proposta não encontrada</p>
     );
+
+  const editalRelacionado = Array.isArray(proposta.editais)
+    ? proposta.editais[0]
+    : proposta.editais;
+  const urlConsultaEdital =
+    proposta.edital_id &&
+    getUrlConsultaEditalAdmin(proposta.edital_id, editalRelacionado);
+  const abreEditalNovaAba = urlConsultaEdital?.startsWith("/editais/");
 
   return (
     <div style={shellStyle}>
@@ -219,6 +254,39 @@ export default function Page() {
             Revise dados, anexos, checklist documental e regularidade antes de
             decidir manualmente pela aprovacao ou rejeicao da proposta.
           </p>
+          {proposta.edital_id && urlConsultaEdital && (
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: adminTokens.spacing.sm,
+                marginTop: adminTokens.spacing.md,
+              }}
+            >
+              <a
+                href={urlConsultaEdital}
+                target={abreEditalNovaAba ? "_blank" : undefined}
+                rel={abreEditalNovaAba ? "noopener noreferrer" : undefined}
+                style={{
+                  ...btn("#0ea5e9", "#fff"),
+                  textDecoration: "none",
+                }}
+              >
+                {isEditalFaseRascunho(editalRelacionado?.fase_atual)
+                  ? "Ver edital (governanca / teste)"
+                  : "Ver edital (publico)"}
+              </a>
+              <a
+                href={`/admin/editais/${proposta.edital_id}/governanca`}
+                style={{
+                  ...btn("#334155", "#e2e8f0"),
+                  textDecoration: "none",
+                }}
+              >
+                Governanca do edital
+              </a>
+            </div>
+          )}
         </div>
         <a
           href="/admin/propostas"
@@ -268,9 +336,20 @@ export default function Page() {
           </p>
           <p style={tightParaStyle}>
             <strong>Edital vinculado:</strong>{" "}
-            {Array.isArray(proposta.editais)
-              ? proposta.editais[0]?.titulo || "sem vínculo"
-              : proposta.editais?.titulo || "sem vínculo"}
+            {editalRelacionado?.titulo || "sem vínculo"}
+          </p>
+          <p style={tightParaStyle}>
+            <strong>Tipo de vinculo:</strong>{" "}
+            <span
+              style={{
+                color: propostaTemVinculoOficial(proposta.status)
+                  ? adminTokens.colors.success.background
+                  : adminTokens.colors.text.muted,
+                fontWeight: adminTokens.typography.fontWeight.bold,
+              }}
+            >
+              {getRotuloVinculoProposta(proposta.status)}
+            </span>
           </p>
         </div>
 
@@ -393,20 +472,59 @@ export default function Page() {
         </div>
 
         <div style={{ ...fullSpanStyle, marginTop: adminTokens.spacing.sm }}>
-          <button
-            onClick={excluirProposta}
+          <div
             style={{
-              background: adminTokens.colors.error.background,
-              color: adminTokens.colors.error.text,
-              padding: `${adminTokens.spacing.xs}px ${adminTokens.spacing.base}px`,
-              borderRadius: 6,
-              border: "none",
-              cursor: "pointer",
-              fontWeight: 600,
+              display: "flex",
+              flexWrap: "wrap",
+              gap: adminTokens.spacing.md,
             }}
           >
-            Excluir Proposta
-          </button>
+            <button
+              type="button"
+              onClick={() => atualizarStatus("aprovado")}
+              style={{
+                background: adminTokens.colors.success.background,
+                color: "#022c22",
+                padding: `${adminTokens.spacing.xs}px ${adminTokens.spacing.base}px`,
+                borderRadius: 6,
+                border: "none",
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+            >
+              Aprovar
+            </button>
+            <button
+              type="button"
+              onClick={() => atualizarStatus("rejeitado")}
+              style={{
+                background: adminTokens.colors.error.background,
+                color: adminTokens.colors.error.text,
+                padding: `${adminTokens.spacing.xs}px ${adminTokens.spacing.base}px`,
+                borderRadius: 6,
+                border: "none",
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+            >
+              Rejeitar
+            </button>
+            <button
+              type="button"
+              onClick={excluirProposta}
+              style={{
+                background: adminTokens.colors.error.background,
+                color: adminTokens.colors.error.text,
+                padding: `${adminTokens.spacing.xs}px ${adminTokens.spacing.base}px`,
+                borderRadius: 6,
+                border: "none",
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+            >
+              Excluir Proposta
+            </button>
+          </div>
         </div>
       </div>
     </div>

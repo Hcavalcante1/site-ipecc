@@ -6,7 +6,14 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { adminStorageUpload } from "@/lib/admin/storageUploadClient";
 import { adminTokens } from "@/components/admin";
+import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
+import { triggerToast } from "@/components/AdminToast";
 import { adminCanonicalRoutes } from "@/lib/admin/canonicalAdminRoutes";
+import {
+  isEditalFaseRascunho,
+  MSG_EXCLUSAO_SOMENTE_RASCUNHO,
+} from "@/lib/editais/governancaRules";
+import { MSG_REVERTER_RASCUNHO_BLOQUEADO } from "@/lib/propostas/enviarPropostaPublica";
 
 // Normaliza nome do arquivo para storage
 function normalizarNomeArquivo(nome: string) {
@@ -28,6 +35,7 @@ const cardListaStyle: CSSProperties = {
 
 const acoesRowStyle: CSSProperties = {
   display: "flex",
+  flexWrap: "wrap",
   gap: adminTokens.spacing.md,
   marginTop: adminTokens.spacing.md,
 };
@@ -59,6 +67,12 @@ function labelFase(valor?: string | null) {
   return FASE_LABELS[valor] || valor.replace(/_/g, " ");
 }
 
+type ResumoPropostasEdital = {
+  aprovadas: number;
+  pendentes: number;
+  rejeitadas: number;
+};
+
 export default function AdminEditais() {
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
@@ -66,30 +80,54 @@ export default function AdminEditais() {
   const [tipo, setTipo] = useState("Chamamento público");
 
   const [status, setStatus] = useState<"aberto" | "encerrado" | "em_breve">(
-    "aberto"
+    "em_breve"
   );
 
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [excluindoId, setExcluindoId] = useState<string | null>(null);
+  const [voltandoRascunhoId, setVoltandoRascunhoId] = useState<string | null>(null);
   const [msg, setMsg] = useState("");
   const [editais, setEditais] = useState<any[]>([]);
+  const [resumoPropostasPorEdital, setResumoPropostasPorEdital] = useState<
+    Record<string, ResumoPropostasEdital>
+  >({});
 
   useEffect(() => {
     carregar();
   }, []);
 
   async function carregar() {
-    const { data, error } = await supabase
-      .from("editais")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const [editaisRes, propostasRes] = await Promise.all([
+      supabase.from("editais").select("*").order("created_at", { ascending: false }),
+      supabase
+        .from("propostas")
+        .select("edital_id, status")
+        .not("edital_id", "is", null),
+    ]);
 
-    if (error) {
-      console.error("ERRO AO CARREGAR:", error);
+    if (editaisRes.error) {
+      console.error("ERRO AO CARREGAR:", editaisRes.error);
       return;
     }
 
-    setEditais(data || []);
+    const resumo: Record<string, ResumoPropostasEdital> = {};
+    for (const proposta of propostasRes.data || []) {
+      const editalId = proposta.edital_id as string;
+      if (!editalId) continue;
+
+      if (!resumo[editalId]) {
+        resumo[editalId] = { aprovadas: 0, pendentes: 0, rejeitadas: 0 };
+      }
+
+      const status = proposta.status || "pendente";
+      if (status === "aprovado") resumo[editalId].aprovadas += 1;
+      else if (status === "rejeitado") resumo[editalId].rejeitadas += 1;
+      else resumo[editalId].pendentes += 1;
+    }
+
+    setEditais(editaisRes.data || []);
+    setResumoPropostasPorEdital(resumo);
   }
 
   async function salvarEdital() {
@@ -148,6 +186,7 @@ export default function AdminEditais() {
         tipo,
         status,
         ativo: true,
+        fase_atual: "rascunho",
         arquivo_pdf: nomeArquivoEdital,
       });
 
@@ -162,7 +201,7 @@ export default function AdminEditais() {
       setDescricao("");
       setPeriodo("");
       setTipo("Chamamento público");
-      setStatus("aberto");
+      setStatus("em_breve");
       setArquivo(null);
 
       await carregar();
@@ -174,23 +213,149 @@ export default function AdminEditais() {
     }
   }
 
-  async function excluir(id: string) {
-    if (!confirm("Deseja excluir este edital?")) return;
-
-    const { error } = await supabase
-      .from("editais")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      console.error("ERRO AO EXCLUIR:", error);
-      alert(error.message);
+  async function excluirEditalCadastrado(
+    id: string,
+    titulo?: string,
+    faseAtual?: string | null
+  ) {
+    if (!isEditalFaseRascunho(faseAtual)) {
+      setMsg(MSG_EXCLUSAO_SOMENTE_RASCUNHO);
+      triggerToast(MSG_EXCLUSAO_SOMENTE_RASCUNHO, "error");
       return;
     }
 
-    alert("Edital excluído com sucesso");
+    const resumo = resumoPropostasPorEdital[id];
+    const totalVinculadas = resumo
+      ? resumo.aprovadas + resumo.pendentes + resumo.rejeitadas
+      : 0;
+    const avisoVinculos =
+      totalVinculadas > 0
+        ? ` ${totalVinculadas} proposta(s) vinculada(s) serao desvinculadas, mas permanecem em Admin > Propostas para auditoria de testes.`
+        : "";
 
-    await carregar();
+    const confirmado = await confirmAction(
+      `Deseja excluir este edital de teste (fase Rascunho)${titulo ? `: "${titulo}"` : ""}?${avisoVinculos}`
+    );
+    if (!confirmado) {
+      if (!isConfirmModalReady()) {
+        const fallback = window.confirm(
+          `Deseja excluir este edital${titulo ? `: "${titulo}"` : ""}?${avisoVinculos}`
+        );
+        if (!fallback) return;
+      } else {
+        return;
+      }
+    }
+
+    setExcluindoId(id);
+    setMsg("");
+
+    try {
+      const res = await fetch("/api/admin/mutate", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          table: "editais",
+          action: "delete",
+          filters: [{ column: "id", value: id }],
+          select: "id",
+        }),
+      });
+
+      const json = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+      };
+
+      if (!res.ok || !json.ok) {
+        const erro = json.error || "Erro ao excluir edital.";
+        setMsg(erro);
+        triggerToast(erro, "error");
+        return;
+      }
+
+      setEditais((atuais) => atuais.filter((edital) => edital.id !== id));
+      setMsg("Edital excluido com sucesso.");
+      triggerToast("Edital excluido com sucesso.", "success");
+      await carregar();
+    } catch (error) {
+      console.error("ERRO AO EXCLUIR:", error);
+      setMsg("Erro inesperado ao excluir edital.");
+      triggerToast("Erro inesperado ao excluir edital.", "error");
+    } finally {
+      setExcluindoId(null);
+    }
+  }
+
+  async function voltarEditalParaRascunho(id: string, titulo?: string) {
+    const resumo = resumoPropostasPorEdital[id];
+    if (resumo?.aprovadas) {
+      setMsg(MSG_REVERTER_RASCUNHO_BLOQUEADO);
+      triggerToast(MSG_REVERTER_RASCUNHO_BLOQUEADO, "error");
+      return;
+    }
+
+    const confirmado = await confirmAction(
+      `Voltar o edital${titulo ? ` "${titulo}"` : ""} para fase Rascunho? Isso habilita a exclusao de testes e remove o edital do site publico.`
+    );
+    if (!confirmado) {
+      if (!isConfirmModalReady()) {
+        if (
+          !window.confirm(
+            `Voltar o edital${titulo ? ` "${titulo}"` : ""} para fase Rascunho?`
+          )
+        ) {
+          return;
+        }
+      } else {
+        return;
+      }
+    }
+
+    setVoltandoRascunhoId(id);
+    setMsg("");
+
+    try {
+      const res = await fetch("/api/admin/mutate", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          table: "editais",
+          action: "update",
+          payload: {
+            fase_atual: "rascunho",
+            status: "em_breve",
+          },
+          filters: [{ column: "id", value: id }],
+          select: "id",
+          single: true,
+        }),
+      });
+
+      const json = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+      };
+
+      if (!res.ok || !json.ok) {
+        const erro = json.error || "Erro ao voltar edital para Rascunho.";
+        setMsg(erro);
+        triggerToast(erro, "error");
+        return;
+      }
+
+      setMsg("Edital voltou para fase Rascunho. Agora voce pode excluir.");
+      triggerToast("Edital em Rascunho — exclusao liberada.", "success");
+      await carregar();
+    } catch (error) {
+      console.error("ERRO AO VOLTAR RASCUNHO:", error);
+      setMsg("Erro inesperado ao alterar a fase.");
+      triggerToast("Erro inesperado ao alterar a fase.", "error");
+    } finally {
+      setVoltandoRascunhoId(null);
+    }
   }
 
   return (
@@ -201,6 +366,12 @@ export default function AdminEditais() {
         Cadastre aqui a abertura oficial do edital e o PDF publicado em /editais.
         As fases posteriores de seleção, recurso, homologação e contrato são
         registradas na área de Transparência.
+      </p>
+      <p className="admin-subtitle" style={{ marginTop: 8 }}>
+        <strong>Fluxo fechado:</strong> novos editais nascem em <strong>Rascunho</strong> (nao
+        aparecem em /editais). Para testar envio de propostas, mantenha Rascunho e altere o
+        status para <strong>Aberto</strong>. Ao avancar a fase na governanca, o edital vira
+        processo real: <strong>Excluir</strong> e bloqueado e o registro permanece para auditoria.
       </p>
       <p className="admin-subtitle" style={{ marginTop: 8 }}>
         <Link href={adminCanonicalRoutes.editaisCms.hub}>
@@ -245,10 +416,15 @@ export default function AdminEditais() {
             setStatus(e.target.value as "aberto" | "encerrado" | "em_breve")
           }
         >
-          <option value="aberto">Aberto</option>
+          <option value="em_breve">Em breve (padrao — sem envio de proposta)</option>
+          <option value="aberto">Aberto (habilita testes em /propostas enquanto Rascunho)</option>
           <option value="encerrado">Encerrado</option>
-          <option value="em_breve">Em breve</option>
         </select>
+        <p style={{ marginTop: 8, fontSize: 13, color: "#94a3b8" }}>
+          Em fase Rascunho, so o status <strong>Aberto</strong> libera o edital no formulario de
+          propostas (ambiente de teste). No processo real, use a governanca para fase{" "}
+          <strong>Recebimento de propostas</strong>.
+        </p>
 
         <label>Arquivo do edital (PDF)</label>
         <input
@@ -305,6 +481,18 @@ export default function AdminEditais() {
             </span>
           </p>
 
+          {resumoPropostasPorEdital[e.id] && (
+            <p style={{ marginTop: 8, fontSize: 13, color: "#94a3b8" }}>
+              <strong>Propostas vinculadas:</strong>{" "}
+              {resumoPropostasPorEdital[e.id].aprovadas} aprovada(s),{" "}
+              {resumoPropostasPorEdital[e.id].pendentes} pendente(s),{" "}
+              {resumoPropostasPorEdital[e.id].rejeitadas} rejeitada(s).
+              {!isEditalFaseRascunho(e.fase_atual)
+                ? " Exclusao bloqueada fora da fase Rascunho."
+                : " Exclusao permitida (fase Rascunho)."}
+            </p>
+          )}
+
           <div style={acoesRowStyle}>
             
             {/* 🟡 EDITAR */}
@@ -324,13 +512,43 @@ export default function AdminEditais() {
               Governança / fases
             </Link>
 
+              {!isEditalFaseRascunho(e.fase_atual) &&
+                (resumoPropostasPorEdital[e.id]?.aprovadas ?? 0) === 0 && (
+              <button
+                type="button"
+                className="admin-button"
+                style={{ background: "#64748b", color: "#fff" }}
+                disabled={voltandoRascunhoId === e.id}
+                onClick={() => voltarEditalParaRascunho(e.id, e.titulo)}
+              >
+                {voltandoRascunhoId === e.id ? "Voltando..." : "Voltar p/ Rascunho"}
+              </button>
+            )}
+
+            {!isEditalFaseRascunho(e.fase_atual) &&
+              (resumoPropostasPorEdital[e.id]?.aprovadas ?? 0) > 0 && (
+              <span style={{ fontSize: 13, color: "#94a3b8", alignSelf: "center" }}>
+                Voltar p/ Rascunho indisponivel (proposta aprovada).
+              </span>
+            )}
+
             {/* 🔴 EXCLUIR */}
             <button
+              type="button"
               className="admin-button"
-              style={excluirBtnStyle}
-              onClick={() => excluir(e.id)}
+              style={{
+                ...excluirBtnStyle,
+                opacity: !isEditalFaseRascunho(e.fase_atual) ? 0.55 : 1,
+              }}
+              disabled={excluindoId === e.id || !isEditalFaseRascunho(e.fase_atual)}
+              title={
+                !isEditalFaseRascunho(e.fase_atual)
+                  ? "Exclusao permitida apenas na fase Rascunho (testes)"
+                  : undefined
+              }
+              onClick={() => excluirEditalCadastrado(e.id, e.titulo, e.fase_atual)}
             >
-              Excluir
+              {excluindoId === e.id ? "Excluindo..." : "Excluir"}
             </button>
 
           </div>

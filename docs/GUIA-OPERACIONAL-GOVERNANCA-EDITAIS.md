@@ -15,6 +15,22 @@ O sistema organiza o processo, mas a decisao continua humana e institucional.
 5. Documentos de resultado, recurso, homologacao, contrato e prestacao de contas sao publicados pela governanca.
 6. A pagina publica `/transparencia` exibe os documentos e fases publicas da governanca.
 
+## Fluxo institucional (fechado)
+
+### Fase Rascunho — sandbox de testes
+
+- edital **nao** aparece em `/editais` nem em `/editais/[id]`;
+- para testar envio em `/propostas`: manter fase Rascunho e status **Aberto** no admin;
+- propostas ficam com referencia ao edital; **Aprovar** = vinculo oficial; **Rejeitar** = historico;
+- **Excluir** permitido (propostas desvinculadas, mas permanecem em Admin > Propostas).
+
+### Processo real (apos sair de Rascunho)
+
+- edital passa a aparecer no site publico conforme a fase;
+- envio em `/propostas` so na fase **Recebimento de propostas**;
+- **Excluir** bloqueado — encerrar pela governanca;
+- transparencia e auditoria preservadas.
+
 ## Onde cada coisa aparece
 
 ### Pagina publica Editais
@@ -57,7 +73,25 @@ Uso:
 - editar dados basicos;
 - anexar PDF oficial;
 - acessar governanca/fases;
-- excluir edital quando necessario.
+- excluir edital quando necessario (somente testes ou cadastro incorreto).
+
+Regras de exclusao:
+
+- exclusao permitida **somente** na fase `rascunho`;
+- em rascunho, propostas vinculadas sao desvinculadas ao excluir, mas permanecem no admin;
+- apos avancar fase na governanca, exclusao bloqueada — usar encerramento.
+
+Testes de proposta em rascunho:
+
+- status do edital = `aberto` habilita o edital no formulario `/propostas` (nao listado em `/editais`);
+- processo real: avancar para fase `recebimento_propostas` na governanca.
+
+Protecoes de producao:
+
+- envio de proposta validado no servidor (`POST /api/propostas/enviar`);
+- voltar para Rascunho bloqueado se houver proposta aprovada;
+- exclusao de edital remove PDF do storage quando possivel;
+- retorno para Rascunho registrado em `editais_logs`.
 
 ### Admin Governanca / fases
 
@@ -70,7 +104,8 @@ Uso:
 - registrar observacao institucional;
 - publicar documentos oficiais;
 - excluir documentos ou logs de teste;
-- acompanhar propostas vinculadas.
+- acompanhar propostas vinculadas;
+- usar **Ver edital** em Admin > Propostas antes de aprovar ou rejeitar.
 
 ## Fases do processo
 
