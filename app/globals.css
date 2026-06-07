@@ -1083,19 +1083,20 @@ button:focus-visible{
 
   .public-edital-card .public-page-actions{
     flex-direction: row;
-    flex-wrap: nowrap;
-    align-items: stretch;
-    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
   }
 
   .public-edital-card .public-page-actions a{
     width: auto;
-    flex: 1 1 0;
+    flex: 0 1 auto;
     min-width: 0;
-    font-size: var(--public-text-xs);
-    line-height: 1.35;
+    font-size: inherit;
+    line-height: inherit;
     white-space: normal;
-    text-align: center;
+    text-align: left;
   }
 
   .public-content--detail .public-content__inner{
