@@ -1707,6 +1707,16 @@ button.public-card__link{
   margin-top: 0;
 }
 
+.public-edital-card__meta{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.public-edital-card__meta span{
+  display: block;
+}
+
 /* ===== FORMUL├üRIO P├ÜBLICO (propostas) ===== */
 .public-form-grid-2{
   display: grid;

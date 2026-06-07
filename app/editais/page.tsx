@@ -181,11 +181,14 @@ export default async function EditaisPublicPage() {
                   >
                     <div className="card__body">
                       <h3 className="card__title">{edital.titulo}</h3>
-                      <p className="card__text">
-                        <strong>Período:</strong> {periodo}
-                        {" · "}
-                        <strong>Status:</strong>{" "}
-                        {editalStatusLabel(edital.status)}
+                      <p className="card__text public-edital-card__meta">
+                        <span>
+                          <strong>Período:</strong> {periodo}
+                        </span>
+                        <span>
+                          <strong>Status:</strong>{" "}
+                          {editalStatusLabel(edital.status)}
+                        </span>
                       </p>
                     </div>
 
