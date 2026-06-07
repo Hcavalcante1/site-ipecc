@@ -11,6 +11,7 @@ export default function AdminButtonBridge() {
 
       // só aplica em botões de submit
       if (btn.type !== "submit") return;
+      if (!btn.closest("form") && !btn.getAttribute("form")) return;
 
       // evita aplicar duas vezes
       if (btn.dataset.loading === "true") return;
