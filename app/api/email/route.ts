@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { verifyAdminSession } from "@/lib/auth/adminSession";
 
+export const dynamic = "force-dynamic";
+
 type TipoEmail = "contato" | "orcamento" | "admin";
 
 const TIPOS_PUBLICOS: TipoEmail[] = ["contato", "orcamento"];
@@ -15,7 +17,9 @@ function getEnv(name: string) {
   return v;
 }
 
-const resend = new Resend(getEnv("RESEND_API_KEY"));
+function getResend() {
+  return new Resend(getEnv("RESEND_API_KEY"));
+}
 
 function pickFrom(tipo: TipoEmail) {
   if (tipo === "contato") return getEnv("EMAIL_CONTATO");
@@ -96,7 +100,7 @@ export async function POST(req: Request) {
         ? `Tipo: admin\n\nMensagem:\n${mensagem}`
         : `Tipo: ${tipo}\nNome: ${nome}\nEmail: ${email}\n\nMensagem:\n${mensagem}`;
 
-    const { error } = await resend.emails.send({
+    const { error } = await getResend().emails.send({
       from,
       to,
       subject,

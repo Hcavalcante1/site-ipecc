@@ -478,6 +478,7 @@ main.page a{
   gap: 24px;
   width: min(90%, var(--container-w));
   margin: 0 auto;
+  align-items: stretch;
 }
 
 .depoimentos blockquote{
@@ -488,6 +489,10 @@ main.page a{
   color: #1f2937;
   line-height: 1.6;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
 }
 
 .depoimentos blockquote::before{
