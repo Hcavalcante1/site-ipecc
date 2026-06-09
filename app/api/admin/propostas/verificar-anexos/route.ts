@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { verifyAdminSession } from "@/lib/auth/adminSession";
 import { existeArquivoProposta } from "@/lib/storage/propostasBucket";
 
+// Prevent pre-rendering during build
+export const dynamic = "force-dynamic";
+
 type ItemEntrada = { path: string; label?: string };
 
 export async function POST(req: Request) {

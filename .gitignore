@@ -28,3 +28,4 @@ scripts/restaurar-hero-home.ts
 scripts/testar-rls-noticias-eventos.ts
 scripts/testar-upsert-cms-anon.ts
 scripts/testar-upsert-cms.ts
+.env*

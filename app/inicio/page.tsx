@@ -539,7 +539,7 @@ const { data: eventos } = await supabase
       </section>
 
       {/* ===== DEPOIMENTOS ===== */}
-      <section className="depoimentos">
+      <section className="depoimentos inicio-depoimentos">
         <div className="container">
           <h2>O Impacto do IPECC</h2>
           <div className="depoimentos__grid">
