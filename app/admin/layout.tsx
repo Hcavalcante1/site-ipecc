@@ -2,7 +2,7 @@
 
 import "./globals.css";
 import Link from "next/link";
-import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type MouseEvent, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import AdminToast from "@/components/AdminToast";
@@ -10,15 +10,45 @@ import AdminFeedbackBridge from "@/components/AdminFeedbackBridge";
 import AdminConfirmModal from "@/components/AdminConfirmModal";
 import AdminButtonBridge from "@/components/AdminButtonBridge";
 import AdminFormBridge from "@/components/AdminFormBridge";
+import type { AdminModulo } from "@/lib/auth/adminEscopo";
+import { MODULOS_MESTRE } from "@/lib/auth/adminEscopo";
 
 const ADMIN_ACTIVE_KEY = "ipecc_admin_active";
 const ADMIN_CLOSED_KEY = "ipecc_admin_closed";
+
+type NavItem = { href: string; label: string; modulo?: AdminModulo };
+
+const NAV_CONTEUDO: NavItem[] = [
+  { href: "/admin/paginas", label: "Paginas", modulo: "paginas" },
+  { href: "/admin/editais", label: "Editais", modulo: "editais" },
+  { href: "/admin/noticias", label: "Noticias", modulo: "noticias" },
+  { href: "/admin/eventos", label: "Eventos", modulo: "eventos" },
+];
+
+const NAV_OPERACAO: NavItem[] = [
+  { href: "/admin/propostas", label: "Propostas", modulo: "propostas" },
+  { href: "/admin/certidoes", label: "Certidoes", modulo: "certidoes" },
+  { href: "/admin/whatsapp", label: "WhatsApp", modulo: "whatsapp" },
+  { href: "/admin/logs", label: "Logs", modulo: "logs" },
+];
+
+const NAV_GOVERNANCA: NavItem[] = [
+  { href: "/admin/processos", label: "Processos", modulo: "processos" },
+  { href: "/admin/acessos", label: "Acessos", modulo: "acessos" },
+];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [checking, setChecking] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [modulos, setModulos] = useState<AdminModulo[]>([...MODULOS_MESTRE]);
+  const [papel, setPapel] = useState<string>("mestre");
+
+  const pode = useMemo(() => {
+    const set = new Set(modulos);
+    return (m?: AdminModulo) => (m ? set.has(m) : true);
+  }, [modulos]);
 
   useEffect(() => {
     let mounted = true;
@@ -50,17 +80,44 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         return;
       }
 
-      const { data: isAdmin, error } = await supabase.rpc("is_admin", {
-        user_id: user.id,
-      });
+      const sessionRes = await fetch("/api/admin/session", {
+        method: "POST",
+        credentials: "include",
+      }).catch(() => null);
 
-      if (error || !isAdmin) {
-        await encerrarSessaoAdmin();
-        router.replace("/");
+      if (!sessionRes || !sessionRes.ok) {
+        // Fallback legado is_admin (antes do SQL Fase 1)
+        const { data: isAdmin, error } = await supabase.rpc("is_admin", {
+          user_id: user.id,
+        });
+        if (error || !isAdmin) {
+          await encerrarSessaoAdmin();
+          router.replace("/");
+          return;
+        }
+        if (mounted) {
+          setModulos([...MODULOS_MESTRE]);
+          setPapel("mestre");
+          setChecking(false);
+        }
         return;
       }
 
-      if (mounted) setChecking(false);
+      const json = (await sessionRes.json()) as {
+        ok?: boolean;
+        papel?: string;
+        modulos?: AdminModulo[];
+      };
+
+      if (mounted) {
+        setPapel(json.papel || "mestre");
+        setModulos(
+          Array.isArray(json.modulos) && json.modulos.length > 0
+            ? json.modulos
+            : [...MODULOS_MESTRE]
+        );
+        setChecking(false);
+      }
     }
 
     async function renovarEntradaAdmin() {
@@ -114,6 +171,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     router.push(href);
   }
 
+  const conteudo = NAV_CONTEUDO.filter((i) => pode(i.modulo));
+  const operacao = NAV_OPERACAO.filter((i) => pode(i.modulo));
+  const governanca = NAV_GOVERNANCA.filter((i) => pode(i.modulo));
+
   return (
     <div className="admin-body">
       <header className="admin-mobile-header">
@@ -156,39 +217,74 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               }}
             />
           </div>
+          <p
+            style={{
+              margin: "0 16px 12px",
+              fontSize: 12,
+              opacity: 0.75,
+              textTransform: "uppercase",
+              letterSpacing: "0.04em",
+            }}
+          >
+            Perfil: {papel}
+          </p>
 
           <nav className="admin-nav">
-            <Link href="/admin" className={navClass(pathname, "/admin", true)} onClick={(event) => handleMobileNav(event, "/admin")}>
+            <Link
+              href="/admin"
+              className={navClass(pathname, "/admin", true)}
+              onClick={(event) => handleMobileNav(event, "/admin")}
+            >
               Dashboard
             </Link>
 
-            <div className="admin-nav-section-title">Conteudo</div>
-            <Link href="/admin/paginas" className={navClass(pathname, "/admin/paginas")} onClick={(event) => handleMobileNav(event, "/admin/paginas")}>
-              Paginas
-            </Link>
-            <Link href="/admin/editais" className={navClass(pathname, "/admin/editais")} onClick={(event) => handleMobileNav(event, "/admin/editais")}>
-              Editais
-            </Link>
-            <Link href="/admin/noticias" className={navClass(pathname, "/admin/noticias")} onClick={(event) => handleMobileNav(event, "/admin/noticias")}>
-              Noticias
-            </Link>
-            <Link href="/admin/eventos" className={navClass(pathname, "/admin/eventos")} onClick={(event) => handleMobileNav(event, "/admin/eventos")}>
-              Eventos
-            </Link>
+            {conteudo.length > 0 ? (
+              <>
+                <div className="admin-nav-section-title">Conteudo</div>
+                {conteudo.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={navClass(pathname, item.href)}
+                    onClick={(event) => handleMobileNav(event, item.href)}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </>
+            ) : null}
 
-            <div className="admin-nav-section-title">Operacao</div>
-            <Link href="/admin/propostas" className={navClass(pathname, "/admin/propostas")} onClick={(event) => handleMobileNav(event, "/admin/propostas")}>
-              Propostas
-            </Link>
-            <Link href="/admin/certidoes" className={navClass(pathname, "/admin/certidoes")} onClick={(event) => handleMobileNav(event, "/admin/certidoes")}>
-              Certidoes
-            </Link>
-            <Link href="/admin/whatsapp" className={navClass(pathname, "/admin/whatsapp")} onClick={(event) => handleMobileNav(event, "/admin/whatsapp")}>
-              WhatsApp
-            </Link>
-            <Link href="/admin/logs" className={navClass(pathname, "/admin/logs")} onClick={(event) => handleMobileNav(event, "/admin/logs")}>
-              Logs
-            </Link>
+            {operacao.length > 0 ? (
+              <>
+                <div className="admin-nav-section-title">Operacao</div>
+                {operacao.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={navClass(pathname, item.href)}
+                    onClick={(event) => handleMobileNav(event, item.href)}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </>
+            ) : null}
+
+            {governanca.length > 0 ? (
+              <>
+                <div className="admin-nav-section-title">Governanca</div>
+                {governanca.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={navClass(pathname, item.href)}
+                    onClick={(event) => handleMobileNav(event, item.href)}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </>
+            ) : null}
           </nav>
         </aside>
 

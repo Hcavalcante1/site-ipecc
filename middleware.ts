@@ -49,11 +49,31 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  const { data: isAdmin, error } = await supabase.rpc("is_admin", {
-    user_id: user.id,
-  });
+  const { data: gateNovo, error: gateNovoError } = await supabase.rpc(
+    "is_admin_ou_perfil",
+    { p_user_id: user.id }
+  );
 
-  if (error || !isAdmin) {
+  let autorizado = !gateNovoError && gateNovo === true;
+
+  if (gateNovoError) {
+    const { data: isAdmin, error } = await supabase.rpc("is_admin", {
+      user_id: user.id,
+    });
+    autorizado = !error && Boolean(isAdmin);
+
+    if (!autorizado) {
+      const { data: perfil } = await supabase
+        .from("admin_perfis")
+        .select("ativo")
+        .eq("user_id", user.id)
+        .eq("ativo", true)
+        .maybeSingle();
+      autorizado = Boolean(perfil?.ativo);
+    }
+  }
+
+  if (!autorizado) {
     const redirect = NextResponse.redirect(new URL("/login", req.url));
     redirect.cookies.set(ADMIN_GATE_COOKIE, "", { path: "/", maxAge: 0 });
     return redirect;

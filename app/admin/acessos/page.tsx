@@ -1,0 +1,321 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { triggerToast } from "@/components/AdminToast";
+import type { AdminPapel } from "@/lib/auth/adminEscopo";
+
+type Perfil = {
+  user_id: string;
+  email?: string | null;
+  papel: AdminPapel;
+  ativo: boolean;
+};
+
+type Processo = { id: string; titulo: string; status: string };
+
+type Escopo = {
+  id: string;
+  user_id: string;
+  processo_id: string | null;
+  modalidade: string | null;
+  mod_editais: boolean;
+  mod_propostas: boolean;
+  mod_transparencia: boolean;
+  mod_noticias: boolean;
+  mod_eventos: boolean;
+  mod_projetos: boolean;
+};
+
+export default function AdminAcessosPage() {
+  const [perfis, setPerfis] = useState<Perfil[]>([]);
+  const [escopos, setEscopos] = useState<Escopo[]>([]);
+  const [processos, setProcessos] = useState<Processo[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [msg, setMsg] = useState("");
+
+  const [email, setEmail] = useState("");
+  const [papel, setPapel] = useState<AdminPapel>("externo");
+  const [userIdEscopo, setUserIdEscopo] = useState("");
+  const [processoId, setProcessoId] = useState("");
+  const [modNoticias, setModNoticias] = useState(true);
+  const [modEventos, setModEventos] = useState(true);
+  const [modProjetos, setModProjetos] = useState(true);
+
+  async function carregar() {
+    setLoading(true);
+    setMsg("");
+    const res = await fetch("/api/admin/acessos", { credentials: "include" });
+    const json = await res.json();
+    if (!res.ok) {
+      setMsg(json.error || "Erro ao carregar.");
+      setPerfis([]);
+      setEscopos([]);
+      setProcessos([]);
+    } else {
+      setPerfis(json.perfis || []);
+      setEscopos(json.escopos || []);
+      setProcessos(json.processos || []);
+      if (!userIdEscopo && json.perfis?.[0]?.user_id) {
+        setUserIdEscopo(json.perfis[0].user_id);
+      }
+      if (!processoId && json.processos?.[0]?.id) {
+        setProcessoId(json.processos[0].id);
+      }
+    }
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    carregar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const processoNome = useMemo(() => {
+    const map = new Map(processos.map((p) => [p.id, p.titulo]));
+    return (id: string | null) => (id ? map.get(id) || id : "—");
+  }, [processos]);
+
+  async function salvarPerfil() {
+    const res = await fetch("/api/admin/acessos", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ acao: "upsert_perfil", email, papel }),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      triggerToast(json.error || "Erro", "error");
+      return;
+    }
+    triggerToast("Perfil salvo.", "success");
+    setEmail("");
+    carregar();
+  }
+
+  async function criarEscopo() {
+    const res = await fetch("/api/admin/acessos", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        acao: "criar_escopo",
+        user_id: userIdEscopo,
+        processo_id: processoId,
+        modulos: {
+          editais: true,
+          propostas: true,
+          transparencia: true,
+          noticias: modNoticias,
+          eventos: modEventos,
+          projetos: modProjetos,
+        },
+      }),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      triggerToast(json.error || "Erro", "error");
+      return;
+    }
+    triggerToast("Escopo vinculado.", "success");
+    carregar();
+  }
+
+  async function removerEscopo(id: string) {
+    const res = await fetch("/api/admin/acessos", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ acao: "remover_escopo", escopo_id: id }),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      triggerToast(json.error || "Erro", "error");
+      return;
+    }
+    triggerToast("Escopo removido.", "success");
+    carregar();
+  }
+
+  return (
+    <div className="admin-page">
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 12,
+          flexWrap: "wrap",
+        }}
+      >
+        <div>
+          <h1 className="admin-h1">Acessos</h1>
+          <p style={{ marginTop: 8, maxWidth: 760 }}>
+            Vincule logins (ja criados no Supabase Auth) a papeis e processos.
+            Mestre ve tudo; operador/externo so o escopo liberado.
+          </p>
+        </div>
+        <Link className="admin-button" href="/admin/processos">
+          Ver processos
+        </Link>
+      </div>
+
+      {msg && (
+        <div className="admin-card" style={{ marginTop: 16, border: "1px solid #f59e0b" }}>
+          <strong>Aviso:</strong> {msg}
+        </div>
+      )}
+
+      <section className="admin-card" style={{ marginTop: 20 }}>
+        <h2 className="admin-h2">1) Adicionar / atualizar perfil</h2>
+        <label>Email do usuario (Auth)</label>
+        <input
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="parceiro@exemplo.org"
+        />
+        <label>Papel</label>
+        <select
+          value={papel}
+          onChange={(e) => setPapel(e.target.value as AdminPapel)}
+        >
+          <option value="mestre">Mestre</option>
+          <option value="operador">Operador</option>
+          <option value="externo">Externo</option>
+        </select>
+        <button type="button" className="admin-button" onClick={salvarPerfil}>
+          Salvar perfil
+        </button>
+      </section>
+
+      <section className="admin-card" style={{ marginTop: 20 }}>
+        <h2 className="admin-h2">2) Vincular escopo (processo + modulos)</h2>
+        <label>Usuario</label>
+        <select
+          value={userIdEscopo}
+          onChange={(e) => setUserIdEscopo(e.target.value)}
+        >
+          {perfis
+            .filter((p) => p.ativo && p.papel !== "mestre")
+            .map((p) => (
+              <option key={p.user_id} value={p.user_id}>
+                {p.email || p.user_id} ({p.papel})
+              </option>
+            ))}
+        </select>
+        <label>Processo</label>
+        <select
+          value={processoId}
+          onChange={(e) => setProcessoId(e.target.value)}
+        >
+          {processos.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.titulo} ({p.status})
+            </option>
+          ))}
+        </select>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 12 }}>
+          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={modNoticias}
+              onChange={(e) => setModNoticias(e.target.checked)}
+            />
+            Noticias
+          </label>
+          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={modEventos}
+              onChange={(e) => setModEventos(e.target.checked)}
+            />
+            Eventos
+          </label>
+          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={modProjetos}
+              onChange={(e) => setModProjetos(e.target.checked)}
+            />
+            Projetos (CMS)
+          </label>
+        </div>
+        <p style={{ fontSize: 13, opacity: 0.85 }}>
+          Editais, propostas e transparencia entram liberados por padrao neste
+          vinculo.
+        </p>
+        <button type="button" className="admin-button" onClick={criarEscopo}>
+          Vincular escopo
+        </button>
+      </section>
+
+      <section className="admin-card" style={{ marginTop: 20 }}>
+        <h2 className="admin-h2">Perfis</h2>
+        {loading ? (
+          <p>Carregando...</p>
+        ) : perfis.length === 0 ? (
+          <p>Nenhum perfil. Aplique o SQL e salve o primeiro mestre/operador.</p>
+        ) : (
+          <div style={{ display: "grid", gap: 10 }}>
+            {perfis.map((p) => (
+              <div
+                key={p.user_id}
+                style={{
+                  border: "1px solid rgba(255,255,255,.14)",
+                  borderRadius: 10,
+                  padding: 12,
+                }}
+              >
+                <strong>{p.email || p.user_id}</strong>
+                <p style={{ margin: "6px 0 0" }}>
+                  Papel: {p.papel} · {p.ativo ? "ativo" : "inativo"}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="admin-card" style={{ marginTop: 20 }}>
+        <h2 className="admin-h2">Escopos</h2>
+        {escopos.length === 0 ? (
+          <p>Nenhum escopo vinculado.</p>
+        ) : (
+          <div style={{ display: "grid", gap: 10 }}>
+            {escopos.map((e) => (
+              <div
+                key={e.id}
+                style={{
+                  border: "1px solid rgba(255,255,255,.14)",
+                  borderRadius: 10,
+                  padding: 12,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  flexWrap: "wrap",
+                }}
+              >
+                <div>
+                  <strong>{processoNome(e.processo_id)}</strong>
+                  <p style={{ margin: "6px 0 0", fontSize: 13 }}>
+                    user: {e.user_id.slice(0, 8)}… · editais{" "}
+                    {e.mod_editais ? "sim" : "nao"} · propostas{" "}
+                    {e.mod_propostas ? "sim" : "nao"} · noticias{" "}
+                    {e.mod_noticias ? "sim" : "nao"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="admin-button"
+                  style={{ background: "#ef4444" }}
+                  onClick={() => removerEscopo(e.id)}
+                >
+                  Remover
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
