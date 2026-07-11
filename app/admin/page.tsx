@@ -24,14 +24,6 @@ export default function AdminPage() {
     setLoading(false);
   }
 
-  async function handleLogout() {
-    sessionStorage.removeItem("ipecc_admin_active");
-    localStorage.removeItem("ipecc_admin_closed");
-    await fetch("/api/logout", { method: "POST" }).catch(() => null);
-    await supabase.auth.signOut();
-    window.location.href = "/login";
-  }
-
   if (loading) {
     return <div style={{ padding: 24, color: "#e5e7eb" }}>Carregando...</div>;
   }
@@ -50,10 +42,6 @@ export default function AdminPage() {
         <div style={styles.actions}>
           <button style={styles.refreshBtn} onClick={() => window.location.reload()}>
             Atualizar
-          </button>
-
-          <button style={styles.logoutBtn} onClick={handleLogout}>
-            Sair
           </button>
         </div>
       </div>
@@ -127,16 +115,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: "#e5e7eb",
     cursor: "pointer",
     fontWeight: 700,
-  },
-
-  logoutBtn: {
-    padding: "10px 18px",
-    borderRadius: 999,
-    border: "none",
-    background: "linear-gradient(135deg, #ef4444, #dc2626)",
-    color: "#fff",
-    cursor: "pointer",
-    fontWeight: 800,
   },
 
   hero: {

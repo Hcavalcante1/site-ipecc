@@ -3,7 +3,11 @@
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
-export default function LogoutButton() {
+type LogoutButtonProps = {
+  className?: string;
+};
+
+export default function LogoutButton({ className }: LogoutButtonProps) {
   const router = useRouter();
 
   async function handleLogout() {
@@ -12,13 +16,16 @@ export default function LogoutButton() {
     await fetch("/api/logout", { method: "POST" }).catch(() => null);
     await supabase.auth.signOut();
     router.replace("/login");
+    router.refresh();
   }
 
   return (
-    <button onClick={handleLogout} className="admin-button">
+    <button
+      type="button"
+      onClick={handleLogout}
+      className={className || "admin-logout-btn"}
+    >
       Sair
     </button>
   );
 }
-
-

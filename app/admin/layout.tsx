@@ -13,9 +13,27 @@ import AdminFormBridge from "@/components/AdminFormBridge";
 import type { AdminModulo } from "@/lib/auth/adminEscopo";
 import { MODULOS_MESTRE } from "@/lib/auth/adminEscopo";
 import LogoutButton from "./components/LogoutButton";
+import AdminNavIcon, { type AdminNavIconName } from "./components/AdminNavIcon";
 
 const ADMIN_ACTIVE_KEY = "ipecc_admin_active";
 const ADMIN_CLOSED_KEY = "ipecc_admin_closed";
+
+function NavLabel({
+  icon,
+  children,
+}: {
+  icon: AdminNavIconName;
+  children: ReactNode;
+}) {
+  return (
+    <>
+      <span className="admin-nav-icon" aria-hidden>
+        <AdminNavIcon name={icon} size={18} />
+      </span>
+      <span className="admin-nav-label">{children}</span>
+    </>
+  );
+}
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -196,50 +214,50 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
           <nav className="admin-nav">
             <Link href="/admin" className={navClass(pathname, "/admin", true)} onClick={(event) => handleMobileNav(event, "/admin")}>
-              Dashboard
+              <NavLabel icon="dashboard">Dashboard</NavLabel>
             </Link>
 
             <div className="admin-nav-section-title">Conteudo</div>
             {pode("paginas") && (
               <Link href="/admin/paginas" className={navClass(pathname, "/admin/paginas")} onClick={(event) => handleMobileNav(event, "/admin/paginas")}>
-                Paginas
+                <NavLabel icon="pages">Paginas</NavLabel>
               </Link>
             )}
             {pode("editais") && (
               <Link href="/admin/editais" className={navClass(pathname, "/admin/editais")} onClick={(event) => handleMobileNav(event, "/admin/editais")}>
-                Editais
+                <NavLabel icon="editais">Editais</NavLabel>
               </Link>
             )}
             {pode("noticias") && (
               <Link href="/admin/noticias" className={navClass(pathname, "/admin/noticias")} onClick={(event) => handleMobileNav(event, "/admin/noticias")}>
-                Noticias
+                <NavLabel icon="noticias">Noticias</NavLabel>
               </Link>
             )}
             {pode("eventos") && (
               <Link href="/admin/eventos" className={navClass(pathname, "/admin/eventos")} onClick={(event) => handleMobileNav(event, "/admin/eventos")}>
-                Eventos
+                <NavLabel icon="eventos">Eventos</NavLabel>
               </Link>
             )}
 
             <div className="admin-nav-section-title">Operacao</div>
             {pode("propostas") && (
               <Link href="/admin/propostas" className={navClass(pathname, "/admin/propostas")} onClick={(event) => handleMobileNav(event, "/admin/propostas")}>
-                Propostas
+                <NavLabel icon="propostas">Propostas</NavLabel>
               </Link>
             )}
             {pode("certidoes") && (
               <Link href="/admin/certidoes" className={navClass(pathname, "/admin/certidoes")} onClick={(event) => handleMobileNav(event, "/admin/certidoes")}>
-                Certidoes
+                <NavLabel icon="certidoes">Certidoes</NavLabel>
               </Link>
             )}
             {pode("whatsapp") && (
               <Link href="/admin/whatsapp" className={navClass(pathname, "/admin/whatsapp")} onClick={(event) => handleMobileNav(event, "/admin/whatsapp")}>
-                WhatsApp
+                <NavLabel icon="whatsapp">WhatsApp</NavLabel>
               </Link>
             )}
             {pode("logs") && (
               <Link href="/admin/logs" className={navClass(pathname, "/admin/logs")} onClick={(event) => handleMobileNav(event, "/admin/logs")}>
-                Logs
+                <NavLabel icon="logs">Logs</NavLabel>
               </Link>
             )}
 
@@ -248,12 +266,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 <div className="admin-nav-section-title">Governanca</div>
                 {pode("processos") && (
                   <Link href="/admin/processos" className={navClass(pathname, "/admin/processos")} onClick={(event) => handleMobileNav(event, "/admin/processos")}>
-                    Processos
+                    <NavLabel icon="processos">Processos</NavLabel>
                   </Link>
                 )}
                 {pode("acessos") && (
                   <Link href="/admin/acessos" className={navClass(pathname, "/admin/acessos")} onClick={(event) => handleMobileNav(event, "/admin/acessos")}>
-                    Acessos
+                    <NavLabel icon="acessos">Acessos</NavLabel>
                   </Link>
                 )}
               </>
@@ -261,15 +279,39 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="admin-sidebar-footer">
-            {userEmail ? (
-              <div className="admin-sidebar-footer-email">{userEmail}</div>
-            ) : null}
+            <div className="admin-sidebar-footer-brand">
+              <span className="admin-sidebar-footer-brand-name">IPECC</span>
+              <span className="admin-sidebar-footer-brand-tag">
+                Instituto Paulista de Esporte, Cultura e Cidadania
+              </span>
+            </div>
+
+            <div className="admin-sidebar-footer-user">
+              <span className="admin-sidebar-footer-label">Sessao administrativa</span>
+              <span
+                className="admin-sidebar-footer-email"
+                title={userEmail || undefined}
+              >
+                {userEmail || "Conta administrativa"}
+              </span>
+              <span className="admin-sidebar-footer-badge">
+                Area restrita - acesso autorizado
+              </span>
+            </div>
+
             <LogoutButton />
+
+            <p className="admin-sidebar-footer-legal">
+              CNPJ 05.965.225/0001-04 | {new Date().getFullYear()} IPECC
+            </p>
           </div>
         </aside>
 
         <main className="admin-main">
           <section className="admin-content-shell">{children}</section>
+          <footer className="admin-main-footer">
+            IPECC | Painel administrativo institucional
+          </footer>
         </main>
       </div>
 
