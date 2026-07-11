@@ -536,14 +536,29 @@ export default function GovernancaEditalPage() {
       }
 
       const faseAnterior = faseAtual;
-      const { error } = await supabase
-        .from("editais")
-        .update({ fase_atual: novaFase })
-        .eq("id", editalId);
+      const res = await fetch("/api/admin/mutate", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          table: "editais",
+          action: "update",
+          payload: { fase_atual: novaFase },
+          filters: [{ column: "id", value: editalId }],
+          select: "id",
+          single: true,
+        }),
+      });
 
-      if (error) {
-        setFaseMsg(`Erro ao atualizar fase: ${error.message}`);
-        triggerToast("Erro ao atualizar fase.", "error");
+      const json = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+      };
+
+      if (!res.ok || !json.ok) {
+        const erro = json.error || "Erro ao atualizar fase.";
+        setFaseMsg(`Erro ao atualizar fase: ${erro}`);
+        triggerToast(erro, "error");
         return;
       }
 
@@ -608,19 +623,44 @@ export default function GovernancaEditalPage() {
         return;
       }
 
-      const { data, error } = await supabase
-        .from("documentos_publicos")
-        .insert({
-          edital_id: editalId,
-          tipo: docTipo,
-          fase: docFase || null,
-          titulo: docTitulo,
-          descricao: docDescricao || null,
-          arquivo_url: path,
-          publicado: true,
-        })
-        .select("id")
-        .single();
+      const { data, error } = await (async () => {
+        const res = await fetch("/api/admin/mutate", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            table: "documentos_publicos",
+            action: "insert",
+            payload: {
+              edital_id: editalId,
+              tipo: docTipo,
+              fase: docFase || null,
+              titulo: docTitulo,
+              descricao: docDescricao || null,
+              arquivo_url: path,
+              publicado: true,
+              publicado_em: new Date().toISOString(),
+            },
+            select: "id",
+            single: true,
+          }),
+        });
+
+        const json = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          error?: string;
+          data?: { id?: string } | null;
+        };
+
+        if (!res.ok || !json.ok) {
+          return {
+            data: null,
+            error: { message: json.error || "Erro ao publicar documento." },
+          };
+        }
+
+        return { data: json.data ?? null, error: null };
+      })();
 
       if (error) {
         setDocMsg(`Erro ao publicar documento: ${error.message}`);
@@ -660,13 +700,29 @@ export default function GovernancaEditalPage() {
         return;
       }
 
-      const { error } = await supabase
-        .from("documentos_publicos")
-        .delete()
-        .eq("id", doc.id);
+      const res = await fetch("/api/admin/mutate", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          table: "documentos_publicos",
+          action: "delete",
+          filters: [
+            { column: "id", value: doc.id },
+            { column: "edital_id", value: editalId },
+          ],
+          select: "id",
+        }),
+      });
 
-      if (error) {
-        setDocMsg(`Erro ao excluir documento: ${error.message}`);
+      const json = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+      };
+
+      if (!res.ok || !json.ok) {
+        const erro = json.error || "Erro ao excluir documento.";
+        setDocMsg(`Erro ao excluir documento: ${erro}`);
         triggerToast("Erro ao excluir documento.", "error");
         return;
       }

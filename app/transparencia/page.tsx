@@ -461,11 +461,12 @@ function isGovernancaPublicavel(edital?: EditalGovernanca | null): boolean {
 }
 
 function editalTemConteudoTransparencia(
-  edital: EditalGovernanca,
-  documentos: DocumentoGovernancaEdital[]
+  _edital: EditalGovernanca,
+  _documentos: DocumentoGovernancaEdital[]
 ): boolean {
-  if (documentos.length > 0) return true;
-  return !!resolveEditalDownloadUrl(edital.arquivo_pdf);
+  // Processo já saiu de rascunho (isGovernancaPublicavel): sempre exibe no
+  // hub público, mesmo sem PDF ou documentos_publicos ainda publicados.
+  return true;
 }
 
 function ordenarDocumentosGovernanca(
@@ -1206,7 +1207,14 @@ export default async function TransparenciaPage() {
 
                           <MetaChipGovernanca
                             label="Documentos"
-                            value={`${grupo.documentos.length} publicados`}
+                            value={`${
+                              grupo.documentos.length +
+                              (resolveEditalDownloadUrl(
+                                grupo.edital?.arquivo_pdf
+                              )
+                                ? 1
+                                : 0)
+                            } publicados`}
                             accent="#475569"
                           />
 
@@ -1340,6 +1348,13 @@ export default async function TransparenciaPage() {
                                   {modalidade || "—"}
                                 </p>
                               </div>
+                            )}
+                          {grupo.documentos.length === 0 &&
+                            !resolveEditalDownloadUrl(grupo.edital?.arquivo_pdf) && (
+                              <p style={{ margin: 0, color: "#64748b", fontSize: ".9rem" }}>
+                                Processo publicado. Documentos oficiais ainda não foram anexados
+                                na governança.
+                              </p>
                             )}
                         </div>
                       </div>

@@ -348,6 +348,23 @@ export async function POST(req: Request) {
         revalidatePath(`/editais/${idFilter.value}`);
       }
     }
+    if (table === "documentos_publicos") {
+      const payloadObj =
+        payload && typeof payload === "object" && !Array.isArray(payload)
+          ? (payload as Record<string, unknown>)
+          : null;
+      const editalIdFromPayload =
+        typeof payloadObj?.edital_id === "string" ? payloadObj.edital_id : null;
+      const editalIdFromFilter = filters.find(
+        (filter) => filter.column === "edital_id"
+      )?.value;
+      const editalId =
+        editalIdFromPayload ||
+        (typeof editalIdFromFilter === "string" ? editalIdFromFilter : null);
+      if (editalId && editalId.trim()) {
+        revalidatePath(`/editais/${editalId}`);
+      }
+    }
 
     return NextResponse.json({
       ok: true,
