@@ -43,7 +43,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const [checking, setChecking] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [modulos, setModulos] = useState<AdminModulo[]>([...MODULOS_MESTRE]);
-  const [papel, setPapel] = useState<string>("mestre");
 
   const pode = useMemo(() => {
     const set = new Set(modulos);
@@ -97,7 +96,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         }
         if (mounted) {
           setModulos([...MODULOS_MESTRE]);
-          setPapel("mestre");
           setChecking(false);
         }
         return;
@@ -110,7 +108,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       };
 
       if (mounted) {
-        setPapel(json.papel || "mestre");
         setModulos(
           Array.isArray(json.modulos) && json.modulos.length > 0
             ? json.modulos
@@ -217,18 +214,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               }}
             />
           </div>
-          <p
-            style={{
-              margin: "0 8px 10px",
-              fontSize: 11,
-              opacity: 0.75,
-              textTransform: "uppercase",
-              letterSpacing: "0.03em",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Perfil: {papel}
-          </p>
 
           <nav className="admin-nav">
             <Link

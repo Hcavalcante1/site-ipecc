@@ -23,8 +23,7 @@
 .admin-wrapper {
   min-height: auto;
   display: grid;
-  /* Largura util do menu: 180px ficou estreito apos Processos/Acessos + secoes */
-  grid-template-columns: 240px minmax(0, 1fr);
+  grid-template-columns: 260px minmax(0, 1fr);
 }
 
 .admin-mobile-header,
@@ -43,10 +42,25 @@
   align-self: start;
   height: auto;
   max-height: 100vh;
+  overflow-x: hidden;
   overflow-y: auto;
   z-index: 10;
   border-radius: 0 18px 18px 0;
-  min-width: 240px;
+  width: 260px;
+  min-width: 260px;
+  max-width: 260px;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
+}
+
+.admin-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.admin-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.45);
+  border-radius: 999px;
 }
 
 /* Logo do painel */
@@ -93,11 +107,11 @@
 }
 
 .admin-nav-section-title {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.16em;
   opacity: 0.6;
-  margin: 10px 4px 4px;
+  margin: 12px 4px 6px;
 }
 
 .admin-nav-separator {
@@ -110,14 +124,13 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 12px;
+  padding: 8px 10px;
   margin: 2px 0;
   border-radius: 999px;
   font-size: 0.9rem;
   text-decoration: none;
   color: #e5e7eb;
   opacity: 0.9;
-  white-space: nowrap;
   transition: background 0.15s ease, transform 0.12s ease, opacity 0.15s ease;
 }
 
@@ -446,6 +459,7 @@ a.admin-button {
     z-index: 2147483002;
     width: min(84vw, 310px);
     min-width: 0;
+    max-width: none;
     max-height: calc(100vh - 96px);
     display: block;
     overflow-y: auto;
