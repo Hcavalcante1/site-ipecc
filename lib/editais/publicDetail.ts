@@ -4,6 +4,7 @@ import {
   editalAceitaEnvioProposta,
   getMensagemEnvioPropostaInstitucional,
 } from "@/lib/editais/governancaRules";
+import { isModalidadeCotacaoPrevia } from "@/lib/editais/tiposAdmin";
 
 export type EditalPublicoDetalhe = {
   id: string;
@@ -66,6 +67,29 @@ export const FASES_TIMELINE_PUBLICA = [
   "encerrado",
 ] as const;
 
+/** Fluxo enxuto para Cotação prévia de preços (público e admin). */
+export const FASES_TIMELINE_COTACAO_PREVIA = [
+  "publicado",
+  "recebimento_propostas",
+  "analise",
+  "resultado_final",
+  "encerrado",
+] as const;
+
+const FASE_COTACAO_ALIASES: Record<
+  string,
+  (typeof FASES_TIMELINE_COTACAO_PREVIA)[number]
+> = {
+  resultado_preliminar: "analise",
+  recurso: "analise",
+  julgamento_recurso: "analise",
+  homologado: "resultado_final",
+  adjudicado: "resultado_final",
+  contratado: "resultado_final",
+  execucao: "resultado_final",
+  prestacao_contas: "resultado_final",
+};
+
 const FASE_RESUMO: Record<string, string> = {
   publicado: "Edital publicado oficialmente pelo IPECC.",
   recebimento_propostas:
@@ -84,6 +108,15 @@ const FASE_RESUMO: Record<string, string> = {
   execucao: "Acompanhamento da execução do objeto ou parceria.",
   prestacao_contas: "Prestação de contas e documentos de encerramento.",
   encerrado: "Processo encerrado institucionalmente.",
+};
+
+const FASE_RESUMO_COTACAO: Record<string, string> = {
+  publicado: "Cotação prévia publicada pelo IPECC.",
+  recebimento_propostas:
+    "Fornecedores podem enviar cotações dentro do prazo informado.",
+  analise: "As cotações recebidas estão em análise pela equipe responsável.",
+  resultado_final: "Divulgação do resultado da cotação prévia.",
+  encerrado: "Cotação prévia encerrada.",
 };
 
 const TIPO_DOCUMENTO_LABELS: Record<string, string> = {
@@ -115,6 +148,53 @@ export function normalizarTextoEdital(valor?: string | null) {
   return valor?.trim() ?? "";
 }
 
+export function getFasesTimelinePublica(tipo?: string | null): readonly string[] {
+  return isModalidadeCotacaoPrevia(tipo)
+    ? FASES_TIMELINE_COTACAO_PREVIA
+    : FASES_TIMELINE_PUBLICA;
+}
+
+export function normalizarFaseParaTimeline(
+  faseAtual: string | null | undefined,
+  timeline: readonly string[]
+): string {
+  const fase = normalizarTextoEdital(faseAtual);
+  if (!fase) return timeline[0] || "publicado";
+  if (timeline.includes(fase)) return fase;
+
+  const alias = FASE_COTACAO_ALIASES[fase];
+  if (alias && timeline.includes(alias)) return alias;
+
+  const ordemCompleta = ["rascunho", ...FASES_TIMELINE_PUBLICA];
+  const fullIdx = ordemCompleta.indexOf(fase);
+  if (fullIdx < 0) return timeline[0] || "publicado";
+
+  let best = timeline[0] || "publicado";
+  for (const etapa of timeline) {
+    const ti = ordemCompleta.indexOf(etapa);
+    if (ti >= 0 && ti <= fullIdx) best = etapa;
+  }
+  return best;
+}
+
+export function indiceFaseNaTimeline(
+  faseAtual: string | null | undefined,
+  timeline: readonly string[]
+): number {
+  const normalizada = normalizarFaseParaTimeline(faseAtual, timeline);
+  const idx = timeline.indexOf(normalizada);
+  return idx >= 0 ? idx : 0;
+}
+
+export function getProximaFaseTimeline(
+  faseAtual: string | null | undefined,
+  tipo?: string | null
+): string {
+  const timeline = getFasesTimelinePublica(tipo);
+  const idx = indiceFaseNaTimeline(faseAtual, timeline);
+  return timeline[idx + 1] || "";
+}
+
 export function descricaoDiferenteDoTitulo(titulo: string, descricao: string) {
   if (!descricao) return false;
   return (
@@ -129,9 +209,12 @@ export function formatDateEdital(dateString?: string | null) {
   return new Intl.DateTimeFormat("pt-BR").format(date);
 }
 
-export function labelFaseEdital(value?: string | null) {
+export function labelFaseEdital(value?: string | null, tipo?: string | null) {
   const clean = normalizarTextoEdital(value);
   if (!clean) return "";
+  if (isModalidadeCotacaoPrevia(tipo) && clean === "recebimento_propostas") {
+    return "Recebimento de cotações";
+  }
   return FASE_LABELS[clean] || clean.replace(/_/g, " ");
 }
 
@@ -149,7 +232,9 @@ export function getDocumentoPublicoDownloadUrl(url?: string | null) {
   return `/api/download/docs/${clean.replace(/^\/+/, "")}`;
 }
 
-export function podeEnviarProposta(edital: Pick<EditalPublicoDetalhe, "status" | "fase_atual">) {
+export function podeEnviarProposta(
+  edital: Pick<EditalPublicoDetalhe, "status" | "fase_atual">
+) {
   return editalAceitaEnvioProposta(edital);
 }
 
@@ -159,7 +244,9 @@ export function getMensagemEnvioProposta(
   return getMensagemEnvioPropostaInstitucional(edital);
 }
 
-export function getFaseAtualPublica(edital: Pick<EditalPublicoDetalhe, "status" | "fase_atual">) {
+export function getFaseAtualPublica(
+  edital: Pick<EditalPublicoDetalhe, "status" | "fase_atual">
+) {
   const fase = normalizarTextoEdital(edital.fase_atual);
   if (fase && fase !== "rascunho") return fase;
 
@@ -172,16 +259,16 @@ export function getFaseAtualPublica(edital: Pick<EditalPublicoDetalhe, "status" 
 }
 
 export function buildTimelinePublica(
-  edital: Pick<EditalPublicoDetalhe, "status" | "fase_atual">,
+  edital: Pick<EditalPublicoDetalhe, "status" | "fase_atual" | "tipo">,
   documentos: DocumentoPublicoEdital[]
 ): TimelineStep[] {
-  const faseAtual = getFaseAtualPublica(edital);
-  const indiceAtual = FASES_TIMELINE_PUBLICA.indexOf(
-    faseAtual as (typeof FASES_TIMELINE_PUBLICA)[number]
-  );
-  const indiceBase = indiceAtual === -1 ? 0 : indiceAtual;
+  const timeline = getFasesTimelinePublica(edital.tipo);
+  const faseAtualBruta = getFaseAtualPublica(edital);
+  const faseAtual = normalizarFaseParaTimeline(faseAtualBruta, timeline);
+  const indiceBase = indiceFaseNaTimeline(faseAtual, timeline);
+  const cotacao = isModalidadeCotacaoPrevia(edital.tipo);
 
-  return FASES_TIMELINE_PUBLICA.map((fase, index) => {
+  return timeline.map((fase, index) => {
     const docsFase = documentos.filter(
       (doc) => normalizarTextoEdital(doc.fase) === fase
     );
@@ -191,10 +278,14 @@ export function buildTimelinePublica(
     if (index === indiceBase) estado = "atual";
     if (faseAtual === "encerrado" && fase === "encerrado") estado = "atual";
 
+    const resumo = cotacao
+      ? FASE_RESUMO_COTACAO[fase] || FASE_RESUMO[fase] || ""
+      : FASE_RESUMO[fase] || "";
+
     return {
       fase,
-      label: labelFaseEdital(fase),
-      resumo: FASE_RESUMO[fase] || "",
+      label: labelFaseEdital(fase, edital.tipo),
+      resumo,
       estado,
       documentos: docsFase,
     };

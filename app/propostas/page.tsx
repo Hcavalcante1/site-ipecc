@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { PublicHeroRolling } from "@/components/public";
 import PublicWhatsAppHelpLine from "@/components/public/PublicWhatsAppHelpLine";
@@ -8,6 +9,7 @@ import {
   editalAceitaEnvioProposta,
   isEnvioPropostaModoTeste,
 } from "@/lib/editais/governancaRules";
+import { isModalidadeCotacaoPrevia } from "@/lib/editais/tiposAdmin";
 
 type TipoPessoa = "pessoa_juridica" | "osc" | "pessoa_fisica";
 type CategoriaDocumento =
@@ -32,6 +34,7 @@ type DocumentoChecklist = {
 type EditalOpcao = {
   id: string;
   titulo?: string | null;
+  tipo?: string | null;
   periodo?: string | null;
   periodo_envio?: string | null;
   status?: string | null;
@@ -86,6 +89,9 @@ const ETAPAS: { id: EtapaFormulario; titulo: string }[] = [
 
 const AVISO_CHECKLIST =
   "A documentação pode variar conforme o edital. Envie os documentos exigidos no edital específico. Os itens condicionais devem ser anexados apenas quando solicitados.";
+
+const AVISO_CHECKLIST_COTACAO =
+  "Cotação prévia de preços: no envio inicial costumam bastar a proposta comercial e a identificação (CNPJ/CPF). Certidões e documentos completos de habilitação, em geral, só são pedidos ao fornecedor selecionado — anexe itens condicionais apenas se o termo de referência exigir nesta etapa.";
 
 const NIVEL_BADGE: Record<
   NivelDocumento,
@@ -417,6 +423,127 @@ const DOCUMENTOS_POR_TIPO: Record<
   },
 };
 
+/**
+ * Checklist enxuto para Cotação prévia de preços.
+ * Padrão de mercado: no envio inicial basta proposta comercial + identificação;
+ * habilitação fiscal/jurídica completa costuma ser exigida só do fornecedor selecionado.
+ */
+const DOCUMENTOS_COTACAO_PREVIA: Record<
+  TipoPessoa,
+  Record<CategoriaDocumento, DocumentoChecklist[]>
+> = {
+  pessoa_juridica: {
+    habilitacao_juridica: [
+      {
+        key: "proposta",
+        label: "Proposta comercial / Cotação de preços (PDF)",
+        nivel: "obrigatorio",
+        hint: "Em papel timbrado, com preços unitários/totais, validade da proposta e dados da empresa.",
+      },
+      {
+        key: "cnpj",
+        label: "Comprovante de Inscrição e Situação Cadastral do CNPJ",
+        nivel: "obrigatorio",
+      },
+      {
+        key: "contrato_social",
+        label: "Contrato Social (somente se o TR exigir nesta etapa)",
+        nivel: "condicional",
+      },
+      {
+        key: "doc_representante",
+        label: "Documento do representante legal (somente se o TR exigir)",
+        nivel: "condicional",
+      },
+      {
+        key: "certidao_federal",
+        label: "Certidão federal / Dívida Ativa (somente se o TR exigir)",
+        nivel: "condicional",
+      },
+      {
+        key: "fgts",
+        label: "CRF do FGTS (somente se o TR exigir)",
+        nivel: "condicional",
+      },
+      {
+        key: "cndt",
+        label: "CNDT (somente se o TR exigir)",
+        nivel: "condicional",
+      },
+    ],
+    regularidade_fiscal_trabalhista: [],
+    qualificacao_tecnica: [],
+  },
+  osc: {
+    habilitacao_juridica: [
+      {
+        key: "proposta",
+        label: "Proposta comercial / Cotação de preços (PDF)",
+        nivel: "obrigatorio",
+        hint: "Em papel timbrado, com preços unitários/totais, validade da proposta e dados da organização.",
+      },
+      {
+        key: "cnpj",
+        label: "Comprovante de Inscrição e Situação Cadastral do CNPJ",
+        nivel: "obrigatorio",
+      },
+      {
+        key: "estatuto",
+        label: "Estatuto social (somente se o TR exigir nesta etapa)",
+        nivel: "condicional",
+      },
+      {
+        key: "doc_representante",
+        label: "Documento do representante legal (somente se o TR exigir)",
+        nivel: "condicional",
+      },
+      {
+        key: "certidao_federal",
+        label: "Certidão federal / Dívida Ativa (somente se o TR exigir)",
+        nivel: "condicional",
+      },
+      {
+        key: "fgts",
+        label: "CRF do FGTS (somente se o TR exigir)",
+        nivel: "condicional",
+      },
+      {
+        key: "cndt",
+        label: "CNDT (somente se o TR exigir)",
+        nivel: "condicional",
+      },
+    ],
+    regularidade_fiscal_trabalhista: [],
+    qualificacao_tecnica: [],
+  },
+  pessoa_fisica: {
+    habilitacao_juridica: [
+      {
+        key: "proposta",
+        label: "Proposta comercial / Cotação de preços (PDF)",
+        nivel: "obrigatorio",
+      },
+      {
+        key: "doc_pessoal",
+        label: "Documento oficial de identificação com foto",
+        nivel: "obrigatorio",
+      },
+      {
+        key: "cpf",
+        label: "Cadastro de Pessoa Física — CPF",
+        nivel: "obrigatorio",
+      },
+      {
+        key: "certidao_federal",
+        label: "Certidão federal (somente se o TR exigir)",
+        nivel: "condicional",
+      },
+    ],
+    regularidade_fiscal_trabalhista: [],
+    qualificacao_tecnica: [],
+  },
+};
+
 function aplicarUrlsNoInsert(
   data: Record<string, unknown>,
   arquivosEnviados: Record<string, string>
@@ -530,11 +657,21 @@ function UploadItem({
 }
 
 export default function PropostasPage() {
+  return (
+    <Suspense fallback={<div className="container" style={{ padding: 24 }}>Carregando formulário...</div>}>
+      <PropostasPageClient />
+    </Suspense>
+  );
+}
+
+function PropostasPageClient() {
+  const searchParams = useSearchParams();
+  const codigoEditalUrl = (searchParams.get("codigo") || "").trim();
   const [tipoPessoa, setTipoPessoa] = useState<TipoPessoa>("pessoa_juridica");
   const [etapa, setEtapa] = useState<EtapaFormulario>("dados");
   const [arquivos, setArquivos] = useState<Record<string, File | null>>({});
   const [editais, setEditais] = useState<EditalOpcao[]>([]);
-  const [editalId, setEditalId] = useState("");
+  const [editalId, setEditalId] = useState(codigoEditalUrl);
   const [carregandoEditais, setCarregandoEditais] = useState(true);
   const [secoesSalvasLocal, setSecoesSalvasLocal] = useState<
     Partial<Record<CategoriaDocumento, boolean>>
@@ -549,18 +686,57 @@ export default function PropostasPage() {
     mensagem: "",
   });
 
-  const checklistPorCategoria = useMemo(() => {
-    return CATEGORIAS_ORDEM.map((cat) => ({
-      categoria: cat,
-      titulo: LABEL_CATEGORIA[cat],
-      documentos: DOCUMENTOS_POR_TIPO[tipoPessoa][cat] || [],
-    }));
-  }, [tipoPessoa]);
-
   const editalSelecionado = useMemo(
     () => editais.find((edital) => edital.id === editalId) ?? null,
     [editais, editalId]
   );
+
+  const isCotacaoPrevia = isModalidadeCotacaoPrevia(editalSelecionado?.tipo);
+
+  const checklistPorCategoria = useMemo(() => {
+    const fonte = isCotacaoPrevia
+      ? DOCUMENTOS_COTACAO_PREVIA
+      : DOCUMENTOS_POR_TIPO;
+
+    return CATEGORIAS_ORDEM.map((cat) => ({
+      categoria: cat,
+      titulo:
+        isCotacaoPrevia && cat === "habilitacao_juridica"
+          ? "Documentos da cotação"
+          : LABEL_CATEGORIA[cat],
+      documentos: fonte[tipoPessoa][cat] || [],
+    })).filter((secao) => secao.documentos.length > 0);
+  }, [tipoPessoa, isCotacaoPrevia]);
+
+  const etapasVisiveis = useMemo(() => {
+    const categoriasComDocs = new Set(
+      checklistPorCategoria.map((s) => s.categoria)
+    );
+    return ETAPAS.filter((item) => {
+      if (item.id === "dados" || item.id === "resumo") return true;
+      return categoriasComDocs.has(item.id as CategoriaDocumento);
+    }).map((item) => {
+      if (item.id === "habilitacao_juridica" && isCotacaoPrevia) {
+        return { ...item, titulo: "Documentos da cotação" };
+      }
+      return item;
+    });
+  }, [checklistPorCategoria, isCotacaoPrevia]);
+
+  useEffect(() => {
+    if (
+      etapa !== "dados" &&
+      etapa !== "resumo" &&
+      !checklistPorCategoria.some((s) => s.categoria === etapa)
+    ) {
+      setEtapa("dados");
+    }
+  }, [checklistPorCategoria, etapa]);
+
+  useEffect(() => {
+    setArquivos({});
+    setSecoesSalvasLocal({});
+  }, [editalId, isCotacaoPrevia]);
 
   useEffect(() => {
     async function carregarEditaisAbertos() {
@@ -568,7 +744,7 @@ export default function PropostasPage() {
 
       const { data } = await supabase
         .from("editais")
-        .select("id,titulo,periodo,periodo_envio,status,fase_atual")
+        .select("id,titulo,tipo,periodo,periodo_envio,status,fase_atual")
         .order("created_at", { ascending: false });
 
       const abertos = ((data || []) as EditalOpcao[]).filter((edital) =>
@@ -576,16 +752,18 @@ export default function PropostasPage() {
       );
 
       setEditais(abertos);
-      setEditalId((atual) =>
-        atual && abertos.some((edital) => edital.id === atual)
-          ? atual
-          : abertos[0]?.id ?? ""
-      );
+      setEditalId((atual) => {
+        const preferido = codigoEditalUrl || atual;
+        if (preferido && abertos.some((edital) => edital.id === preferido)) {
+          return preferido;
+        }
+        return abertos[0]?.id ?? "";
+      });
       setCarregandoEditais(false);
     }
 
     carregarEditaisAbertos();
-  }, []);
+  }, [codigoEditalUrl]);
 
   function setArquivo(key: string, file: File | null) {
     setArquivos((prev) => ({ ...prev, [key]: file }));
@@ -609,11 +787,34 @@ export default function PropostasPage() {
     limparDocumentosEMensagem();
   }
 
+  function proximaEtapaApos(categoria: CategoriaDocumento): EtapaFormulario {
+    const ids = etapasVisiveis.map((item) => item.id);
+    const idx = ids.indexOf(categoria);
+    if (idx >= 0 && idx < ids.length - 1) {
+      return ids[idx + 1];
+    }
+    return "resumo";
+  }
+
   function salvarDocumentosSecao(categoria: CategoriaDocumento) {
-    setSecoesSalvasLocal((prev) => ({ ...prev, [categoria]: true }));
-    alert(
-      "Documentos desta seção salvos localmente. Você pode continuar o preenchimento e enviar a proposta na etapa final."
+    const secao = checklistPorCategoria.find((s) => s.categoria === categoria);
+    if (!secao) return;
+
+    const obrigatoriosFaltando = secao.documentos.filter(
+      (doc) => doc.nivel === "obrigatorio" && !arquivos[doc.key]
     );
+
+    if (obrigatoriosFaltando.length > 0) {
+      alert(
+        `Anexe os documentos obrigatórios antes de continuar:\n• ${obrigatoriosFaltando
+          .map((doc) => doc.label)
+          .join("\n• ")}`
+      );
+      return;
+    }
+
+    setSecoesSalvasLocal((prev) => ({ ...prev, [categoria]: true }));
+    setEtapa(proximaEtapaApos(categoria));
   }
 
   async function uploadArquivo(file: File, tipoArquivo: string) {
@@ -657,9 +858,30 @@ export default function PropostasPage() {
 
     const propostaFile = arquivos["proposta"];
     if (!propostaFile) {
-      alert("Envie o formulário de inscrição / proposta principal (PDF).");
+      alert(
+        isCotacaoPrevia
+          ? "Envie a proposta comercial / cotação de preços (PDF)."
+          : "Envie o formulário de inscrição / proposta principal (PDF)."
+      );
       setEtapa("habilitacao_juridica");
       return;
+    }
+
+    if (isCotacaoPrevia) {
+      const obrigatoriosFaltando = checklistPorCategoria
+        .flatMap((s) => s.documentos)
+        .filter((d) => d.nivel === "obrigatorio" && d.key !== "proposta")
+        .filter((d) => !arquivos[d.key]);
+
+      if (obrigatoriosFaltando.length > 0) {
+        alert(
+          `Na cotação prévia, anexe também: ${obrigatoriosFaltando
+            .map((d) => d.label)
+            .join("; ")}.`
+        );
+        setEtapa("habilitacao_juridica");
+        return;
+      }
     }
 
     try {
@@ -773,7 +995,7 @@ export default function PropostasPage() {
         }}
         aria-label="Etapas do formulário"
       >
-        {ETAPAS.map((item) => {
+        {etapasVisiveis.map((item) => {
           const ativa = etapa === item.id;
           return (
             <button
@@ -820,7 +1042,7 @@ export default function PropostasPage() {
             lineHeight: 1.55,
           }}
         >
-          {AVISO_CHECKLIST}
+          {isCotacaoPrevia ? AVISO_CHECKLIST_COTACAO : AVISO_CHECKLIST}
         </p>
         <p style={{ marginTop: 0, color: "#64748b", fontSize: 14 }}>
           {LABEL_TIPO_PESSOA[tipoPessoa]} — preencha os documentos desta seção. O envio
@@ -829,13 +1051,17 @@ export default function PropostasPage() {
         {salva ? (
           <p
             style={{
-              color: "#15803d",
-              fontWeight: 600,
+              color: "#14532d",
+              fontWeight: 700,
               fontSize: 14,
               margin: "12px 0",
+              padding: "10px 12px",
+              borderRadius: 10,
+              background: "#dcfce7",
+              border: "1px solid #86efac",
             }}
           >
-            Seção salva localmente.
+            Documentos desta seção salvos. Avance para a próxima etapa.
           </p>
         ) : null}
         <div style={{ display: "grid", gap: 14, marginTop: 16 }}>
@@ -853,7 +1079,7 @@ export default function PropostasPage() {
           onClick={() => salvarDocumentosSecao(categoria)}
           style={{
             marginTop: 18,
-            background: "#0d6efd",
+            background: "#14532d",
             color: "#fff",
             padding: "12px 20px",
             borderRadius: 999,
@@ -864,7 +1090,7 @@ export default function PropostasPage() {
             fontSize: 15,
           }}
         >
-          Salvar documentos desta seção
+          Salvar e continuar
         </button>
       </div>
     );
@@ -894,6 +1120,7 @@ export default function PropostasPage() {
           <p style={{ margin: "4px 0", fontSize: 14 }}>
             <strong>Edital / chamamento:</strong>{" "}
             {editalSelecionado?.titulo || "—"}
+            {editalSelecionado?.tipo ? ` — ${editalSelecionado.tipo}` : ""}
           </p>
           <p style={{ margin: "4px 0", fontSize: 14 }}>
             <strong>Tipo:</strong> {LABEL_TIPO_PESSOA[tipoPessoa]}
@@ -941,8 +1168,10 @@ export default function PropostasPage() {
         ))}
         <p style={{ fontSize: 13, color: "#64748b", lineHeight: 1.5 }}>
           Será criado <strong>um único registro</strong> de proposta com todos os anexos
-          selecionados. Apenas o PDF da proposta principal é obrigatório para concluir o
-          envio.
+          selecionados.{" "}
+          {isCotacaoPrevia
+            ? "Na cotação prévia, são obrigatórios a proposta comercial e a identificação (CNPJ ou documento/CPF). Demais itens só se o TR exigir."
+            : "Apenas o PDF da proposta principal é obrigatório para concluir o envio."}
         </p>
         <button
           type="submit"
@@ -1033,6 +1262,7 @@ export default function PropostasPage() {
                       editais.map((edital) => (
                         <option key={edital.id} value={edital.id}>
                           {edital.titulo || "Edital / Chamamento"}
+                          {edital.tipo ? ` — ${edital.tipo}` : ""}
                           {isEnvioPropostaModoTeste(edital) ? " [teste interno]" : ""}
                         </option>
                       ))
@@ -1149,7 +1379,9 @@ export default function PropostasPage() {
                     fontSize: 22,
                   }}
                 >
-                  {LABEL_CATEGORIA.habilitacao_juridica}
+                  {isCotacaoPrevia
+                    ? "Documentos da cotação"
+                    : LABEL_CATEGORIA.habilitacao_juridica}
                 </h2>
                 {renderSecaoDocumentos("habilitacao_juridica")}
               </div>

@@ -5,7 +5,10 @@ import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { PublicHeroRolling, PublicPageContent } from "@/components/public";
 import PublicWhatsAppHelpLine from "@/components/public/PublicWhatsAppHelpLine";
 import { editalStatusLabel, resolveEditalDownloadUrl } from "@/lib/editais/download";
-import { editalVisivelNoSitePublico } from "@/lib/editais/governancaRules";
+import {
+  editalAceitaEnvioProposta,
+  editalVisivelNoSitePublico,
+} from "@/lib/editais/governancaRules";
 import { logPublicFetch } from "@/lib/observability/publicFetchLog";
 import { fetchPaginaConteudo } from "@/lib/cms/paginasConteudoServer";
 
@@ -183,6 +186,10 @@ export default async function EditaisPublicPage() {
                       <h3 className="card__title">{edital.titulo}</h3>
                       <p className="card__text public-edital-card__meta">
                         <span>
+                          <strong>Modalidade:</strong>{" "}
+                          {edital.tipo || "Chamamento público"}
+                        </span>
+                        <span>
                           <strong>Período:</strong> {periodo}
                         </span>
                         <span>
@@ -209,12 +216,14 @@ export default async function EditaisPublicPage() {
                           Baixar PDF
                         </a>
                       )}
-                      <Link
-                        href={`/propostas?codigo=${edital.id}`}
-                        className="card__link"
-                      >
-                        Enviar proposta
-                      </Link>
+                      {editalAceitaEnvioProposta(edital) && (
+                        <Link
+                          href={`/propostas?codigo=${edital.id}`}
+                          className="card__link"
+                        >
+                          Enviar proposta
+                        </Link>
+                      )}
                     </div>
                   </article>
                 );

@@ -9,9 +9,16 @@ import { AdminLoadingButton } from "@/components/admin";
 import { adminStorageUpload } from "@/lib/admin/storageUploadClient";
 import { supabase } from "@/lib/supabaseClient";
 import {
+  getFasesGovernancaAdmin,
+  indiceFaseGovernancaAdmin,
+  labelFaseAdmin,
+  sincronizarFaseComModalidade,
+} from "@/lib/editais/fasesAdmin";
+import {
   isEditalFaseRascunho,
   MSG_SAIDA_RASCUNHO,
 } from "@/lib/editais/governancaRules";
+import { isModalidadeCotacaoPrevia } from "@/lib/editais/tiposAdmin";
 
 type Edital = {
   id: string;
@@ -61,40 +68,6 @@ type Proposta = {
   created_at?: string | null;
 };
 
-const FASES = [
-  "rascunho",
-  "publicado",
-  "recebimento_propostas",
-  "analise",
-  "resultado_preliminar",
-  "recurso",
-  "julgamento_recurso",
-  "resultado_final",
-  "homologado",
-  "adjudicado",
-  "contratado",
-  "execucao",
-  "prestacao_contas",
-  "encerrado",
-];
-
-const FASE_LABELS: Record<string, string> = {
-  rascunho: "Rascunho",
-  publicado: "Publicado",
-  recebimento_propostas: "Recebimento de propostas",
-  analise: "Analise tecnica",
-  resultado_preliminar: "Resultado preliminar",
-  recurso: "Recursos",
-  julgamento_recurso: "Julgamento dos recursos",
-  resultado_final: "Resultado final",
-  homologado: "Homologacao",
-  adjudicado: "Adjudicacao",
-  contratado: "Contrato / termo",
-  execucao: "Execucao",
-  prestacao_contas: "Prestacao de contas",
-  encerrado: "Encerramento",
-};
-
 const TIPOS_DOCUMENTO = [
   "edital",
   "anexo",
@@ -111,6 +84,16 @@ const TIPOS_DOCUMENTO = [
   "prestacao_de_contas",
   "encerramento",
 ];
+
+/** Tipos relevantes para Cotação prévia (já existem no constraint do banco). */
+const TIPOS_DOCUMENTO_COTACAO = [
+  "edital",
+  "anexo",
+  "ata",
+  "parecer",
+  "resultado_final",
+  "encerramento",
+] as const;
 
 const TIPO_DOCUMENTO_LABELS: Record<string, string> = {
   edital: "Edital",
@@ -129,13 +112,51 @@ const TIPO_DOCUMENTO_LABELS: Record<string, string> = {
   encerramento: "Encerramento",
 };
 
-function label(valor?: string | null) {
-  if (!valor) return "-";
-  return FASE_LABELS[valor] || valor.replace(/_/g, " ");
-}
+const TIPO_DOCUMENTO_LABELS_COTACAO: Record<string, string> = {
+  edital: "Termo de referência / Instrumento da cotação",
+  anexo: "Anexo (planilha, TR, memorial)",
+  ata: "Ata de decisão / análise técnica",
+  parecer: "Parecer técnico",
+  resultado_final: "Resultado da cotação",
+  encerramento: "Encerramento da cotação",
+};
 
-function labelTipoDocumento(valor?: string | null) {
+/** Documentos esperados por fase na cotação prévia. */
+const DOCS_SUGERIDOS_COTACAO: Record<
+  string,
+  { tipos: string[]; orientacao: string }
+> = {
+  publicado: {
+    tipos: ["edital", "anexo"],
+    orientacao:
+      "Publique o termo de referência e anexos oficiais da cotação.",
+  },
+  recebimento_propostas: {
+    tipos: ["anexo"],
+    orientacao:
+      "Se necessário, publique esclarecimentos ou anexos complementares do período de recebimento.",
+  },
+  analise: {
+    tipos: ["ata", "parecer"],
+    orientacao:
+      "Publique a ata de decisão da análise técnica e/ou parecer técnico.",
+  },
+  resultado_final: {
+    tipos: ["resultado_final", "ata"],
+    orientacao:
+      "Publique o resultado da cotação e, se houver, a ata de homologação da escolha.",
+  },
+  encerrado: {
+    tipos: ["encerramento"],
+    orientacao: "Publique o documento de encerramento do processo, se aplicável.",
+  },
+};
+
+function labelTipoDocumento(valor?: string | null, cotacao = false) {
   if (!valor) return "-";
+  if (cotacao && TIPO_DOCUMENTO_LABELS_COTACAO[valor]) {
+    return TIPO_DOCUMENTO_LABELS_COTACAO[valor];
+  }
   return TIPO_DOCUMENTO_LABELS[valor] || valor.replace(/_/g, " ");
 }
 
@@ -185,13 +206,21 @@ export default function GovernancaEditalPage() {
   const [docDescricao, setDocDescricao] = useState("");
   const [docArquivo, setDocArquivo] = useState<File | null>(null);
 
+  const fases = useMemo(
+    () => [...getFasesGovernancaAdmin(edital?.tipo)],
+    [edital?.tipo]
+  );
+  const isCotacao = isModalidadeCotacaoPrevia(edital?.tipo);
+  const label = (valor?: string | null) =>
+    labelFaseAdmin(valor, edital?.tipo) || "-";
+
   const faseAtual = edital?.fase_atual || "rascunho";
-  const faseAtualIndex = Math.max(FASES.indexOf(faseAtual), 0);
-  const proximaFase = FASES[faseAtualIndex + 1] || null;
+  const faseAtualIndex = indiceFaseGovernancaAdmin(faseAtual, edital?.tipo);
+  const proximaFase = fases[faseAtualIndex + 1] || null;
   const documentosOrdenados = useMemo(() => {
     return [...documentos].sort((a, b) => {
-      const faseA = FASES.indexOf(a.fase || "");
-      const faseB = FASES.indexOf(b.fase || "");
+      const faseA = fases.indexOf(a.fase || "");
+      const faseB = fases.indexOf(b.fase || "");
       const ordemFaseA = faseA === -1 ? 999 : faseA;
       const ordemFaseB = faseB === -1 ? 999 : faseB;
 
@@ -201,10 +230,42 @@ export default function GovernancaEditalPage() {
       const dataB = new Date(b.publicado_em || b.created_at || 0).getTime();
       return dataB - dataA;
     });
-  }, [documentos]);
+  }, [documentos, fases]);
   const checklistGovernanca = useMemo(() => {
     const temDocumento = (tipo: string) =>
       documentos.some((doc) => doc.tipo === tipo);
+    const temDocumentoNaFase = (fase: string, tipos: string[]) =>
+      documentos.some(
+        (doc) =>
+          (doc.fase === fase || !doc.fase) && tipos.includes(doc.tipo)
+      ) || documentos.some((doc) => tipos.includes(doc.tipo));
+
+    if (isCotacao) {
+      return [
+        {
+          label: "Publicação — termo/anexos da cotação",
+          done:
+            !!edital?.arquivo_pdf ||
+            temDocumento("edital") ||
+            temDocumento("anexo"),
+        },
+        {
+          label: "Análise — ata ou parecer técnico",
+          done: temDocumento("ata") || temDocumento("parecer"),
+        },
+        {
+          label: "Resultado final publicado",
+          done: temDocumento("resultado_final"),
+        },
+        {
+          label: "Encerramento (se aplicável)",
+          done:
+            faseAtualIndex >= fases.indexOf("encerrado") ||
+            temDocumento("encerramento") ||
+            temDocumentoNaFase("encerrado", ["encerramento"]),
+        },
+      ];
+    }
 
     return [
       {
@@ -217,7 +278,7 @@ export default function GovernancaEditalPage() {
       },
       {
         label: "Fase de recursos registrada",
-        done: faseAtualIndex >= FASES.indexOf("recurso"),
+        done: faseAtualIndex >= fases.indexOf("recurso"),
       },
       {
         label: "Resultado final publicado",
@@ -236,7 +297,13 @@ export default function GovernancaEditalPage() {
         done: temDocumento("prestacao_de_contas"),
       },
     ];
-  }, [documentos, edital?.arquivo_pdf, faseAtualIndex]);
+  }, [
+    documentos,
+    edital?.arquivo_pdf,
+    faseAtualIndex,
+    fases,
+    isCotacao,
+  ]);
 
   const resumoPropostas = useMemo(() => {
     const porStatus = (status: string) =>
@@ -263,6 +330,35 @@ export default function GovernancaEditalPage() {
     const itens: string[] = [];
     if (!edital?.arquivo_pdf) itens.push("PDF oficial do edital ainda nao identificado.");
     if (!edital?.periodo && !edital?.periodo_envio) itens.push("Periodo do edital nao informado.");
+
+    if (isCotacao) {
+      if (faseAtual === "publicado") {
+        const temBase =
+          !!edital?.arquivo_pdf ||
+          documentos.some((doc) => doc.tipo === "edital" || doc.tipo === "anexo");
+        if (!temBase) {
+          itens.push("Publique o termo de referência ou anexo oficial da cotação.");
+        }
+      }
+      if (faseAtual === "analise") {
+        const temAnalise = documentos.some(
+          (doc) => doc.tipo === "ata" || doc.tipo === "parecer"
+        );
+        if (!temAnalise) {
+          itens.push(
+            "Publique a ata de decisão da análise técnica ou o parecer técnico."
+          );
+        }
+      }
+      if (faseAtual === "resultado_final") {
+        const temResultado = documentos.some((doc) => doc.tipo === "resultado_final");
+        if (!temResultado) {
+          itens.push("Resultado da cotação ainda não publicado.");
+        }
+      }
+      return itens;
+    }
+
     if (faseAtual === "resultado_preliminar") {
       const temResultado = documentos.some((doc) => doc.tipo === "resultado_preliminar");
       if (!temResultado) itens.push("Resultado preliminar ainda nao publicado.");
@@ -278,7 +374,36 @@ export default function GovernancaEditalPage() {
       if (!temContrato) itens.push("Contrato ou termo de parceria ainda nao publicado.");
     }
     return itens;
-  }, [documentos, edital, faseAtual]);
+  }, [documentos, edital, faseAtual, isCotacao]);
+
+  const tiposDocumentoDisponiveis = useMemo(
+    () => (isCotacao ? [...TIPOS_DOCUMENTO_COTACAO] : TIPOS_DOCUMENTO),
+    [isCotacao]
+  );
+
+  const sugestaoDocsFase =
+    isCotacao && DOCS_SUGERIDOS_COTACAO[faseAtual]
+      ? DOCS_SUGERIDOS_COTACAO[faseAtual]
+      : null;
+
+  useEffect(() => {
+    if (!edital) return;
+
+    const fasePadrao =
+      faseAtual && faseAtual !== "rascunho" ? faseAtual : "publicado";
+    setDocFase((atual) =>
+      fases.includes(atual) ? atual : fasePadrao
+    );
+
+    if (isCotacao) {
+      const sugeridos = DOCS_SUGERIDOS_COTACAO[fasePadrao]?.tipos;
+      setDocTipo((atual) =>
+        (TIPOS_DOCUMENTO_COTACAO as readonly string[]).includes(atual)
+          ? atual
+          : sugeridos?.[0] || "edital"
+      );
+    }
+  }, [edital, faseAtual, fases, isCotacao]);
 
   async function carregar() {
     setLoading(true);
@@ -299,7 +424,12 @@ export default function GovernancaEditalPage() {
       setDocumentos(json.documentos || []);
       setLogs(json.logs || []);
       setPropostas(json.propostas || []);
-      setNovaFase(json.edital?.fase_atual || "rascunho");
+      setNovaFase(
+        sincronizarFaseComModalidade(
+          json.edital?.fase_atual,
+          json.edital?.tipo
+        )
+      );
     } catch {
       setMsg("Erro inesperado ao carregar governanca.");
     } finally {
@@ -311,6 +441,43 @@ export default function GovernancaEditalPage() {
     if (editalId) carregar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editalId]);
+
+  async function atualizarStatusProposta(
+    propostaId: string,
+    status: "aprovado" | "rejeitado"
+  ) {
+    setSaving(true);
+    setMsg("");
+
+    try {
+      const { error } = await supabase
+        .from("propostas")
+        .update({ status })
+        .eq("id", propostaId);
+
+      if (error) {
+        triggerToast("Erro ao atualizar status da proposta.", "error");
+        return;
+      }
+
+      await registrarLog(
+        status === "aprovado" ? "proposta_aprovada" : "proposta_rejeitada",
+        {
+          observacao: `Proposta ${propostaId} marcada como ${status} pela governanca do edital.`,
+        }
+      );
+
+      triggerToast(
+        status === "aprovado" ? "Proposta aprovada." : "Proposta rejeitada.",
+        "success"
+      );
+      await carregar();
+    } catch {
+      triggerToast("Erro inesperado ao atualizar proposta.", "error");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function registrarLog(
     acao: string,
@@ -643,9 +810,11 @@ export default function GovernancaEditalPage() {
             marginTop: 16,
           }}
         >
-          {FASES.map((fase, index) => {
+          {fases.map((fase, index) => {
             const concluida = index < faseAtualIndex;
             const atual = index === faseAtualIndex;
+            const docsNaFase = documentos.filter((doc) => doc.fase === fase).length;
+            const sugestao = isCotacao ? DOCS_SUGERIDOS_COTACAO[fase] : null;
 
             return (
               <div
@@ -667,6 +836,19 @@ export default function GovernancaEditalPage() {
                 <p style={{ marginTop: 6, marginBottom: 0 }}>
                   {atual ? "Fase atual" : concluida ? "Etapa anterior" : "Etapa futura"}
                 </p>
+                <p style={{ marginTop: 6, marginBottom: 0, fontSize: 13, opacity: 0.9 }}>
+                  {docsNaFase > 0
+                    ? `${docsNaFase} documento(s) vinculado(s)`
+                    : "Sem documento vinculado"}
+                </p>
+                {sugestao ? (
+                  <p style={{ marginTop: 6, marginBottom: 0, fontSize: 12, opacity: 0.8 }}>
+                    Ex.:{" "}
+                    {sugestao.tipos
+                      .map((tipo) => labelTipoDocumento(tipo, true))
+                      .join(", ")}
+                  </p>
+                ) : null}
               </div>
             );
           })}
@@ -715,7 +897,7 @@ export default function GovernancaEditalPage() {
             fontWeight: 700,
           }}
         >
-          {FASES.map((fase) => (
+          {fases.map((fase) => (
             <option key={fase} value={fase}>
               {label(fase)}
             </option>
@@ -780,19 +962,48 @@ export default function GovernancaEditalPage() {
 
       <section className="admin-card">
         <h2 className="admin-h2">Publicar documento oficial</h2>
+        <p>
+          Cada fase pode receber documentos oficiais vinculados. Eles aparecem na
+          Transparência com a fase correspondente
+          {isCotacao
+            ? " (ex.: ata de análise técnica na fase Análise)."
+            : "."}
+        </p>
+
+        {sugestaoDocsFase ? (
+          <div
+            style={{
+              marginTop: 12,
+              marginBottom: 14,
+              padding: "12px 14px",
+              borderRadius: 12,
+              border: "1px solid rgba(56,189,248,.35)",
+              background: "rgba(14,165,233,.12)",
+            }}
+          >
+            <strong>Sugestão para a fase atual ({label(faseAtual)})</strong>
+            <p style={{ margin: "8px 0 0" }}>{sugestaoDocsFase.orientacao}</p>
+            <p style={{ margin: "8px 0 0", fontSize: 13 }}>
+              Tipos sugeridos:{" "}
+              {sugestaoDocsFase.tipos
+                .map((tipo) => labelTipoDocumento(tipo, true))
+                .join(" · ")}
+            </p>
+          </div>
+        ) : null}
 
         <label>Tipo do documento</label>
         <select value={docTipo} onChange={(e) => setDocTipo(e.target.value)}>
-          {TIPOS_DOCUMENTO.map((tipo) => (
+          {tiposDocumentoDisponiveis.map((tipo) => (
             <option key={tipo} value={tipo}>
-              {labelTipoDocumento(tipo)}
+              {labelTipoDocumento(tipo, isCotacao)}
             </option>
           ))}
         </select>
 
         <label>Fase relacionada</label>
         <select value={docFase} onChange={(e) => setDocFase(e.target.value)}>
-          {FASES.map((fase) => (
+          {fases.map((fase) => (
             <option key={fase} value={fase}>
               {label(fase)}
             </option>
@@ -843,7 +1054,7 @@ export default function GovernancaEditalPage() {
           documentosOrdenados.map((doc) => (
             <div key={doc.id} style={{ borderTop: "1px solid rgba(255,255,255,.15)", paddingTop: 12, marginTop: 12 }}>
               <strong>{doc.titulo}</strong>
-              <p><strong>Tipo:</strong> {labelTipoDocumento(doc.tipo)} | <strong>Fase:</strong> {label(doc.fase)}</p>
+              <p><strong>Tipo:</strong> {labelTipoDocumento(doc.tipo, isCotacao)} | <strong>Fase:</strong> {label(doc.fase)}</p>
               <p><strong>Publicado em:</strong> {formatDate(doc.publicado_em || doc.created_at)}</p>
               {doc.descricao && <p>{doc.descricao}</p>}
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 10 }}>
@@ -868,8 +1079,10 @@ export default function GovernancaEditalPage() {
       <section className="admin-card">
         <h2 className="admin-h2">Propostas vinculadas</h2>
         <p>
-          Resumo das propostas recebidas para este edital. A decisao continua
-          sendo humana e registrada no detalhe de cada proposta.
+          Decisão por proposta (aprovar/rejeitar) e andamento do processo (fases/
+          documentos) ficam juntos aqui para reduzir ida e volta de telas. O
+          detalhe documental completo continua em{" "}
+          <Link href="/admin/propostas">Propostas recebidas</Link>.
         </p>
         <div
           style={{
@@ -961,17 +1174,55 @@ export default function GovernancaEditalPage() {
                     <strong>Enviada em:</strong>{" "}
                     {formatDate(proposta.criado_em || proposta.created_at)}
                   </p>
-                  <Link
-                    href={`/admin/propostas/${proposta.id}`}
-                    className="admin-button"
+                  <div
                     style={{
-                      display: "inline-flex",
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: 8,
                       marginTop: 12,
-                      textDecoration: "none",
                     }}
                   >
-                    Ver proposta
-                  </Link>
+                    <Link
+                      href={`/admin/propostas/${proposta.id}`}
+                      className="admin-button"
+                      style={{
+                        display: "inline-flex",
+                        textDecoration: "none",
+                      }}
+                    >
+                      Ver proposta
+                    </Link>
+                    <button
+                      type="button"
+                      className="admin-button"
+                      disabled={saving || status === "aprovado"}
+                      style={{
+                        background: "#22c55e",
+                        color: "#022c22",
+                        opacity: status === "aprovado" ? 0.55 : 1,
+                      }}
+                      onClick={() =>
+                        atualizarStatusProposta(proposta.id, "aprovado")
+                      }
+                    >
+                      Aprovar
+                    </button>
+                    <button
+                      type="button"
+                      className="admin-button"
+                      disabled={saving || status === "rejeitado"}
+                      style={{
+                        background: "#ef4444",
+                        color: "#fff",
+                        opacity: status === "rejeitado" ? 0.55 : 1,
+                      }}
+                      onClick={() =>
+                        atualizarStatusProposta(proposta.id, "rejeitado")
+                      }
+                    >
+                      Rejeitar
+                    </button>
+                  </div>
                 </div>
               );
             })}

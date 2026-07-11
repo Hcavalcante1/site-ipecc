@@ -4,8 +4,16 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { triggerToast } from "@/components/AdminToast";
-import { FASES_GOVERNANCA, labelFaseAdmin } from "@/lib/editais/fasesAdmin";
+import {
+  getFasesGovernancaAdmin,
+  labelFaseAdmin,
+  sincronizarFaseComModalidade,
+} from "@/lib/editais/fasesAdmin";
 import { isEditalFaseRascunho } from "@/lib/editais/governancaRules";
+import {
+  TIPOS_EDITAL_ADMIN,
+  TIPO_EDITAL_PADRAO,
+} from "@/lib/editais/tiposAdmin";
 
 export default function EditarEdital() {
   const params = useParams();
@@ -15,7 +23,7 @@ export default function EditarEdital() {
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [periodo, setPeriodo] = useState("");
-  const [tipo, setTipo] = useState("Chamamento público");
+  const [tipo, setTipo] = useState<string>(TIPO_EDITAL_PADRAO);
   const [faseAtual, setFaseAtual] = useState("rascunho");
   const [status, setStatus] = useState<"aberto" | "encerrado" | "em_breve">(
     "em_breve"
@@ -39,7 +47,7 @@ export default function EditarEdital() {
         setTitulo(data.titulo || "");
         setDescricao(data.descricao || "");
         setPeriodo(data.periodo || "");
-        setTipo(data.tipo || "Chamamento público");
+        setTipo(data.tipo || TIPO_EDITAL_PADRAO);
         setFaseAtual(data.fase_atual || "rascunho");
         setStatus(data.status || "em_breve");
       }
@@ -152,24 +160,36 @@ export default function EditarEdital() {
           onChange={(e) => setPeriodo(e.target.value)}
         />
 
-        <label>Tipo</label>
+        <label>Tipo / modalidade</label>
         <select
           value={tipo}
-          onChange={(e) => setTipo(e.target.value)}
+          onChange={(e) => {
+            const novoTipo = e.target.value;
+            setTipo(novoTipo);
+            setFaseAtual((atual) =>
+              sincronizarFaseComModalidade(atual, novoTipo)
+            );
+          }}
         >
-          <option value="Chamamento público">Chamamento público</option>
-          <option value="Edital">Edital</option>
-          <option value="Credenciamento">Credenciamento</option>
+          {TIPOS_EDITAL_ADMIN.map((opcao) => (
+            <option key={opcao} value={opcao}>
+              {opcao}
+            </option>
+          ))}
         </select>
 
         <label>Fase de governanca</label>
         <select
-          value={faseAtual}
+          value={
+            getFasesGovernancaAdmin(tipo).includes(faseAtual)
+              ? faseAtual
+              : sincronizarFaseComModalidade(faseAtual, tipo)
+          }
           onChange={(e) => setFaseAtual(e.target.value)}
         >
-          {FASES_GOVERNANCA.map((fase) => (
+          {getFasesGovernancaAdmin(tipo).map((fase) => (
             <option key={fase} value={fase}>
-              {labelFaseAdmin(fase)}
+              {labelFaseAdmin(fase, tipo)}
             </option>
           ))}
         </select>

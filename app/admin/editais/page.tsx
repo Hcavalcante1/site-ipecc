@@ -14,6 +14,10 @@ import {
   MSG_EXCLUSAO_SOMENTE_RASCUNHO,
   MSG_REVERTER_RASCUNHO_BLOQUEADO,
 } from "@/lib/editais/governancaRules";
+import {
+  TIPOS_EDITAL_ADMIN,
+  TIPO_EDITAL_PADRAO,
+} from "@/lib/editais/tiposAdmin";
 
 // Normaliza nome do arquivo para storage
 function normalizarNomeArquivo(nome: string) {
@@ -77,7 +81,7 @@ export default function AdminEditais() {
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [periodo, setPeriodo] = useState("");
-  const [tipo, setTipo] = useState("Chamamento público");
+  const [tipo, setTipo] = useState<string>(TIPO_EDITAL_PADRAO);
 
   const [status, setStatus] = useState<"aberto" | "encerrado" | "em_breve">(
     "em_breve"
@@ -200,7 +204,7 @@ export default function AdminEditais() {
       setTitulo("");
       setDescricao("");
       setPeriodo("");
-      setTipo("Chamamento público");
+      setTipo(TIPO_EDITAL_PADRAO);
       setStatus("em_breve");
       setArquivo(null);
 
@@ -402,11 +406,13 @@ export default function AdminEditais() {
           placeholder="Ex: 01/01/2025 a 31/01/2025"
         />
 
-        <label>Tipo</label>
+        <label>Tipo / modalidade</label>
         <select value={tipo} onChange={(e) => setTipo(e.target.value)}>
-          <option value="Chamamento público">Chamamento público</option>
-          <option value="Edital">Edital</option>
-          <option value="Credenciamento">Credenciamento</option>
+          {TIPOS_EDITAL_ADMIN.map((opcao) => (
+            <option key={opcao} value={opcao}>
+              {opcao}
+            </option>
+          ))}
         </select>
 
         <label>Status</label>

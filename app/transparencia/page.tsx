@@ -2,6 +2,12 @@
 
 import { getDownloadUrl, isValidFileUrl } from "@/lib/storage";
 import { resolveEditalDownloadUrl } from "@/lib/editais/download";
+import {
+  getFasesTimelinePublica,
+  getProximaFaseTimeline,
+  indiceFaseNaTimeline,
+  labelFaseEdital,
+} from "@/lib/editais/publicDetail";
 import { createClient } from "@/lib/supabaseServer";
 import { logPublicFetch } from "@/lib/observability/publicFetchLog";
 import { PublicHeroRolling } from "@/components/public";
@@ -135,19 +141,6 @@ const FASE_GOVERNANCA_LABELS: Record<string, string> = {
   prestacao_contas: "Prestacao de contas",
   encerrado: "Encerramento",
 };
-
-const FASE_GOVERNANCA_ORDEM = Object.keys(FASE_GOVERNANCA_LABELS);
-const FASES_PUBLICAS_TIMELINE = [
-  "publicado",
-  "resultado_preliminar",
-  "recurso",
-  "resultado_final",
-  "homologado",
-  "contratado",
-  "execucao",
-  "prestacao_contas",
-  "encerrado",
-];
 
 const TIPO_DOCUMENTO_GOVERNANCA_LABELS: Record<string, string> = {
   edital: "Edital",
@@ -377,7 +370,9 @@ function safeText(value?: string | null): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function labelFase(value?: string | null): string {
+function labelFase(value?: string | null, tipo?: string | null): string {
+  const fromLib = labelFaseEdital(value, tipo);
+  if (fromLib) return fromLib;
   const clean = safeText(value);
   if (!clean) return "";
   return FASE_GOVERNANCA_LABELS[clean] || clean.replace(/_/g, " ");
@@ -389,16 +384,69 @@ function labelTipoDocumentoGovernanca(value?: string | null): string {
   return TIPO_DOCUMENTO_GOVERNANCA_LABELS[clean] || clean.replace(/_/g, " ");
 }
 
-function getProximaFaseGovernanca(value?: string | null): string {
-  const clean = safeText(value);
-  const atualIndex = FASE_GOVERNANCA_ORDEM.indexOf(clean);
-  if (atualIndex < 0) return "";
+function getProximaFaseGovernanca(
+  value?: string | null,
+  tipo?: string | null
+): string {
+  const proxima = getProximaFaseTimeline(value, tipo);
+  return proxima ? labelFase(proxima, tipo) : "";
+}
 
-  const proxima = FASES_PUBLICAS_TIMELINE.find(
-    (fase) => FASE_GOVERNANCA_ORDEM.indexOf(fase) > atualIndex
+function MetaChipGovernanca({
+  label,
+  value,
+  accent = "#14532d",
+}: {
+  label: string;
+  value: string;
+  accent?: string;
+}) {
+  return (
+    <div
+      style={{
+        height: "100%",
+        minHeight: 78,
+        boxSizing: "border-box",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        gap: 6,
+        borderRadius: 12,
+        border: "1px solid rgba(15,23,42,.10)",
+        background: "#fff",
+        padding: "12px 14px",
+        boxShadow: "inset 3px 0 0 " + accent,
+      }}
+    >
+      <span
+        style={{
+          display: "block",
+          fontSize: ".7rem",
+          fontWeight: 700,
+          letterSpacing: "0.05em",
+          textTransform: "uppercase",
+          color: accent,
+          lineHeight: 1.2,
+        }}
+      >
+        {label}
+      </span>
+      <strong
+        style={{
+          fontSize: ".9rem",
+          fontWeight: 700,
+          color: "#0f172a",
+          lineHeight: 1.35,
+          display: "-webkit-box",
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: "vertical",
+          overflow: "hidden",
+        }}
+      >
+        {value}
+      </strong>
+    </div>
   );
-
-  return proxima ? labelFase(proxima) : "";
 }
 
 function isGovernancaPublicavel(edital?: EditalGovernanca | null): boolean {
@@ -423,9 +471,10 @@ function editalTemConteudoTransparencia(
 function ordenarDocumentosGovernanca(
   documentos: DocumentoGovernancaEdital[]
 ): DocumentoGovernancaEdital[] {
+  const ordemFases = Object.keys(FASE_GOVERNANCA_LABELS);
   return [...documentos].sort((a, b) => {
-    const faseA = FASE_GOVERNANCA_ORDEM.indexOf(safeText(a.fase));
-    const faseB = FASE_GOVERNANCA_ORDEM.indexOf(safeText(b.fase));
+    const faseA = ordemFases.indexOf(safeText(a.fase));
+    const faseB = ordemFases.indexOf(safeText(b.fase));
     const ordemFaseA = faseA === -1 ? 999 : faseA;
     const ordemFaseB = faseB === -1 ? 999 : faseB;
 
@@ -1082,7 +1131,16 @@ export default async function TransparenciaPage() {
                   <div style={{ display: "grid", gap: 20, marginBottom: 24 }}>
                     {documentosGovernancaAgrupados.map((grupo) => {
                       const faseAtual = safeText(grupo.edital?.fase_atual);
-                      const proximaFase = getProximaFaseGovernanca(faseAtual);
+                      const modalidade = safeText(grupo.edital?.tipo);
+                      const timelineFases = getFasesTimelinePublica(modalidade);
+                      const proximaFase = getProximaFaseGovernanca(
+                        faseAtual,
+                        modalidade
+                      );
+                      const indiceAtual = indiceFaseNaTimeline(
+                        faseAtual,
+                        timelineFases
+                      );
 
                       return (
                       <div
@@ -1110,117 +1168,71 @@ export default async function TransparenciaPage() {
                           style={{
                             display: "grid",
                             gridTemplateColumns:
-                              "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
+                              "repeat(auto-fit, minmax(min(100%, 168px), 1fr))",
                             gap: 10,
                             marginTop: 12,
+                            alignItems: "stretch",
                           }}
                         >
-                          {faseAtual && (
-                            <div
-                              style={{
-                                borderRadius: 14,
-                                background: "rgba(34,197,94,.12)",
-                                border: "1px solid rgba(34,197,94,.25)",
-                                padding: "10px 12px",
-                              }}
-                            >
-                              <span
-                                style={{
-                                  display: "block",
-                                  fontSize: ".76rem",
-                                  fontWeight: 700,
-                                  color: "#166534",
-                                }}
-                              >
-                                Fase atual
-                              </span>
-                              <strong>{labelFase(faseAtual)}</strong>
-                            </div>
-                          )}
+                          {modalidade ? (
+                            <MetaChipGovernanca
+                              label="Modalidade"
+                              value={modalidade}
+                              accent="#1d4ed8"
+                            />
+                          ) : null}
 
-                          {safeText(grupo.edital?.periodo || grupo.edital?.periodo_envio) && (
-                            <div
-                              style={{
-                                borderRadius: 14,
-                                background: "rgba(14,165,233,.10)",
-                                border: "1px solid rgba(14,165,233,.20)",
-                                padding: "10px 12px",
-                              }}
-                            >
-                              <span
-                                style={{
-                                  display: "block",
-                                  fontSize: ".76rem",
-                                  fontWeight: 700,
-                                  color: "#075985",
-                                }}
-                              >
-                                Periodo
-                              </span>
-                              <strong>{grupo.edital?.periodo || grupo.edital?.periodo_envio}</strong>
-                            </div>
-                          )}
+                          {faseAtual ? (
+                            <MetaChipGovernanca
+                              label="Fase atual"
+                              value={labelFase(faseAtual, modalidade)}
+                              accent="#15803d"
+                            />
+                          ) : null}
 
-                          <div
-                            style={{
-                              borderRadius: 14,
-                              background: "rgba(15,23,42,.06)",
-                              border: "1px solid rgba(15,23,42,.10)",
-                              padding: "10px 12px",
-                            }}
-                          >
-                            <span
-                              style={{
-                                display: "block",
-                                fontSize: ".76rem",
-                                fontWeight: 700,
-                                color: "#334155",
-                              }}
-                            >
-                              Documentos
-                            </span>
-                            <strong>{grupo.documentos.length} publicados</strong>
-                          </div>
+                          {safeText(
+                            grupo.edital?.periodo || grupo.edital?.periodo_envio
+                          ) ? (
+                            <MetaChipGovernanca
+                              label="Período"
+                              value={
+                                grupo.edital?.periodo ||
+                                grupo.edital?.periodo_envio ||
+                                ""
+                              }
+                              accent="#0369a1"
+                            />
+                          ) : null}
 
-                          {proximaFase && (
-                            <div
-                              style={{
-                                borderRadius: 14,
-                                background: "rgba(245,158,11,.10)",
-                                border: "1px solid rgba(245,158,11,.24)",
-                                padding: "10px 12px",
-                              }}
-                            >
-                              <span
-                                style={{
-                                  display: "block",
-                                  fontSize: ".76rem",
-                                  fontWeight: 700,
-                                  color: "#92400e",
-                                }}
-                              >
-                                Proxima etapa
-                              </span>
-                              <strong>{proximaFase}</strong>
-                            </div>
-                          )}
+                          <MetaChipGovernanca
+                            label="Documentos"
+                            value={`${grupo.documentos.length} publicados`}
+                            accent="#475569"
+                          />
+
+                          {proximaFase ? (
+                            <MetaChipGovernanca
+                              label="Próxima etapa"
+                              value={proximaFase}
+                              accent="#b45309"
+                            />
+                          ) : null}
                         </div>
 
                         <div
                           aria-label="Linha do tempo do edital"
                           style={{
                             display: "grid",
-                            gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(140px, 1fr))",
                             gap: 8,
                             marginTop: 16,
+                            alignItems: "stretch",
                           }}
                         >
-                          {FASES_PUBLICAS_TIMELINE.map((fase) => {
-                            const indiceAtual = FASE_GOVERNANCA_ORDEM.indexOf(faseAtual);
-                            const indiceFase = FASE_GOVERNANCA_ORDEM.indexOf(fase);
-                            const etapaAtual = faseAtual === fase;
-                            const etapaConcluida =
-                              indiceAtual >= 0 && indiceFase >= 0 && indiceFase < indiceAtual;
+                          {timelineFases.map((fase, indiceFase) => {
+                            const etapaAtual = indiceFase === indiceAtual;
+                            const etapaConcluida = indiceFase < indiceAtual;
                             const temDocumento =
                               grupo.documentos.some(
                                 (doc) =>
@@ -1228,33 +1240,38 @@ export default async function TransparenciaPage() {
                                   safeText(doc.tipo) === fase
                               ) ||
                               (fase === "publicado" &&
-                                !!resolveEditalDownloadUrl(grupo.edital?.arquivo_pdf));
+                                !!resolveEditalDownloadUrl(
+                                  grupo.edital?.arquivo_pdf
+                                ));
 
                             return (
                               <span
                                 key={fase}
                                 style={{
-                                  borderRadius: 999,
+                                  height: "100%",
+                                  minHeight: 40,
+                                  boxSizing: "border-box",
+                                  borderRadius: 10,
                                   border: etapaAtual
-                                    ? "1px solid rgba(34,197,94,.55)"
-                                    : "1px solid rgba(148,163,184,.24)",
+                                    ? "1px solid rgba(21,128,61,.45)"
+                                    : "1px solid rgba(15,23,42,.10)",
                                   background: etapaAtual
-                                    ? "rgba(34,197,94,.14)"
+                                    ? "rgba(22,163,74,.12)"
                                     : etapaConcluida || temDocumento
-                                    ? "rgba(14,165,233,.12)"
-                                    : "rgba(15,23,42,.06)",
-                                  color: etapaAtual ? "#166534" : "#0f172a",
+                                      ? "rgba(29,78,216,.08)"
+                                      : "#fff",
+                                  color: etapaAtual ? "#14532d" : "#334155",
                                   padding: "8px 10px",
                                   fontSize: ".78rem",
                                   fontWeight: 700,
                                   textAlign: "center",
-                                  minHeight: 36,
                                   display: "inline-flex",
                                   alignItems: "center",
                                   justifyContent: "center",
+                                  lineHeight: 1.25,
                                 }}
                               >
-                                {labelFase(fase)}
+                                {labelFase(fase, modalidade)}
                               </span>
                             );
                           })}
@@ -1277,12 +1294,13 @@ export default async function TransparenciaPage() {
                                 rel="noreferrer"
                                 className="card__link"
                               >
-                                {doc.titulo || labelFase(doc.tipo) || "Documento oficial"}
+                                {doc.titulo || labelFase(doc.tipo, modalidade) || "Documento oficial"}
                               </a>
                               <p style={{ marginTop: 4 }}>
                                 {safeText(doc.fase) && (
                                   <>
-                                    <strong>Fase:</strong> {labelFase(doc.fase)}{" "}
+                                    <strong>Fase:</strong>{" "}
+                                    {labelFase(doc.fase, modalidade)}{" "}
                                   </>
                                 )}
                                 {safeText(doc.tipo) && (
@@ -1316,8 +1334,10 @@ export default async function TransparenciaPage() {
                                   PDF oficial do edital
                                 </a>
                                 <p style={{ marginTop: 4 }}>
-                                  <strong>Fase:</strong> {labelFase(faseAtual)}{" "}
-                                  <strong>Tipo:</strong> Edital
+                                  <strong>Fase:</strong>{" "}
+                                  {labelFase(faseAtual, modalidade)}{" "}
+                                  <strong>Modalidade:</strong>{" "}
+                                  {modalidade || "—"}
                                 </p>
                               </div>
                             )}

@@ -98,7 +98,7 @@ export default function Page() {
     setLoading(true);
     const { data } = await supabase
       .from("propostas")
-      .select("*, editais(titulo, periodo, periodo_envio, fase_atual)")
+      .select("*, editais(titulo, periodo, periodo_envio, fase_atual, tipo)")
       .eq("id", id);
 
     if (data && data.length > 0) {
@@ -337,6 +337,10 @@ export default function Page() {
           <p style={tightParaStyle}>
             <strong>Edital vinculado:</strong>{" "}
             {editalRelacionado?.titulo || "sem vínculo"}
+          </p>
+          <p style={tightParaStyle}>
+            <strong>Modalidade:</strong>{" "}
+            {editalRelacionado?.tipo?.trim() || "—"}
           </p>
           <p style={tightParaStyle}>
             <strong>Tipo de vinculo:</strong>{" "}

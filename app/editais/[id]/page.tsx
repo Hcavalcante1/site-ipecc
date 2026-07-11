@@ -153,7 +153,7 @@ export default async function EditalDetalhePage({ params }: Props) {
               <dl className="public-detail-card__facts">
                 <div className="public-detail-card__fact">
                   <dt>Fase atual</dt>
-                  <dd>{labelFaseEdital(faseAtual)}</dd>
+                  <dd>{labelFaseEdital(faseAtual, registro.tipo)}</dd>
                 </div>
                 <div className="public-detail-card__fact">
                   <dt>Status público</dt>

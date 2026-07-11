@@ -24,7 +24,10 @@ type Proposta = {
   status?: string;
   categoria?: string | null;
   edital_id?: string | null;
-  editais?: { titulo?: string | null; fase_atual?: string | null } | { titulo?: string | null; fase_atual?: string | null }[] | null;
+  editais?:
+    | { titulo?: string | null; fase_atual?: string | null; tipo?: string | null }
+    | { titulo?: string | null; fase_atual?: string | null; tipo?: string | null }[]
+    | null;
   [key: string]: unknown;
 };
 
@@ -101,7 +104,7 @@ export default function Page() {
 
     const { data } = await supabase
       .from("propostas")
-      .select("*, editais(titulo, fase_atual)")
+      .select("*, editais(titulo, fase_atual, tipo)")
       .order("criado_em", { ascending: false });
 
     setPropostas(data || []);
@@ -156,9 +159,10 @@ export default function Page() {
         }}
       >
         Acompanhe aqui as propostas enviadas pelo site, confira documentos e
-        registre a decisao humana de aprovar ou rejeitar. Use <strong>Ver edital</strong> antes
-        de decidir. Aprovacao registra vinculo oficial; rejeicao mantem historico sem bloquear
-        exclusao do edital em fase Rascunho.
+        registre a decisão humana de aprovar ou rejeitar. Use{" "}
+        <strong>Governança</strong> para fases e documentos oficiais do edital; use{" "}
+        <strong>Ver edital</strong> para a página pública. Aprovação registra vínculo
+        oficial; rejeição mantém histórico.
       </p>
 
       {propostas.length === 0 ? (
@@ -200,6 +204,11 @@ export default function Page() {
             <p style={tightParaStyle}>
               <strong>Edital:</strong>{" "}
               {editalRelacionado?.titulo || "sem vínculo"}
+            </p>
+
+            <p style={tightParaStyle}>
+              <strong>Modalidade:</strong>{" "}
+              {editalRelacionado?.tipo?.trim() || "—"}
             </p>
 
             <p style={tightParaStyle}>
@@ -255,7 +264,20 @@ export default function Page() {
             ) : null}
 
             <div style={acoesRowStyle}>
-              {p.edital_id && urlEdital && (
+              {p.edital_id ? (
+                <Link
+                  href={`/admin/editais/${p.edital_id}/governanca`}
+                  style={{
+                    ...linkBtnBase,
+                    background: "#0f766e",
+                    color: "#fff",
+                  }}
+                >
+                  Governança
+                </Link>
+              ) : null}
+
+              {p.edital_id && urlEdital ? (
                 <Link
                   href={urlEdital}
                   target={abreNovaAba ? "_blank" : undefined}
@@ -266,9 +288,9 @@ export default function Page() {
                     color: "#fff",
                   }}
                 >
-                  Ver edital
+                  {abreNovaAba ? "Ver edital" : "Ver edital (admin)"}
                 </Link>
-              )}
+              ) : null}
 
               <Link
                 href={`/admin/propostas/${p.id}`}

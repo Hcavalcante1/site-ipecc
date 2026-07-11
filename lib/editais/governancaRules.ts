@@ -41,7 +41,8 @@ export function editalVisivelNoSitePublico(edital: EditalCamposGovernanca): bool
 /**
  * Envio em /propostas:
  * - Rascunho + status aberto = testes internos (admin habilita).
- * - recebimento_propostas + nao encerrado = processo real.
+ * - publicado + aberto = processo ja aberto ao publico (ex.: cotacao previa).
+ * - recebimento_propostas + nao encerrado = processo real de propostas.
  */
 export function editalAceitaEnvioProposta(edital: EditalCamposGovernanca): boolean {
   const fase = normalizarFaseEdital(edital.fase_atual);
@@ -53,7 +54,10 @@ export function editalAceitaEnvioProposta(edital: EditalCamposGovernanca): boole
     return status === "aberto";
   }
 
-  return fase === "recebimento_propostas";
+  if (fase === "recebimento_propostas") return true;
+
+  // Cotacao / edital publicado com status aberto ja pode receber envio.
+  return fase === "publicado" && status === "aberto";
 }
 
 export function isEnvioPropostaModoTeste(edital: EditalCamposGovernanca): boolean {
