@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { verifyAdminSession } from "@/lib/auth/adminSession";
-import { modulosPermitidos } from "@/lib/auth/adminEscopo";
+import {
+  isMestre,
+  modulosPermitidos,
+  processoIdsDoEscopo,
+} from "@/lib/auth/adminEscopo";
 
 const ADMIN_GATE_COOKIE = "ipecc_admin_gate";
 const ADMIN_GATE_MAX_AGE = 10;
@@ -19,7 +23,9 @@ export async function POST() {
     ok: true,
     papel: auth.contexto.papel,
     legadoIsAdmin: auth.contexto.legadoIsAdmin,
+    mestre: isMestre(auth.contexto),
     modulos: modulosPermitidos(auth.contexto),
+    processoIds: processoIdsDoEscopo(auth.contexto),
   });
   res.cookies.set(ADMIN_GATE_COOKIE, "1", {
     httpOnly: true,

@@ -12,6 +12,8 @@ import {
   getUrlConsultaEditalAdmin,
   propostaTemVinculoOficial,
 } from "@/lib/editais/governancaRules";
+import { registroNoEscopoProcesso } from "@/lib/auth/adminEscopo";
+import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
 
 type Proposta = {
   id: string;
@@ -25,8 +27,18 @@ type Proposta = {
   categoria?: string | null;
   edital_id?: string | null;
   editais?:
-    | { titulo?: string | null; fase_atual?: string | null; tipo?: string | null }
-    | { titulo?: string | null; fase_atual?: string | null; tipo?: string | null }[]
+    | {
+        titulo?: string | null;
+        fase_atual?: string | null;
+        tipo?: string | null;
+        processo_id?: string | null;
+      }
+    | {
+        titulo?: string | null;
+        fase_atual?: string | null;
+        tipo?: string | null;
+        processo_id?: string | null;
+      }[]
     | null;
   [key: string]: unknown;
 };
@@ -90,24 +102,34 @@ const linkBtnBase: CSSProperties = {
 };
 
 export default function Page() {
+  const escopo = useAdminEscopoCliente();
   const [propostas, setPropostas] = useState<Proposta[]>([]);
   const [loading, setLoading] = useState(true);
   const { resumo: resumoAnexos, carregando: carregandoResumoAnexos } =
     useResumoAnexosListagem(propostas);
 
   useEffect(() => {
-    carregar();
-  }, []);
+    if (escopo.loading) return;
+    void carregar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [escopo.loading, escopo.processoIds]);
 
   async function carregar() {
     setLoading(true);
 
     const { data } = await supabase
       .from("propostas")
-      .select("*, editais(titulo, fase_atual, tipo)")
+      .select("*, editais(titulo, fase_atual, tipo, processo_id)")
       .order("criado_em", { ascending: false });
 
-    setPropostas(data || []);
+    const lista = ((data || []) as Proposta[]).filter((proposta) => {
+      const edital = Array.isArray(proposta.editais)
+        ? proposta.editais[0]
+        : proposta.editais;
+      return registroNoEscopoProcesso(edital?.processo_id, escopo.processoIds);
+    });
+
+    setPropostas(lista);
     setLoading(false);
   }
 

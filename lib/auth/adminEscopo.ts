@@ -133,3 +133,13 @@ export function podeModuloNoProcesso(
     (e) => e.processo_id === processoId && Boolean(e[flag])
   );
 }
+
+/** Listagens admin: mestre vê tudo; demais só itens do processo do escopo. */
+export function registroNoEscopoProcesso(
+  processoId: string | null | undefined,
+  processoIds: string[] | "todos"
+): boolean {
+  if (processoIds === "todos") return true;
+  if (!processoId) return false;
+  return processoIds.includes(processoId);
+}

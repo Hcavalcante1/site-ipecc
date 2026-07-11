@@ -18,6 +18,8 @@ import {
   TIPOS_EDITAL_ADMIN,
   TIPO_EDITAL_PADRAO,
 } from "@/lib/editais/tiposAdmin";
+import { registroNoEscopoProcesso } from "@/lib/auth/adminEscopo";
+import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
 
 // Normaliza nome do arquivo para storage
 function normalizarNomeArquivo(nome: string) {
@@ -78,10 +80,13 @@ type ResumoPropostasEdital = {
 };
 
 export default function AdminEditais() {
+  const escopo = useAdminEscopoCliente();
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [periodo, setPeriodo] = useState("");
   const [tipo, setTipo] = useState<string>(TIPO_EDITAL_PADRAO);
+  const [processoId, setProcessoId] = useState("");
+  const [processos, setProcessos] = useState<{ id: string; titulo: string }[]>([]);
 
   const [status, setStatus] = useState<"aberto" | "encerrado" | "em_breve">(
     "em_breve"
@@ -98,8 +103,33 @@ export default function AdminEditais() {
   >({});
 
   useEffect(() => {
-    carregar();
-  }, []);
+    if (escopo.loading) return;
+    void carregar();
+    void carregarProcessos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [escopo.loading, escopo.processoIds]);
+
+  async function carregarProcessos() {
+    const { data, error } = await supabase
+      .from("processos_contratacao")
+      .select("id, titulo")
+      .eq("status", "ativo")
+      .order("titulo", { ascending: true });
+
+    if (error) {
+      setProcessos([]);
+      return;
+    }
+
+    let lista = (data || []) as { id: string; titulo: string }[];
+    if (escopo.processoIds !== "todos") {
+      lista = lista.filter((p) => escopo.processoIds.includes(p.id));
+    }
+    setProcessos(lista);
+    if (lista.length === 1) {
+      setProcessoId(lista[0].id);
+    }
+  }
 
   async function carregar() {
     const [editaisRes, propostasRes] = await Promise.all([
@@ -115,10 +145,15 @@ export default function AdminEditais() {
       return;
     }
 
+    const editaisFiltrados = ((editaisRes.data || []) as any[]).filter((edital) =>
+      registroNoEscopoProcesso(edital.processo_id, escopo.processoIds)
+    );
+    const idsVisiveis = new Set(editaisFiltrados.map((e) => e.id as string));
+
     const resumo: Record<string, ResumoPropostasEdital> = {};
     for (const proposta of propostasRes.data || []) {
       const editalId = proposta.edital_id as string;
-      if (!editalId) continue;
+      if (!editalId || !idsVisiveis.has(editalId)) continue;
 
       if (!resumo[editalId]) {
         resumo[editalId] = { aprovadas: 0, pendentes: 0, rejeitadas: 0 };
@@ -130,7 +165,7 @@ export default function AdminEditais() {
       else resumo[editalId].pendentes += 1;
     }
 
-    setEditais(editaisRes.data || []);
+    setEditais(editaisFiltrados);
     setResumoPropostasPorEdital(resumo);
   }
 
@@ -159,6 +194,21 @@ export default function AdminEditais() {
 
       if (!arquivo) {
         setMsg("Selecione o arquivo PDF do edital.");
+        setLoading(false);
+        return;
+      }
+
+      if (!processoId) {
+        setMsg("Selecione o processo (pasta) deste edital.");
+        setLoading(false);
+        return;
+      }
+
+      if (
+        escopo.processoIds !== "todos" &&
+        !escopo.processoIds.includes(processoId)
+      ) {
+        setMsg("Voce nao tem escopo neste processo.");
         setLoading(false);
         return;
       }
@@ -192,6 +242,7 @@ export default function AdminEditais() {
         ativo: true,
         fase_atual: "rascunho",
         arquivo_pdf: nomeArquivoEdital,
+        processo_id: processoId,
       });
 
       if (error) {
@@ -207,6 +258,7 @@ export default function AdminEditais() {
       setTipo(TIPO_EDITAL_PADRAO);
       setStatus("em_breve");
       setArquivo(null);
+      if (processos.length !== 1) setProcessoId("");
 
       await carregar();
     } catch (error) {
@@ -415,6 +467,25 @@ export default function AdminEditais() {
           ))}
         </select>
 
+        <label>Processo (pasta)</label>
+        <select
+          value={processoId}
+          onChange={(e) => setProcessoId(e.target.value)}
+        >
+          <option value="">Selecione o processo</option>
+          {processos.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.titulo}
+            </option>
+          ))}
+        </select>
+        {processos.length === 0 && !escopo.loading ? (
+          <p style={{ marginTop: 8, fontSize: 13, color: "#fbbf24" }}>
+            Nenhum processo ativo no seu escopo. Crie em Admin → Processos (mestre)
+            ou peca vinculo em Acessos.
+          </p>
+        ) : null}
+
         <label>Status</label>
         <select
           value={status}
@@ -462,6 +533,11 @@ export default function AdminEditais() {
           {e.descricao && <p>{e.descricao}</p>}
 
           <p><strong>Tipo:</strong> {e.tipo}</p>
+          <p>
+            <strong>Processo:</strong>{" "}
+            {processos.find((p) => p.id === e.processo_id)?.titulo ||
+              (e.processo_id ? "Vinculado" : "Sem processo")}
+          </p>
           <p><strong>Período:</strong> {e.periodo || "-"}</p>
           <p><strong>Status:</strong> {e.status}</p>
           <p>
