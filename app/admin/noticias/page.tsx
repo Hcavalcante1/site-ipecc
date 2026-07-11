@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { adminTokens } from "@/components/admin";
+import { registroNoEscopoProcesso } from "@/lib/auth/adminEscopo";
+import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
 
 const wrapTopStyle: CSSProperties = {
   marginTop: adminTokens.spacing.sm * 2,
@@ -45,9 +47,11 @@ type Noticia = {
   resumo: string;
   publicado: boolean;
   created_at: string;
+  processo_id?: string | null;
 };
 
 export default function NoticiasAdmin() {
+  const escopo = useAdminEscopoCliente();
   const [noticias, setNoticias] = useState<Noticia[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -57,7 +61,10 @@ export default function NoticiasAdmin() {
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (data) setNoticias(data);
+    const lista = ((data || []) as Noticia[]).filter((n) =>
+      registroNoEscopoProcesso(n.processo_id, escopo.processoIds)
+    );
+    setNoticias(lista);
     setLoading(false);
   }
 
@@ -67,7 +74,7 @@ export default function NoticiasAdmin() {
 
     try {
       const { error } = await supabase.from("noticias").delete().eq("id", id);
-      
+
       if (error) {
         console.error("Erro ao excluir notícia:", error.message);
         alert(`Erro ao excluir notícia: ${error.message}`);
@@ -82,8 +89,10 @@ export default function NoticiasAdmin() {
   }
 
   useEffect(() => {
-    carregarNoticias();
-  }, []);
+    if (escopo.loading) return;
+    void carregarNoticias();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [escopo.loading, escopo.processoIds]);
 
   return (
     <>
@@ -99,16 +108,14 @@ export default function NoticiasAdmin() {
         </a>
       </div>
 
-      {loading ? (
+      {loading || escopo.loading ? (
         <p style={sectionTopStyle}>Carregando...</p>
       ) : (
         <div className="admin-grid" style={sectionTopStyle}>
           {noticias.map((n) => (
             <div key={n.id} className="admin-card">
               <h3>{n.titulo}</h3>
-              <p style={descricaoStyle}>
-                {n.resumo}
-              </p>
+              <p style={descricaoStyle}>{n.resumo}</p>
 
               <p style={statusLinhaStyle}>
                 {n.publicado ? "🟢 Publicado" : "🔴 Rascunho"}
@@ -119,10 +126,7 @@ export default function NoticiasAdmin() {
                   <button className="admin-button">Editar</button>
                 </a>
 
-                <button
-                  onClick={() => excluir(n.id)}
-                  style={excluirBtnStyle}
-                >
+                <button onClick={() => excluir(n.id)} style={excluirBtnStyle}>
                   Excluir
                 </button>
               </div>

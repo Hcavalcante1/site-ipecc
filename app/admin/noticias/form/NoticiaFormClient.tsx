@@ -5,6 +5,12 @@ import type { CSSProperties } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useSearchParams, useRouter } from "next/navigation";
 import { adminTokens } from "@/components/admin";
+import { registroNoEscopoProcesso } from "@/lib/auth/adminEscopo";
+import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
+import {
+  carregarProcessosDoEscopo,
+  type ProcessoOpcao,
+} from "@/lib/auth/processosEscopoCliente";
 
 const publicadoRowStyle: CSSProperties = {
   display: "flex",
@@ -15,6 +21,7 @@ const publicadoRowStyle: CSSProperties = {
 export default function NoticiaForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const escopo = useAdminEscopoCliente();
 
   const id = searchParams.get("id");
 
@@ -23,11 +30,18 @@ export default function NoticiaForm() {
   const [conteudo, setConteudo] = useState("");
   const [imagem, setImagem] = useState("");
   const [publicado, setPublicado] = useState(true);
+  const [processoId, setProcessoId] = useState("");
+  const [processos, setProcessos] = useState<ProcessoOpcao[]>([]);
+  const [bloqueado, setBloqueado] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
 
   async function carregar() {
+    const lista = await carregarProcessosDoEscopo(escopo.processoIds);
+    setProcessos(lista);
+    if (lista.length === 1) setProcessoId(lista[0].id);
+
     if (!id) return;
 
     const { data } = await supabase
@@ -37,11 +51,16 @@ export default function NoticiaForm() {
       .single();
 
     if (data) {
+      if (!registroNoEscopoProcesso(data.processo_id, escopo.processoIds)) {
+        setBloqueado(true);
+        return;
+      }
       setTitulo(data.titulo || "");
       setResumo(data.resumo || "");
       setConteudo(data.conteudo || "");
       setImagem(data.imagem_url || "");
       setPublicado(data.publicado);
+      setProcessoId(data.processo_id || "");
     }
   }
 
@@ -55,12 +74,19 @@ export default function NoticiaForm() {
       return;
     }
 
+    if (!processoId) {
+      setMsg("Selecione o processo (pasta).");
+      setLoading(false);
+      return;
+    }
+
     const row = {
       titulo,
       resumo,
       conteudo,
       imagem_url: imagem,
       publicado,
+      processo_id: processoId,
     };
 
     const { error } = id
@@ -80,8 +106,21 @@ export default function NoticiaForm() {
   }
 
   useEffect(() => {
-    carregar();
-  }, []);
+    if (escopo.loading) return;
+    void carregar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [escopo.loading, escopo.processoIds]);
+
+  if (escopo.loading) return <p style={{ padding: 20 }}>Carregando...</p>;
+
+  if (bloqueado) {
+    return (
+      <>
+        <h1 className="admin-h1">Acesso negado</h1>
+        <p className="admin-subtitle">Notícia fora do seu escopo de processo.</p>
+      </>
+    );
+  }
 
   return (
     <>
@@ -126,6 +165,22 @@ export default function NoticiaForm() {
           />
         </div>
 
+        <div>
+          <label>Processo (pasta)</label>
+          <select
+            className="admin-input"
+            value={processoId}
+            onChange={(e) => setProcessoId(e.target.value)}
+          >
+            <option value="">Selecione o processo</option>
+            {processos.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.titulo}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div style={publicadoRowStyle}>
           <input
             type="checkbox"
@@ -135,9 +190,7 @@ export default function NoticiaForm() {
           <label>Publicado</label>
         </div>
 
-        {msg && (
-          <p style={{ marginTop: 12, fontWeight: 500 }}>{msg}</p>
-        )}
+        {msg && <p style={{ marginTop: 12, fontWeight: 500 }}>{msg}</p>}
 
         <div className="admin-save-row">
           <button

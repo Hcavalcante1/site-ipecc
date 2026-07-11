@@ -14,11 +14,18 @@ import {
   TIPOS_EDITAL_ADMIN,
   TIPO_EDITAL_PADRAO,
 } from "@/lib/editais/tiposAdmin";
+import { registroNoEscopoProcesso } from "@/lib/auth/adminEscopo";
+import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
+import {
+  carregarProcessosDoEscopo,
+  type ProcessoOpcao,
+} from "@/lib/auth/processosEscopoCliente";
 
 export default function EditarEdital() {
   const params = useParams();
   const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const router = useRouter();
+  const escopo = useAdminEscopoCliente();
 
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
@@ -28,35 +35,47 @@ export default function EditarEdital() {
   const [status, setStatus] = useState<"aberto" | "encerrado" | "em_breve">(
     "em_breve"
   );
+  const [processoId, setProcessoId] = useState("");
+  const [processos, setProcessos] = useState<ProcessoOpcao[]>([]);
+  const [bloqueado, setBloqueado] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState("");
 
   useEffect(() => {
+    if (escopo.loading || !id) return;
+
     async function carregar() {
-      if (!id) return;
+      const [dataRes, listaProcessos] = await Promise.all([
+        supabase.from("editais").select("*").eq("id", id).single(),
+        carregarProcessosDoEscopo(escopo.processoIds),
+      ]);
 
-      const { data } = await supabase
-        .from("editais")
-        .select("*")
-        .eq("id", id)
-        .single();
+      setProcessos(listaProcessos);
 
+      const data = dataRes.data;
       if (data) {
+        if (!registroNoEscopoProcesso(data.processo_id, escopo.processoIds)) {
+          setBloqueado(true);
+          setLoading(false);
+          return;
+        }
+
         setTitulo(data.titulo || "");
         setDescricao(data.descricao || "");
         setPeriodo(data.periodo || "");
         setTipo(data.tipo || TIPO_EDITAL_PADRAO);
         setFaseAtual(data.fase_atual || "rascunho");
         setStatus(data.status || "em_breve");
+        setProcessoId(data.processo_id || "");
       }
 
       setLoading(false);
     }
 
-    carregar();
-  }, [id]);
+    void carregar();
+  }, [id, escopo.loading, escopo.processoIds]);
 
   async function salvarEditalCadastrado() {
     setSalvando(true);
@@ -84,6 +103,19 @@ export default function EditarEdital() {
         return;
       }
 
+      if (!processoId) {
+        setMsg("Selecione o processo (pasta) deste edital.");
+        return;
+      }
+
+      if (
+        escopo.processoIds !== "todos" &&
+        !escopo.processoIds.includes(processoId)
+      ) {
+        setMsg("Voce nao tem escopo neste processo.");
+        return;
+      }
+
       const res = await fetch("/api/admin/mutate", {
         method: "POST",
         credentials: "include",
@@ -99,6 +131,7 @@ export default function EditarEdital() {
             tipo,
             status,
             fase_atual: faseAtual,
+            processo_id: processoId,
           },
           filters: [{ column: "id", value: id }],
           select: "id",
@@ -130,7 +163,25 @@ export default function EditarEdital() {
     }
   }
 
-  if (loading) return <p style={{ padding: 20 }}>Carregando...</p>;
+  if (loading || escopo.loading) return <p style={{ padding: 20 }}>Carregando...</p>;
+
+  if (bloqueado) {
+    return (
+      <div className="admin-box">
+        <h1 className="admin-h1">Acesso negado</h1>
+        <p className="admin-subtitle">
+          Este edital esta fora do seu escopo de processo.
+        </p>
+        <button
+          type="button"
+          className="admin-button"
+          onClick={() => router.push("/admin/editais")}
+        >
+          Voltar
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-box">
@@ -174,6 +225,19 @@ export default function EditarEdital() {
           {TIPOS_EDITAL_ADMIN.map((opcao) => (
             <option key={opcao} value={opcao}>
               {opcao}
+            </option>
+          ))}
+        </select>
+
+        <label>Processo (pasta)</label>
+        <select
+          value={processoId}
+          onChange={(e) => setProcessoId(e.target.value)}
+        >
+          <option value="">Selecione o processo</option>
+          {processos.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.titulo}
             </option>
           ))}
         </select>

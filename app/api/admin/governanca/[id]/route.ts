@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { verifyAdminSession } from "@/lib/auth/adminSession";
+import { podeAcessarProcesso } from "@/lib/auth/adminEscopo";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Params = {
@@ -40,6 +41,19 @@ export async function GET(_req: Request, { params }: Params) {
     return NextResponse.json(
       { ok: false, error: editalRes.error.message },
       { status: 500 }
+    );
+  }
+
+  const processoId = (editalRes.data as { processo_id?: string | null } | null)
+    ?.processo_id;
+
+  if (!podeAcessarProcesso(auth.contexto, processoId)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Acesso negado — este edital esta fora do seu escopo de processo.",
+      },
+      { status: 403 }
     );
   }
 

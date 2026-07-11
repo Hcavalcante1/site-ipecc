@@ -12,6 +12,8 @@ import {
   isEditalFaseRascunho,
   propostaTemVinculoOficial,
 } from "@/lib/editais/governancaRules";
+import { registroNoEscopoProcesso } from "@/lib/auth/adminEscopo";
+import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
 import {
   btn,
   ChecklistDocumentalProposta,
@@ -78,31 +80,48 @@ function corStatus(status?: string) {
 export default function Page() {
   const params = useParams();
   const router = useRouter();
+  const escopo = useAdminEscopoCliente();
 
   const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
 
   const [proposta, setProposta] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [foraEscopo, setForaEscopo] = useState(false);
   const [certidoesEntidade, setCertidoesEntidade] = useState<CertidaoEntidadeLinha[]>(
     []
   );
   const [carregandoCertidoes, setCarregandoCertidoes] = useState(false);
 
   useEffect(() => {
+    if (escopo.loading) return;
     void carregarProposta();
-  }, [id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, escopo.loading, escopo.processoIds]);
 
   async function carregarProposta() {
     if (!id) return;
 
     setLoading(true);
+    setForaEscopo(false);
     const { data } = await supabase
       .from("propostas")
-      .select("*, editais(titulo, periodo, periodo_envio, fase_atual, tipo)")
+      .select("*, editais(titulo, periodo, periodo_envio, fase_atual, tipo, processo_id)")
       .eq("id", id);
 
     if (data && data.length > 0) {
-      setProposta(data[0]);
+      const row = data[0] as {
+        editais?:
+          | { processo_id?: string | null }
+          | { processo_id?: string | null }[]
+          | null;
+      };
+      const edital = Array.isArray(row.editais) ? row.editais[0] : row.editais;
+      if (!registroNoEscopoProcesso(edital?.processo_id, escopo.processoIds)) {
+        setForaEscopo(true);
+        setProposta(null);
+      } else {
+        setProposta(data[0]);
+      }
     } else {
       setProposta(null);
     }
@@ -211,9 +230,22 @@ export default function Page() {
     return `/api/download/public/propostas/${caminho}`;
   }
 
-  if (loading)
+  if (loading || escopo.loading)
     return (
       <p style={{ padding: adminTokens.spacing.xxxl }}>Carregando...</p>
+    );
+  if (foraEscopo)
+    return (
+      <div style={shellStyle}>
+        <p>Acesso negado — proposta fora do seu escopo de processo.</p>
+        <button
+          type="button"
+          style={btn("#1e293b", "#fff")}
+          onClick={() => router.push("/admin/propostas")}
+        >
+          Voltar
+        </button>
+      </div>
     );
   if (!proposta)
     return (

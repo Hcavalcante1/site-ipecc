@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { adminTokens } from "@/components/admin";
+import { registroNoEscopoProcesso } from "@/lib/auth/adminEscopo";
+import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
 
 const wrapTopStyle: CSSProperties = {
   marginTop: adminTokens.spacing.sm * 2,
@@ -57,9 +59,11 @@ type Evento = {
   horario?: string;
   whatsapp?: string;
   publicado: boolean;
+  processo_id?: string | null;
 };
 
 export default function EventosAdmin() {
+  const escopo = useAdminEscopoCliente();
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -69,7 +73,10 @@ export default function EventosAdmin() {
       .select("*")
       .order("data_evento", { ascending: true });
 
-    if (data) setEventos(data);
+    const lista = ((data || []) as Evento[]).filter((e) =>
+      registroNoEscopoProcesso(e.processo_id, escopo.processoIds)
+    );
+    setEventos(lista);
     setLoading(false);
   }
 
@@ -82,8 +89,10 @@ export default function EventosAdmin() {
   }
 
   useEffect(() => {
-    carregarEventos();
-  }, []);
+    if (escopo.loading) return;
+    void carregarEventos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [escopo.loading, escopo.processoIds]);
 
   return (
     <>
@@ -99,7 +108,7 @@ export default function EventosAdmin() {
         </a>
       </div>
 
-      {loading ? (
+      {loading || escopo.loading ? (
         <p style={sectionTopStyle}>Carregando...</p>
       ) : (
         <div className="admin-grid" style={sectionTopStyle}>

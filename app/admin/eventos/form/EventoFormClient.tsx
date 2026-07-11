@@ -5,6 +5,12 @@ import type { CSSProperties } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useSearchParams, useRouter } from "next/navigation";
 import { adminTokens } from "@/components/admin";
+import { registroNoEscopoProcesso } from "@/lib/auth/adminEscopo";
+import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
+import {
+  carregarProcessosDoEscopo,
+  type ProcessoOpcao,
+} from "@/lib/auth/processosEscopoCliente";
 
 const publicadoRowStyle: CSSProperties = {
   display: "flex",
@@ -20,6 +26,7 @@ const msgStyle: CSSProperties = {
 export default function EventoForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const escopo = useAdminEscopoCliente();
 
   const id = searchParams.get("id");
 
@@ -31,11 +38,18 @@ export default function EventoForm() {
   const [horario, setHorario] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [publicado, setPublicado] = useState(true);
+  const [processoId, setProcessoId] = useState("");
+  const [processos, setProcessos] = useState<ProcessoOpcao[]>([]);
+  const [bloqueado, setBloqueado] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
 
   async function carregar() {
+    const lista = await carregarProcessosDoEscopo(escopo.processoIds);
+    setProcessos(lista);
+    if (lista.length === 1) setProcessoId(lista[0].id);
+
     if (!id) return;
 
     const { data } = await supabase
@@ -45,6 +59,10 @@ export default function EventoForm() {
       .single();
 
     if (data) {
+      if (!registroNoEscopoProcesso(data.processo_id, escopo.processoIds)) {
+        setBloqueado(true);
+        return;
+      }
       setTitulo(data.titulo || "");
       setDescricao(data.descricao || "");
       setDataEvento(data.data_evento || "");
@@ -53,6 +71,7 @@ export default function EventoForm() {
       setHorario(data.horario || "");
       setWhatsapp(data.whatsapp || "");
       setPublicado(data.publicado);
+      setProcessoId(data.processo_id || "");
     }
   }
 
@@ -66,19 +85,28 @@ export default function EventoForm() {
       return;
     }
 
+    if (!processoId) {
+      setMsg("Selecione o processo (pasta).");
+      setLoading(false);
+      return;
+    }
+
+    const payload = {
+      titulo,
+      descricao,
+      data_evento: dataEvento || null,
+      local,
+      imagem_url: imagem,
+      horario,
+      whatsapp,
+      publicado,
+      processo_id: processoId,
+    };
+
     if (id) {
       const { error } = await supabase
         .from("eventos")
-        .update({
-          titulo,
-          descricao,
-          data_evento: dataEvento || null,
-          local,
-          imagem_url: imagem,
-          horario,
-          whatsapp,
-          publicado,
-        })
+        .update(payload)
         .eq("id", id);
 
       if (error) {
@@ -87,18 +115,7 @@ export default function EventoForm() {
         return;
       }
     } else {
-      const { error } = await supabase
-        .from("eventos")
-        .insert({
-          titulo,
-          descricao,
-          data_evento: dataEvento || null,
-          local,
-          imagem_url: imagem,
-          horario,
-          whatsapp,
-          publicado,
-        });
+      const { error } = await supabase.from("eventos").insert(payload);
 
       if (error) {
         setMsg("Erro ao salvar: " + error.message);
@@ -116,8 +133,21 @@ export default function EventoForm() {
   }
 
   useEffect(() => {
-    carregar();
-  }, []);
+    if (escopo.loading) return;
+    void carregar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [escopo.loading, escopo.processoIds]);
+
+  if (escopo.loading) return <p style={{ padding: 20 }}>Carregando...</p>;
+
+  if (bloqueado) {
+    return (
+      <>
+        <h1 className="admin-h1">Acesso negado</h1>
+        <p className="admin-subtitle">Evento fora do seu escopo de processo.</p>
+      </>
+    );
+  }
 
   return (
     <>
@@ -190,6 +220,22 @@ export default function EventoForm() {
           />
         </div>
 
+        <div>
+          <label>Processo (pasta)</label>
+          <select
+            className="admin-input"
+            value={processoId}
+            onChange={(e) => setProcessoId(e.target.value)}
+          >
+            <option value="">Selecione o processo</option>
+            {processos.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.titulo}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div style={publicadoRowStyle}>
           <input
             type="checkbox"
@@ -199,16 +245,11 @@ export default function EventoForm() {
           <label>Publicado</label>
         </div>
 
-        {/* ✅ MENSAGEM PADRÃO */}
-        {msg && (
-          <p style={msgStyle}>
-            {msg}
-          </p>
-        )}
+        {msg && <p style={msgStyle}>{msg}</p>}
 
         <div className="admin-save-row">
           <button
-	type="button"
+            type="button"
             onClick={salvar}
             className="admin-save-button"
             disabled={loading}
