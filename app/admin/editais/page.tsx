@@ -468,17 +468,26 @@ export default function AdminEditais() {
         </select>
 
         <label>Processo (pasta)</label>
-        <select
-          value={processoId}
-          onChange={(e) => setProcessoId(e.target.value)}
-        >
-          <option value="">Selecione o processo</option>
-          {processos.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.titulo}
-            </option>
-          ))}
-        </select>
+        {processos.length === 1 ? (
+          <p style={{ marginTop: 4, marginBottom: 8, color: "#e2e8f0" }}>
+            {processos[0].titulo}
+            <span style={{ display: "block", fontSize: 13, color: "#94a3b8" }}>
+              Vinculado automaticamente ao seu processo.
+            </span>
+          </p>
+        ) : (
+          <select
+            value={processoId}
+            onChange={(e) => setProcessoId(e.target.value)}
+          >
+            <option value="">Selecione o processo</option>
+            {processos.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.titulo}
+              </option>
+            ))}
+          </select>
+        )}
         {processos.length === 0 && !escopo.loading ? (
           <p style={{ marginTop: 8, fontSize: 13, color: "#fbbf24" }}>
             Nenhum processo ativo no seu escopo. Crie em Admin → Processos (mestre)

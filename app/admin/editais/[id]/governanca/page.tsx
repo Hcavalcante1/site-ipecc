@@ -471,6 +471,33 @@ export default function GovernancaEditalPage() {
         status === "aprovado" ? "Proposta aprovada." : "Proposta rejeitada.",
         "success"
       );
+
+      if (status === "aprovado") {
+        const ponte = await fetch("/api/admin/transparencia/ponte", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            acao: "convenio_de_proposta",
+            propostaId,
+          }),
+        })
+          .then((r) => r.json())
+          .catch(() => null);
+
+        if (ponte?.ok) {
+          triggerToast(
+            ponte.message || "Rascunho de convenio criado na Transparencia.",
+            "success"
+          );
+        } else if (ponte?.error) {
+          triggerToast(
+            `Proposta aprovada, mas a ponte falhou: ${ponte.error}`,
+            "error"
+          );
+        }
+      }
+
       await carregar();
     } catch {
       triggerToast("Erro inesperado ao atualizar proposta.", "error");
@@ -572,6 +599,29 @@ export default function GovernancaEditalPage() {
       setConfirmado(false);
       setFaseMsg(`Fase atualizada para "${label(novaFase)}".`);
       triggerToast("Fase atualizada com sucesso.", "success");
+
+      if (novaFase === "prestacao_contas" && editalId) {
+        const ponte = await fetch("/api/admin/transparencia/ponte", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            acao: "prestacoes_do_edital",
+            editalId,
+          }),
+        })
+          .then((r) => r.json())
+          .catch(() => null);
+
+        if (ponte?.ok && ponte.message) {
+          triggerToast(String(ponte.message), "success");
+          triggerToast(
+            "Abra Prestacao (admin) para revisar os rascunhos.",
+            "success"
+          );
+        }
+      }
+
       await carregar();
     } finally {
       setSaving(false);
@@ -679,6 +729,24 @@ export default function GovernancaEditalPage() {
       setDocArquivo(null);
       setDocMsg("Documento publicado com sucesso.");
       triggerToast("Documento publicado com sucesso.", "success");
+
+      if (editalId) {
+        await fetch("/api/admin/transparencia/ponte", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            acao: "espelhar_documento",
+            editalId,
+            documento: {
+              tipo: docTipo,
+              titulo: docTitulo,
+              arquivo_url: path,
+            },
+          }),
+        }).catch(() => null);
+      }
+
       await carregar();
     } finally {
       setSaving(false);
@@ -844,7 +912,19 @@ export default function GovernancaEditalPage() {
             Ver edital publico
           </Link>
           <Link className="admin-button" href="/transparencia" target="_blank">
-            Ver Transparencia
+            Ver Transparencia (site)
+          </Link>
+          <Link
+            className="admin-button"
+            href="/admin/paginas/transparencia/convenios"
+          >
+            Convenios (admin)
+          </Link>
+          <Link
+            className="admin-button"
+            href="/admin/paginas/transparencia/prestacao"
+          >
+            Prestacao (admin)
           </Link>
           <Link className="admin-button" href={`/admin/editais/${edital.id}`}>
             Editar cadastro

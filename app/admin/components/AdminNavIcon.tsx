@@ -11,7 +11,8 @@ export type AdminNavIconName =
   | "whatsapp"
   | "logs"
   | "processos"
-  | "acessos";
+  | "acessos"
+  | "transparencia";
 
 type AdminNavIconProps = {
   name: AdminNavIconName;
@@ -85,6 +86,12 @@ const PATHS: Record<AdminNavIconName, ReactElement> = {
       <circle cx="9" cy="7" r="3" />
       <path d="M22 19v-1a3 3 0 0 0-2-2.83" />
       <path d="M16 4.1a3 3 0 0 1 0 5.8" />
+    </>
+  ),
+  transparencia: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18" />
     </>
   ),
 };

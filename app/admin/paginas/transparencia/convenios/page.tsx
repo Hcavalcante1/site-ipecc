@@ -7,10 +7,18 @@ import { getConvenios, saveConvenio, deleteConvenio } from "./conveniosService";
 import classes from "./page.module.css";
 import ConvenioCard from "./components/ConvenioCard";
 import { AdminButton, AdminLoadingButton, AdminMessage, AdminSectionHeader, spacing, borderRadius, shadows, sizes, typography } from "@/components/admin";
+import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
 
-function novoConvenio(): Convenio {
+function processoPadrao(processoIds: string[] | "todos"): string | null {
+  if (processoIds === "todos") return null;
+  if (processoIds.length >= 1) return processoIds[0];
+  return null;
+}
+
+function novoConvenio(processoId?: string | null): Convenio {
   return {
     edital_id: "",
+    processo_id: processoId || null,
     titulo: "",
     numero_instrumento: "",
     tipo_instrumento: "",
@@ -277,24 +285,31 @@ function normalizeUuid(value?: string | null) {
 }
 
 export default function TransparenciaConveniosAdmin() {
+  const escopo = useAdminEscopoCliente();
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
   const [blockMsgs, setBlockMsgs] = useState<Record<number, string>>({});
   const [convenios, setConvenios] = useState<Convenio[]>([]);
 
   useEffect(() => {
+    if (escopo.loading) return;
     carregar();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [escopo.loading, escopo.processoIds]);
 
   async function carregar() {
     setLoading(true);
     try {
-      const data = await getConvenios();
-      setConvenios(data && data.length > 0 ? data : [novoConvenio()]);
+      const data = await getConvenios(escopo.processoIds);
+      setConvenios(
+        data && data.length > 0
+          ? data
+          : [novoConvenio(processoPadrao(escopo.processoIds))]
+      );
     } catch (error: any) {
       console.error("Erro ao carregar convênios:", error);
       setMsg(`Erro ao carregar convênios: ${error.message}`);
-      setConvenios([novoConvenio()]);
+      setConvenios([novoConvenio(processoPadrao(escopo.processoIds))]);
     } finally {
       setLoading(false);
     }
@@ -313,15 +328,32 @@ export default function TransparenciaConveniosAdmin() {
   }
 
   function adicionarBloco() {
-    setConvenios((prev) => [...prev, novoConvenio()]);
+    setConvenios((prev) => [
+      ...prev,
+      novoConvenio(processoPadrao(escopo.processoIds)),
+    ]);
     setMsg("Novo bloco de convênio adicionado.");
+  }
+
+  function comProcessoDoEscopo(item: Convenio): Convenio {
+    if (item.processo_id) return item;
+    const pid = processoPadrao(escopo.processoIds);
+    return pid ? { ...item, processo_id: pid } : item;
   }
 
   async function salvarTodos() {
     setMsg("Salvando convênios...");
 
     for (let i = 0; i < convenios.length; i++) {
-      const item = convenios[i];
+      const item = comProcessoDoEscopo(convenios[i]);
+      if (
+        escopo.processoIds !== "todos" &&
+        !item.processo_id
+      ) {
+        setMsg("Informe o processo do convenio (escopo).");
+        setBlockMsg(i, "Processo obrigatorio para o seu login.");
+        return;
+      }
       try {
         await saveConvenio(item);
         setBlockMsg(i, "Bloco salvo com sucesso.");
@@ -338,8 +370,13 @@ export default function TransparenciaConveniosAdmin() {
   }
 
   async function salvarBloco(index: number) {
-    const item = convenios[index];
+    const item = comProcessoDoEscopo(convenios[index]);
     setBlockMsg(index, "Salvando este bloco...");
+
+    if (escopo.processoIds !== "todos" && !item.processo_id) {
+      setBlockMsg(index, "Processo obrigatorio para o seu login.");
+      return;
+    }
 
     try {
       await saveConvenio(item);

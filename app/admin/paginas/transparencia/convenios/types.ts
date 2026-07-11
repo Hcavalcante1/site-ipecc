@@ -1,6 +1,8 @@
 export type Convenio = {
   id?: string;
   edital_id?: string | null;
+  proposta_id?: string | null;
+  processo_id?: string | null;
   titulo?: string | null;
   numero_instrumento?: string | null;
   tipo_instrumento?: string | null;

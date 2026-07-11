@@ -1,63 +1,99 @@
+"use client";
+
 import {
   AdminHubCard,
   AdminPaginasHubLayout,
 } from "@/components/admin";
 import { adminCanonicalRoutes } from "@/lib/admin/canonicalAdminRoutes";
+import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
 
 export default function TransparenciaAdminIndex() {
   const r = adminCanonicalRoutes.transparencia;
+  const escopo = useAdminEscopoCliente();
+
+  const podeSite =
+    escopo.mestre || escopo.modulos.includes("paginas");
+  const podeCiclo =
+    escopo.mestre ||
+    escopo.modulos.includes("transparencia") ||
+    escopo.modulos.includes("paginas");
+
+  if (escopo.loading) {
+    return (
+      <div style={{ padding: 24, color: "#e5e7eb" }}>Carregando...</div>
+    );
+  }
 
   return (
     <AdminPaginasHubLayout
-      titulo="Página — Transparência"
+      titulo="Transparencia"
       subtitulo={
-        <>
-          Escolha qual bloco da página pública <strong>Transparência</strong> você
-          deseja editar.
-        </>
+        podeSite ? (
+          <>
+            Ciclo do processo (convenios, editais, prestacao) e blocos
+            institucionais da pagina publica <strong>Transparencia</strong>.
+            Rascunhos automaticos; publicacao no site continua humana.
+          </>
+        ) : (
+          <>
+            Modulo do seu processo: fecha o ciclo Editais e Propostas com
+            rascunhos de convenios, resultados e prestacao. A publicacao no
+            site continua humana. Conteudo institucional do site IPECC
+            (hero, LGPD, CTA) nao aparece neste acesso.
+          </>
+        )
       }
     >
       <div className="admin-grid admin-grid--wide">
-        <AdminHubCard
-          titulo="Hero da página"
-          descricao="Título e texto principal do topo da página."
-          href={r.hero}
-        />
-        <AdminHubCard
-          titulo="Compromissos e princípios"
-          descricao="Texto institucional sobre ética, transparência e governança."
-          href={r.compromissos}
-        />
-        <AdminHubCard
-          titulo="Documentos institucionais"
-          descricao="Estatuto, atas, CNDs, políticas e demais documentos públicos."
-          href={r.documentos}
-        />
-        <AdminHubCard
-          titulo="Termos e Convênios"
-          descricao="Cadastro dos instrumentos gerados apos selecao, homologacao e formalizacao."
-          href={r.convenios}
-        />
-        <AdminHubCard
-          titulo="Editais e Chamamentos"
-          descricao="Registro manual das fases de selecao, recurso, resultado, homologacao e contrato."
-          href={r.editais}
-        />
-        <AdminHubCard
-          titulo="Prestação de contas"
-          descricao="Documentos de execucao e prestacao vinculados aos convenios cadastrados."
-          href={r.prestacao}
-        />
-        <AdminHubCard
-          titulo="LGPD"
-          descricao="Política de privacidade, contatos e proteção de dados."
-          href={r.lgpd}
-        />
-        <AdminHubCard
-          titulo="CTA / Acesso rápido"
-          descricao="Bloco final com botão de acesso a documentos."
-          href={r.cta}
-        />
+        {podeCiclo && (
+          <>
+            <AdminHubCard
+              titulo="Termos e Convenios"
+              descricao="Fecha o ciclo das propostas aprovadas (rascunhos automaticos + publicacao humana)."
+              href={r.convenios}
+            />
+            <AdminHubCard
+              titulo="Editais e Chamamentos"
+              descricao="Espelho dos resultados/homologacao a partir da governanca do edital."
+              href={r.editais}
+            />
+            <AdminHubCard
+              titulo="Prestacao de contas"
+              descricao="Rascunhos vinculados aos convenios do processo — publicar apos revisao."
+              href={r.prestacao}
+            />
+          </>
+        )}
+
+        {podeSite && (
+          <>
+            <AdminHubCard
+              titulo="Hero da pagina"
+              descricao="Titulo e texto principal do topo da pagina (site IPECC)."
+              href={r.hero}
+            />
+            <AdminHubCard
+              titulo="Compromissos e principios"
+              descricao="Texto institucional sobre etica, transparencia e governanca."
+              href={r.compromissos}
+            />
+            <AdminHubCard
+              titulo="Documentos institucionais"
+              descricao="Estatuto, atas, CNDs, politicas e demais documentos publicos da entidade."
+              href={r.documentos}
+            />
+            <AdminHubCard
+              titulo="LGPD"
+              descricao="Politica de privacidade, contatos e protecao de dados."
+              href={r.lgpd}
+            />
+            <AdminHubCard
+              titulo="CTA / Acesso rapido"
+              descricao="Bloco final com botao de acesso a documentos."
+              href={r.cta}
+            />
+          </>
+        )}
       </div>
     </AdminPaginasHubLayout>
   );

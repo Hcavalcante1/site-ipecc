@@ -18,6 +18,20 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchLogs();
+
+    function recarregarSeVisivel() {
+      if (document.visibilityState === "visible") {
+        fetchLogs();
+      }
+    }
+
+    window.addEventListener("focus", fetchLogs);
+    document.addEventListener("visibilitychange", recarregarSeVisivel);
+
+    return () => {
+      window.removeEventListener("focus", fetchLogs);
+      document.removeEventListener("visibilitychange", recarregarSeVisivel);
+    };
   }, []);
 
   async function fetchLogs() {
@@ -67,14 +81,14 @@ export default function AdminDashboard() {
 
   return (
     <div style={styles.wrapper}>
-      <h1 style={styles.title}>Dashboard do Admin</h1>
+      <h1 style={styles.title}>Painel do Admin</h1>
 
       {/* CARDS */}
       <div style={styles.cards}>
-        <Card label="Total de Ações" value={metrics.total} />
-        <Card label="INSERT" value={metrics.insert} color="#22c55e" />
-        <Card label="UPDATE" value={metrics.update} color="#38bdf8" />
-        <Card label="DELETE" value={metrics.del} color="#ef4444" />
+        <Card label="Total de Acoes" value={metrics.total} />
+        <Card label="Inclusao" value={metrics.insert} color="#22c55e" />
+        <Card label="Atualizacao" value={metrics.update} color="#38bdf8" />
+        <Card label="Exclusao" value={metrics.del} color="#ef4444" />
       </div>
 
       {/* TABELAS MAIS ALTERADAS */}

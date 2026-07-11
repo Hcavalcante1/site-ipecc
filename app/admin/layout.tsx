@@ -14,6 +14,7 @@ import type { AdminModulo } from "@/lib/auth/adminEscopo";
 import { MODULOS_MESTRE } from "@/lib/auth/adminEscopo";
 import LogoutButton from "./components/LogoutButton";
 import AdminNavIcon, { type AdminNavIconName } from "./components/AdminNavIcon";
+import { caminhoEhCmsSite } from "./components/RequireAdminModulo";
 
 const ADMIN_ACTIVE_KEY = "ipecc_admin_active";
 const ADMIN_CLOSED_KEY = "ipecc_admin_closed";
@@ -214,13 +215,30 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
           <nav className="admin-nav">
             <Link href="/admin" className={navClass(pathname, "/admin", true)} onClick={(event) => handleMobileNav(event, "/admin")}>
-              <NavLabel icon="dashboard">Dashboard</NavLabel>
+              <NavLabel icon="dashboard">Painel</NavLabel>
             </Link>
 
             <div className="admin-nav-section-title">Conteudo</div>
             {pode("paginas") && (
-              <Link href="/admin/paginas" className={navClass(pathname, "/admin/paginas")} onClick={(event) => handleMobileNav(event, "/admin/paginas")}>
+              <Link
+                href="/admin/paginas"
+                className={
+                  caminhoEhCmsSite(pathname) || pathname === "/admin/paginas"
+                    ? "admin-nav-item admin-nav-item--active"
+                    : "admin-nav-item"
+                }
+                onClick={(event) => handleMobileNav(event, "/admin/paginas")}
+              >
                 <NavLabel icon="pages">Paginas</NavLabel>
+              </Link>
+            )}
+            {pode("projetos") && (
+              <Link
+                href="/admin/paginas/projetos"
+                className={navClass(pathname, "/admin/paginas/projetos")}
+                onClick={(event) => handleMobileNav(event, "/admin/paginas/projetos")}
+              >
+                <NavLabel icon="pages">Projetos</NavLabel>
               </Link>
             )}
             {pode("editais") && (
@@ -243,6 +261,17 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             {pode("propostas") && (
               <Link href="/admin/propostas" className={navClass(pathname, "/admin/propostas")} onClick={(event) => handleMobileNav(event, "/admin/propostas")}>
                 <NavLabel icon="propostas">Propostas</NavLabel>
+              </Link>
+            )}
+            {pode("transparencia") && (
+              <Link
+                href="/admin/paginas/transparencia"
+                className={navClass(pathname, "/admin/paginas/transparencia")}
+                onClick={(event) =>
+                  handleMobileNav(event, "/admin/paginas/transparencia")
+                }
+              >
+                <NavLabel icon="transparencia">Transparencia</NavLabel>
               </Link>
             )}
             {pode("certidoes") && (

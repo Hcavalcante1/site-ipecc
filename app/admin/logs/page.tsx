@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { spacing, borderRadius, typography, colors } from "@/components/admin";
+import { labelAcaoAdmin } from "@/lib/admin/acaoLabel";
 
 type Log = {
   id: string;
@@ -61,9 +62,9 @@ export default function LogsPage() {
 
     const rows = logs.map((log) => [
       log.user_email,
-      log.acao,
+      labelAcaoAdmin(log.acao),
       log.tabela,
-      new Date(log.created_at).toLocaleString(),
+      new Date(log.created_at).toLocaleString("pt-BR"),
     ]);
 
     const csvContent =
@@ -102,10 +103,10 @@ export default function LogsPage() {
       {/* FILTROS */}
       <div style={styles.filters}>
         <select value={acao} onChange={(e) => setAcao(e.target.value)}>
-          <option value="">Todas ações</option>
-          <option value="INSERT">INSERT</option>
-          <option value="UPDATE">UPDATE</option>
-          <option value="DELETE">DELETE</option>
+          <option value="">Todas as acoes</option>
+          <option value="INSERT">Inclusao</option>
+          <option value="UPDATE">Atualizacao</option>
+          <option value="DELETE">Exclusao</option>
         </select>
 
         <input
@@ -132,7 +133,7 @@ export default function LogsPage() {
           <div key={log.id} style={styles.row}>
             <div style={styles.header}>
               <span style={{ ...styles.badge, background: getColor(log.acao) }}>
-                {log.acao}
+                {labelAcaoAdmin(log.acao)}
               </span>
 
               <span style={styles.tabela}>{log.tabela}</span>
@@ -141,7 +142,7 @@ export default function LogsPage() {
             <div style={styles.info}>
               <strong>{log.user_email}</strong>
               <span>
-                {new Date(log.created_at).toLocaleString()}
+                {new Date(log.created_at).toLocaleString("pt-BR")}
               </span>
             </div>
 

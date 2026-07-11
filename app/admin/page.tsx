@@ -1,16 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import AdminDashboardClient from "./AdminDashboardClient";
 
 export default function AdminPage() {
+  const pathname = usePathname();
   const [userEmail, setUserEmail] = useState("...");
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     getUser();
   }, []);
+
+  useEffect(() => {
+    if (pathname === "/admin") {
+      setRefreshKey((value) => value + 1);
+    }
+  }, [pathname]);
 
   async function getUser() {
     const {
@@ -35,12 +44,17 @@ export default function AdminPage() {
           <span style={styles.eyebrow}>IPECC Admin</span>
           <h1 style={styles.title}>Painel Administrativo</h1>
           <p style={styles.subtitle}>
-            Visao geral operacional, publicacoes, propostas e atividade recente.
+            Dados do processo logado (KPIs e atalhos conforme o escopo). O
+            rotulo do processo aparece no banner abaixo.
           </p>
         </div>
 
         <div style={styles.actions}>
-          <button style={styles.refreshBtn} onClick={() => window.location.reload()}>
+          <button
+            type="button"
+            style={styles.refreshBtn}
+            onClick={() => setRefreshKey((value) => value + 1)}
+          >
             Atualizar
           </button>
         </div>
@@ -55,7 +69,7 @@ export default function AdminPage() {
           <div style={styles.statusPill}>Ambiente operacional</div>
         </div>
 
-        <AdminDashboardClient userEmail={userEmail} />
+        <AdminDashboardClient key={refreshKey} userEmail={userEmail} />
       </section>
     </div>
   );

@@ -1,5 +1,6 @@
 export type Convenio = {
   id?: string;
+  processo_id?: string | null;
   titulo?: string | null;
   numero_instrumento?: string | null;
   tipo_instrumento?: string | null;
@@ -12,6 +13,7 @@ export type Convenio = {
 export type PrestacaoConta = {
   id?: string;
   convenio_id?: string | null;
+  processo_id?: string | null;
   fase_prestacao?: string | null;
   status_prestacao?: string | null;
   tipo_documento?: string | null;

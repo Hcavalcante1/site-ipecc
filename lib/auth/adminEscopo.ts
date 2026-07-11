@@ -91,7 +91,6 @@ export function modulosPermitidos(ctx: AdminContexto): AdminModulo[] {
     if (escopo.mod_eventos) set.add("eventos");
     if (escopo.mod_projetos) {
       set.add("projetos");
-      set.add("paginas");
     }
   }
   return Array.from(set);

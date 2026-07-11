@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { verifyAdminSession } from "@/lib/auth/adminSession";
+import {
+  isMestre,
+  podeAcessarProcesso,
+  type AdminContexto,
+} from "@/lib/auth/adminEscopo";
 import { revalidateForTable } from "@/lib/admin/revalidateTables";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
@@ -32,6 +37,16 @@ const ALLOWED_TABLES = new Set([
   "logs_atividade",
 ]);
 
+/** Tabelas com processo_id — login de processo so altera o proprio escopo. */
+const TABELAS_PROCESSO_ID = new Set([
+  "editais",
+  "noticias",
+  "eventos",
+  "transparencia_editais",
+  "transparencia_convenios",
+  "transparencia_prestacao_contas",
+]);
+
 const ALLOWED_FILTER_OPERATORS = new Set(["eq"]);
 const IDENTIFIER_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
 
@@ -46,6 +61,54 @@ type Body = {
   single?: boolean;
   upsertOptions?: { onConflict?: string; ignoreDuplicates?: boolean };
 };
+
+async function bloquearForaDoEscopo(
+  ctx: AdminContexto,
+  table: string,
+  action: Body["action"],
+  payload: unknown,
+  filters: Filter[]
+): Promise<string | null> {
+  if (isMestre(ctx)) return null;
+  if (!TABELAS_PROCESSO_ID.has(table)) return null;
+
+  const rows = Array.isArray(payload) ? payload : payload ? [payload] : [];
+
+  if (action === "insert" || action === "upsert") {
+    for (const row of rows) {
+      if (!row || typeof row !== "object") continue;
+      const processoId = (row as { processo_id?: string | null }).processo_id;
+      if (!podeAcessarProcesso(ctx, processoId)) {
+        return "Processo fora do seu escopo.";
+      }
+    }
+  }
+
+  if (action === "update" || action === "delete") {
+    const idFilter = filters.find((f) => f.column === "id");
+    const id = idFilter?.value;
+    if (typeof id === "string" && id.trim()) {
+      const { data, error } = await supabaseAdmin
+        .from(table)
+        .select("processo_id")
+        .eq("id", id)
+        .maybeSingle();
+      if (error) return error.message;
+      if (!podeAcessarProcesso(ctx, data?.processo_id)) {
+        return "Registro fora do seu escopo de processo.";
+      }
+    }
+
+    if (action === "update" && payload && typeof payload === "object") {
+      const novo = (payload as { processo_id?: string | null }).processo_id;
+      if (novo !== undefined && !podeAcessarProcesso(ctx, novo)) {
+        return "Nao e permitido mover registro para outro processo.";
+      }
+    }
+  }
+
+  return null;
+}
 
 type EditalDeletePrep =
   | { ok: true; arquivoPdf: string | null }
@@ -163,6 +226,20 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { ok: false, error: "Filtros sao obrigatorios para update/delete" },
         { status: 400 }
+      );
+    }
+
+    const bloqueioEscopo = await bloquearForaDoEscopo(
+      auth.contexto,
+      table,
+      action,
+      payload,
+      filters
+    );
+    if (bloqueioEscopo) {
+      return NextResponse.json(
+        { ok: false, error: bloqueioEscopo, data: null },
+        { status: 403 }
       );
     }
 

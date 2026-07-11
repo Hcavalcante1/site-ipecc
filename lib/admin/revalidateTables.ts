@@ -5,7 +5,7 @@ const TABLE_PATHS: Record<string, string[]> = {
   eventos: ["/eventos", "/inicio"],
   paginas_conteudo: ["/", "/inicio", "/projetos", "/quem-somos", "/contato", "/editais", "/transparencia"],
   paginas_eixos: ["/projetos", "/"],
-  editais: ["/editais", "/transparencia", "/propostas"],
+  editais: ["/editais", "/transparencia", "/propostas", "/admin"],
   editais_documentos: ["/editais"],
   documentos_publicos: ["/transparencia", "/editais", "/propostas"],
   editais_logs: [],
@@ -15,6 +15,7 @@ const TABLE_PATHS: Record<string, string[]> = {
   paginas: ["/contato"],
   certidoes: ["/transparencia"],
   contato_mensagens: ["/contato"],
+  propostas: ["/propostas", "/admin"],
   proposta_anexos: ["/propostas"],
 };
 

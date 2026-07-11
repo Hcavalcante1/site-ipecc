@@ -1,7 +1,10 @@
 import { supabase } from "@/lib/supabaseClient";
+import { registroNoEscopoProcesso } from "@/lib/auth/adminEscopo";
 import type { Convenio } from "./types";
 
-export async function getConvenios(): Promise<Convenio[]> {
+export async function getConvenios(
+  processoIds: string[] | "todos" = "todos"
+): Promise<Convenio[]> {
   const { data, error } = await supabase
     .from("transparencia_convenios")
     .select("*")
@@ -11,12 +14,16 @@ export async function getConvenios(): Promise<Convenio[]> {
     throw error;
   }
 
-  return data || [];
+  return ((data || []) as Convenio[]).filter((item) =>
+    registroNoEscopoProcesso(item.processo_id, processoIds)
+  );
 }
 
 export async function saveConvenio(convenio: Convenio): Promise<Convenio> {
   const payload = {
     edital_id: convenio.edital_id || null,
+    proposta_id: convenio.proposta_id || null,
+    processo_id: convenio.processo_id || null,
     titulo: convenio.titulo || null,
     numero_instrumento: convenio.numero_instrumento || null,
     tipo_instrumento: convenio.tipo_instrumento || null,
@@ -49,20 +56,32 @@ export async function saveConvenio(convenio: Convenio): Promise<Convenio> {
       throw error;
     }
 
-    return data;
-  } else {
-    const { data, error } = await supabase
-      .from("transparencia_convenios")
-      .insert(payload)
-      .select()
-      .single();
-
-    if (error) {
-      throw error;
+    if (payload.publicado) {
+      await fetch("/api/admin/transparencia/ponte", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          acao: "prestacao_de_convenio",
+          convenioId: convenio.id,
+        }),
+      }).catch(() => null);
     }
 
     return data;
   }
+
+  const { data, error } = await supabase
+    .from("transparencia_convenios")
+    .insert(payload)
+    .select()
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
 }
 
 export async function deleteConvenio(id: string): Promise<void> {

@@ -1,8 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
+import { labelAcaoAdmin } from "@/lib/admin/acaoLabel";
+import {
+  editalAceitaEnvioProposta,
+  editalVisivelNoSitePublico,
+} from "@/lib/editais/governancaRules";
+import type { AdminModulo } from "@/lib/auth/adminEscopo";
+import { registroNoEscopoProcesso } from "@/lib/auth/adminEscopo";
+import { carregarProcessosDoEscopo } from "@/lib/auth/processosEscopoCliente";
+import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
 
 import {
   Chart as ChartJS,
@@ -39,62 +48,299 @@ type AdminLog = {
   created_at?: string;
 };
 
+type EditalResumo = {
+  status?: string | null;
+  fase_atual?: string | null;
+};
+
+function podeModuloCliente(
+  mestre: boolean,
+  modulos: AdminModulo[],
+  modulo: AdminModulo
+): boolean {
+  if (mestre) return true;
+  return modulos.includes(modulo);
+}
+
 export default function AdminDashboardClient({ userEmail }: Props) {
+  const escopo = useAdminEscopoCliente();
   const [totalPropostas, setTotalPropostas] = useState(0);
   const [editaisAtivos, setEditaisAtivos] = useState(0);
   const [noticiasPublicadas, setNoticiasPublicadas] = useState(0);
   const [eventosPublicados, setEventosPublicados] = useState(0);
+  const [rascunhosTransparencia, setRascunhosTransparencia] = useState(0);
   const [logs, setLogs] = useState<AdminLog[]>([]);
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState("-");
+  const [sincronizadoEm, setSincronizadoEm] = useState("-");
+  const [titulosProcesso, setTitulosProcesso] = useState<string[]>([]);
+
+  const pode = useCallback(
+    (modulo: AdminModulo) =>
+      podeModuloCliente(escopo.mestre, escopo.modulos, modulo),
+    [escopo.mestre, escopo.modulos]
+  );
+
+  const podeVerLogs = escopo.mestre || pode("logs");
+
+  const rotuloEscopo = useMemo(() => {
+    if (escopo.loading) return "Carregando escopo...";
+    if (escopo.mestre) return "Visao geral IPECC (mestre)";
+    if (titulosProcesso.length === 0) return "Escopo do processo";
+    if (titulosProcesso.length === 1) return titulosProcesso[0];
+    return titulosProcesso.join(" · ");
+  }, [escopo.loading, escopo.mestre, titulosProcesso]);
 
   useEffect(() => {
+    if (escopo.loading) return;
+
+    let ativo = true;
+    void (async () => {
+      const lista = await carregarProcessosDoEscopo(escopo.processoIds);
+      if (!ativo) return;
+      setTitulosProcesso(lista.map((p) => p.titulo).filter(Boolean));
+    })();
+
+    return () => {
+      ativo = false;
+    };
+  }, [escopo.loading, escopo.processoIds]);
+
+  const loadData = useCallback(async () => {
+    if (escopo.loading) return;
+
+    const temPropostas = podeModuloCliente(
+      escopo.mestre,
+      escopo.modulos,
+      "propostas"
+    );
+    const temEditais = podeModuloCliente(
+      escopo.mestre,
+      escopo.modulos,
+      "editais"
+    );
+    const temNoticias = podeModuloCliente(
+      escopo.mestre,
+      escopo.modulos,
+      "noticias"
+    );
+    const temEventos = podeModuloCliente(
+      escopo.mestre,
+      escopo.modulos,
+      "eventos"
+    );
+    const temTransparencia = podeModuloCliente(
+      escopo.mestre,
+      escopo.modulos,
+      "transparencia"
+    );
+    const temLogs =
+      escopo.mestre ||
+      podeModuloCliente(escopo.mestre, escopo.modulos, "logs");
+
+    if (temPropostas) {
+      // Mesma base da listagem /admin/propostas (com escopo de processo).
+      const { data: propostasData } = await supabase
+        .from("propostas")
+        .select("id, editais(processo_id)");
+
+      const totalPropostasEscopo = ((propostasData || []) as Array<{
+        id: string;
+        editais?:
+          | { processo_id?: string | null }
+          | { processo_id?: string | null }[]
+          | null;
+      }>).filter((proposta) => {
+        const edital = Array.isArray(proposta.editais)
+          ? proposta.editais[0]
+          : proposta.editais;
+        return registroNoEscopoProcesso(edital?.processo_id, escopo.processoIds);
+      }).length;
+
+      setTotalPropostas(totalPropostasEscopo);
+    } else {
+      setTotalPropostas(0);
+    }
+
+    if (temEditais) {
+      // Mesma regra do site publico: fora de rascunho e aberto ao envio.
+      const { data: editaisData } = await supabase
+        .from("editais")
+        .select("status,fase_atual,processo_id");
+
+      const editaisAbertos = ((editaisData || []) as Array<
+        EditalResumo & { processo_id?: string | null }
+      >).filter(
+        (edital) =>
+          registroNoEscopoProcesso(edital.processo_id, escopo.processoIds) &&
+          editalVisivelNoSitePublico(edital) &&
+          editalAceitaEnvioProposta(edital)
+      ).length;
+
+      setEditaisAtivos(editaisAbertos);
+    } else {
+      setEditaisAtivos(0);
+    }
+
+    if (temNoticias) {
+      const { data: noticiasData } = await supabase
+        .from("noticias")
+        .select("id, processo_id, publicado")
+        .eq("publicado", true);
+
+      const noticiasCount = ((noticiasData || []) as Array<{
+        processo_id?: string | null;
+      }>).filter((n) =>
+        registroNoEscopoProcesso(n.processo_id, escopo.processoIds)
+      ).length;
+
+      setNoticiasPublicadas(noticiasCount);
+    } else {
+      setNoticiasPublicadas(0);
+    }
+
+    if (temEventos) {
+      const { data: eventosData } = await supabase
+        .from("eventos")
+        .select("id, processo_id, publicado")
+        .eq("publicado", true);
+
+      const eventosCount = ((eventosData || []) as Array<{
+        processo_id?: string | null;
+      }>).filter((e) =>
+        registroNoEscopoProcesso(e.processo_id, escopo.processoIds)
+      ).length;
+
+      setEventosPublicados(eventosCount);
+    } else {
+      setEventosPublicados(0);
+    }
+
+    if (temTransparencia) {
+      const [convR, editR, prestR] = await Promise.all([
+        supabase
+          .from("transparencia_convenios")
+          .select("id, processo_id, publicado"),
+        supabase
+          .from("transparencia_editais")
+          .select("id, processo_id, publicado"),
+        supabase
+          .from("transparencia_prestacao_contas")
+          .select("id, processo_id, publicado"),
+      ]);
+
+      const pendentes = [
+        ...(((convR.data || []) as Array<{
+          processo_id?: string | null;
+          publicado?: boolean | null;
+        }>)),
+        ...(((editR.data || []) as Array<{
+          processo_id?: string | null;
+          publicado?: boolean | null;
+        }>)),
+        ...(((prestR.data || []) as Array<{
+          processo_id?: string | null;
+          publicado?: boolean | null;
+        }>)),
+      ].filter(
+        (row) =>
+          row.publicado === false &&
+          registroNoEscopoProcesso(row.processo_id, escopo.processoIds)
+      ).length;
+
+      setRascunhosTransparencia(pendentes);
+    } else {
+      setRascunhosTransparencia(0);
+    }
+
+    if (temLogs) {
+      const { data } = await supabase
+        .from("admin_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      if (data) {
+        setLogs(data);
+
+        if (data.length > 0 && data[0].created_at) {
+          setUltimaAtualizacao(
+            new Date(data[0].created_at).toLocaleString("pt-BR")
+          );
+        } else {
+          setUltimaAtualizacao("-");
+        }
+      }
+    } else {
+      setLogs([]);
+      setUltimaAtualizacao("-");
+    }
+
+    setSincronizadoEm(new Date().toLocaleString("pt-BR"));
+  }, [escopo.loading, escopo.mestre, escopo.modulos, escopo.processoIds]);
+
+  useEffect(() => {
+    if (escopo.loading) return;
+
     loadData();
-  }, []);
 
-  async function loadData() {
-    const { count } = await supabase
-      .from("propostas")
-      .select("*", { count: "exact", head: true });
-
-    setTotalPropostas(count || 0);
-
-    const { count: editaisCount } = await supabase
-      .from("editais")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "aberto");
-
-    setEditaisAtivos(editaisCount || 0);
-
-    const { count: noticiasCount } = await supabase
-      .from("noticias")
-      .select("*", { count: "exact", head: true })
-      .eq("publicado", true);
-
-    setNoticiasPublicadas(noticiasCount || 0);
-
-    const { count: eventosCount } = await supabase
-      .from("eventos")
-      .select("*", { count: "exact", head: true })
-      .eq("publicado", true);
-
-    setEventosPublicados(eventosCount || 0);
-
-    const { data } = await supabase
-      .from("admin_logs")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(100);
-
-    if (data) {
-      setLogs(data);
-
-      if (data.length > 0) {
-        setUltimaAtualizacao(new Date(data[0].created_at).toLocaleString());
+    function recarregarSeVisivel() {
+      if (document.visibilityState === "visible") {
+        loadData();
       }
     }
-  }
 
-  const totalAcoes = logs.length;
+    window.addEventListener("focus", loadData);
+    document.addEventListener("visibilitychange", recarregarSeVisivel);
+
+    const pollId = window.setInterval(loadData, 12000);
+
+    const channel = supabase
+      .channel("admin-dashboard-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "propostas" },
+        () => {
+          loadData();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "editais" },
+        () => {
+          loadData();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "noticias" },
+        () => {
+          loadData();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "eventos" },
+        () => {
+          loadData();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "admin_logs" },
+        () => {
+          loadData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      window.removeEventListener("focus", loadData);
+      document.removeEventListener("visibilitychange", recarregarSeVisivel);
+      window.clearInterval(pollId);
+      supabase.removeChannel(channel);
+    };
+  }, [escopo.loading, loadData]);
+
   const insert = logs.filter((l) => l.acao === "INSERT").length;
   const update = logs.filter((l) => l.acao === "UPDATE").length;
   const del = logs.filter((l) => l.acao === "DELETE").length;
@@ -151,106 +397,236 @@ export default function AdminDashboardClient({ userEmail }: Props) {
   const recentes = logs.slice(0, 8);
   const temAtividade = values.some((value) => value > 0);
 
+  const quickLinks: Array<{ href: string; title: string; text: string }> = [];
+  if (pode("noticias")) {
+    quickLinks.push({
+      href: "/admin/noticias/form",
+      title: "Nova noticia",
+      text: "Publicar comunicado",
+    });
+  }
+  if (pode("eventos")) {
+    quickLinks.push({
+      href: "/admin/eventos/form",
+      title: "Novo evento",
+      text: "Cadastrar agenda",
+    });
+  }
+  if (pode("editais")) {
+    quickLinks.push({
+      href: "/admin/editais",
+      title: "Editais e governanca",
+      text: "Publicacao, fases e documentos",
+    });
+  }
+  if (pode("propostas")) {
+    quickLinks.push({
+      href: "/admin/propostas",
+      title: "Propostas",
+      text: "Acompanhar inscricoes",
+    });
+  }
+  if (pode("transparencia")) {
+    quickLinks.push({
+      href: "/admin/paginas/transparencia",
+      title: "Transparencia",
+      text: "Fechar ciclo: convenios e prestacao",
+    });
+  }
+  if (pode("projetos")) {
+    quickLinks.push({
+      href: "/admin/paginas/projetos",
+      title: "Projetos",
+      text: "Conteudo publico do processo",
+    });
+  }
+
   return (
     <div style={styles.wrapper}>
-      <div style={styles.quickGrid}>
-        <QuickLink href="/admin/noticias/form" title="Nova noticia" text="Publicar comunicado" />
-        <QuickLink href="/admin/eventos/form" title="Novo evento" text="Cadastrar agenda" />
-        <QuickLink href="/admin/editais" title="Editais e governanca" text="Publicacao, fases e documentos" />
-        <QuickLink href="/admin/paginas/transparencia" title="Transparencia" text="Atualizar prestacao" />
+      <div style={styles.escopoBanner}>
+        <span style={styles.escopoLabel}>Escopo</span>
+        <strong style={styles.escopoTitle}>{rotuloEscopo}</strong>
       </div>
+
+      {quickLinks.length > 0 && (
+        <div style={styles.quickGrid}>
+          {quickLinks.map((link) => (
+            <QuickLink
+              key={link.href}
+              href={link.href}
+              title={link.title}
+              text={link.text}
+            />
+          ))}
+        </div>
+      )}
+
+      <p style={styles.liveHint}>
+        Dados ao vivo do banco · sincronizado em {sincronizadoEm}
+      </p>
 
       <div style={styles.kpiGrid}>
-        <MetricCard title="Propostas recebidas" value={totalPropostas} tone="green" />
-        <MetricCard title="Editais abertos" value={editaisAtivos} tone="blue" />
-        <MetricCard title="Noticias publicadas" value={noticiasPublicadas} tone="slate" />
-        <MetricCard title="Eventos publicados" value={eventosPublicados} tone="cyan" />
-        <MetricCard title="Acoes registradas" value={totalAcoes} tone="slate" />
-        <MetricCard title="Ultima atualizacao" value={ultimaAtualizacao} tone="cyan" compact />
+        {pode("propostas") && (
+          <MetricCard
+            title="Propostas recebidas"
+            value={totalPropostas}
+            tone="green"
+          />
+        )}
+        {pode("editais") && (
+          <MetricCard
+            title="Editais abertos no site"
+            value={editaisAtivos}
+            tone="blue"
+          />
+        )}
+        {pode("noticias") && (
+          <MetricCard
+            title="Noticias publicadas"
+            value={noticiasPublicadas}
+            tone="slate"
+          />
+        )}
+        {pode("eventos") && (
+          <MetricCard
+            title="Eventos publicados"
+            value={eventosPublicados}
+            tone="cyan"
+          />
+        )}
+        {pode("transparencia") && (
+          <MetricCard
+            title="Transparencia pendente"
+            value={rascunhosTransparencia}
+            tone="slate"
+          />
+        )}
+        {podeVerLogs && (
+          <MetricCard
+            title="Ultima acao"
+            value={ultimaAtualizacao}
+            tone="cyan"
+            compact
+          />
+        )}
       </div>
 
-      <div style={styles.mainGrid}>
-        <section style={styles.chartCard}>
-          <div style={styles.cardHeader}>
-            <div>
-              <h3 style={styles.darkTitle}>Atividade recente</h3>
-              <p style={styles.darkSub}>Movimentacao dos ultimos registros administrativos.</p>
-            </div>
-            <span style={styles.lightBadge}>7 dias</span>
-          </div>
-          {temAtividade ? (
-            <div style={styles.chartBox}>
-              <Line data={chartData} options={chartOptions as any} />
-            </div>
-          ) : (
-            <div style={styles.emptyChart}>
-              <div style={styles.emptyIcon}>0</div>
-              <strong>Nenhuma atividade recente</strong>
-              <span>Quando houver salvamentos no admin, o grafico aparece aqui.</span>
-            </div>
-          )}
-        </section>
+      {podeVerLogs ? (
+        <>
+          <div style={styles.mainGrid}>
+            <section style={styles.chartCard}>
+              <div style={styles.cardHeader}>
+                <div>
+                  <h3 style={styles.darkTitle}>Atividade recente</h3>
+                  <p style={styles.darkSub}>
+                    Movimentacao dos ultimos registros administrativos.
+                  </p>
+                </div>
+                <span style={styles.lightBadge}>7 dias</span>
+              </div>
+              {temAtividade ? (
+                <div style={styles.chartBox}>
+                  <Line data={chartData} options={chartOptions as any} />
+                </div>
+              ) : (
+                <div style={styles.emptyChart}>
+                  <div style={styles.emptyIcon}>0</div>
+                  <strong>Nenhuma atividade recente</strong>
+                  <span>
+                    Quando houver salvamentos no admin, o grafico aparece aqui.
+                  </span>
+                </div>
+              )}
+            </section>
 
+            <section style={styles.actionPanel}>
+              <h3 style={styles.panelTitle}>Atividade do Sistema</h3>
+              <p style={styles.panelSub}>
+                Resumo rapido por tipo de alteracao.
+              </p>
+
+              <div style={styles.smallGrid}>
+                <SmallCard title="Inclusao" value={insert} color="#22c55e" />
+                <SmallCard title="Atualizacao" value={update} color="#38bdf8" />
+                <SmallCard title="Exclusao" value={del} color="#ef4444" />
+              </div>
+
+              <div style={styles.userBox}>
+                <span style={styles.userLabel}>Operador</span>
+                <strong>{userEmail}</strong>
+              </div>
+            </section>
+          </div>
+
+          <section style={styles.tableCard}>
+            <div style={{ ...styles.cardHeader, ...styles.tableHeader }}>
+              <div>
+                <h3 style={styles.tableTitle}>Ultimas acoes administrativas</h3>
+                <p style={styles.tableSub}>
+                  Auditoria resumida dos registros mais recentes.
+                </p>
+              </div>
+            </div>
+
+            <div style={styles.tableWrap}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Acao</th>
+                    <th style={styles.th}>Tabela</th>
+                    <th style={styles.th}>Usuario</th>
+                    <th style={styles.th}>Data</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentes.length === 0 ? (
+                    <tr>
+                      <td style={styles.emptyCell} colSpan={4}>
+                        Nenhuma atividade encontrada.
+                      </td>
+                    </tr>
+                  ) : (
+                    recentes.map((log, index) => (
+                      <tr
+                        key={log.id ?? index}
+                        style={index % 2 ? styles.trAlt : styles.tr}
+                      >
+                        <td style={styles.td}>
+                          <span style={badgeStyle(log.acao)}>
+                            {labelAcaoAdmin(log.acao)}
+                          </span>
+                        </td>
+                        <td style={styles.td}>{log.tabela || "-"}</td>
+                        <td style={styles.td}>{log.user_email || "-"}</td>
+                        <td style={styles.td}>
+                          {log.created_at
+                            ? new Date(log.created_at).toLocaleString("pt-BR")
+                            : "-"}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </>
+      ) : (
         <section style={styles.actionPanel}>
-          <h3 style={styles.panelTitle}>Atividade do Sistema</h3>
-          <p style={styles.panelSub}>Resumo rapido por tipo de alteracao.</p>
-
-          <div style={styles.smallGrid}>
-            <SmallCard title="INSERT" value={insert} color="#22c55e" />
-            <SmallCard title="UPDATE" value={update} color="#38bdf8" />
-            <SmallCard title="DELETE" value={del} color="#ef4444" />
-          </div>
-
+          <h3 style={styles.panelTitle}>Painel do processo</h3>
+          <p style={styles.panelSub}>
+            Resumo operacional do seu escopo. Use os atalhos acima para
+            navegar nos modulos liberados.
+          </p>
           <div style={styles.userBox}>
             <span style={styles.userLabel}>Operador</span>
             <strong>{userEmail}</strong>
+            <span style={{ color: "#93c5fd", marginTop: 6 }}>
+              {rotuloEscopo}
+            </span>
           </div>
         </section>
-      </div>
-
-      <section style={styles.tableCard}>
-        <div style={{ ...styles.cardHeader, ...styles.tableHeader }}>
-          <div>
-            <h3 style={styles.tableTitle}>Ultimas acoes administrativas</h3>
-            <p style={styles.tableSub}>Auditoria resumida dos registros mais recentes.</p>
-          </div>
-        </div>
-
-        <div style={styles.tableWrap}>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>Acao</th>
-                <th style={styles.th}>Tabela</th>
-                <th style={styles.th}>Usuario</th>
-                <th style={styles.th}>Data</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentes.length === 0 ? (
-                <tr>
-                  <td style={styles.emptyCell} colSpan={4}>
-                    Nenhuma atividade encontrada.
-                  </td>
-                </tr>
-              ) : (
-                recentes.map((log, index) => (
-                  <tr key={log.id ?? index} style={index % 2 ? styles.trAlt : styles.tr}>
-                    <td style={styles.td}>
-                      <span style={badgeStyle(log.acao)}>{log.acao || "-"}</span>
-                    </td>
-                    <td style={styles.td}>{log.tabela || "-"}</td>
-                    <td style={styles.td}>{log.user_email || "-"}</td>
-                    <td style={styles.td}>
-                      {log.created_at ? new Date(log.created_at).toLocaleString() : "-"}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      )}
     </div>
   );
 }
@@ -269,12 +645,22 @@ function MetricCard({
   return (
     <div style={{ ...styles.metricCard, ...metricTone[tone] }}>
       <div style={styles.metricLabel}>{title}</div>
-      <div style={compact ? styles.metricValueCompact : styles.metricValue}>{value}</div>
+      <div style={compact ? styles.metricValueCompact : styles.metricValue}>
+        {value}
+      </div>
     </div>
   );
 }
 
-function SmallCard({ title, value, color }: { title: string; value: number; color: string }) {
+function SmallCard({
+  title,
+  value,
+  color,
+}: {
+  title: string;
+  value: number;
+  color: string;
+}) {
   return (
     <div style={styles.smallCard}>
       <div style={{ ...styles.smallValue, color }}>{value}</div>
@@ -283,7 +669,15 @@ function SmallCard({ title, value, color }: { title: string; value: number; colo
   );
 }
 
-function QuickLink({ href, title, text }: { href: string; title: string; text: string }) {
+function QuickLink({
+  href,
+  title,
+  text,
+}: {
+  href: string;
+  title: string;
+  text: string;
+}) {
   return (
     <Link href={href} style={styles.quickLink}>
       <span style={styles.quickTitle}>{title}</span>
@@ -294,7 +688,13 @@ function QuickLink({ href, title, text }: { href: string; title: string; text: s
 
 function badgeStyle(acao?: string) {
   const color =
-    acao === "INSERT" ? "#16a34a" : acao === "UPDATE" ? "#0284c7" : acao === "DELETE" ? "#dc2626" : "#64748b";
+    acao === "INSERT"
+      ? "#16a34a"
+      : acao === "UPDATE"
+        ? "#0284c7"
+        : acao === "DELETE"
+          ? "#dc2626"
+          : "#64748b";
 
   return {
     ...styles.badge,
@@ -328,6 +728,36 @@ const styles: any = {
     display: "flex",
     flexDirection: "column",
     gap: 18,
+  },
+
+  escopoBanner: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 4,
+    padding: "12px 14px",
+    borderRadius: 14,
+    background: "rgba(14, 165, 233, 0.10)",
+    border: "1px solid rgba(125, 211, 252, 0.28)",
+  },
+
+  escopoLabel: {
+    color: "#7dd3fc",
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: "0.12em",
+    textTransform: "uppercase",
+  },
+
+  escopoTitle: {
+    color: "#e0f2fe",
+    fontSize: 15,
+    fontWeight: 800,
+  },
+
+  liveHint: {
+    margin: 0,
+    fontSize: 12,
+    color: "#64748b",
   },
 
   quickGrid: {

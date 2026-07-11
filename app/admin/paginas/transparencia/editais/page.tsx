@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { AdminButton, AdminLoadingButton, AdminInput, AdminTextarea, AdminSelect, AdminFileInput, AdminSectionHeader, spacing, borderRadius, shadows, sizes, typography } from "@/components/admin";
+import { registroNoEscopoProcesso } from "@/lib/auth/adminEscopo";
+import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,6 +14,7 @@ const supabase = createClient(
 type Edital = {
   id?: string;
   edital_id?: string | null;
+  processo_id?: string | null;
   status_fase?: string | null;
   resultado_preliminar_titulo?: string | null;
   resultado_preliminar_url?: string | null;
@@ -27,9 +30,10 @@ type Edital = {
   publicado?: boolean | null;
 };
 
-function novoEdital(): Edital {
+function novoEdital(processoId?: string | null): Edital {
   return {
     edital_id: "",
+    processo_id: processoId || null,
     status_fase: "",
     resultado_preliminar_titulo: "",
     resultado_preliminar_url: "",
@@ -264,14 +268,22 @@ function emptyToNull(value?: string | null) {
 }
 
 export default function TransparenciaEditaisAdmin() {
+  const escopo = useAdminEscopoCliente();
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
   const [blockMsgs, setBlockMsgs] = useState<Record<number, string>>({});
   const [editais, setEditais] = useState<Edital[]>([]);
 
+  const processoPadrao =
+    escopo.processoIds === "todos"
+      ? null
+      : escopo.processoIds[0] || null;
+
   useEffect(() => {
-    carregar();
-  }, []);
+    if (escopo.loading) return;
+    void carregar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [escopo.loading, escopo.processoIds]);
 
   async function carregar() {
     setLoading(true);
@@ -280,12 +292,15 @@ export default function TransparenciaEditaisAdmin() {
     if (error) {
       console.error("Erro ao carregar editais:", error);
       setMsg(`Erro ao carregar editais: ${error.message}`);
-      setEditais([novoEdital()]);
+      setEditais([novoEdital(processoPadrao)]);
       setLoading(false);
       return;
     }
 
-    setEditais(data && data.length > 0 ? data : [novoEdital()]);
+    const filtrados = ((data || []) as Edital[]).filter((item) =>
+      registroNoEscopoProcesso(item.processo_id, escopo.processoIds)
+    );
+    setEditais(filtrados.length > 0 ? filtrados : [novoEdital(processoPadrao)]);
     setLoading(false);
   }
 
@@ -323,7 +338,7 @@ async function handleUpload(e: React.ChangeEvent<HTMLInputElement>, index: numbe
   setBlockMsg(index, "Arquivo enviado. Clique em salvar bloco.");
 }
   function adicionarBloco() {
-    setEditais((prev) => [...prev, novoEdital()]);
+    setEditais((prev) => [...prev, novoEdital(processoPadrao)]);
     setMsg("Novo bloco de edital adicionado.");
   }
 
@@ -348,6 +363,7 @@ async function handleUpload(e: React.ChangeEvent<HTMLInputElement>, index: numbe
 
       const payload = {
         edital_id: editalTexto,
+        processo_id: item.processo_id || processoPadrao,
         status_fase: item.status_fase.trim(),
         resultado_preliminar_titulo: emptyToNull(item.resultado_preliminar_titulo),
         resultado_preliminar_url: emptyToNull(item.resultado_preliminar_url),
@@ -399,6 +415,7 @@ async function handleUpload(e: React.ChangeEvent<HTMLInputElement>, index: numbe
 
     const payload = {
       edital_id: editalTexto,
+      processo_id: item.processo_id || processoPadrao,
       status_fase: item.status_fase.trim(),
       resultado_preliminar_titulo: emptyToNull(item.resultado_preliminar_titulo),
       resultado_preliminar_url: emptyToNull(item.resultado_preliminar_url),
@@ -446,7 +463,7 @@ async function handleUpload(e: React.ChangeEvent<HTMLInputElement>, index: numbe
   if (!id) {
     setEditais((prev) => {
       const nova = prev.filter((_, i) => i !== idx);
-      return nova.length > 0 ? nova : [novoEdital()];
+      return nova.length > 0 ? nova : [novoEdital(processoPadrao)];
     });
 
     setBlockMsg(idx, "Bloco removido da tela.");
@@ -469,7 +486,7 @@ async function handleUpload(e: React.ChangeEvent<HTMLInputElement>, index: numbe
   // 🔥 remove direto da tela sem recarregar
   setEditais((prev) => {
     const nova = prev.filter((_, i) => i !== idx);
-    return nova.length > 0 ? nova : [novoEdital()];
+    return nova.length > 0 ? nova : [novoEdital(processoPadrao)];
   });
 
   setBlockMsg(idx, "Bloco excluído com sucesso.");

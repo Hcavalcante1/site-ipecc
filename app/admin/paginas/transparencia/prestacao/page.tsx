@@ -13,12 +13,20 @@ import PrestacaoCard from "./components/PrestacaoCard";
 import classes from "./page.module.css";
 import { AdminButton, AdminMessage, AdminSectionHeader, spacing, borderRadius, shadows, sizes, typography } from "@/components/admin";
 import { Convenio, PrestacaoConta, LoadingOperationType, FASE_OPTIONS, STATUS_OPTIONS, TIPO_DOCUMENTO_OPTIONS } from "./index";
+import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
 
 import { useEffect, useState } from "react";
 
-function novaPrestacao(): PrestacaoConta {
+function processoPadrao(processoIds: string[] | "todos"): string | null {
+  if (processoIds === "todos") return null;
+  if (processoIds.length === 1) return processoIds[0];
+  return processoIds[0] || null;
+}
+
+function novaPrestacao(processoId?: string | null): PrestacaoConta {
   return {
     convenio_id: "",
+    processo_id: processoId || null,
     fase_prestacao: "",
     status_prestacao: "",
     tipo_documento: "",
@@ -301,60 +309,65 @@ function emptyNumberToNull(value?: number | null) {
 }
 
 export default function TransparenciaPrestacaoAdmin() {
-
-async function handleUploadPrestacao(
-  e: React.ChangeEvent<HTMLInputElement>,
-  index: number
-) {
-  const file = e.target.files?.[0];
-  if (!file) return;
-
-  setLoadingIndex(index);
-  setLoadingOperationType('upload');
-  setBlockMsg(index, "Enviando...");
-
-  try {
-    const url = await uploadPdfToSupabase({
-      file,
-      bucket: "docs",
-      folder: "transparencia/prestacao",
-      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      supabaseClient: supabase,
-    });
-
-    updatePrestacao(index, "documento_url", url);
-    setSuccess(index, "Upload realizado");
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Erro no upload.";
-    setError(index, message);
-  } finally {
-    setLoadingIndex(null);
-    setLoadingOperationType(null);
-    e.target.value = "";
-  }
-}
-
+  const escopo = useAdminEscopoCliente();
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
   const [blockMsgs, setBlockMsgs] = useState<Record<number, string>>({});
   const [loadingIndex, setLoadingIndex] = useState<number | null>(null);
-  const [loadingOperationType, setLoadingOperationType] = useState<LoadingOperationType>(null);
+  const [loadingOperationType, setLoadingOperationType] =
+    useState<LoadingOperationType>(null);
   const [convenios, setConvenios] = useState<Convenio[]>([]);
   const [prestacoes, setPrestacoes] = useState<PrestacaoConta[]>([]);
 
+  async function handleUploadPrestacao(
+    e: React.ChangeEvent<HTMLInputElement>,
+    index: number
+  ) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setLoadingIndex(index);
+    setLoadingOperationType("upload");
+    setBlockMsg(index, "Enviando...");
+
+    try {
+      const url = await uploadPdfToSupabase({
+        file,
+        bucket: "docs",
+        folder: "transparencia/prestacao",
+        supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        supabaseClient: supabase,
+      });
+
+      updatePrestacao(index, "documento_url", url);
+      setSuccess(index, "Upload realizado");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erro no upload.";
+      setError(index, message);
+    } finally {
+      setLoadingIndex(null);
+      setLoadingOperationType(null);
+      e.target.value = "";
+    }
+  }
+
   useEffect(() => {
+    if (escopo.loading) return;
+
     async function load() {
-      let conveniosData = [];
-      let prestacoesData = [];
+      setLoading(true);
+      let conveniosData: Convenio[] = [];
+      let prestacoesData: PrestacaoConta[] = [];
+      const pid = processoPadrao(escopo.processoIds);
 
       try {
-        conveniosData = await getConvenios();
+        conveniosData = await getConvenios(escopo.processoIds);
       } catch (error) {
         console.error("Erro ao carregar convênios:", error);
       }
 
       try {
-        prestacoesData = await getPrestacoes();
+        prestacoesData = await getPrestacoes(escopo.processoIds);
       } catch (error) {
         console.error("Erro ao carregar prestações:", error);
       }
@@ -363,14 +376,14 @@ async function handleUploadPrestacao(
       setPrestacoes(
         prestacoesData && prestacoesData.length > 0
           ? prestacoesData
-          : [novaPrestacao()]
+          : [novaPrestacao(pid)]
       );
 
       setLoading(false);
     }
 
-    load();
-  }, []);
+    void load();
+  }, [escopo.loading, escopo.processoIds]);
 
   function setBlockMsg(index: number, message: string) {
     setBlockMsgs((prev) => ({ ...prev, [index]: message }));
@@ -405,7 +418,10 @@ async function handleUploadPrestacao(
 }
 
   function adicionarPrestacao() {
-    setPrestacoes((prev) => [...prev, novaPrestacao()]);
+    setPrestacoes((prev) => [
+      ...prev,
+      novaPrestacao(processoPadrao(escopo.processoIds)),
+    ]);
     setMsg("Novo bloco de prestação adicionado.");
   }
 
@@ -425,8 +441,12 @@ async function handleUploadPrestacao(
 
   async function recarregarPrestacoes(successMsg?: string) {
     try {
-      const data = await getPrestacoes();
-      setPrestacoes(data && data.length > 0 ? data : [novaPrestacao()]);
+      const data = await getPrestacoes(escopo.processoIds);
+      setPrestacoes(
+        data && data.length > 0
+          ? data
+          : [novaPrestacao(processoPadrao(escopo.processoIds))]
+      );
       if (successMsg) setMsg(successMsg);
     } catch (error) {
       console.error(error);
@@ -506,6 +526,10 @@ async function handleUploadPrestacao(
         await savePrestacao({
           ...item,
           convenio_id: item.convenio_id,
+          processo_id:
+            item.processo_id ||
+            convenios.find((c) => c.id === item.convenio_id)?.processo_id ||
+            processoPadrao(escopo.processoIds),
           fase_prestacao: item.fase_prestacao,
           status_prestacao: item.status_prestacao,
           tipo_documento: item.tipo_documento,
@@ -595,6 +619,10 @@ await logAction({
     const response = await savePrestacao({
       ...item,
       convenio_id: item.convenio_id,
+      processo_id:
+        item.processo_id ||
+        convenios.find((c) => c.id === item.convenio_id)?.processo_id ||
+        processoPadrao(escopo.processoIds),
       fase_prestacao: item.fase_prestacao,
       status_prestacao: item.status_prestacao,
       tipo_documento: item.tipo_documento,

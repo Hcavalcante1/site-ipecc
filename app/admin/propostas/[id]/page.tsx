@@ -198,10 +198,38 @@ export default function Page() {
   }, [proposta, cnpjProposta]);
 
   async function excluirProposta() {
+    if (!id) return;
     if (!confirm("Deseja excluir esta proposta?")) return;
 
-    await supabase.from("propostas").delete().eq("id", id);
+    // Exclusao real via service role (client RLS pode "suceder" sem apagar nenhuma linha).
+    const res = await fetch("/api/admin/mutate", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        table: "propostas",
+        action: "delete",
+        filters: [{ column: "id", value: id }],
+        select: "id",
+      }),
+    });
+
+    const json = (await res.json().catch(() => ({}))) as {
+      ok?: boolean;
+      error?: string;
+    };
+
+    if (!res.ok || !json.ok) {
+      triggerToast(
+        `Erro ao excluir proposta: ${json.error || "falha na exclusao"}`,
+        "error"
+      );
+      return;
+    }
+
+    triggerToast("Proposta excluida com sucesso.", "success");
     router.push("/admin/propostas");
+    router.refresh();
   }
 
   async function atualizarStatus(status: "aprovado" | "rejeitado") {
@@ -221,6 +249,33 @@ export default function Page() {
       status === "aprovado" ? "Proposta aprovada." : "Proposta rejeitada.",
       "success"
     );
+
+    if (status === "aprovado") {
+      const ponte = await fetch("/api/admin/transparencia/ponte", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          acao: "convenio_de_proposta",
+          propostaId: id,
+        }),
+      })
+        .then((r) => r.json())
+        .catch(() => null);
+
+      if (ponte?.ok) {
+        triggerToast(
+          ponte.message || "Rascunho de convenio criado na Transparencia.",
+          "success"
+        );
+      } else if (ponte?.error) {
+        triggerToast(
+          `Proposta aprovada, mas a ponte falhou: ${ponte.error}`,
+          "error"
+        );
+      }
+    }
+
     await carregarProposta();
   }
 
@@ -387,6 +442,16 @@ export default function Page() {
               {getRotuloVinculoProposta(proposta.status)}
             </span>
           </p>
+          {propostaTemVinculoOficial(proposta.status) ? (
+            <p style={{ marginTop: 10, marginBottom: 0 }}>
+              <a
+                href="/admin/paginas/transparencia/convenios"
+                style={{ color: "#93c5fd", fontWeight: 700 }}
+              >
+                Abrir rascunhos de convenio na Transparencia
+              </a>
+            </p>
+          ) : null}
         </div>
 
         <div style={cardStyle}>

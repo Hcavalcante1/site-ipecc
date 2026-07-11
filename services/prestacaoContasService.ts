@@ -1,11 +1,14 @@
 import { supabase } from "@/lib/supabaseClient";
+import { registroNoEscopoProcesso } from "@/lib/auth/adminEscopo";
 import type { Convenio, PrestacaoConta } from "@/app/admin/paginas/transparencia/prestacao/types";
 
-export async function getConvenios(): Promise<Convenio[]> {
+export async function getConvenios(
+  processoIds: string[] | "todos" = "todos"
+): Promise<Convenio[]> {
   const { data, error } = await supabase
     .from("transparencia_convenios")
     .select(
-      "id, titulo, numero_instrumento, tipo_instrumento, contratado, vigencia_inicio, vigencia_fim, status"
+      "id, titulo, numero_instrumento, tipo_instrumento, contratado, vigencia_inicio, vigencia_fim, status, processo_id"
     )
     .order("ordem", { ascending: true });
 
@@ -13,10 +16,14 @@ export async function getConvenios(): Promise<Convenio[]> {
     throw error;
   }
 
-  return data || [];
+  return ((data || []) as Convenio[]).filter((item) =>
+    registroNoEscopoProcesso(item.processo_id, processoIds)
+  );
 }
 
-export async function getPrestacoes(): Promise<PrestacaoConta[]> {
+export async function getPrestacoes(
+  processoIds: string[] | "todos" = "todos"
+): Promise<PrestacaoConta[]> {
   const { data, error } = await supabase
     .from("transparencia_prestacao_contas")
     .select("*")
@@ -26,7 +33,19 @@ export async function getPrestacoes(): Promise<PrestacaoConta[]> {
     throw error;
   }
 
-  return data || [];
+  const rows = (data || []) as PrestacaoConta[];
+  if (processoIds === "todos") return rows;
+
+  const conveniosEscopo = await getConvenios(processoIds);
+  const convenioIds = new Set(
+    conveniosEscopo.map((c) => c.id).filter((id): id is string => Boolean(id))
+  );
+
+  return rows.filter((item) => {
+    if (registroNoEscopoProcesso(item.processo_id, processoIds)) return true;
+    if (item.convenio_id && convenioIds.has(item.convenio_id)) return true;
+    return false;
+  });
 }
 
 export async function savePrestacao(
@@ -34,6 +53,7 @@ export async function savePrestacao(
 ): Promise<PrestacaoConta> {
   const record = {
     convenio_id: payload.convenio_id,
+    processo_id: payload.processo_id || null,
     fase_prestacao: payload.fase_prestacao,
     status_prestacao: payload.status_prestacao,
     tipo_documento: payload.tipo_documento,
