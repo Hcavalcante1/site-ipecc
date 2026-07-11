@@ -23,7 +23,8 @@
 .admin-wrapper {
   min-height: auto;
   display: grid;
-  grid-template-columns: 180px minmax(0, 1fr);
+  /* Largura util do menu: 180px ficou estreito apos Processos/Acessos + secoes */
+  grid-template-columns: 240px minmax(0, 1fr);
 }
 
 .admin-mobile-header,
@@ -45,6 +46,7 @@
   overflow-y: auto;
   z-index: 10;
   border-radius: 0 18px 18px 0;
+  min-width: 240px;
 }
 
 /* Logo do painel */
@@ -91,11 +93,11 @@
 }
 
 .admin-nav-section-title {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.08em;
   opacity: 0.6;
-  margin: 12px 4px 6px;
+  margin: 10px 4px 4px;
 }
 
 .admin-nav-separator {
@@ -108,13 +110,14 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 10px;
+  padding: 8px 12px;
   margin: 2px 0;
   border-radius: 999px;
   font-size: 0.9rem;
   text-decoration: none;
   color: #e5e7eb;
   opacity: 0.9;
+  white-space: nowrap;
   transition: background 0.15s ease, transform 0.12s ease, opacity 0.15s ease;
 }
 
@@ -442,6 +445,7 @@ a.admin-button {
     bottom: auto;
     z-index: 2147483002;
     width: min(84vw, 310px);
+    min-width: 0;
     max-height: calc(100vh - 96px);
     display: block;
     overflow-y: auto;

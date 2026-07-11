@@ -219,11 +219,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </div>
           <p
             style={{
-              margin: "0 16px 12px",
-              fontSize: 12,
+              margin: "0 8px 10px",
+              fontSize: 11,
               opacity: 0.75,
               textTransform: "uppercase",
-              letterSpacing: "0.04em",
+              letterSpacing: "0.03em",
+              whiteSpace: "nowrap",
             }}
           >
             Perfil: {papel}
