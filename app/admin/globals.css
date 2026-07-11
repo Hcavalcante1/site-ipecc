@@ -23,7 +23,7 @@
 .admin-wrapper {
   min-height: auto;
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-columns: 180px minmax(0, 1fr);
 }
 
 .admin-mobile-header,
@@ -42,25 +42,9 @@
   align-self: start;
   height: auto;
   max-height: 100vh;
-  overflow-x: hidden;
   overflow-y: auto;
   z-index: 10;
   border-radius: 0 18px 18px 0;
-  width: 260px;
-  min-width: 260px;
-  max-width: 260px;
-  box-sizing: border-box;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
-}
-
-.admin-sidebar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.admin-sidebar::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.45);
-  border-radius: 999px;
 }
 
 /* Logo do painel */
@@ -458,8 +442,6 @@ a.admin-button {
     bottom: auto;
     z-index: 2147483002;
     width: min(84vw, 310px);
-    min-width: 0;
-    max-width: none;
     max-height: calc(100vh - 96px);
     display: block;
     overflow-y: auto;

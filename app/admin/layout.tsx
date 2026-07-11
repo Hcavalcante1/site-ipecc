@@ -16,27 +16,6 @@ import { MODULOS_MESTRE } from "@/lib/auth/adminEscopo";
 const ADMIN_ACTIVE_KEY = "ipecc_admin_active";
 const ADMIN_CLOSED_KEY = "ipecc_admin_closed";
 
-type NavItem = { href: string; label: string; modulo?: AdminModulo };
-
-const NAV_CONTEUDO: NavItem[] = [
-  { href: "/admin/paginas", label: "Paginas", modulo: "paginas" },
-  { href: "/admin/editais", label: "Editais", modulo: "editais" },
-  { href: "/admin/noticias", label: "Noticias", modulo: "noticias" },
-  { href: "/admin/eventos", label: "Eventos", modulo: "eventos" },
-];
-
-const NAV_OPERACAO: NavItem[] = [
-  { href: "/admin/propostas", label: "Propostas", modulo: "propostas" },
-  { href: "/admin/certidoes", label: "Certidoes", modulo: "certidoes" },
-  { href: "/admin/whatsapp", label: "WhatsApp", modulo: "whatsapp" },
-  { href: "/admin/logs", label: "Logs", modulo: "logs" },
-];
-
-const NAV_GOVERNANCA: NavItem[] = [
-  { href: "/admin/processos", label: "Processos", modulo: "processos" },
-  { href: "/admin/acessos", label: "Acessos", modulo: "acessos" },
-];
-
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -46,7 +25,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   const pode = useMemo(() => {
     const set = new Set(modulos);
-    return (m?: AdminModulo) => (m ? set.has(m) : true);
+    return (m: AdminModulo) => set.has(m);
   }, [modulos]);
 
   useEffect(() => {
@@ -85,7 +64,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       }).catch(() => null);
 
       if (!sessionRes || !sessionRes.ok) {
-        // Fallback legado is_admin (antes do SQL Fase 1)
         const { data: isAdmin, error } = await supabase.rpc("is_admin", {
           user_id: user.id,
         });
@@ -103,7 +81,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
       const json = (await sessionRes.json()) as {
         ok?: boolean;
-        papel?: string;
         modulos?: AdminModulo[];
       };
 
@@ -168,10 +145,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     router.push(href);
   }
 
-  const conteudo = NAV_CONTEUDO.filter((i) => pode(i.modulo));
-  const operacao = NAV_OPERACAO.filter((i) => pode(i.modulo));
-  const governanca = NAV_GOVERNANCA.filter((i) => pode(i.modulo));
-
   return (
     <div className="admin-body">
       <header className="admin-mobile-header">
@@ -216,61 +189,69 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </div>
 
           <nav className="admin-nav">
-            <Link
-              href="/admin"
-              className={navClass(pathname, "/admin", true)}
-              onClick={(event) => handleMobileNav(event, "/admin")}
-            >
+            <Link href="/admin" className={navClass(pathname, "/admin", true)} onClick={(event) => handleMobileNav(event, "/admin")}>
               Dashboard
             </Link>
 
-            {conteudo.length > 0 ? (
-              <>
-                <div className="admin-nav-section-title">Conteudo</div>
-                {conteudo.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={navClass(pathname, item.href)}
-                    onClick={(event) => handleMobileNav(event, item.href)}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </>
-            ) : null}
+            <div className="admin-nav-section-title">Conteudo</div>
+            {pode("paginas") && (
+              <Link href="/admin/paginas" className={navClass(pathname, "/admin/paginas")} onClick={(event) => handleMobileNav(event, "/admin/paginas")}>
+                Paginas
+              </Link>
+            )}
+            {pode("editais") && (
+              <Link href="/admin/editais" className={navClass(pathname, "/admin/editais")} onClick={(event) => handleMobileNav(event, "/admin/editais")}>
+                Editais
+              </Link>
+            )}
+            {pode("noticias") && (
+              <Link href="/admin/noticias" className={navClass(pathname, "/admin/noticias")} onClick={(event) => handleMobileNav(event, "/admin/noticias")}>
+                Noticias
+              </Link>
+            )}
+            {pode("eventos") && (
+              <Link href="/admin/eventos" className={navClass(pathname, "/admin/eventos")} onClick={(event) => handleMobileNav(event, "/admin/eventos")}>
+                Eventos
+              </Link>
+            )}
 
-            {operacao.length > 0 ? (
-              <>
-                <div className="admin-nav-section-title">Operacao</div>
-                {operacao.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={navClass(pathname, item.href)}
-                    onClick={(event) => handleMobileNav(event, item.href)}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </>
-            ) : null}
+            <div className="admin-nav-section-title">Operacao</div>
+            {pode("propostas") && (
+              <Link href="/admin/propostas" className={navClass(pathname, "/admin/propostas")} onClick={(event) => handleMobileNav(event, "/admin/propostas")}>
+                Propostas
+              </Link>
+            )}
+            {pode("certidoes") && (
+              <Link href="/admin/certidoes" className={navClass(pathname, "/admin/certidoes")} onClick={(event) => handleMobileNav(event, "/admin/certidoes")}>
+                Certidoes
+              </Link>
+            )}
+            {pode("whatsapp") && (
+              <Link href="/admin/whatsapp" className={navClass(pathname, "/admin/whatsapp")} onClick={(event) => handleMobileNav(event, "/admin/whatsapp")}>
+                WhatsApp
+              </Link>
+            )}
+            {pode("logs") && (
+              <Link href="/admin/logs" className={navClass(pathname, "/admin/logs")} onClick={(event) => handleMobileNav(event, "/admin/logs")}>
+                Logs
+              </Link>
+            )}
 
-            {governanca.length > 0 ? (
+            {(pode("processos") || pode("acessos")) && (
               <>
                 <div className="admin-nav-section-title">Governanca</div>
-                {governanca.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={navClass(pathname, item.href)}
-                    onClick={(event) => handleMobileNav(event, item.href)}
-                  >
-                    {item.label}
+                {pode("processos") && (
+                  <Link href="/admin/processos" className={navClass(pathname, "/admin/processos")} onClick={(event) => handleMobileNav(event, "/admin/processos")}>
+                    Processos
                   </Link>
-                ))}
+                )}
+                {pode("acessos") && (
+                  <Link href="/admin/acessos" className={navClass(pathname, "/admin/acessos")} onClick={(event) => handleMobileNav(event, "/admin/acessos")}>
+                    Acessos
+                  </Link>
+                )}
               </>
-            ) : null}
+            )}
           </nav>
         </aside>
 
