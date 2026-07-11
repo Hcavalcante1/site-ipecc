@@ -12,6 +12,7 @@ import AdminButtonBridge from "@/components/AdminButtonBridge";
 import AdminFormBridge from "@/components/AdminFormBridge";
 import type { AdminModulo } from "@/lib/auth/adminEscopo";
 import { MODULOS_MESTRE } from "@/lib/auth/adminEscopo";
+import LogoutButton from "./components/LogoutButton";
 
 const ADMIN_ACTIVE_KEY = "ipecc_admin_active";
 const ADMIN_CLOSED_KEY = "ipecc_admin_closed";
@@ -22,6 +23,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const [checking, setChecking] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [modulos, setModulos] = useState<AdminModulo[]>([...MODULOS_MESTRE]);
+  const [userEmail, setUserEmail] = useState("");
 
   const pode = useMemo(() => {
     const set = new Set(modulos);
@@ -56,6 +58,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       if (!user) {
         router.replace("/login");
         return;
+      }
+
+      if (mounted) {
+        setUserEmail(user.email || "");
       }
 
       const sessionRes = await fetch("/api/admin/session", {
@@ -253,6 +259,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               </>
             )}
           </nav>
+
+          <div className="admin-sidebar-footer">
+            {userEmail ? (
+              <div className="admin-sidebar-footer-email">{userEmail}</div>
+            ) : null}
+            <LogoutButton />
+          </div>
         </aside>
 
         <main className="admin-main">
