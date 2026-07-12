@@ -151,6 +151,11 @@ export default function DigitalAdminPage() {
   const [editAccountIds, setEditAccountIds] = useState<string[]>([]);
   const [scheduleForId, setScheduleForId] = useState<string | null>(null);
   const [scheduleValue, setScheduleValue] = useState("");
+  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+  const [editAccLabel, setEditAccLabel] = useState("");
+  const [editAccHref, setEditAccHref] = useState("");
+  const [editAccHandle, setEditAccHandle] = useState("");
+  const [editAccProjetoRef, setEditAccProjetoRef] = useState("");
 
   const contasDestino = accounts.filter((a) => a.ativo);
 
@@ -259,6 +264,48 @@ export default function DigitalAdminPage() {
     const json = await res.json();
     if (!res.ok || !json.ok) setAviso(json.error ?? "Falha ao atualizar");
     else await carregar();
+    setBusy(false);
+  }
+
+  function iniciarEdicaoPerfil(account: DigitalAccount) {
+    setEditingAccountId(account.id);
+    setEditAccLabel(account.label);
+    setEditAccHref(account.href);
+    setEditAccHandle(account.handle ?? "");
+    setEditAccProjetoRef(account.projeto_ref ?? "");
+    setAviso(null);
+  }
+
+  async function salvarEdicaoPerfil(account: DigitalAccount) {
+    if (!editAccLabel.trim() || !editAccHref.trim()) {
+      setAviso("Rótulo e endereço (URL) são obrigatórios.");
+      return;
+    }
+    if (account.scope === "projeto" && !editAccProjetoRef.trim()) {
+      setAviso("Referência do projeto é obrigatória neste perfil.");
+      return;
+    }
+    setBusy(true);
+    const res = await fetch("/api/admin/digital/accounts", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: account.id,
+        label: editAccLabel,
+        href: editAccHref,
+        handle: editAccHandle,
+        projeto_ref:
+          account.scope === "projeto" ? editAccProjetoRef.trim() : null,
+      }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.ok) {
+      setAviso(json.error ?? "Falha ao salvar perfil");
+    } else {
+      setEditingAccountId(null);
+      setAviso("Perfil atualizado.");
+      await carregar();
+    }
     setBusy(false);
   }
 
@@ -524,42 +571,123 @@ export default function DigitalAdminPage() {
             {accounts.length === 0 ? (
               <p style={metaStyle}>Nenhum perfil. Aplique o SQL e/ou cadastre acima.</p>
             ) : (
-              accounts.map((a) => (
-                <div
-                  key={a.id}
-                  style={{
-                    ...rowStyle,
-                    justifyContent: "space-between",
-                    borderBottom: "1px solid #334155",
-                    padding: `${adminTokens.spacing.sm}px 0`,
-                  }}
-                >
-                  <div>
-                    <strong>
-                      {a.label} · {rotuloPlataforma(a.platform)}
-                    </strong>
-                    <div style={metaStyle}>
-                      {a.scope === "projeto"
-                        ? LABEL_ESCOPO.projeto
-                        : LABEL_ESCOPO.site}
-                      {a.projeto_ref ? ` / ${a.projeto_ref}` : ""} ·{" "}
-                      {a.ativo ? "ativo" : "inativo"}
-                      <br />
-                      <a href={a.href} target="_blank" rel="noreferrer" style={{ color: "#93c5fd" }}>
-                        {a.href}
-                      </a>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    style={btnGhost}
-                    disabled={busy}
-                    onClick={() => void toggleAtivo(a)}
+              accounts.map((a) => {
+                const editandoPerfil = editingAccountId === a.id;
+                return (
+                  <div
+                    key={a.id}
+                    style={{
+                      borderBottom: "1px solid #334155",
+                      padding: `${adminTokens.spacing.sm}px 0`,
+                    }}
                   >
-                    {a.ativo ? "Desativar" : "Ativar"}
-                  </button>
-                </div>
-              ))
+                    {editandoPerfil ? (
+                      <div style={{ display: "grid", gap: adminTokens.spacing.sm }}>
+                        <input
+                          style={inputStyle}
+                          value={editAccLabel}
+                          onChange={(e) => setEditAccLabel(e.target.value)}
+                          placeholder="Rótulo"
+                          aria-label="Rótulo do perfil"
+                        />
+                        <input
+                          style={inputStyle}
+                          value={editAccHref}
+                          onChange={(e) => setEditAccHref(e.target.value)}
+                          placeholder="Endereço (URL)"
+                          aria-label="URL do perfil"
+                        />
+                        <input
+                          style={inputStyle}
+                          value={editAccHandle}
+                          onChange={(e) => setEditAccHandle(e.target.value)}
+                          placeholder="Identificador na rede (opcional)"
+                          aria-label="Identificador na rede"
+                        />
+                        {a.scope === "projeto" && (
+                          <input
+                            style={inputStyle}
+                            value={editAccProjetoRef}
+                            onChange={(e) => setEditAccProjetoRef(e.target.value)}
+                            placeholder="Referência do projeto"
+                            aria-label="Referência do projeto"
+                          />
+                        )}
+                        <div style={rowStyle}>
+                          <button
+                            type="button"
+                            style={btnStyle}
+                            disabled={
+                              busy ||
+                              !editAccLabel.trim() ||
+                              !editAccHref.trim()
+                            }
+                            onClick={() => void salvarEdicaoPerfil(a)}
+                          >
+                            Salvar perfil
+                          </button>
+                          <button
+                            type="button"
+                            style={btnGhost}
+                            disabled={busy}
+                            onClick={() => setEditingAccountId(null)}
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          ...rowStyle,
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <div>
+                          <strong>
+                            {a.label} · {rotuloPlataforma(a.platform)}
+                          </strong>
+                          <div style={metaStyle}>
+                            {a.scope === "projeto"
+                              ? LABEL_ESCOPO.projeto
+                              : LABEL_ESCOPO.site}
+                            {a.projeto_ref ? ` / ${a.projeto_ref}` : ""}
+                            {a.handle ? ` · ${a.handle}` : ""} ·{" "}
+                            {a.ativo ? "ativo" : "inativo"}
+                            <br />
+                            <a
+                              href={a.href}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{ color: "#93c5fd" }}
+                            >
+                              {a.href}
+                            </a>
+                          </div>
+                        </div>
+                        <div style={rowStyle}>
+                          <button
+                            type="button"
+                            style={btnGhost}
+                            disabled={busy}
+                            onClick={() => iniciarEdicaoPerfil(a)}
+                          >
+                            Editar perfil
+                          </button>
+                          <button
+                            type="button"
+                            style={btnGhost}
+                            disabled={busy}
+                            onClick={() => void toggleAtivo(a)}
+                          >
+                            {a.ativo ? "Desativar" : "Ativar"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
         </>

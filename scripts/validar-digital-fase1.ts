@@ -73,6 +73,7 @@ function main() {
   assert("ui abrir rede", pageText.includes("Abrir"));
   assert("ui resumo fila", pageText.includes("Resumo:"));
   assert("ui vencido", pageText.includes("vencido"));
+  assert("ui editar perfil", pageText.includes("Editar perfil"));
   const api = path.join(
     process.cwd(),
     "app/api/admin/digital/generate/route.ts"

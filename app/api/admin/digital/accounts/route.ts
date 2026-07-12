@@ -162,8 +162,26 @@ export async function PATCH(req: NextRequest) {
     updated_at: new Date().toISOString(),
   };
 
-  if (body.label !== undefined) patch.label = body.label.trim();
-  if (body.href !== undefined) patch.href = body.href.trim();
+  if (body.label !== undefined) {
+    const label = body.label.trim();
+    if (!label) {
+      return NextResponse.json(
+        { ok: false, error: "Rótulo não pode ficar vazio" },
+        { status: 400 }
+      );
+    }
+    patch.label = label;
+  }
+  if (body.href !== undefined) {
+    const href = body.href.trim();
+    if (!href) {
+      return NextResponse.json(
+        { ok: false, error: "Endereço (URL) não pode ficar vazio" },
+        { status: 400 }
+      );
+    }
+    patch.href = href;
+  }
   if (body.handle !== undefined) {
     patch.handle =
       body.handle === null || body.handle === ""
