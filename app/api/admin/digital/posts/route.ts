@@ -44,9 +44,26 @@ export async function GET(req: NextRequest) {
     error = fallback.error;
   }
 
+  if (
+    error &&
+    /external_post_id|publish_error|published_via|column .* does not exist/i.test(
+      error.message || ""
+    )
+  ) {
+    const base = await supabaseAdmin
+      .from("digital_posts")
+      .select(
+        "id, title, body, hashtags, media_url, source_type, source_id, status, scheduled_at, published_at, created_by, created_at, updated_at"
+      )
+      .order("created_at", { ascending: false })
+      .limit(100);
+    data = (base.data || []) as typeof data;
+    error = base.error;
+  }
+
   if (error) {
-    const missing =
-      error.message.includes("digital_posts") || error.code === "42P01";
+    const tableMissing = error.code === "42P01";
+    const columnMissing = /column .* does not exist/i.test(error.message || "");
     return NextResponse.json({
       ok: true,
       posts: [],
@@ -58,9 +75,11 @@ export async function GET(req: NextRequest) {
         published_manual: 0,
         archived: 0,
       },
-      aviso: missing
+      aviso: tableMissing
         ? "Tabela digital_posts ausente. Aplique docs/sql/digital-redes-fase1.sql no Supabase."
-        : error.message,
+        : columnMissing
+          ? "Colunas de digital_posts incompletas. Aplique docs/sql/digital-redes-instagram-publish.sql e docs/sql/digital-redes-automation-phase1.sql."
+          : error.message,
     });
   }
 
