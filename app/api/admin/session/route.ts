@@ -7,7 +7,8 @@ import {
 } from "@/lib/auth/adminEscopo";
 
 const ADMIN_GATE_COOKIE = "ipecc_admin_gate";
-const ADMIN_GATE_MAX_AGE = 10;
+/** Renovado pelo heartbeat do layout (~4s). */
+const ADMIN_GATE_MAX_AGE = 60;
 
 export async function POST() {
   const auth = await verifyAdminSession();

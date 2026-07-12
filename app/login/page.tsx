@@ -16,32 +16,34 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password.trim(),
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          password: password.trim(),
+        }),
       });
 
-      if (error) {
-        setMsg("E-mail ou senha invalidos.");
+      const json = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        ok?: boolean;
+      };
+
+      if (!res.ok) {
+        setMsg(json.error || "Acesso admin nao autorizado.");
         setLoading(false);
         return;
       }
 
-      const gate = await fetch("/api/admin/session", { method: "POST" });
-
-      if (!gate.ok) {
-        await supabase.auth.signOut();
-        setMsg("Acesso admin nao autorizado.");
-        setLoading(false);
-        return;
-      }
+      // Sincroniza cliente browser com a sessao ja gravada nos cookies
+      await supabase.auth.getSession();
 
       localStorage.removeItem("ipecc_admin_closed");
       sessionStorage.setItem("ipecc_admin_active", "1");
-
-      // mantem seu fluxo original
       window.location.href = "/admin";
-    } catch (error) {
+    } catch {
       setMsg("Erro ao autenticar.");
       setLoading(false);
     }
