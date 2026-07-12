@@ -51,10 +51,46 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       ok: true,
       posts: [],
+      resumo: {
+        draft: 0,
+        approved: 0,
+        scheduled: 0,
+        scheduled_vencidos: 0,
+        published_manual: 0,
+        archived: 0,
+      },
       aviso: missing
         ? "Tabela digital_posts ausente. Aplique docs/sql/digital-redes-fase1.sql no Supabase."
         : error.message,
     });
+  }
+
+  const { data: rowsResumo } = await supabaseAdmin
+    .from("digital_posts")
+    .select("status, scheduled_at")
+    .limit(500);
+
+  const now = Date.now();
+  const resumo = {
+    draft: 0,
+    approved: 0,
+    scheduled: 0,
+    scheduled_vencidos: 0,
+    published_manual: 0,
+    archived: 0,
+  };
+  for (const row of rowsResumo ?? []) {
+    const st = row.status as string;
+    if (st in resumo) {
+      resumo[st as keyof typeof resumo] += 1;
+    }
+    if (
+      st === "scheduled" &&
+      row.scheduled_at &&
+      new Date(String(row.scheduled_at)).getTime() < now
+    ) {
+      resumo.scheduled_vencidos += 1;
+    }
   }
 
   const posts = data ?? [];
@@ -107,6 +143,7 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     ok: true,
+    resumo,
     posts: posts.map((p) => ({
       ...p,
       targets: targetsByPost.get(p.id as string) ?? [],

@@ -87,6 +87,30 @@ function primeiroLink(post: DigitalPost): string | null {
   return m?.[0] ?? null;
 }
 
+type FilaResumo = {
+  draft: number;
+  approved: number;
+  scheduled: number;
+  scheduled_vencidos: number;
+  published_manual: number;
+  archived: number;
+};
+
+const RESUMO_VAZIO: FilaResumo = {
+  draft: 0,
+  approved: 0,
+  scheduled: 0,
+  scheduled_vencidos: 0,
+  published_manual: 0,
+  archived: 0,
+};
+
+function postAgendamentoVencido(post: DigitalPost): boolean {
+  if (post.status !== "scheduled" || !post.scheduled_at) return false;
+  const t = new Date(post.scheduled_at).getTime();
+  return !Number.isNaN(t) && t < Date.now();
+}
+
 function toDatetimeLocalValue(iso: string | null | undefined): string {
   if (!iso) return "";
   const d = new Date(iso);
@@ -103,6 +127,7 @@ export default function DigitalAdminPage() {
 
   const [accounts, setAccounts] = useState<DigitalAccount[]>([]);
   const [posts, setPosts] = useState<DigitalPost[]>([]);
+  const [resumo, setResumo] = useState<FilaResumo>(RESUMO_VAZIO);
   const [statusFilter, setStatusFilter] = useState<string>("");
 
   const [newPlatform, setNewPlatform] = useState<DigitalPlatform>("instagram");
@@ -152,8 +177,10 @@ export default function DigitalAdminPage() {
     if (!postRes.ok || !postJson.ok) {
       setAviso((prev) => prev ?? postJson.error ?? "Erro ao carregar fila");
       setPosts([]);
+      setResumo(RESUMO_VAZIO);
     } else {
       setPosts(postJson.posts ?? []);
+      setResumo(postJson.resumo ?? RESUMO_VAZIO);
       if (postJson.aviso) setAviso((prev) => prev ?? postJson.aviso);
     }
 
@@ -630,10 +657,49 @@ export default function DigitalAdminPage() {
                 </option>
               ))}
             </select>
+            {(
+              [
+                ["", "Todos"],
+                ["draft", `Rascunhos (${resumo.draft})`],
+                ["approved", `Aprovados (${resumo.approved})`],
+                ["scheduled", `Agendados (${resumo.scheduled})`],
+                ["published_manual", `Publicados (${resumo.published_manual})`],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={label}
+                type="button"
+                style={statusFilter === value ? btnStyle : btnGhost}
+                onClick={() => setStatusFilter(value)}
+              >
+                {label}
+              </button>
+            ))}
           </div>
+
+          {resumo.scheduled_vencidos > 0 && (
+            <p
+              style={{
+                ...metaStyle,
+                marginTop: adminTokens.spacing.sm,
+                color: "#f59e0b",
+              }}
+            >
+              {resumo.scheduled_vencidos} agendamento(s) vencido(s) — copie o
+              texto e marque como publicado, ou reagende.
+            </p>
+          )}
 
           <div style={cardStyle}>
             <h2 style={{ marginTop: 0, fontSize: 18 }}>Fila editorial</h2>
+            <p style={{ ...metaStyle, marginTop: 0 }}>
+              Resumo: {resumo.draft} rascunho(s) · {resumo.approved} aprovado(s)
+              · {resumo.scheduled} agendado(s)
+              {resumo.scheduled_vencidos > 0
+                ? ` (${resumo.scheduled_vencidos} vencido(s))`
+                : ""}{" "}
+              · {resumo.published_manual} publicado(s)
+            </p>
             {posts.length === 0 ? (
               <p style={metaStyle}>
                 Nenhum post. Use “Gerar rascunhos” ou crie um manual.
@@ -652,6 +718,7 @@ export default function DigitalAdminPage() {
                   p.status === "draft" ||
                   p.status === "scheduled";
                 const agendando = scheduleForId === p.id;
+                const vencido = postAgendamentoVencido(p);
 
                 return (
                   <div
@@ -659,6 +726,8 @@ export default function DigitalAdminPage() {
                     style={{
                       borderBottom: "1px solid #334155",
                       padding: `${adminTokens.spacing.sm}px 0`,
+                      borderLeft: vencido ? "3px solid #f59e0b" : undefined,
+                      paddingLeft: vencido ? adminTokens.spacing.sm : undefined,
                     }}
                   >
                     {editando ? (
@@ -729,6 +798,7 @@ export default function DigitalAdminPage() {
                           {p.scheduled_at
                             ? ` · agendado para ${formatarDataAgendada(p.scheduled_at)}`
                             : ""}
+                          {vencido ? " · vencido" : ""}
                         </div>
                         {targets.length > 0 && (
                           <div
