@@ -59,9 +59,15 @@ export default function AdminAcessosPage() {
       setPerfis(json.perfis || []);
       setEscopos(json.escopos || []);
       setProcessos(json.processos || []);
-      if (!userIdEscopo && json.perfis?.[0]?.user_id) {
-        setUserIdEscopo(json.perfis[0].user_id);
-      }
+      const operadores = (json.perfis || []).filter(
+        (p: Perfil) => p.ativo && p.papel !== "mestre"
+      );
+      setUserIdEscopo((prev) => {
+        if (prev && operadores.some((p: Perfil) => p.user_id === prev)) {
+          return prev;
+        }
+        return operadores[0]?.user_id || "";
+      });
       if (!processoId && json.processos?.[0]?.id) {
         setProcessoId(json.processos[0].id);
       }
@@ -78,6 +84,11 @@ export default function AdminAcessosPage() {
     const map = new Map(processos.map((p) => [p.id, p.titulo]));
     return (id: string | null) => (id ? map.get(id) || id : "—");
   }, [processos]);
+
+  const emailDoUsuario = useMemo(() => {
+    const map = new Map(perfis.map((p) => [p.user_id, p.email || p.user_id]));
+    return (id: string) => map.get(id) || id;
+  }, [perfis]);
 
   async function salvarPerfil() {
     const res = await fetch("/api/admin/acessos", {
@@ -97,6 +108,10 @@ export default function AdminAcessosPage() {
   }
 
   async function criarEscopo() {
+    if (!userIdEscopo || !processoId) {
+      triggerToast("Selecione usuario (operador/externo) e processo.", "error");
+      return;
+    }
     const res = await fetch("/api/admin/acessos", {
       method: "POST",
       credentials: "include",
@@ -120,7 +135,10 @@ export default function AdminAcessosPage() {
       triggerToast(json.error || "Erro", "error");
       return;
     }
-    triggerToast("Escopo vinculado.", "success");
+    triggerToast(
+      `Escopo vinculado a ${emailDoUsuario(userIdEscopo)}.`,
+      "success"
+    );
     carregar();
   }
 
@@ -324,7 +342,7 @@ export default function AdminAcessosPage() {
                 <div>
                   <strong>{processoNome(e.processo_id)}</strong>
                   <p style={{ margin: "6px 0 0", fontSize: 13 }}>
-                    user: {e.user_id.slice(0, 8)}… · editais{" "}
+                    usuario: {emailDoUsuario(e.user_id)} · editais{" "}
                     {e.mod_editais ? "sim" : "nao"} · propostas{" "}
                     {e.mod_propostas ? "sim" : "nao"} · transparencia{" "}
                     {e.mod_transparencia ? "sim" : "nao"} · noticias{" "}
