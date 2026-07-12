@@ -58,6 +58,9 @@ export type DigitalPost = {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  external_post_id?: string | null;
+  publish_error?: string | null;
+  published_via?: "manual" | "instagram_api" | null;
   targets?: DigitalPostTargetBrief[];
 };
 

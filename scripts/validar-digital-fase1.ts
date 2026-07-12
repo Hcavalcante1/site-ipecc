@@ -74,6 +74,20 @@ function main() {
   assert("ui resumo fila", pageText.includes("Resumo:"));
   assert("ui vencido", pageText.includes("vencido"));
   assert("ui editar perfil", pageText.includes("Editar perfil"));
+  assert("ui publicar instagram", pageText.includes("Publicar no Instagram"));
+
+  const publishApi = path.join(
+    process.cwd(),
+    "app/api/admin/digital/publish/route.ts"
+  );
+  assert("publish api", fs.existsSync(publishApi));
+  const sqlIg = path.join(
+    process.cwd(),
+    "docs/sql/digital-redes-instagram-publish.sql"
+  );
+  assert("sql instagram publish", fs.existsSync(sqlIg));
+  const igLib = path.join(process.cwd(), "lib/digital/instagramPublish.ts");
+  assert("instagram publish lib", fs.existsSync(igLib));
   const api = path.join(
     process.cwd(),
     "app/api/admin/digital/generate/route.ts"

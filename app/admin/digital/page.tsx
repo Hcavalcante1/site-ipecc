@@ -462,6 +462,38 @@ export default function DigitalAdminPage() {
     }
   }
 
+  async function publicarNoInstagram(post: DigitalPost) {
+    if (!post.media_url || !/^https?:\/\//i.test(post.media_url)) {
+      setAviso(
+        "Informe uma URL pública de imagem no post antes de publicar no Instagram."
+      );
+      return;
+    }
+    const temIg = (post.targets ?? []).some((t) => t.platform === "instagram");
+    if (!temIg) {
+      setAviso("Inclua o perfil Instagram nos destinos deste post.");
+      return;
+    }
+    setBusy(true);
+    setAviso(null);
+    const res = await fetch("/api/admin/digital/publish", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ post_id: post.id }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.ok) {
+      setAviso(json.error ?? "Falha ao publicar no Instagram");
+    } else {
+      setAviso(
+        json.aviso ??
+          `Publicado no Instagram${json.media_id ? ` (id ${json.media_id})` : ""}.`
+      );
+      await carregar();
+    }
+    setBusy(false);
+  }
+
   return (
     <div style={pageStyle}>
       <h1 style={{ margin: 0, fontSize: 24 }}>Digital — redes sociais</h1>
@@ -927,7 +959,26 @@ export default function DigitalAdminPage() {
                             ? ` · agendado para ${formatarDataAgendada(p.scheduled_at)}`
                             : ""}
                           {vencido ? " · vencido" : ""}
+                          {p.published_via === "instagram_api"
+                            ? " · via Instagram API"
+                            : p.published_via === "manual"
+                              ? " · via manual"
+                              : ""}
+                          {p.external_post_id
+                            ? ` · id ${p.external_post_id}`
+                            : ""}
                         </div>
+                        {p.publish_error && (
+                          <div
+                            style={{
+                              ...metaStyle,
+                              marginTop: 4,
+                              color: "#f87171",
+                            }}
+                          >
+                            Último erro de publicação: {p.publish_error}
+                          </div>
+                        )}
                         {targets.length > 0 && (
                           <div
                             style={{
@@ -1076,6 +1127,22 @@ export default function DigitalAdminPage() {
                                 Agendar
                               </button>
                             )}
+                          {(p.status === "approved" ||
+                            p.status === "scheduled") && (
+                            <button
+                              type="button"
+                              style={btnStyle}
+                              disabled={busy}
+                              onClick={() => void publicarNoInstagram(p)}
+                              title={
+                                !p.media_url
+                                  ? "Requer URL pública de imagem"
+                                  : "Publicar via Graph API"
+                              }
+                            >
+                              Publicar no Instagram
+                            </button>
+                          )}
                           {p.status === "scheduled" && (
                             <button
                               type="button"

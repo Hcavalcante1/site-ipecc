@@ -14,7 +14,7 @@ export const LABEL_STATUS: Record<DigitalPostStatus, string> = {
 };
 
 export const AJUDA_PUBLICACAO_ASSISTIDA =
-  "Fluxo assistido: aprove o rascunho, agende se quiser, copie o texto, abra o perfil da rede, cole e marque como publicado. A publicação automática nas APIs das redes fica para uma fase futura.";
+  "Fluxo assistido: aprove, agende se quiser, copie o texto ou publique no Instagram (exige imagem pública e tokens Meta no servidor).";
 
 export function formatarDataAgendada(iso: string | null | undefined): string {
   if (!iso) return "";

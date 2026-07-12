@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
   let query = supabaseAdmin
     .from("digital_posts")
     .select(
-      "id, title, body, hashtags, media_url, source_type, source_id, status, scheduled_at, published_at, created_by, created_at, updated_at"
+      "id, title, body, hashtags, media_url, source_type, source_id, status, scheduled_at, published_at, created_by, created_at, updated_at, external_post_id, publish_error, published_via"
     )
     .order("created_at", { ascending: false })
     .limit(100);
@@ -197,7 +197,7 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString(),
     })
     .select(
-      "id, title, body, hashtags, media_url, source_type, source_id, status, scheduled_at, published_at, created_by, created_at, updated_at"
+      "id, title, body, hashtags, media_url, source_type, source_id, status, scheduled_at, published_at, created_by, created_at, updated_at, external_post_id, publish_error, published_via"
     )
     .single();
 
@@ -335,6 +335,10 @@ export async function PATCH(req: NextRequest) {
     patch.status = body.status;
     if (body.status === "published_manual") {
       patch.published_at = new Date().toISOString();
+      if (patch.published_via === undefined) {
+        patch.published_via = "manual";
+      }
+      patch.publish_error = null;
     }
   }
   if (body.scheduled_at !== undefined) {
@@ -346,7 +350,7 @@ export async function PATCH(req: NextRequest) {
     .update(patch)
     .eq("id", id)
     .select(
-      "id, title, body, hashtags, media_url, source_type, source_id, status, scheduled_at, published_at, created_by, created_at, updated_at"
+      "id, title, body, hashtags, media_url, source_type, source_id, status, scheduled_at, published_at, created_by, created_at, updated_at, external_post_id, publish_error, published_via"
     )
     .single();
 
