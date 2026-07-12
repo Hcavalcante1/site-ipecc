@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import type { AdminModulo } from "@/lib/auth/adminEscopo";
+import { MODULOS_MESTRE } from "@/lib/auth/adminEscopo";
+import { supabase } from "@/lib/supabaseClient";
 
 export type AdminEscopoCliente = {
   loading: boolean;
@@ -19,9 +21,29 @@ const INICIAL: AdminEscopoCliente = {
   processoIds: "todos",
 };
 
+async function fallbackLegadoIsAdmin(): Promise<AdminEscopoCliente | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: isAdmin, error } = await supabase.rpc("is_admin", {
+    user_id: user.id,
+  });
+  if (error || !isAdmin) return null;
+
+  return {
+    loading: false,
+    mestre: true,
+    papel: "mestre",
+    modulos: [...MODULOS_MESTRE],
+    processoIds: "todos",
+  };
+}
+
 /**
  * Lê escopo do POST /api/admin/session (mesmo gate do layout).
- * Mestre → processoIds "todos"; operador/externo → UUIDs do escopo.
+ * Se a session falhar, faz fallback is_admin — alinhado ao admin/layout.
  */
 export function useAdminEscopoCliente(): AdminEscopoCliente {
   const [estado, setEstado] = useState<AdminEscopoCliente>(INICIAL);
@@ -38,7 +60,17 @@ export function useAdminEscopoCliente(): AdminEscopoCliente {
         if (!ativo) return;
 
         if (!res.ok) {
-          setEstado({ ...INICIAL, loading: false, mestre: false, processoIds: [] });
+          const legado = await fallbackLegadoIsAdmin();
+          if (!ativo) return;
+          setEstado(
+            legado ?? {
+              ...INICIAL,
+              loading: false,
+              mestre: false,
+              modulos: [],
+              processoIds: [],
+            }
+          );
           return;
         }
 
@@ -50,20 +82,37 @@ export function useAdminEscopoCliente(): AdminEscopoCliente {
           legadoIsAdmin?: boolean;
         };
 
+        const mestre = Boolean(json.mestre || json.legadoIsAdmin);
         setEstado({
           loading: false,
-          mestre: Boolean(json.mestre ?? json.legadoIsAdmin),
-          papel: json.papel || "mestre",
-          modulos: Array.isArray(json.modulos) ? json.modulos : [],
+          mestre,
+          papel: json.papel || (mestre ? "mestre" : "operador"),
+          modulos:
+            Array.isArray(json.modulos) && json.modulos.length > 0
+              ? json.modulos
+              : mestre
+                ? [...MODULOS_MESTRE]
+                : [],
           processoIds:
             json.processoIds === "todos" || Array.isArray(json.processoIds)
               ? json.processoIds
-              : [],
+              : mestre
+                ? "todos"
+                : [],
         });
       } catch {
-        if (ativo) {
-          setEstado({ ...INICIAL, loading: false, mestre: false, processoIds: [] });
-        }
+        if (!ativo) return;
+        const legado = await fallbackLegadoIsAdmin();
+        if (!ativo) return;
+        setEstado(
+          legado ?? {
+            ...INICIAL,
+            loading: false,
+            mestre: false,
+            modulos: [],
+            processoIds: [],
+          }
+        );
       }
     }
 

@@ -66,13 +66,18 @@ async function carregarContexto(
       )
       .eq("user_id", userId);
 
+    const { data: isAdmin } = await supabase.rpc("is_admin", {
+      user_id: userId,
+    });
+
     return {
       userId,
       email: row.email ?? email ?? null,
       papel: row.papel,
       ativo: true,
       escopos: (escoposData || []) as AdminEscopo[],
-      legadoIsAdmin: false,
+      // is_admin legado continua contando como mestre (acesso total)
+      legadoIsAdmin: Boolean(isAdmin),
     };
   }
 

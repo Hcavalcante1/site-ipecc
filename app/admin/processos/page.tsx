@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabaseClient";
 import { triggerToast } from "@/components/AdminToast";
 
 type Processo = {
@@ -32,20 +31,18 @@ export default function AdminProcessosPage() {
   async function carregar() {
     setLoading(true);
     setMsg("");
-    const { data, error } = await supabase
-      .from("processos_contratacao")
-      .select("id, titulo, tipo, status, resumo, created_at")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      setMsg(
-        error.message.includes("schema cache") || error.code === "42P01"
-          ? "Tabela processos_contratacao ainda nao existe. Aplique docs/sql/multi-admin-processos-fase-1.sql no Supabase."
-          : error.message
-      );
+    try {
+      const res = await fetch("/api/admin/processos", { credentials: "include" });
+      const json = await res.json();
+      if (!res.ok) {
+        setMsg(json.error || "Erro ao carregar processos.");
+        setLista([]);
+      } else {
+        setLista((json.processos || []) as Processo[]);
+      }
+    } catch {
+      setMsg("Falha de rede ao carregar processos.");
       setLista([]);
-    } else {
-      setLista((data || []) as Processo[]);
     }
     setLoading(false);
   }
@@ -60,34 +57,52 @@ export default function AdminProcessosPage() {
       return;
     }
     setSalvando(true);
-    const { error } = await supabase.from("processos_contratacao").insert({
-      titulo: titulo.trim(),
-      tipo,
-      resumo: resumo.trim() || null,
-      status: "ativo",
-    });
-    setSalvando(false);
-    if (error) {
-      triggerToast(error.message, "error");
-      return;
+    try {
+      const res = await fetch("/api/admin/processos", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          acao: "criar",
+          titulo: titulo.trim(),
+          tipo,
+          resumo: resumo.trim() || null,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        triggerToast(json.error || "Erro ao criar.", "error");
+        setSalvando(false);
+        return;
+      }
+      setTitulo("");
+      setResumo("");
+      triggerToast("Processo criado.", "success");
+      await carregar();
+    } catch {
+      triggerToast("Falha de rede ao criar processo.", "error");
     }
-    setTitulo("");
-    setResumo("");
-    triggerToast("Processo criado.", "success");
-    carregar();
+    setSalvando(false);
   }
 
   async function encerrar(id: string) {
-    const { error } = await supabase
-      .from("processos_contratacao")
-      .update({ status: "encerrado", updated_at: new Date().toISOString() })
-      .eq("id", id);
-    if (error) {
-      triggerToast(error.message, "error");
-      return;
+    try {
+      const res = await fetch("/api/admin/processos", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ acao: "encerrar", id }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        triggerToast(json.error || "Erro ao encerrar.", "error");
+        return;
+      }
+      triggerToast("Processo encerrado.", "success");
+      carregar();
+    } catch {
+      triggerToast("Falha de rede ao encerrar.", "error");
     }
-    triggerToast("Processo encerrado.", "success");
-    carregar();
   }
 
   return (
