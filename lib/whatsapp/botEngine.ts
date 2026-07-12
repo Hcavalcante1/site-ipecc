@@ -1,5 +1,12 @@
 import { menuPromptLines, resolveMenuOption } from "./botMenu";
 import { COPY, topicReply } from "./messageTemplates";
+import {
+  TOPIC_SCRIPTS,
+  findTopicSubByLabel,
+  resolveTopicSubKey,
+  topicStateToId,
+  topicSubmenuLines,
+} from "./botTopicScripts";
 import { isFromSiteMessage, normalizeInboundText } from "./textUtils";
 import type {
   BotTurnResult,
@@ -15,6 +22,7 @@ const MENU_COMMANDS = new Set([
   "início",
   "ajuda",
   "voltar",
+  "0",
 ]);
 
 const EXIT_COMMANDS = new Set(["sair", "encerrar", "tchau", "obrigado"]);
@@ -62,6 +70,41 @@ function handoff(): BotTurnResult {
   };
 }
 
+function handleTopicTurn(
+  state: ConversationState,
+  text: string,
+  lower: string
+): BotTurnResult | null {
+  const id = topicStateToId(state);
+  if (!id) return null;
+  const script = TOPIC_SCRIPTS[id];
+
+  if (lower === "0" || MENU_COMMANDS.has(lower)) {
+    return showMenu();
+  }
+
+  const subKey = resolveTopicSubKey(text);
+  if (subKey) {
+    const sub = script.subs.find((s) => s.key === subKey);
+    if (sub) {
+      return {
+        replies: toReplies(sub.lines),
+        nextState: script.state,
+      };
+    }
+  }
+
+  const byLabel = findTopicSubByLabel(script, text);
+  if (byLabel) {
+    return {
+      replies: toReplies(byLabel.lines),
+      nextState: script.state,
+    };
+  }
+
+  return null;
+}
+
 /** Processa uma mensagem inbound e retorna respostas + novo estado (função pura). */
 export function processBotTurn(
   ctx: ConversationContext,
@@ -87,9 +130,6 @@ export function processBotTurn(
   }
 
   if (ctx.state === "closed") {
-    if (EXIT_COMMANDS.has(lower)) {
-      return showGreeting(inbound.fromSite ?? isFromSite(text));
-    }
     return showGreeting(inbound.fromSite ?? isFromSite(text));
   }
 
@@ -99,6 +139,12 @@ export function processBotTurn(
 
   if (HANDOFF_COMMANDS.has(lower) || lower === "6") {
     return handoff();
+  }
+
+  // Dentro de um tema: prioriza A/B/C antes do menu principal 1–5
+  const topicHandled = handleTopicTurn(ctx.state, text, lower);
+  if (topicHandled) {
+    return topicHandled;
   }
 
   if (MENU_COMMANDS.has(lower)) {
@@ -132,22 +178,37 @@ export function processBotTurn(
     );
   }
 
-  const topicStates: ConversationState[] = [
-    "topic_projetos",
-    "topic_editais",
-    "topic_propostas",
-    "topic_transparencia",
-    "topic_eventos",
-    "menu",
-  ];
-  if (topicStates.includes(ctx.state)) {
-    return showMenu();
+  // Em tema sem match: reexibe submenu do tema (mais profundo que saltar ao menu)
+  const topicId = topicStateToId(ctx.state);
+  if (topicId) {
+    const script = TOPIC_SCRIPTS[topicId];
+    return {
+      replies: toReplies([
+        "Neste tema, use *A*, *B* ou *C* (ou *0* para o menu principal).",
+        ...topicSubmenuLines(script),
+      ]),
+      nextState: script.state,
+    };
+  }
+
+  if (ctx.state === "menu") {
+    return {
+      replies: toReplies([
+        ...COPY.unknown(ctx.unknownCount + 1),
+        "",
+        ...menuPromptLines(),
+      ]),
+      nextState: "menu",
+    };
   }
 
   const unknownCount = ctx.unknownCount + 1;
   if (unknownCount >= 3) {
     const h = handoff();
-    return { ...h, replies: toReplies([...COPY.unknown(unknownCount), "", ...COPY.handoff]) };
+    return {
+      ...h,
+      replies: toReplies([...COPY.unknown(unknownCount), "", ...COPY.handoff]),
+    };
   }
 
   return {
@@ -169,11 +230,18 @@ export function applyTurn(
   inbound: InboundMessage
 ): { ctx: ConversationContext; result: BotTurnResult } {
   const result = processBotTurn(ctx, inbound);
-  const understood =
+  const lower = normalizeText(inbound.text);
+  const understood = Boolean(
     resolveMenuOption(inbound.text) ||
-    MENU_COMMANDS.has(normalizeText(inbound.text)) ||
-    ["oi", "olá", "ola"].includes(normalizeText(inbound.text)) ||
-    isFromSite(inbound.text);
+      resolveTopicSubKey(inbound.text) ||
+      MENU_COMMANDS.has(lower) ||
+      HANDOFF_COMMANDS.has(lower) ||
+      EXIT_COMMANDS.has(lower) ||
+      ["oi", "olá", "ola", "bom dia", "boa tarde", "boa noite", "hello", "hi"].includes(
+        lower
+      ) ||
+      isFromSite(inbound.text)
+  );
 
   return {
     result,
@@ -181,7 +249,8 @@ export function applyTurn(
       ...ctx,
       state: result.nextState,
       unknownCount: understood ? 0 : ctx.unknownCount + 1,
-      fromSiteHint: ctx.fromSiteHint || inbound.fromSite || isFromSite(inbound.text),
+      fromSiteHint:
+        ctx.fromSiteHint || inbound.fromSite || isFromSite(inbound.text),
     },
   };
 }

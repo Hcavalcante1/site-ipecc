@@ -38,9 +38,12 @@ export default function AdminAcessosPage() {
   const [papel, setPapel] = useState<AdminPapel>("externo");
   const [userIdEscopo, setUserIdEscopo] = useState("");
   const [processoId, setProcessoId] = useState("");
-  const [modNoticias, setModNoticias] = useState(true);
-  const [modEventos, setModEventos] = useState(true);
-  const [modProjetos, setModProjetos] = useState(true);
+  const [modEditais, setModEditais] = useState(true);
+  const [modPropostas, setModPropostas] = useState(true);
+  const [modTransparencia, setModTransparencia] = useState(true);
+  const [modNoticias, setModNoticias] = useState(false);
+  const [modEventos, setModEventos] = useState(false);
+  const [modProjetos, setModProjetos] = useState(false);
 
   async function carregar() {
     setLoading(true);
@@ -103,9 +106,9 @@ export default function AdminAcessosPage() {
         user_id: userIdEscopo,
         processo_id: processoId,
         modulos: {
-          editais: true,
-          propostas: true,
-          transparencia: true,
+          editais: modEditais,
+          propostas: modPropostas,
+          transparencia: modTransparencia,
           noticias: modNoticias,
           eventos: modEventos,
           projetos: modProjetos,
@@ -217,6 +220,30 @@ export default function AdminAcessosPage() {
           <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <input
               type="checkbox"
+              checked={modEditais}
+              onChange={(e) => setModEditais(e.target.checked)}
+            />
+            Editais
+          </label>
+          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={modPropostas}
+              onChange={(e) => setModPropostas(e.target.checked)}
+            />
+            Propostas
+          </label>
+          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={modTransparencia}
+              onChange={(e) => setModTransparencia(e.target.checked)}
+            />
+            Transparencia
+          </label>
+          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              type="checkbox"
               checked={modNoticias}
               onChange={(e) => setModNoticias(e.target.checked)}
             />
@@ -236,12 +263,12 @@ export default function AdminAcessosPage() {
               checked={modProjetos}
               onChange={(e) => setModProjetos(e.target.checked)}
             />
-            Projetos (CMS)
+            Projetos
           </label>
         </div>
         <p style={{ fontSize: 13, opacity: 0.85 }}>
-          Editais, propostas e transparencia entram liberados por padrao neste
-          vinculo.
+          Marque somente os modulos vendidos neste processo. CMS do site IPECC
+          permanece com o mestre.
         </p>
         <button type="button" className="admin-button" onClick={criarEscopo}>
           Vincular escopo
@@ -299,8 +326,11 @@ export default function AdminAcessosPage() {
                   <p style={{ margin: "6px 0 0", fontSize: 13 }}>
                     user: {e.user_id.slice(0, 8)}… · editais{" "}
                     {e.mod_editais ? "sim" : "nao"} · propostas{" "}
-                    {e.mod_propostas ? "sim" : "nao"} · noticias{" "}
-                    {e.mod_noticias ? "sim" : "nao"}
+                    {e.mod_propostas ? "sim" : "nao"} · transparencia{" "}
+                    {e.mod_transparencia ? "sim" : "nao"} · noticias{" "}
+                    {e.mod_noticias ? "sim" : "nao"} · eventos{" "}
+                    {e.mod_eventos ? "sim" : "nao"} · projetos{" "}
+                    {e.mod_projetos ? "sim" : "nao"}
                   </p>
                 </div>
                 <button

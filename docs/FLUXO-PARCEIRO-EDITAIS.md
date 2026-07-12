@@ -13,10 +13,16 @@
 2. Parceiro entra e cadastra o edital (cotacao previa, chamamento, etc.) ja com `processo_id`.
 3. Abre **Governanca** do edital: fases, docs, propostas vinculadas.
 4. Publico envia em `/propostas`; parceiro analisa em **Propostas**.
-5. Aprovacao gera rascunho de convenio (ponte).
+5. Aprovacao (listagem, detalhe ou governanca) gera rascunho de convenio (ponte).
 6. Avanco de fases / docs espelham na Transparencia.
 7. Fase prestacao / convenio publicado → rascunhos de prestacao.
-8. Parceiro revisa e **publica** em Convenios / Prestacao.
+8. Parceiro revisa e **publica** em Convenios / Prestacao (novos itens nascem como rascunho).
+
+## Acessos (venda)
+
+Em **Admin → Acessos**, o mestre marca os 6 modulos por processo:
+`editais`, `propostas`, `transparencia`, `noticias`, `eventos`, `projetos`.
+CMS institucional (`paginas`) permanece so com o mestre.
 
 ## SQL obrigatorio
 

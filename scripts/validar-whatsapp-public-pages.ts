@@ -24,12 +24,20 @@ function read(rel: string): string {
 
 function main() {
   const layout = read("app/layout.tsx");
-  assert("layout WhatsAppChatProvider", layout.includes("WhatsAppChatProvider"));
-  // Topbar pode ser renderizada via componente (ex.: PublicSocialLinks)
-  // então não validamos mais por string literal do botão.
+  assert("layout PublicSiteShell", layout.includes("PublicSiteShell"));
+
+  const shell = read("components/public/PublicSiteShell.tsx");
   assert(
-    "layout topbar WhatsApp",
-    layout.includes("PublicSocialLinks") || layout.includes("openPanel")
+    "shell WhatsAppChatProvider",
+    shell.includes("WhatsAppChatProvider")
+  );
+  assert(
+    "shell WhatsAppFloatingChat",
+    shell.includes("WhatsAppFloatingChat")
+  );
+  assert(
+    "shell topbar WhatsApp",
+    shell.includes("PublicSocialLinks") || shell.includes("openPanel")
   );
 
   const landing = read("components/public/ApresentacaoLanding.tsx");

@@ -326,7 +326,7 @@ export default function PrestacaoCard({
         <label style={styles.switchRow}>
           <AdminInput
             type="checkbox"
-            checked={item.publicado ?? true}
+            checked={item.publicado ?? false}
             onChange={(e) => updatePrestacao(index, "publicado", e.target.checked)}
           />
           Publicado

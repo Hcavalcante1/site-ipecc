@@ -144,6 +144,26 @@ export default function Page() {
       return;
     }
 
+    if (status === "aprovado") {
+      const ponte = await fetch("/api/admin/transparencia/ponte", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          acao: "convenio_de_proposta",
+          propostaId: id,
+        }),
+      })
+        .then((r) => r.json())
+        .catch(() => null);
+
+      if (ponte?.ok) {
+        alert(ponte.message || "Rascunho de convenio criado na Transparencia.");
+      } else if (ponte?.error) {
+        alert(`Proposta aprovada, mas a ponte falhou: ${ponte.error}`);
+      }
+    }
+
     carregar();
   }
 

@@ -79,6 +79,7 @@ export function WhatsAppChatProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/** Painel de pré-cadastro → WhatsApp real (menu superior / CTAs). */
 export default function WhatsAppFloatingChat() {
   const { isOpen, closePanel, defaultAssunto } = useWhatsAppChat();
   const panelId = useId();

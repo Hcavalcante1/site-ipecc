@@ -2,7 +2,26 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const SEEDS = ["/", "/quem-somos", "/projetos", "/cotacoes", "/transparencia", "/contato", "/acoes"];
+/** Seeds das rotas publicas principais — o crawler segue os links internos. */
+const SEEDS = [
+  "/",
+  "/inicio",
+  "/portal",
+  "/quem-somos",
+  "/projetos",
+  "/projetos/valer-mais",
+  "/projetos/cultura-inclusao-social",
+  "/projetos/parcerias-institucionais",
+  "/projetos/oficinas-educacao-cidada",
+  "/editais",
+  "/propostas",
+  "/transparencia",
+  "/noticias",
+  "/eventos",
+  "/contato",
+  "/acoes",
+  "/login",
+];
 const MAX_PAGES = 200;
 
 const isInternal = (href, base) => {
@@ -24,8 +43,17 @@ const normalizePath = (p) => {
   }
 };
 const extractLinks = (html) => {
-  const hrefs = [...html.matchAll(/\shref\s*=\s*"(.*?)"/gi)].map(m => m[1]);
-  const srcs  = [...html.matchAll(/\ssrc\s*=\s*"(.*?)"/gi)].map(m => m[1]);
+  const decodeAttr = (value) =>
+    value
+      .replaceAll("&amp;", "&")
+      .replaceAll("&quot;", "\"")
+      .replaceAll("&#39;", "'");
+  const hrefs = [...html.matchAll(/\shref\s*=\s*"(.*?)"/gi)].map((m) =>
+    decodeAttr(m[1])
+  );
+  const srcs = [...html.matchAll(/\ssrc\s*=\s*"(.*?)"/gi)].map((m) =>
+    decodeAttr(m[1])
+  );
   return { hrefs, srcs };
 };
 
@@ -33,8 +61,35 @@ const extractLinks = (html) => {
 async function crawlHttp(baseUrl) {
   console.log(`🌐 HTTP mode — base: ${baseUrl}`);
   const visited = new Set();
+  const checkedAssets = new Set();
   const queue = [...SEEDS.map(s => new URL(s, baseUrl).href)];
   const errors = [];
+  const origin = new URL(baseUrl).origin;
+
+  async function checkAsset(src, pageUrl) {
+    const u = new URL(src, pageUrl);
+    if (u.origin !== origin) return;
+
+    // Next Image optimizer: HEAD costuma falhar; valida o arquivo /media original.
+    let target = u.href;
+    if (u.pathname === "/_next/image") {
+      const raw = u.searchParams.get("url");
+      if (raw) target = new URL(decodeURIComponent(raw), baseUrl).href;
+    }
+
+    if (checkedAssets.has(target)) return;
+    checkedAssets.add(target);
+
+    try {
+      let r = await fetch(target, { method: "HEAD" });
+      if (!r.ok) r = await fetch(target, { method: "GET" });
+      if (!r.ok) {
+        errors.push({ type: "img", target, note: `HTTP ${r.status}` });
+      }
+    } catch (e) {
+      errors.push({ type: "img", target, note: e.message });
+    }
+  }
 
   while (queue.length && visited.size < MAX_PAGES) {
     const url = queue.shift();
@@ -59,12 +114,7 @@ async function crawlHttp(baseUrl) {
       if (!visited.has(next) && !queue.includes(next)) queue.push(next);
     }
     for (const s of srcs) {
-      const u = new URL(s, url);
-      if (u.origin !== new URL(baseUrl).origin) continue;
-      try {
-        const r = await fetch(u.href, { method: "HEAD" });
-        if (!r.ok) errors.push({ type: "img", target: u.href, note: `HTTP ${r.status}` });
-      } catch (e) { errors.push({ type: "img", target: u.href, note: e.message }); }
+      await checkAsset(s, url);
     }
   }
   return { visited: [...visited], errors };

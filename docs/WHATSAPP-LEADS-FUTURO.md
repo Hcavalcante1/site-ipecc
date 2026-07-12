@@ -1,6 +1,6 @@
 # Pré-cadastro WhatsApp — persistência (futuro)
 
-**Status atual:** o site grava leads **somente** com `WHATSAPP_LEADS_PERSIST_SUPABASE=1` e tabela `whatsapp_leads` no staging. Sem isso, o fluxo continua só com `wa.me` (`buildWhatsAppUrlFromLead`).
+**Status atual:** fluxo público = **wa.me + formulário** (sem Meta Cloud API). Persistência em `whatsapp_leads` com `WHATSAPP_LEADS_PERSIST_SUPABASE=1` (service role). Meta fica para fase futura.
 
 ## O que já existe
 

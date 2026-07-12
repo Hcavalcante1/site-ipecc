@@ -28,10 +28,20 @@ function main() {
 
   const r2 = applyTurn(ctx, { waId: "test-user", text: "1" });
   assert("opção 1 projetos", r2.result.nextState === "topic_projetos");
+  assert(
+    "submenu A/B/C no tema",
+    /A —/i.test(r2.result.replies[0].text) &&
+      /B —/i.test(r2.result.replies[0].text)
+  );
   ctx = r2.ctx;
 
-  const r3 = applyTurn(ctx, { waId: "test-user", text: "menu" });
-  assert("voltar menu", r3.result.nextState === "menu");
+  const r2b = applyTurn(ctx, { waId: "test-user", text: "a" });
+  assert("subopção A permanece no tema", r2b.result.nextState === "topic_projetos");
+  assert("subopção A com conteúdo", r2b.result.replies[0].text.length > 40);
+  ctx = r2b.ctx;
+
+  const r3 = applyTurn(ctx, { waId: "test-user", text: "0" });
+  assert("voltar menu com 0", r3.result.nextState === "menu");
   ctx = r3.ctx;
 
   const r4 = applyTurn(ctx, { waId: "test-user", text: "6" });

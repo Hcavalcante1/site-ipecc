@@ -61,7 +61,7 @@ export async function savePrestacao(
     referencia_inicio: payload.referencia_inicio || null,
     referencia_fim: payload.referencia_fim || null,
     ordem: payload.ordem || 0,
-    publicado: payload.publicado ?? true,
+    publicado: payload.publicado ?? false,
   };
 
   if (payload.id) {

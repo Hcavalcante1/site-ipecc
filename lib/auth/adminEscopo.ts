@@ -57,11 +57,15 @@ export const MODULOS_MESTRE: AdminModulo[] = [
 ];
 
 const MODULO_FLAG: Record<
-  Exclude<AdminModulo, "paginas" | "certidoes" | "whatsapp" | "logs" | "processos" | "acessos" | "transparencia">,
+  Exclude<
+    AdminModulo,
+    "paginas" | "certidoes" | "whatsapp" | "logs" | "processos" | "acessos"
+  >,
   keyof Pick<
     AdminEscopo,
     | "mod_editais"
     | "mod_propostas"
+    | "mod_transparencia"
     | "mod_noticias"
     | "mod_eventos"
     | "mod_projetos"
@@ -69,6 +73,7 @@ const MODULO_FLAG: Record<
 > = {
   editais: "mod_editais",
   propostas: "mod_propostas",
+  transparencia: "mod_transparencia",
   noticias: "mod_noticias",
   eventos: "mod_eventos",
   projetos: "mod_projetos",

@@ -41,7 +41,7 @@ export async function saveConvenio(convenio: Convenio): Promise<Convenio> {
     relatorio_final_url: convenio.relatorio_final_url || null,
     observacoes: convenio.observacoes || null,
     ordem: convenio.ordem ?? 0,
-    publicado: convenio.publicado ?? true,
+    publicado: convenio.publicado ?? false,
   };
 
   if (convenio.id) {

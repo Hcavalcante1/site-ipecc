@@ -229,7 +229,7 @@ export default function ConvenioCard({
 
       <div className={classes.footer}>
         <label style={styles.switchRow}>
-          <AdminInput type="checkbox" checked={item.publicado ?? true} onChange={(e) => updateConvenio(index, "publicado", e.target.checked)} />
+          <AdminInput type="checkbox" checked={item.publicado ?? false} onChange={(e) => updateConvenio(index, "publicado", e.target.checked)} />
           Publicado
         </label>
 

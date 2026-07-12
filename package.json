@@ -58,6 +58,8 @@
     "validar:whatsapp-webhook-http": "npx --yes tsx scripts/validar-whatsapp-webhook-http.ts",
     "validar:whatsapp-handoff-fase4": "npx --yes tsx scripts/validar-whatsapp-handoff-fase4.ts",
     "validar:smoke-publico": "npx --yes tsx scripts/validar-smoke-publico-http.ts",
+    "check:site": "node scripts/check-site.mjs --http http://localhost:3000",
+    "test:site": "npm run validar:smoke-publico && npm run check:site && npm run validar:public-pages-padrao && npm run validar:admin-rotas",
     "validar:whatsapp-fase3": "npx --yes tsx scripts/validar-whatsapp-fase3.ts",
     "validar:whatsapp-meta": "npx --yes tsx scripts/validar-whatsapp-meta.ts",
     "validar:whatsapp-persist": "npx --yes tsx scripts/validar-whatsapp-persist-staging.ts",

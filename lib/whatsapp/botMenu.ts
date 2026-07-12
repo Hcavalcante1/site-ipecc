@@ -40,6 +40,14 @@ export function resolveMenuOption(
     (o) =>
       t === o.id ||
       t.includes(o.label.toLowerCase()) ||
+      (t.includes("projeto") && o.id === "projetos") ||
+      (t.includes("edital") && o.id === "editais") ||
+      (t.includes("chamada") && o.id === "editais") ||
+      (t.includes("proposta") && o.id === "propostas") ||
+      (t.includes("enviar") && o.id === "propostas") ||
+      (t.includes("transpar") && o.id === "transparencia") ||
+      (t.includes("evento") && o.id === "eventos") ||
+      (t.includes("agenda") && o.id === "eventos") ||
       (t.includes("equipe") && o.id === "equipe") ||
       (t.includes("atendente") && o.id === "equipe")
   );

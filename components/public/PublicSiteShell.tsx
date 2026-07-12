@@ -11,6 +11,7 @@ import {
 import WhatsAppFloatingChat, {
   WhatsAppChatProvider,
 } from "@/components/public/WhatsAppFloatingChat";
+import WhatsAppSiteBotFab from "@/components/public/WhatsAppSiteBotFab";
 import PublicSiteFooter from "@/components/public/PublicSiteFooter";
 import PublicBreadcrumbs from "@/components/public/PublicBreadcrumbs";
 import PublicSocialLinks from "@/components/public/PublicSocialLinks";
@@ -191,6 +192,7 @@ export default function PublicSiteShell({ children }: { children: ReactNode }) {
       <PublicSiteFooter />
 
       <WhatsAppFloatingChat />
+      <WhatsAppSiteBotFab />
     </WhatsAppChatProvider>
   );
 }

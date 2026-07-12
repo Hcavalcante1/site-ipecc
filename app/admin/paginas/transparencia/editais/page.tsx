@@ -1,15 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabaseClient";
 import { AdminButton, AdminLoadingButton, AdminInput, AdminTextarea, AdminSelect, AdminFileInput, AdminSectionHeader, spacing, borderRadius, shadows, sizes, typography } from "@/components/admin";
 import { registroNoEscopoProcesso } from "@/lib/auth/adminEscopo";
 import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 type Edital = {
   id?: string;
@@ -46,7 +41,7 @@ function novoEdital(processoId?: string | null): Edital {
     contrato_titulo: "",
     contrato_url: "",
     observacoes: "",
-    publicado: true,
+    publicado: false,
   };
 }
 
@@ -376,7 +371,7 @@ async function handleUpload(e: React.ChangeEvent<HTMLInputElement>, index: numbe
         contrato_titulo: emptyToNull(item.contrato_titulo),
         contrato_url: emptyToNull(item.contrato_url),
         observacoes: emptyToNull(item.observacoes),
-        publicado: item.publicado ?? true,
+        publicado: item.publicado ?? false,
       };
 
       const response = item.id
@@ -428,7 +423,7 @@ async function handleUpload(e: React.ChangeEvent<HTMLInputElement>, index: numbe
       contrato_titulo: emptyToNull(item.contrato_titulo),
       contrato_url: emptyToNull(item.contrato_url),
       observacoes: emptyToNull(item.observacoes),
-      publicado: item.publicado ?? true,
+      publicado: item.publicado ?? false,
     };
 
     const response = item.id
@@ -759,7 +754,7 @@ return (
             <label style={styles.switchRow}>
               <AdminInput
                 type="checkbox"
-                checked={item.publicado ?? true}
+                checked={item.publicado ?? false}
                 onChange={(e) =>
                   atualizarCampo(index, "publicado", e.target.checked)
                 }

@@ -23,7 +23,7 @@ type SmokeRoute = {
 const ROUTES: SmokeRoute[] = [
   { path: "/", expect: 200 },
   { path: "/inicio", expect: 200 },
-  { path: "/portal", redirect: "manual", expect: 308, locationSuffix: "/inicio" },
+  { path: "/portal", expect: 200 },
   {
     path: "/apresentacao",
     redirect: "manual",

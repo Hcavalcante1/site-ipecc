@@ -77,15 +77,18 @@ function main() {
     landing.includes("{LANDING_CHAMADA}") &&
       landingContent.includes('LANDING_CHAMADA = "Educação, esporte, cultura e cidadania"')
   );
+
+  const shell = read("components/public/PublicSiteShell.tsx");
   assert(
     "menu label Portal (href /)",
-    /href="\/"[\s\S]{0,400}Portal/.test(read("app/layout.tsx"))
+    /href="\/"[\s\S]{0,400}Portal/.test(shell)
   );
 
   const layout = read("app/layout.tsx");
-  assert("layout PublicSiteFooter", layout.includes("PublicSiteFooter"));
-  assert("layout PublicBreadcrumbs", layout.includes("PublicBreadcrumbs"));
-  assert("layout menu ativo", layout.includes("menu__link--active"));
+  assert("layout PublicSiteShell", layout.includes("PublicSiteShell"));
+  assert("shell PublicSiteFooter", shell.includes("PublicSiteFooter"));
+  assert("shell PublicBreadcrumbs", shell.includes("PublicBreadcrumbs"));
+  assert("shell menu ativo", shell.includes("menu__link--active"));
 
   for (const page of PUBLIC_PAGES_DIRECT_WHATSAPP) {
     const src = read(page);

@@ -25,5 +25,5 @@ CREATE INDEX IF NOT EXISTS whatsapp_leads_assunto_idx
 COMMENT ON TABLE whatsapp_leads IS
   'Leads do formulário público antes de abrir wa.me (opcional).';
 
--- RLS: sem política anon. Inserção futura via API route com service role ou edge function.
--- Não habilitar INSERT para anon/authenticated sem revisão de segurança.
+-- RLS: sem política para anon/authenticated — INSERT só via service role (API).
+ALTER TABLE whatsapp_leads ENABLE ROW LEVEL SECURITY;

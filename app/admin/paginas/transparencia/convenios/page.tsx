@@ -36,7 +36,7 @@ function novoConvenio(processoId?: string | null): Convenio {
     relatorio_final_url: "",
     observacoes: "",
     ordem: 0,
-    publicado: true,
+    publicado: false,
   };
 }
 

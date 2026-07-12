@@ -26,7 +26,15 @@ export function loadEnvLocal(options: LoadEnvLocalOptions = {}) {
     if (i < 1 || line.trimStart().startsWith("#")) continue;
     const key = line.slice(0, i).trim();
     if (allow && !allow.has(key)) continue;
-    process.env[key] = line.slice(i + 1).trim();
+    let value = line.slice(i + 1).trim();
+    // Remove aspas envolventes comuns em .env (Windows/editores)
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    process.env[key] = value;
   }
 }
 

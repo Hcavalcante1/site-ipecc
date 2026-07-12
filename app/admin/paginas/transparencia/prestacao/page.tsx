@@ -36,7 +36,7 @@ function novaPrestacao(processoId?: string | null): PrestacaoConta {
     referencia_fim: "",
     observacoes: "",
     ordem: 0,
-    publicado: true,
+    publicado: false,
   };
 }
 
@@ -517,7 +517,7 @@ export default function TransparenciaPrestacaoAdmin() {
   referencia_inicio: item.referencia_inicio || null,
   referencia_fim: item.referencia_fim || null,
   ordem: item.ordem || 0,
-  publicado: item.publicado ?? true,
+  publicado: item.publicado ?? false,
 };
 
       let error = null;
@@ -537,7 +537,7 @@ export default function TransparenciaPrestacaoAdmin() {
           referencia_inicio: item.referencia_inicio || null,
           referencia_fim: item.referencia_fim || null,
           ordem: item.ordem || 0,
-          publicado: item.publicado ?? true,
+          publicado: item.publicado ?? false,
         });
       } catch (error) {
         const message = error instanceof Error ? error.message : "Erro ao salvar prestações.";
@@ -610,7 +610,7 @@ await logAction({
     referencia_inicio: item.referencia_inicio || null,
     referencia_fim: item.referencia_fim || null,
     ordem: item.ordem || 0,
-    publicado: item.publicado ?? true,
+    publicado: item.publicado ?? false,
   };
 
   let error = null;
@@ -630,7 +630,7 @@ await logAction({
       referencia_inicio: item.referencia_inicio || null,
       referencia_fim: item.referencia_fim || null,
       ordem: item.ordem || 0,
-      publicado: item.publicado ?? true,
+      publicado: item.publicado ?? false,
     });
 
     if (!item.id && response?.id) {

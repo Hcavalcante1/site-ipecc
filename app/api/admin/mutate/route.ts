@@ -4,7 +4,9 @@ import { verifyAdminSession } from "@/lib/auth/adminSession";
 import {
   isMestre,
   podeAcessarProcesso,
+  podeModulo,
   type AdminContexto,
+  type AdminModulo,
 } from "@/lib/auth/adminEscopo";
 import { revalidateForTable } from "@/lib/admin/revalidateTables";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -37,7 +39,7 @@ const ALLOWED_TABLES = new Set([
   "logs_atividade",
 ]);
 
-/** Tabelas com processo_id — login de processo so altera o proprio escopo. */
+/** Tabelas com processo_id direto. */
 const TABELAS_PROCESSO_ID = new Set([
   "editais",
   "noticias",
@@ -46,6 +48,30 @@ const TABELAS_PROCESSO_ID = new Set([
   "transparencia_convenios",
   "transparencia_prestacao_contas",
 ]);
+
+/** Tabelas cujo processo vem do edital/proposta vinculado. */
+const TABELAS_ESCOPO_INDIRETO = new Set([
+  "propostas",
+  "proposta_anexos",
+  "editais_documentos",
+]);
+
+const TABELA_MODULO: Partial<Record<string, AdminModulo>> = {
+  editais: "editais",
+  editais_documentos: "editais",
+  editais_logs: "editais",
+  propostas: "propostas",
+  proposta_anexos: "propostas",
+  transparencia_editais: "transparencia",
+  transparencia_convenios: "transparencia",
+  transparencia_prestacao_contas: "transparencia",
+  noticias: "noticias",
+  eventos: "eventos",
+  paginas: "paginas",
+  paginas_conteudo: "paginas",
+  paginas_eixos: "paginas",
+  documentos_publicos: "paginas",
+};
 
 const ALLOWED_FILTER_OPERATORS = new Set(["eq"]);
 const IDENTIFIER_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
@@ -62,6 +88,89 @@ type Body = {
   upsertOptions?: { onConflict?: string; ignoreDuplicates?: boolean };
 };
 
+async function processoIdDoEdital(
+  editalId: string | null | undefined
+): Promise<string | null> {
+  if (!editalId) return null;
+  const { data, error } = await supabaseAdmin
+    .from("editais")
+    .select("processo_id")
+    .eq("id", editalId)
+    .maybeSingle();
+  if (error) return null;
+  return data?.processo_id ?? null;
+}
+
+async function processoIdDaProposta(
+  propostaId: string | null | undefined
+): Promise<string | null> {
+  if (!propostaId) return null;
+  const { data, error } = await supabaseAdmin
+    .from("propostas")
+    .select("edital_id")
+    .eq("id", propostaId)
+    .maybeSingle();
+  if (error) return null;
+  return processoIdDoEdital(data?.edital_id);
+}
+
+async function resolverProcessoIdLinha(
+  table: string,
+  id: string
+): Promise<{ processoId: string | null; error?: string }> {
+  if (TABELAS_PROCESSO_ID.has(table)) {
+    const { data, error } = await supabaseAdmin
+      .from(table)
+      .select("processo_id")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) return { processoId: null, error: error.message };
+    return { processoId: data?.processo_id ?? null };
+  }
+
+  if (table === "propostas") {
+    return { processoId: await processoIdDaProposta(id) };
+  }
+
+  if (table === "proposta_anexos") {
+    const { data, error } = await supabaseAdmin
+      .from("proposta_anexos")
+      .select("proposta_id")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) return { processoId: null, error: error.message };
+    return { processoId: await processoIdDaProposta(data?.proposta_id) };
+  }
+
+  if (table === "editais_documentos") {
+    const { data, error } = await supabaseAdmin
+      .from("editais_documentos")
+      .select("edital_id")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) return { processoId: null, error: error.message };
+    return { processoId: await processoIdDoEdital(data?.edital_id) };
+  }
+
+  return { processoId: null };
+}
+
+async function processoIdDoPayload(
+  table: string,
+  row: Record<string, unknown>
+): Promise<string | null> {
+  if (TABELAS_PROCESSO_ID.has(table)) {
+    return (row.processo_id as string | null | undefined) ?? null;
+  }
+  if (table === "propostas" || table === "editais_documentos") {
+    return processoIdDoEdital(row.edital_id as string | null | undefined);
+  }
+  if (table === "proposta_anexos") {
+    return processoIdDaProposta(row.proposta_id as string | null | undefined);
+  }
+  return null;
+}
+
 async function bloquearForaDoEscopo(
   ctx: AdminContexto,
   table: string,
@@ -70,14 +179,25 @@ async function bloquearForaDoEscopo(
   filters: Filter[]
 ): Promise<string | null> {
   if (isMestre(ctx)) return null;
-  if (!TABELAS_PROCESSO_ID.has(table)) return null;
+
+  const modulo = TABELA_MODULO[table];
+  if (modulo && !podeModulo(ctx, modulo)) {
+    return "Modulo nao liberado para esta operacao.";
+  }
+
+  const precisaEscopo =
+    TABELAS_PROCESSO_ID.has(table) || TABELAS_ESCOPO_INDIRETO.has(table);
+  if (!precisaEscopo) return null;
 
   const rows = Array.isArray(payload) ? payload : payload ? [payload] : [];
 
   if (action === "insert" || action === "upsert") {
     for (const row of rows) {
       if (!row || typeof row !== "object") continue;
-      const processoId = (row as { processo_id?: string | null }).processo_id;
+      const processoId = await processoIdDoPayload(
+        table,
+        row as Record<string, unknown>
+      );
       if (!podeAcessarProcesso(ctx, processoId)) {
         return "Processo fora do seu escopo.";
       }
@@ -87,22 +207,28 @@ async function bloquearForaDoEscopo(
   if (action === "update" || action === "delete") {
     const idFilter = filters.find((f) => f.column === "id");
     const id = idFilter?.value;
-    if (typeof id === "string" && id.trim()) {
-      const { data, error } = await supabaseAdmin
-        .from(table)
-        .select("processo_id")
-        .eq("id", id)
-        .maybeSingle();
-      if (error) return error.message;
-      if (!podeAcessarProcesso(ctx, data?.processo_id)) {
-        return "Registro fora do seu escopo de processo.";
-      }
+    if (typeof id !== "string" || !id.trim()) {
+      return "Filtro id e obrigatorio para update/delete nesta tabela.";
+    }
+
+    const resolvido = await resolverProcessoIdLinha(table, id);
+    if (resolvido.error) return resolvido.error;
+    if (!podeAcessarProcesso(ctx, resolvido.processoId)) {
+      return "Registro fora do seu escopo de processo.";
     }
 
     if (action === "update" && payload && typeof payload === "object") {
-      const novo = (payload as { processo_id?: string | null }).processo_id;
-      if (novo !== undefined && !podeAcessarProcesso(ctx, novo)) {
+      const row = payload as Record<string, unknown>;
+      if (row.processo_id !== undefined && !podeAcessarProcesso(ctx, row.processo_id as string | null)) {
         return "Nao e permitido mover registro para outro processo.";
+      }
+      if (row.edital_id !== undefined) {
+        const viaEdital = await processoIdDoEdital(
+          row.edital_id as string | null
+        );
+        if (!podeAcessarProcesso(ctx, viaEdital)) {
+          return "Edital fora do seu escopo de processo.";
+        }
       }
     }
   }

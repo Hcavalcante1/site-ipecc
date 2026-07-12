@@ -841,8 +841,14 @@ export default function GovernancaEditalPage() {
   if (!edital) {
     return (
       <div className="admin-box">
-        <h1 className="admin-h1">Governanca do edital</h1>
-        <p>{msg || "Edital nao encontrado."}</p>
+        <p className="admin-subtitle">
+          <Link href="/admin/editais">Voltar para editais</Link>
+        </p>
+        <h1 className="admin-h1">Acesso negado ou edital indisponivel</h1>
+        <p>
+          {msg ||
+            "Este edital nao esta no seu processo, ou nao foi encontrado."}
+        </p>
       </div>
     );
   }
