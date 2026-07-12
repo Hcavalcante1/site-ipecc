@@ -197,6 +197,7 @@ export async function PATCH(req: NextRequest) {
     media_url?: string | null;
     status?: string;
     scheduled_at?: string | null;
+    account_ids?: string[];
   };
 
   try {
@@ -217,7 +218,8 @@ export async function PATCH(req: NextRequest) {
     body.title !== undefined ||
     body.body !== undefined ||
     body.hashtags !== undefined ||
-    body.media_url !== undefined;
+    body.media_url !== undefined ||
+    body.account_ids !== undefined;
 
   if (contentEdit) {
     const { data: atual, error: errAtual } = await supabaseAdmin
@@ -313,6 +315,29 @@ export async function PATCH(req: NextRequest) {
 
   if (error) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
+  }
+
+  if (body.account_ids !== undefined) {
+    const accountIds = Array.isArray(body.account_ids)
+      ? body.account_ids.filter(Boolean)
+      : [];
+    await supabaseAdmin.from("digital_post_targets").delete().eq("post_id", id);
+    if (accountIds.length > 0) {
+      const { error: targetError } = await supabaseAdmin
+        .from("digital_post_targets")
+        .insert(
+          accountIds.map((account_id) => ({
+            post_id: id,
+            account_id,
+          }))
+        );
+      if (targetError) {
+        return NextResponse.json(
+          { ok: false, error: targetError.message },
+          { status: 400 }
+        );
+      }
+    }
   }
 
   return NextResponse.json({ ok: true, post: data });

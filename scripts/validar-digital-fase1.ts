@@ -67,6 +67,8 @@ function main() {
   const pageText = fs.readFileSync(page, "utf8");
   assert("ui copiar texto", pageText.includes("Copiar texto"));
   assert("ui editar texto", pageText.includes("Editar texto"));
+  assert("ui destinos", pageText.includes("Destinos"));
+  assert("ui midia", pageText.includes("URL de mídia"));
   const api = path.join(
     process.cwd(),
     "app/api/admin/digital/generate/route.ts"

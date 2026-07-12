@@ -106,11 +106,17 @@ export default function DigitalAdminPage() {
   const [manualTitle, setManualTitle] = useState("");
   const [manualBody, setManualBody] = useState("");
   const [manualTags, setManualTags] = useState("#IPECC");
+  const [manualMedia, setManualMedia] = useState("");
+  const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editBody, setEditBody] = useState("");
   const [editTags, setEditTags] = useState("");
+  const [editMedia, setEditMedia] = useState("");
+  const [editAccountIds, setEditAccountIds] = useState<string[]>([]);
+
+  const contasDestino = accounts.filter((a) => a.ativo);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -146,6 +152,19 @@ export default function DigitalAdminPage() {
   useEffect(() => {
     void carregar();
   }, [carregar]);
+
+  useEffect(() => {
+    const siteAtivos = accounts
+      .filter((a) => a.scope === "site" && a.ativo)
+      .map((a) => a.id);
+    setSelectedAccountIds((prev) => {
+      if (prev.length === 0) return siteAtivos;
+      const stillValid = prev.filter((id) =>
+        accounts.some((a) => a.id === id && a.ativo)
+      );
+      return stillValid.length > 0 ? stillValid : siteAtivos;
+    });
+  }, [accounts]);
 
   async function gerarRascunhos() {
     setBusy(true);
@@ -206,6 +225,10 @@ export default function DigitalAdminPage() {
   }
 
   async function criarPostManual() {
+    if (selectedAccountIds.length === 0) {
+      setAviso("Selecione ao menos um perfil de destino.");
+      return;
+    }
     setBusy(true);
     const res = await fetch("/api/admin/digital/posts", {
       method: "POST",
@@ -214,7 +237,8 @@ export default function DigitalAdminPage() {
         title: manualTitle,
         body: manualBody,
         hashtags: manualTags,
-        account_ids: accounts.filter((a) => a.scope === "site" && a.ativo).map((a) => a.id),
+        media_url: manualMedia.trim() || null,
+        account_ids: selectedAccountIds,
       }),
     });
     const json = await res.json();
@@ -223,6 +247,7 @@ export default function DigitalAdminPage() {
     } else {
       setManualTitle("");
       setManualBody("");
+      setManualMedia("");
       await carregar();
     }
     setBusy(false);
@@ -252,10 +277,16 @@ export default function DigitalAdminPage() {
     setEditTitle(post.title);
     setEditBody(post.body);
     setEditTags(post.hashtags ?? "");
+    setEditMedia(post.media_url ?? "");
+    setEditAccountIds((post.targets ?? []).map((t) => t.account_id));
     setAviso(null);
   }
 
   async function salvarEdicao(postId: string) {
+    if (editAccountIds.length === 0) {
+      setAviso("Selecione ao menos um perfil de destino.");
+      return;
+    }
     setBusy(true);
     const res = await fetch("/api/admin/digital/posts", {
       method: "PATCH",
@@ -265,6 +296,8 @@ export default function DigitalAdminPage() {
         title: editTitle,
         body: editBody,
         hashtags: editTags,
+        media_url: editMedia.trim() || null,
+        account_ids: editAccountIds,
       }),
     });
     const json = await res.json();
@@ -272,10 +305,15 @@ export default function DigitalAdminPage() {
       setAviso(json.error ?? "Falha ao salvar edição");
     } else {
       setEditingId(null);
-      setAviso("Texto atualizado.");
+      setAviso("Texto e destinos atualizados.");
       await carregar();
     }
     setBusy(false);
+  }
+
+  function toggleId(list: string[], id: string, on: boolean): string[] {
+    if (on) return list.includes(id) ? list : [...list, id];
+    return list.filter((x) => x !== id);
   }
 
   async function copiarTexto(post: DigitalPost) {
@@ -473,10 +511,56 @@ export default function DigitalAdminPage() {
                 value={manualTags}
                 onChange={(e) => setManualTags(e.target.value)}
               />
+              <input
+                style={inputStyle}
+                placeholder="URL de mídia ou link (opcional)"
+                value={manualMedia}
+                onChange={(e) => setManualMedia(e.target.value)}
+              />
+              <div>
+                <div style={{ ...metaStyle, marginBottom: 6 }}>Destinos</div>
+                {contasDestino.length === 0 ? (
+                  <p style={metaStyle}>Nenhum perfil ativo. Cadastre em Perfis.</p>
+                ) : (
+                  <div style={{ display: "grid", gap: 6 }}>
+                    {contasDestino.map((a) => (
+                      <label
+                        key={a.id}
+                        style={{
+                          ...metaStyle,
+                          display: "flex",
+                          gap: 8,
+                          alignItems: "center",
+                          color: "#e5e7eb",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedAccountIds.includes(a.id)}
+                          onChange={(e) =>
+                            setSelectedAccountIds((prev) =>
+                              toggleId(prev, a.id, e.target.checked)
+                            )
+                          }
+                        />
+                        {rotuloPlataforma(a.platform)} · {a.label}
+                        {a.scope === "projeto" && a.projeto_ref
+                          ? ` (${a.projeto_ref})`
+                          : ""}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button
                 type="button"
                 style={btnStyle}
-                disabled={busy || !manualTitle || !manualBody}
+                disabled={
+                  busy ||
+                  !manualTitle ||
+                  !manualBody ||
+                  selectedAccountIds.length === 0
+                }
                 onClick={() => void criarPostManual()}
               >
                 Salvar rascunho
@@ -543,6 +627,43 @@ export default function DigitalAdminPage() {
                           placeholder="Marcadores (#)"
                           aria-label="Marcadores"
                         />
+                        <input
+                          style={inputStyle}
+                          value={editMedia}
+                          onChange={(e) => setEditMedia(e.target.value)}
+                          placeholder="URL de mídia ou link (opcional)"
+                          aria-label="URL de mídia"
+                        />
+                        <div>
+                          <div style={{ ...metaStyle, marginBottom: 6 }}>
+                            Destinos
+                          </div>
+                          <div style={{ display: "grid", gap: 6 }}>
+                            {contasDestino.map((a) => (
+                              <label
+                                key={a.id}
+                                style={{
+                                  ...metaStyle,
+                                  display: "flex",
+                                  gap: 8,
+                                  alignItems: "center",
+                                  color: "#e5e7eb",
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={editAccountIds.includes(a.id)}
+                                  onChange={(e) =>
+                                    setEditAccountIds((prev) =>
+                                      toggleId(prev, a.id, e.target.checked)
+                                    )
+                                  }
+                                />
+                                {rotuloPlataforma(a.platform)} · {a.label}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     ) : (
                       <>
@@ -581,7 +702,12 @@ export default function DigitalAdminPage() {
                           <button
                             type="button"
                             style={btnStyle}
-                            disabled={busy || !editTitle.trim() || !editBody.trim()}
+                            disabled={
+                              busy ||
+                              !editTitle.trim() ||
+                              !editBody.trim() ||
+                              editAccountIds.length === 0
+                            }
                             onClick={() => void salvarEdicao(p.id)}
                           >
                             Salvar texto
