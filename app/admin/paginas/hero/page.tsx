@@ -80,7 +80,7 @@ export default function HeroPage() {
   return (
     <>
       <div className="admin-header-block">
-        <h1 className="admin-title">Home – Hero</h1>
+        <h1 className="admin-title">Início – Destaque / topo</h1>
         <p className="admin-subtitle">
           Edite o conteúdo principal da página inicial.
         </p>

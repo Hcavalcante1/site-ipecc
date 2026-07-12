@@ -111,7 +111,7 @@ export async function POST(req: Request) {
       case "convenio_de_proposta": {
         if (!body.propostaId) {
           return NextResponse.json(
-            { ok: false, error: "propostaId obrigatorio." },
+            { ok: false, error: "Identificador da proposta é obrigatório." },
             { status: 400 }
           );
         }
@@ -126,7 +126,7 @@ export async function POST(req: Request) {
       case "prestacao_de_convenio": {
         if (!body.convenioId) {
           return NextResponse.json(
-            { ok: false, error: "convenioId obrigatorio." },
+            { ok: false, error: "Identificador do convênio é obrigatório." },
             { status: 400 }
           );
         }
@@ -141,7 +141,7 @@ export async function POST(req: Request) {
       case "espelhar_documento": {
         if (!body.editalId || !body.documento) {
           return NextResponse.json(
-            { ok: false, error: "editalId e documento obrigatorios." },
+            { ok: false, error: "Identificador do edital e documento são obrigatórios." },
             { status: 400 }
           );
         }
@@ -159,7 +159,7 @@ export async function POST(req: Request) {
       case "prestacoes_do_edital": {
         if (!body.editalId) {
           return NextResponse.json(
-            { ok: false, error: "editalId obrigatorio." },
+            { ok: false, error: "Identificador do edital é obrigatório." },
             { status: 400 }
           );
         }

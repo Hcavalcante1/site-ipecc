@@ -64,7 +64,7 @@ export default function ProjetosHeroAdmin() {
 
   return (
     <div className="admin-card">
-      <h1>Projetos — Hero</h1>
+      <h1>Projetos — Destaque / topo</h1>
       <p>Edite o topo da página de projetos.</p>
 
       <div className="admin-form">

@@ -82,18 +82,18 @@ export default function EditaisHeroAdmin() {
 
   return (
     <div className="admin-card">
-      <h1>Editais — Hero</h1>
+      <h1>Editais — Destaque / topo</h1>
       <p>Edite o conteúdo principal do topo da página de editais.</p>
 
       {/* 🔥 ESSENCIAL PRA NÃO QUEBRAR LAYOUT */}
       <div className="admin-form">
-        <label>Título do Hero</label>
+        <label>Título do destaque</label>
         <input
           value={tituloHero}
           onChange={(e) => setTituloHero(e.target.value)}
         />
 
-        <label>Texto do Hero</label>
+        <label>Texto do destaque</label>
         <textarea
           rows={5}
           value={textoHero}

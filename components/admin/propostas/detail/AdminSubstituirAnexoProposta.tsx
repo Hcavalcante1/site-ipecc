@@ -73,7 +73,7 @@ export function AdminSubstituirAnexoProposta({ propostaId, onAtualizado }: Props
         throw new Error(
           typeof syncJson.error === "string"
             ? syncJson.error
-            : "Falha ao sincronizar proposta_anexos"
+            : "Falha ao sincronizar anexos da proposta"
         );
       }
 
@@ -108,7 +108,7 @@ export function AdminSubstituirAnexoProposta({ propostaId, onAtualizado }: Props
   } as const;
 
   return (
-    <InfoCard title="Substituir anexo (admin)">
+    <InfoCard title="Substituir anexo (painel)">
       <p
         style={{
           marginTop: 0,

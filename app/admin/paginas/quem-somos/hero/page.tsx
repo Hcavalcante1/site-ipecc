@@ -72,7 +72,7 @@ export default function QuemSomosHeroAdminPage() {
 
   return (
     <div className="admin-box">
-      <h1 className="admin-h1">Hero – Quem Somos</h1>
+      <h1 className="admin-h1">Destaque – Quem Somos</h1>
 
       <form
         className="admin-form"

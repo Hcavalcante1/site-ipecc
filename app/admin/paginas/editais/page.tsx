@@ -26,7 +26,7 @@ export default function EditaisAdminIndex() {
     >
       <div className="admin-grid admin-grid--wide">
         <AdminHubCard
-          titulo="Hero da página"
+          titulo="Destaque / topo da página"
           descricao="Título e texto principal do topo da página pública /editais."
           href={adminCanonicalRoutes.editaisCms.hero}
         />
@@ -37,7 +37,7 @@ export default function EditaisAdminIndex() {
         />
         <AdminHubCard
           titulo="Documentos"
-          descricao="Checklist de documentos exigidos para participação nos editais."
+          descricao="Lista de documentos exigidos para participação nos editais."
           href={adminCanonicalRoutes.editaisCms.documentos}
         />
         <AdminHubCard
@@ -46,7 +46,7 @@ export default function EditaisAdminIndex() {
           href={adminCanonicalRoutes.editaisCms.mural}
         />
         <AdminHubCard
-          titulo="CTA / Chamada final"
+          titulo="Chamada final"
           descricao="Bloco final com texto de apoio e botão de ação para propostas."
           href={adminCanonicalRoutes.editaisCms.cta}
         />

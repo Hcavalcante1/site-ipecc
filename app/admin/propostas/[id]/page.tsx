@@ -392,7 +392,7 @@ export default function Page() {
         <div style={cardStyle}>
           <strong style={sectionTitleStyle}>{proposta.nome || "—"}</strong>
           <p style={tightParaStyle}>
-            <strong>Email:</strong> {proposta.email || "—"}
+            <strong>E-mail:</strong> {proposta.email || "—"}
           </p>
           <p style={tightParaStyle}>
             <strong>Telefone:</strong> {proposta.telefone || "—"}
@@ -527,7 +527,7 @@ export default function Page() {
         </div>
 
         <div style={{ ...cardStyle, ...fullSpanStyle }}>
-          <strong style={sectionTitleStyle}>Downloads</strong>
+          <strong style={sectionTitleStyle}>Arquivos para download</strong>
           <div
             style={{
               display: "flex",
@@ -537,11 +537,11 @@ export default function Page() {
           >
             {verificandoDownloads && downloads.length > 0 ? (
               <span style={{ color: adminTokens.colors.text.muted, fontSize: 14 }}>
-                Verificando anexos no storage…
+                Verificando anexos no armazenamento…
               </span>
             ) : downloadsDisponiveis.length === 0 ? (
               <span style={{ color: adminTokens.colors.text.muted, fontSize: 14 }}>
-                Nenhum documento disponível para download.
+                Nenhum documento disponível para baixar.
               </span>
             ) : (
               downloadsDisponiveis.map((item) => (
@@ -566,7 +566,7 @@ export default function Page() {
                 fontSize: 13,
               }}
             >
-              Sem arquivo no storage:{" "}
+              Sem arquivo no armazenamento:{" "}
               {downloadsOrfaos.map((o) => `${o.label} (${o.path})`).join("; ")}
             </p>
           )}

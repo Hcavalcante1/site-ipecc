@@ -20,7 +20,7 @@ export default function ContatoAdminIndex() {
     >
       <div className="admin-grid admin-grid--wide">
         <AdminHubCard
-          titulo="Hero da página"
+          titulo="Destaque / topo da página"
           descricao="Título e texto principal do topo da página pública /contato."
           href={r.hero}
         />
@@ -40,7 +40,7 @@ export default function ContatoAdminIndex() {
           href={r.formulario}
         />
         <AdminHubCard
-          titulo="CTA Final"
+          titulo="Chamada final"
           descricao="Chamada final da página /contato, com texto e ação."
           href={r.cta}
         />

@@ -323,7 +323,7 @@ async function handleUpload(e: React.ChangeEvent<HTMLInputElement>, index: numbe
     .upload(`transparencia/parcerias/${fileName}`, file);
 
   if (error) {
-    setBlockMsg(index, `Erro no upload: ${error.message}`);
+    setBlockMsg(index, `Erro no envio: ${error.message}`);
     return;
   }
 

@@ -82,7 +82,7 @@ export default function EditaisCTAAdmin() {
       if (error) {
         setMsg(error.message);
       } else {
-        setMsg("CTA salvo com sucesso.");
+        setMsg("Chamada salva com sucesso.");
         setEditando(false);
       }
     } finally {
@@ -94,7 +94,7 @@ export default function EditaisCTAAdmin() {
 
   return (
     <div className="admin-card">
-      <h1>Editais — CTA</h1>
+      <h1>Editais — Chamada</h1>
       <p>Configure o bloco final da página.</p>
 
       <div className="admin-form">

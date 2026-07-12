@@ -67,17 +67,17 @@ export default function TransparenciaHeroAdmin() {
 
   return (
     <div className="admin-card">
-      <h1>Transparência — Hero</h1>
+      <h1>Transparência — Destaque / topo</h1>
       <p>Edite o conteúdo principal do topo da página pública.</p>
 
-      <label>Título do Hero</label>
+      <label>Título do destaque</label>
       <input
         style={{ width: "100%", maxWidth: 800 }} // ✅ caixa mais larga
         value={tituloHero}
         onChange={(e) => setTituloHero(e.target.value)}
       />
 
-      <label>Texto do Hero</label>
+      <label>Texto do destaque</label>
       <textarea
         rows={4}
         style={{ width: "100%", maxWidth: 800 }} // ✅ caixa mais larga

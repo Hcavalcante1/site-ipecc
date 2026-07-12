@@ -90,8 +90,9 @@ export default function WhatsAppAdminPage() {
       <h1 style={{ margin: 0, fontSize: 24 }}>WhatsApp — atendimentos</h1>
       <p style={{ color: "#94a3b8", marginTop: 8, maxWidth: 720 }}>
         Acompanhe conversas persistidas pelo bot e assuma atendimentos que
-        exigem equipe humana. As respostas automaticas continuam pelo webhook;
-        este painel serve para handoff, responsavel e encerramento.
+        exigem equipe humana. As respostas automáticas continuam pelo canal
+        automático; este painel serve para transferência humana, responsável e
+        encerramento.
       </p>
 
       <div

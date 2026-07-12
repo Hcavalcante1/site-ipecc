@@ -78,15 +78,15 @@ export default function ContatoHeroAdmin() {
 
   return (
     <div className="admin-card">
-      <h1>Contato — Hero</h1>
+      <h1>Contato — Destaque / topo</h1>
 
-      <label>Título do Hero</label>
+      <label>Título do destaque</label>
       <input
         value={tituloHero}
         onChange={(e) => setTituloHero(e.target.value)}
       />
 
-      <label>Texto do Hero</label>
+      <label>Texto do destaque</label>
       <textarea
         rows={4}
         value={textoHero}

@@ -1,4 +1,4 @@
-/** Mensagens de erro do login admin (senha × perfil × sessao). */
+/** Mensagens de erro do login admin (senha × perfil × sessão). */
 
 export function mensagemErroLoginAdmin(params: {
   status?: number;
@@ -13,27 +13,27 @@ export function mensagemErroLoginAdmin(params: {
     auth.includes("credentials") ||
     auth.includes("invalid login")
   ) {
-    return "E-mail ou senha invalidos. Confira o usuario no Supabase Auth.";
+    return "E-mail ou senha inválidos. Confira o usuário na autenticação do Supabase.";
   }
 
   if (params.status === 401) {
     return (
       api ||
-      "Sessao invalida. Tente de novo. Se persistir, limpe cookies do site."
+      "Sessão inválida. Tente de novo. Se persistir, limpe os cookies do site."
     );
   }
 
   if (params.status === 403) {
     if (api.toLowerCase().includes("perfil")) {
-      return "Login Auth ok, mas falta perfil em /admin/acessos (operador/externo ativo).";
+      return "Autenticação ok, mas falta perfil em /admin/acessos (operador/externo ativo).";
     }
     return (
       api ||
-      "Acesso negado. Usuario autenticado, porem sem permissao admin (Acessos)."
+      "Acesso negado. Usuário autenticado, porém sem permissão de admin (Acessos)."
     );
   }
 
   if (api) return api;
   if (params.authErrorMessage) return params.authErrorMessage;
-  return "Nao foi possivel entrar no painel admin.";
+  return "Não foi possível entrar no painel admin.";
 }

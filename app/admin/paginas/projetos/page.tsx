@@ -20,7 +20,7 @@ export default function ProjetosAdminIndex() {
     >
       <div className="admin-grid admin-grid--wide">
         <AdminHubCard
-          titulo="Hero"
+          titulo="Destaque / topo"
           descricao="Título e texto principal do topo da página pública /projetos."
           href={r.hero}
         />
@@ -50,7 +50,7 @@ export default function ProjetosAdminIndex() {
           href={r.numeros}
         />
         <AdminHubCard
-          titulo="CTA Final"
+          titulo="Chamada final"
           descricao="Chamada final da página /projetos, com texto e ação."
           href={r.cta}
         />

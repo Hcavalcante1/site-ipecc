@@ -118,7 +118,7 @@ export default function QuemSomosCtaAdminPage() {
   return (
     <>
       <div className="admin-header-block">
-        <h1 className="admin-title">CTA Final — Quem Somos</h1>
+        <h1 className="admin-title">Chamada final — Quem Somos</h1>
         <p className="admin-subtitle">
           Este bloco representa o fechamento institucional e o convite de conversão da página.
         </p>

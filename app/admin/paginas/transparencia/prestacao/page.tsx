@@ -340,9 +340,9 @@ export default function TransparenciaPrestacaoAdmin() {
       });
 
       updatePrestacao(index, "documento_url", url);
-      setSuccess(index, "Upload realizado");
+      setSuccess(index, "Envio concluído");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Erro no upload.";
+      const message = error instanceof Error ? error.message : "Erro no envio do arquivo.";
       setError(index, message);
     } finally {
       setLoadingIndex(null);

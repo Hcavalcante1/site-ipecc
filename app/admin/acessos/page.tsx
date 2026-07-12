@@ -248,7 +248,7 @@ export default function AdminAcessosPage() {
 
       <section className="admin-card" style={{ marginTop: 20 }}>
         <h2 className="admin-h2">1) Adicionar / atualizar perfil</h2>
-        <label>Email do usuario (Auth)</label>
+        <label>E-mail do usuário (autenticação)</label>
         <input
           value={email}
           onChange={(e) => setEmail(e.target.value)}

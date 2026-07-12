@@ -132,7 +132,7 @@ export default function TransparenciaCtaAdmin() {
 
   return (
     <div className="admin-card">
-      <h1>Transparência — CTA / Acesso rápido</h1>
+      <h1>Transparência — Chamada / Acesso rápido</h1>
 
       <label>Título</label>
       <input value={titulo} onChange={(e) => setTitulo(e.target.value)} />

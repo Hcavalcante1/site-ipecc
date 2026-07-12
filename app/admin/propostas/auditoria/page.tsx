@@ -89,7 +89,7 @@ export default function AuditoriaAnexosPage() {
           gap: adminTokens.spacing.md,
         }}
       >
-        <h1 style={{ margin: 0 }}>Auditoria de anexos (read-only)</h1>
+        <h1 style={{ margin: 0 }}>Auditoria de anexos (somente leitura)</h1>
         <Link
           href="/admin/propostas"
           style={{
@@ -103,8 +103,8 @@ export default function AuditoriaAnexosPage() {
       </div>
 
       <p style={{ color: adminTokens.colors.text.muted, marginTop: adminTokens.spacing.md }}>
-        Verificacao em tempo real no bucket <strong>propostas</strong>. Esta tela
-        apenas confirma se os anexos existem no storage; nao altera banco,
+        Verificação em tempo real no repositório <strong>propostas</strong>. Esta tela
+        apenas confirma se os anexos existem no armazenamento; não altera banco,
         status ou arquivos.
       </p>
 
@@ -136,8 +136,8 @@ export default function AuditoriaAnexosPage() {
                 <th style={thStyle}>E-mail</th>
                 <th style={thStyle}>Coluna</th>
                 <th style={thStyle}>Documento</th>
-                <th style={thStyle}>Path</th>
-                <th style={thStyle}>Storage</th>
+                <th style={thStyle}>Caminho</th>
+                <th style={thStyle}>Armazenamento</th>
               </tr>
             </thead>
             <tbody>

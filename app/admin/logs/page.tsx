@@ -58,7 +58,7 @@ export default function LogsPage() {
   function exportCSV() {
     if (logs.length === 0) return;
 
-    const header = ["Email", "Ação", "Tabela", "Data"];
+    const header = ["E-mail", "Ação", "Tabela", "Data"];
 
     const rows = logs.map((log) => [
       log.user_email,
@@ -89,7 +89,7 @@ export default function LogsPage() {
 
   return (
     <div style={styles.wrapper}>
-      <h1 style={styles.title}>Logs do Sistema</h1>
+      <h1 style={styles.title}>Registros do sistema</h1>
       <p style={styles.subtitle}>
         Consulte os registros de operacao do admin para auditoria, revisao de
         alteracoes e investigacao de falhas. Esta tela e somente de consulta e

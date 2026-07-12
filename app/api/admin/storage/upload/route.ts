@@ -49,21 +49,21 @@ export async function POST(req: Request) {
 
     if (!bucket || !path || !(file instanceof Blob)) {
       return NextResponse.json(
-        { ok: false, error: "bucket, path e file são obrigatórios" },
+        { ok: false, error: "Repositório, caminho e arquivo são obrigatórios" },
         { status: 400 }
       );
     }
 
     if (!ALLOWED_BUCKETS.has(bucket)) {
       return NextResponse.json(
-        { ok: false, error: `Bucket não permitido: ${bucket}` },
+        { ok: false, error: `Repositório não permitido: ${bucket}` },
         { status: 400 }
       );
     }
 
     if (!isSafeStoragePath(path)) {
       return NextResponse.json(
-        { ok: false, error: "Caminho de upload invalido" },
+        { ok: false, error: "Caminho de envio inválido" },
         { status: 400 }
       );
     }
@@ -80,7 +80,7 @@ export async function POST(req: Request) {
 
     if (!allowedExtensions?.has(extension)) {
       return NextResponse.json(
-        { ok: false, error: "Extensao nao permitida para este bucket" },
+        { ok: false, error: "Extensão não permitida para este repositório" },
         { status: 400 }
       );
     }
@@ -94,7 +94,7 @@ export async function POST(req: Request) {
       !allowedMimeTypes.has(effectiveContentType)
     ) {
       return NextResponse.json(
-        { ok: false, error: "Tipo de arquivo nao permitido" },
+        { ok: false, error: "Tipo de arquivo não permitido" },
         { status: 400 }
       );
     }
@@ -110,7 +110,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, data });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Erro no upload";
+    const message = e instanceof Error ? e.message : "Erro no envio do arquivo";
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }

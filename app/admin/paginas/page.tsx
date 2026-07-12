@@ -16,12 +16,12 @@ export default function AdminPaginas() {
 
       <div className="admin-grid">
         <AdminHubNavCard
-          titulo="Hero (Tarja azul degradê)"
+          titulo="Destaque / topo (tarja azul degradê)"
           descricao="Edita o topo da página inicial. Aparece em /inicio e na home."
           href={inicio.hero}
         />
         <AdminHubNavCard
-          titulo="Cards Principais"
+          titulo="Cartões principais"
           descricao="Edita os cards de acesso rápido da página inicial."
           href={inicio.cards}
         />
@@ -46,7 +46,7 @@ export default function AdminPaginas() {
           href={inicio.depoimentos}
         />
         <AdminHubNavCard
-          titulo="Sobre + CTA Final"
+          titulo="Sobre + chamada final"
           descricao="Edita o bloco final de chamada para ação da página inicial."
           href={inicio.sobreCta}
         />

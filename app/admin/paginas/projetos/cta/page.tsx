@@ -97,7 +97,7 @@ export default function ProjetosCtaAdminPage() {
   return (
     <>
       <div className="admin-header-block">
-        <h1 className="admin-title">Projetos - CTA </h1>
+        <h1 className="admin-title">Projetos — Chamada </h1>
         <p className="admin-subtitle">
           Edite o bloco final de chamada para ação da página /projetos
           (parcerias, editais e botão de contato).

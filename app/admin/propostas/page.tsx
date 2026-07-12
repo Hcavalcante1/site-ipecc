@@ -190,7 +190,7 @@ export default function Page() {
             fontWeight: adminTokens.typography.fontWeight.bold,
           }}
         >
-          Auditoria de anexos (read-only)
+          Auditoria de anexos (somente leitura)
         </a>
       </div>
       <p
@@ -224,7 +224,7 @@ export default function Page() {
             <strong style={{ fontSize: 18 }}>{p.nome}</strong>
 
             <p style={blockParaStyle}>
-              <strong>Email:</strong> {p.email || "—"}
+              <strong>E-mail:</strong> {p.email || "—"}
             </p>
 
             <p style={tightParaStyle}>
@@ -330,7 +330,7 @@ export default function Page() {
                     color: "#fff",
                   }}
                 >
-                  {abreNovaAba ? "Ver edital" : "Ver edital (admin)"}
+                  {abreNovaAba ? "Ver edital" : "Ver edital (painel)"}
                 </Link>
               ) : null}
 

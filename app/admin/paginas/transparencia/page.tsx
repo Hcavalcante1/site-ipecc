@@ -39,7 +39,7 @@ export default function TransparenciaAdminIndex() {
             Modulo do seu processo: fecha o ciclo Editais e Propostas com
             rascunhos de convenios, resultados e prestacao. A publicacao no
             site continua humana. Conteudo institucional do site IPECC
-            (hero, LGPD, CTA) nao aparece neste acesso.
+            (destaque, LGPD, chamada) não aparece neste acesso.
           </>
         )
       }
@@ -68,7 +68,7 @@ export default function TransparenciaAdminIndex() {
         {podeSite && (
           <>
             <AdminHubCard
-              titulo="Hero da pagina"
+              titulo="Destaque / topo da página"
               descricao="Titulo e texto principal do topo da pagina (site IPECC)."
               href={r.hero}
             />
@@ -88,7 +88,7 @@ export default function TransparenciaAdminIndex() {
               href={r.lgpd}
             />
             <AdminHubCard
-              titulo="CTA / Acesso rapido"
+              titulo="Chamada / Acesso rápido"
               descricao="Bloco final com botao de acesso a documentos."
               href={r.cta}
             />

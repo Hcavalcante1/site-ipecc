@@ -17,7 +17,7 @@ export function ChecklistDocumentalProposta({
   url: (caminho: string | null) => string | null;
 }) {
   return (
-    <InfoCard title="Checklist documental da proposta">
+    <InfoCard title="Lista de verificação documental da proposta">
       <p
         style={{
           marginTop: 0,
@@ -27,7 +27,7 @@ export function ChecklistDocumentalProposta({
           lineHeight: 1.55,
         }}
       >
-        Checklist gerado a partir dos anexos informados no envio da proposta.
+        Lista gerada a partir dos anexos informados no envio da proposta.
       </p>
       {totalItens === 0 ? (
         <span style={{ color: adminTokens.colors.text.muted, fontSize: 14 }}>

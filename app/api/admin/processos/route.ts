@@ -82,7 +82,7 @@ export async function POST(req: Request) {
 
     if (body.acao === "encerrar") {
       if (!body.id) {
-        return NextResponse.json({ error: "id obrigatorio." }, { status: 400 });
+        return NextResponse.json({ error: "Identificador é obrigatório." }, { status: 400 });
       }
       const { error } = await admin
         .from("processos_contratacao")

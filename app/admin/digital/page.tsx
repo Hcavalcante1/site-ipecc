@@ -229,7 +229,7 @@ export default function DigitalAdminPage() {
       <p style={{ ...metaStyle, marginTop: adminTokens.spacing.sm }}>
         Gerencie perfis do site e por projeto, e a fila editorial. O agente gera
         rascunhos a partir de notícias, eventos e programas. Publicação automática
-        nas APIs das redes fica para a Fase 2.
+        nas interfaces das redes fica para a Fase 2.
       </p>
 
       <div style={{ ...rowStyle, marginTop: adminTokens.spacing.base }}>
@@ -391,7 +391,7 @@ export default function DigitalAdminPage() {
               />
               <input
                 style={inputStyle}
-                placeholder="Hashtags"
+                placeholder="Marcadores (#)"
                 value={manualTags}
                 onChange={(e) => setManualTags(e.target.value)}
               />

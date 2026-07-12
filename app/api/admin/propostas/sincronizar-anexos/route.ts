@@ -22,7 +22,7 @@ export async function POST(req: Request) {
 
     if (!propostaId) {
       return NextResponse.json(
-        { ok: false, error: "propostaId é obrigatório" },
+        { ok: false, error: "Identificador da proposta é obrigatório" },
         { status: 400 }
       );
     }

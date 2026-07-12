@@ -208,7 +208,7 @@ async function bloquearForaDoEscopo(
     const idFilter = filters.find((f) => f.column === "id");
     const id = idFilter?.value;
     if (typeof id !== "string" || !id.trim()) {
-      return "Filtro id e obrigatorio para update/delete nesta tabela.";
+      return "Filtro de identificador é obrigatório para atualizar ou excluir nesta tabela.";
     }
 
     const resolvido = await resolverProcessoIdLinha(table, id);
@@ -350,7 +350,7 @@ export async function POST(req: Request) {
 
     if ((action === "update" || action === "delete") && filters.length === 0) {
       return NextResponse.json(
-        { ok: false, error: "Filtros sao obrigatorios para update/delete" },
+        { ok: false, error: "Filtros são obrigatórios para atualizar ou excluir" },
         { status: 400 }
       );
     }
@@ -375,7 +375,7 @@ export async function POST(req: Request) {
 
       if (typeof editalId !== "string" || !editalId.trim()) {
         return NextResponse.json(
-          { ok: false, error: "ID do edital e obrigatorio para exclusao." },
+          { ok: false, error: "Identificador do edital é obrigatório para exclusão." },
           { status: 400 }
         );
       }

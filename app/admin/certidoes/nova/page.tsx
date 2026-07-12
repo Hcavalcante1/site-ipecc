@@ -129,10 +129,10 @@ export default function NovaCertidaoPage() {
       try {
         const parsed = JSON.parse(metadataTexto);
         if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-          return "Metadata deve ser um objeto JSON válido.";
+          return "Metadados devem ser um objeto JSON válido.";
         }
       } catch {
-        return "Metadata inválida. Use JSON objeto ou deixe em branco.";
+        return "Metadados inválidos. Use um objeto JSON ou deixe em branco.";
       }
     }
 
@@ -383,7 +383,7 @@ export default function NovaCertidaoPage() {
           </div>
 
           <div>
-            <label>Metadata (JSON opcional)</label>
+            <label>Metadados (JSON opcional)</label>
             <textarea
               className="admin-textarea"
               value={metadataTexto}

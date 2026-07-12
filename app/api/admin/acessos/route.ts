@@ -107,7 +107,7 @@ export async function POST(req: Request) {
         return NextResponse.json(
           {
             error:
-              "Usuario nao encontrado no Auth. Crie o login em Supabase Auth (email/senha) e tente de novo.",
+              "Usuário não encontrado na autenticação. Crie o login no Supabase (e-mail/senha) e tente de novo.",
           },
           { status: 404 }
         );
@@ -132,7 +132,7 @@ export async function POST(req: Request) {
     if (body.acao === "criar_escopo") {
       if (!body.user_id || !body.processo_id) {
         return NextResponse.json(
-          { error: "user_id e processo_id sao obrigatorios." },
+          { error: "Identificador do usuário e do processo são obrigatórios." },
           { status: 400 }
         );
       }
@@ -157,7 +157,7 @@ export async function POST(req: Request) {
     if (body.acao === "remover_escopo") {
       if (!body.escopo_id) {
         return NextResponse.json(
-          { error: "escopo_id obrigatorio." },
+          { error: "Identificador do escopo é obrigatório." },
           { status: 400 }
         );
       }
@@ -174,7 +174,7 @@ export async function POST(req: Request) {
     if (body.acao === "desativar_perfil") {
       if (!body.user_id) {
         return NextResponse.json(
-          { error: "user_id obrigatorio." },
+          { error: "Identificador do usuário é obrigatório." },
           { status: 400 }
         );
       }

@@ -138,7 +138,7 @@ export default function CardsPage() {
   return (
     <>
       <div className="admin-header-block">
-        <h1 className="admin-title">Home – Cards Principais</h1>
+        <h1 className="admin-title">Início – Cartões principais</h1>
         <p className="admin-subtitle">
           Edite aqui os 3 cards da seção “Projetos / Transparência / Contato”.
         </p>

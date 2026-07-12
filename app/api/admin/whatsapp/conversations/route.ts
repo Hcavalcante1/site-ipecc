@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
       conversations: [],
       persistenciaAtiva: false,
       aviso: missing
-        ? "Tabela whatsapp_conversations ausente. Aplique docs/sql/whatsapp-conversations-staging.sql e WHATSAPP_PERSIST_SUPABASE=1."
+        ? "Tabela de conversas ausente. Aplique o script SQL de WhatsApp no Supabase."
         : error.message,
     });
   }
@@ -78,7 +78,7 @@ export async function PATCH(req: NextRequest) {
   const waId = body.wa_id?.trim();
   if (!waId) {
     return NextResponse.json(
-      { ok: false, error: "wa_id obrigatório" },
+      { ok: false, error: "Identificador do contato (WhatsApp) é obrigatório" },
       { status: 400 }
     );
   }
@@ -96,7 +96,7 @@ export async function PATCH(req: NextRequest) {
   if (body.state !== undefined) {
     if (!ADMIN_STATES.includes(body.state as ConversationState)) {
       return NextResponse.json(
-        { ok: false, error: "state permitido: handoff, closed" },
+        { ok: false, error: "Estado permitido: aguardando equipe, encerrada" },
         { status: 400 }
       );
     }

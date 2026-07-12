@@ -35,7 +35,7 @@ export default function SobreCtaPage() {
         setSobreTexto(sobreData.texto || "");
       }
 
-      // CTA
+      // Chamada final
       const ctaData = await fetchPaginaConteudo(supabase, "home", "cta_final", "extra");
       const cta = parsePaginaExtra<{
         cta?: { titulo?: string; texto?: string; label?: string; url?: string };
@@ -89,7 +89,7 @@ export default function SobreCtaPage() {
 
     if (errorCta) {
       console.error(errorCta);
-      setMensagem(`Erro ao salvar CTA: ${errorCta.message}`);
+      setMensagem(`Erro ao salvar chamada: ${errorCta.message}`);
       return;
     }
 
@@ -106,9 +106,9 @@ export default function SobreCtaPage() {
   return (
     <>
       <div className="admin-header-block">
-        <h1 className="admin-title">Home – Sobre + CTA Final</h1>
+        <h1 className="admin-title">Início – Sobre + chamada final</h1>
         <p className="admin-subtitle">
-          Edite o bloco institucional e o CTA final.
+          Edite o bloco institucional e a chamada final.
         </p>
       </div>
 
@@ -130,7 +130,7 @@ export default function SobreCtaPage() {
         </label>
 
         <label style={{ fontSize: ".9rem", display: "block", marginTop: 8 }}>
-          Texto (use ENTER para novo parágrafo):
+          Texto (use Enter para novo parágrafo):
           <textarea
             value={sobreTexto}
             onChange={(e) => setSobreTexto(e.target.value)}
@@ -138,7 +138,7 @@ export default function SobreCtaPage() {
           />
         </label>
 
-        <h2 style={{ marginTop: 20 }}>CTA</h2>
+        <h2 style={{ marginTop: 20 }}>Chamada</h2>
 
         <input
           value={ctaTitulo}
@@ -151,7 +151,7 @@ export default function SobreCtaPage() {
           value={ctaTexto}
           onChange={(e) => setCtaTexto(e.target.value)}
           style={textareaStyle}
-          placeholder="Texto (use ENTER para múltiplos parágrafos)"
+          placeholder="Texto (use Enter para múltiplos parágrafos)"
         />
 
         <input

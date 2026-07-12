@@ -89,7 +89,7 @@ export default function AdminContatoCTA() {
 
   return (
     <div style={{ padding: 40, maxWidth: 800 }}>
-      <h1 style={{ marginBottom: 20 }}>CTA — Página Contato</h1>
+      <h1 style={{ marginBottom: 20 }}>Chamada — Página Contato</h1>
 
       <div
         style={{
@@ -130,7 +130,7 @@ export default function AdminContatoCTA() {
 
         {/* 🔥 NOVO CAMPO */}
         <textarea
-          placeholder="Descrição do CTA (lado direito)"
+          placeholder="Descrição da chamada (lado direito)"
           value={descricao}
           onChange={(e) => setDescricao(e.target.value)}
           style={textarea}

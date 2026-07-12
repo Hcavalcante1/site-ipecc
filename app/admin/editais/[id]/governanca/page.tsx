@@ -616,7 +616,7 @@ export default function GovernancaEditalPage() {
         if (ponte?.ok && ponte.message) {
           triggerToast(String(ponte.message), "success");
           triggerToast(
-            "Abra Prestacao (admin) para revisar os rascunhos.",
+            "Abra Prestação (painel) para revisar os rascunhos.",
             "success"
           );
         }
@@ -924,13 +924,13 @@ export default function GovernancaEditalPage() {
             className="admin-button"
             href="/admin/paginas/transparencia/convenios"
           >
-            Convenios (admin)
+            Convênios (painel)
           </Link>
           <Link
             className="admin-button"
             href="/admin/paginas/transparencia/prestacao"
           >
-            Prestacao (admin)
+            Prestação (painel)
           </Link>
           <Link className="admin-button" href={`/admin/editais/${edital.id}`}>
             Editar cadastro
@@ -998,7 +998,7 @@ export default function GovernancaEditalPage() {
       </section>
 
       <section className="admin-card">
-        <h2 className="admin-h2">Checklist operacional</h2>
+        <h2 className="admin-h2">Lista de verificação operacional</h2>
         <p>
           Use este resumo para conferir se os marcos documentais principais ja
           foram registrados. Ele nao substitui a analise humana do edital.

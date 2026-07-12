@@ -14,10 +14,10 @@ export default function QuemSomosAdminIndexPage() {
     >
       <div className="admin-grid admin-grid--wide">
         <AdminHubCard
-          titulo="Hero"
+          titulo="Destaque / topo"
           descricao='Título e parágrafo inicial da página pública "/quem-somos".'
           href={r.hero}
-          label="Editar Hero"
+          label="Editar destaque / topo"
         />
         <AdminHubCard
           titulo="Bloco Principal"
@@ -38,10 +38,10 @@ export default function QuemSomosAdminIndexPage() {
           label="Editar atuação e eixos"
         />
         <AdminHubCard
-          titulo="CTA Final"
+          titulo="Chamada final"
           descricao="Chamada final da página, com convite e botão de contato."
           href={r.cta}
-          label="Editar CTA final"
+          label="Editar chamada final"
         />
       </div>
     </AdminPaginasHubLayout>

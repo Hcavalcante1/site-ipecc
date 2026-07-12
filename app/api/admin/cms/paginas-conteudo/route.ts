@@ -30,13 +30,13 @@ export async function POST(req: Request) {
     const rows = (Array.isArray(body?.rows) ? body.rows : body?.row ? [body.row] : []) as PaginaConteudoUpsert[];
 
     if (!rows.length) {
-      return NextResponse.json({ ok: false, error: "Payload vazio" }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "Dados vazios" }, { status: 400 });
     }
 
     for (const row of rows) {
       if (!row.pagina_slug || !row.bloco) {
         return NextResponse.json(
-          { ok: false, error: "pagina_slug e bloco são obrigatórios" },
+          { ok: false, error: "Identificador da página e bloco são obrigatórios" },
           { status: 400 }
         );
       }
