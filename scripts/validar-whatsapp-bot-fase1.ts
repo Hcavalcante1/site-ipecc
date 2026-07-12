@@ -5,6 +5,11 @@
 
 import { applyTurn, createInitialContext } from "../lib/whatsapp/botEngine";
 import { resolveMenuOption } from "../lib/whatsapp/botMenu";
+import {
+  createSiteBotContext,
+  getSiteBotQuickOptions,
+  runSiteBotTurn,
+} from "../lib/whatsapp/siteBotScript";
 
 let ok = 0;
 let fail = 0;
@@ -52,6 +57,24 @@ function main() {
   assert("encerrar", r5.result.nextState === "closed");
 
   assert("menu resolve 6 opções", MENU_OPTIONS_COUNT() === 6);
+
+  // Script do site (bot flutuante)
+  let siteCtx = createSiteBotContext();
+  const s1 = runSiteBotTurn(siteCtx, "oi");
+  assert("site bot saudacao", s1.replies.length > 0 && s1.ctx.state === "menu");
+  siteCtx = s1.ctx;
+  const s2 = runSiteBotTurn(siteCtx, "2");
+  assert("site bot editais", s2.ctx.state === "topic_editais");
+  assert(
+    "site bot quick A/B/C",
+    getSiteBotQuickOptions(s2.ctx.state).some((o) => o.id === "a")
+  );
+  siteCtx = s2.ctx;
+  const s3 = runSiteBotTurn(siteCtx, "b");
+  assert("site bot sub B", s3.replies.join(" ").length > 30);
+  siteCtx = s3.ctx;
+  const s4 = runSiteBotTurn(siteCtx, "6");
+  assert("site bot handoff", s4.handoff === true);
 
   console.log(`\nOK: ${ok} | Falhas: ${fail}`);
   process.exit(fail > 0 ? 1 : 0);

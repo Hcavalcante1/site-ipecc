@@ -36,9 +36,18 @@ function main() {
     shell.includes("WhatsAppFloatingChat")
   );
   assert(
+    "shell WhatsAppSiteBotFab",
+    shell.includes("WhatsAppSiteBotFab")
+  );
+  assert(
     "shell topbar WhatsApp",
     shell.includes("PublicSocialLinks") || shell.includes("openPanel")
   );
+
+  const fab = read("components/public/WhatsAppSiteBotFab.tsx");
+  assert("fab runSiteBotTurn", fab.includes("runSiteBotTurn"));
+  assert("fab handoff openPanel", fab.includes("openPanel"));
+  assert("fab quick options", fab.includes("getSiteBotQuickOptions"));
 
   const landing = read("components/public/ApresentacaoLanding.tsx");
   assert(
