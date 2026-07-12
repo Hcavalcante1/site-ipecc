@@ -11,32 +11,49 @@ export async function GET() {
 
   try {
     const admin = getSupabaseAdmin();
-    const [{ data: perfis, error: e1 }, { data: escopos, error: e2 }, { data: processos, error: e3 }] =
+    const selectComDigital =
+      "id, user_id, processo_id, modalidade, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos, mod_digital";
+    const selectSemDigital =
+      "id, user_id, processo_id, modalidade, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos";
+
+    const [{ data: perfis, error: e1 }, escoposRes, { data: processos, error: e3 }] =
       await Promise.all([
         admin
           .from("admin_perfis")
           .select("user_id, email, papel, ativo, created_at")
           .order("created_at", { ascending: false }),
-        admin
-          .from("admin_escopos")
-          .select(
-            "id, user_id, processo_id, modalidade, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos, mod_digital"
-          ),
+        admin.from("admin_escopos").select(selectComDigital),
         admin
           .from("processos_contratacao")
           .select("id, titulo, tipo, status")
           .order("titulo"),
       ]);
 
+    let escopos = escoposRes.data;
+    let e2 = escoposRes.error;
+    let avisoSqlDigital: string | undefined;
+
+    if (
+      e2 &&
+      /mod_digital|column .* does not exist/i.test(e2.message || "")
+    ) {
+      const fallback = await admin
+        .from("admin_escopos")
+        .select(selectSemDigital);
+      escopos = (fallback.data || []).map((e) => ({
+        ...e,
+        mod_digital: false,
+      }));
+      e2 = fallback.error;
+      avisoSqlDigital =
+        "Coluna mod_digital ausente. Aplique docs/sql/admin-escopos-mod-digital.sql no Supabase para liberar o checkbox Digital.";
+    }
+
     if (e1 || e2 || e3) {
       const raw = e1?.message || e2?.message || e3?.message || "";
-      const faltaDigital =
-        /mod_digital/i.test(raw) || /column .* does not exist/i.test(raw);
       return NextResponse.json(
         {
-          error: faltaDigital
-            ? "Coluna mod_digital ausente. Aplique docs/sql/admin-escopos-mod-digital.sql no Supabase."
-            : raw || "Erro ao carregar acessos. Aplique o SQL da Fase 1.",
+          error: raw || "Erro ao carregar acessos. Aplique o SQL da Fase 1.",
         },
         { status: 500 }
       );
@@ -47,6 +64,7 @@ export async function GET() {
       perfis: perfis || [],
       escopos: escopos || [],
       processos: processos || [],
+      ...(avisoSqlDigital ? { aviso: avisoSqlDigital } : {}),
     });
   } catch (err) {
     const message =
@@ -152,7 +170,17 @@ export async function POST(req: Request) {
         mod_digital: Boolean(m.digital),
       });
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const faltaDigital =
+          /mod_digital/i.test(error.message || "") ||
+          /column .* does not exist/i.test(error.message || "");
+        return NextResponse.json(
+          {
+            error: faltaDigital
+              ? "Coluna mod_digital ausente. Aplique docs/sql/admin-escopos-mod-digital.sql no Supabase e tente de novo."
+              : error.message,
+          },
+          { status: 500 }
+        );
       }
       return NextResponse.json({ ok: true });
     }

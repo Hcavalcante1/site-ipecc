@@ -85,6 +85,9 @@ export default function AdminAcessosPage() {
       setPerfis(json.perfis || []);
       setEscopos(json.escopos || []);
       setProcessos(json.processos || []);
+      if (json.aviso) {
+        setMsg(json.aviso);
+      }
       const operadores = (json.perfis || []).filter(
         (p: Perfil) => p.ativo && p.papel !== "mestre"
       );
