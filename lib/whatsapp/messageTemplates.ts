@@ -21,31 +21,44 @@ function url(path: string): string {
 export const COPY = {
   greeting: [
     "Olá! Você está no canal oficial do *Instituto Paulista de Esporte, Cultura e Cidadania (IPECC)*.",
-    "Posso orientar sobre projetos, editais, propostas, transparência e eventos — com menu e *subopções A/B/C* em cada tema.",
+    "Nossa atuação: *educação, esporte, cultura e cidadania* — com projetos de impacto social, parcerias públicas e transparência ativa no Estado de São Paulo.",
+    "Em números (visão institucional): *+120* projetos · *35* municípios · *50.000+* pessoas · *300+* parceiros.",
+    "Neste assistente você encontra o *mesmo escopo do site*: projetos e programas, editais, envio de propostas, transparência e eventos.",
+    "Use o *menu 1–6*. Em cada tema, digite *A*, *B* ou *C* para aprofundar. Digite *6* para falar com a equipe humana.",
   ],
   greetingFromSite: [
-    "Recebemos sua mensagem pelo site do IPECC. Obrigado pelo contato!",
-    "Escolha uma opção do menu. Em cada tema, use *A*, *B* ou *C* para ir mais a fundo.",
+    "Recebemos seu contato pelo *site oficial do IPECC*. Obrigado!",
+    "Somos o *Instituto Paulista de Esporte, Cultura e Cidadania* — educação, esporte, cultura e cidadania.",
+    "O portal conecta *projetos*, *editais*, *propostas documentais* e *transparência* para poder público, OSCs, escolas e comunidade.",
+    "Impacto institucional: *+120* projetos · *35* municípios · *50.000+* pessoas · *300+* parceiros.",
+    `Explore também: ${url("/")} · notícias e vitrine: ${url("/inicio")}`,
+    "Escolha uma opção do menu. Em cada tema use *A*, *B* ou *C*. Digite *6* para a equipe.",
   ],
   unknown: (n: number) =>
     n >= 2
       ? [
-          "Ainda não identifiquei sua solicitação.",
-          "Digite *menu* para ver as opções, *A/B/C* se estiver em um tema, ou *6* para falar com a equipe.",
+          "Ainda não identifiquei sua solicitação com clareza.",
+          "Você pode:",
+          "• digitar *menu* para ver todas as opções do portal;",
+          "• se já estiver em um tema, usar *A*, *B* ou *C*;",
+          "• digitar *6* para falar com a equipe (útil se for edital com prazo ou caso específico).",
+          "Posso orientar sobre projetos, editais, propostas, transparência e eventos — o mesmo escopo do site público.",
         ]
       : [
           "Não identifiquei sua solicitação.",
-          "Digite *menu* para ver as opções ou *6* para falar com a equipe.",
+          "Digite *menu* para ver as opções do assistente (projetos, editais, propostas, transparência, eventos) ou *6* para falar com a equipe do IPECC.",
         ],
   handoff: [
-    "Vamos encaminhar você para a *equipe humana*.",
+    "Vamos encaminhar você para a *equipe humana do IPECC*.",
     "O retorno ocorre em *horário comercial* (segunda a sexta).",
-    "Se for urgente sobre edital com prazo hoje, informe o *nome do edital* na mensagem do WhatsApp.",
-    "Enquanto isso, o atendimento automático fica pausado — digite *menu* se quiser voltar ao bot.",
+    "Para agilizar, informe na mensagem: *assunto*, *nome do edital* (se houver), *protocolo* (se já enviou proposta) ou *nome/data do evento*.",
+    "Dados institucionais: *CNPJ 05.965.225/0001-04*.",
+    `Contato e canais: ${url("/contato")}`,
+    "Enquanto isso, o atendimento automático fica pausado — digite *menu* se quiser voltar ao assistente.",
   ],
   closed: [
-    "Obrigado pelo contato com o IPECC.",
-    `Site: ${url("/")}`,
+    "Obrigado pelo contato com o *IPECC* — Instituto Paulista de Esporte, Cultura e Cidadania.",
+    `Portal: ${url("/")} · Transparência: ${url("/transparencia")} · Contato: ${url("/contato")}`,
     "Até breve!",
   ],
 };

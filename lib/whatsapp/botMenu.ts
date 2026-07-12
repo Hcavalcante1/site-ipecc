@@ -55,8 +55,10 @@ export function resolveMenuOption(
 
 export function menuPromptLines(): string[] {
   return [
-    "Como posso ajudar?",
+    "Posso orientar sobre o *mesmo escopo do site público* do IPECC — projetos e programas, editais, propostas, transparência e eventos.",
+    "Escolha uma opção:",
     ...MENU_OPTIONS.map((o) => `${o.key} — ${o.label}`),
+    "Em cada tema, use *A / B / C* para aprofundar.",
     "_Digite o número ou *menu* para voltar._",
   ];
 }
