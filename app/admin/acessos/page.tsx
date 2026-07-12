@@ -12,7 +12,27 @@ type Perfil = {
   ativo: boolean;
 };
 
-type Processo = { id: string; titulo: string; status: string };
+type Processo = {
+  id: string;
+  titulo: string;
+  tipo?: string | null;
+  status: string;
+};
+
+const LABEL_TIPO_PROCESSO: Record<string, string> = {
+  interno_ipecc: "Interno IPECC",
+  publico_externo: "Contratacao publica externa",
+  privado_externo: "Contratacao privada externa",
+};
+
+function labelTipoProcesso(tipo?: string | null): string {
+  if (!tipo) return "Tipo nao informado";
+  return LABEL_TIPO_PROCESSO[tipo] || tipo;
+}
+
+function labelProcesso(p: Pick<Processo, "titulo" | "tipo" | "status">): string {
+  return `${p.titulo} · ${labelTipoProcesso(p.tipo)} · ${p.status}`;
+}
 
 type Escopo = {
   id: string;
@@ -81,7 +101,9 @@ export default function AdminAcessosPage() {
   }, []);
 
   const processoNome = useMemo(() => {
-    const map = new Map(processos.map((p) => [p.id, p.titulo]));
+    const map = new Map(
+      processos.map((p) => [p.id, labelProcesso(p)])
+    );
     return (id: string | null) => (id ? map.get(id) || id : "—");
   }, [processos]);
 
@@ -230,7 +252,7 @@ export default function AdminAcessosPage() {
         >
           {processos.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.titulo} ({p.status})
+              {labelProcesso(p)}
             </option>
           ))}
         </select>

@@ -24,7 +24,7 @@ export async function GET() {
           ),
         admin
           .from("processos_contratacao")
-          .select("id, titulo, status")
+          .select("id, titulo, tipo, status")
           .order("titulo"),
       ]);
 
