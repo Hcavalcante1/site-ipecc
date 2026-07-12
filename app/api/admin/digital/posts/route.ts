@@ -1,32 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdminSession } from "@/lib/auth/adminSession";
-import { isMestre } from "@/lib/auth/adminEscopo";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { denyIfSemModuloDigital } from "@/lib/digital/adminGate";
 import {
   isDigitalPlatform,
   isDigitalPostStatus,
   type DigitalPostTargetBrief,
 } from "@/lib/digital/types";
 
-function denyIfNotMestre(auth: Awaited<ReturnType<typeof verifyAdminSession>>) {
-  if (auth.ok === false) {
-    return NextResponse.json(
-      { ok: false, error: auth.message },
-      { status: auth.status }
-    );
-  }
-  if (!isMestre(auth.contexto)) {
-    return NextResponse.json(
-      { ok: false, error: "Módulo Digital disponível apenas para mestre nesta fase." },
-      { status: 403 }
-    );
-  }
-  return null;
-}
-
 export async function GET(req: NextRequest) {
-  const auth = await verifyAdminSession();
-  const denied = denyIfNotMestre(auth);
+  const { denied } = await denyIfSemModuloDigital();
   if (denied) return denied;
 
   const status = req.nextUrl.searchParams.get("status")?.trim();
@@ -152,12 +134,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await verifyAdminSession();
-  const denied = denyIfNotMestre(auth);
-  if (denied) return denied;
-  if (auth.ok === false) {
-    return NextResponse.json({ ok: false, error: auth.message }, { status: auth.status });
-  }
+  const { denied, auth } = await denyIfSemModuloDigital();
+  if (denied || !auth) return denied!;
 
   let body: {
     title?: string;
@@ -222,8 +200,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const auth = await verifyAdminSession();
-  const denied = denyIfNotMestre(auth);
+  const { denied } = await denyIfSemModuloDigital();
   if (denied) return denied;
 
   let body: {

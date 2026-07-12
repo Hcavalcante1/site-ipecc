@@ -27,6 +27,7 @@ type EscopoRow = {
   mod_noticias: boolean;
   mod_eventos: boolean;
   mod_projetos: boolean;
+  mod_digital: boolean;
 };
 
 async function carregarContexto(
@@ -59,12 +60,40 @@ async function carregarContexto(
 
   const row = perfil as PerfilRow | null;
   if (row?.ativo) {
-    const { data: escoposData } = await supabase
-      .from("admin_escopos")
-      .select(
-        "id, processo_id, modalidade, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos"
-      )
-      .eq("user_id", userId);
+    const selectComDigital =
+      "id, processo_id, modalidade, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos, mod_digital";
+    const selectSemDigital =
+      "id, processo_id, modalidade, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos";
+
+    let escoposData: Array<Partial<EscopoRow> & Omit<EscopoRow, "mod_digital">> | null =
+      null;
+    let escoposError: { message?: string } | null = null;
+
+    {
+      const first = await supabase
+        .from("admin_escopos")
+        .select(selectComDigital)
+        .eq("user_id", userId);
+      escoposData = first.data as typeof escoposData;
+      escoposError = first.error;
+
+      // Coluna ainda não aplicada → fallback sem quebrar menus dos outros módulos
+      if (
+        escoposError &&
+        /mod_digital|column .* does not exist/i.test(escoposError.message || "")
+      ) {
+        const fallback = await supabase
+          .from("admin_escopos")
+          .select(selectSemDigital)
+          .eq("user_id", userId);
+        escoposData = fallback.data as typeof escoposData;
+        escoposError = fallback.error;
+      }
+    }
+
+    if (escoposError) {
+      escoposData = [];
+    }
 
     const { data: isAdmin } = await supabase.rpc("is_admin", {
       user_id: userId,
@@ -75,7 +104,18 @@ async function carregarContexto(
       email: row.email ?? email ?? null,
       papel: row.papel,
       ativo: true,
-      escopos: (escoposData || []) as AdminEscopo[],
+      escopos: (escoposData || []).map((e) => ({
+        id: e.id as string,
+        processo_id: e.processo_id as string | null,
+        modalidade: e.modalidade as string | null,
+        mod_editais: Boolean(e.mod_editais),
+        mod_propostas: Boolean(e.mod_propostas),
+        mod_transparencia: Boolean(e.mod_transparencia),
+        mod_noticias: Boolean(e.mod_noticias),
+        mod_eventos: Boolean(e.mod_eventos),
+        mod_projetos: Boolean(e.mod_projetos),
+        mod_digital: Boolean(e.mod_digital),
+      })),
       // is_admin legado continua contando como mestre (acesso total)
       legadoIsAdmin: Boolean(isAdmin),
     };

@@ -20,7 +20,7 @@ export async function GET() {
         admin
           .from("admin_escopos")
           .select(
-            "id, user_id, processo_id, modalidade, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos"
+            "id, user_id, processo_id, modalidade, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos, mod_digital"
           ),
         admin
           .from("processos_contratacao")
@@ -29,13 +29,14 @@ export async function GET() {
       ]);
 
     if (e1 || e2 || e3) {
+      const raw = e1?.message || e2?.message || e3?.message || "";
+      const faltaDigital =
+        /mod_digital/i.test(raw) || /column .* does not exist/i.test(raw);
       return NextResponse.json(
         {
-          error:
-            e1?.message ||
-            e2?.message ||
-            e3?.message ||
-            "Erro ao carregar acessos. Aplique o SQL da Fase 1.",
+          error: faltaDigital
+            ? "Coluna mod_digital ausente. Aplique docs/sql/admin-escopos-mod-digital.sql no Supabase."
+            : raw || "Erro ao carregar acessos. Aplique o SQL da Fase 1.",
         },
         { status: 500 }
       );
@@ -75,6 +76,7 @@ export async function POST(req: Request) {
         noticias?: boolean;
         eventos?: boolean;
         projetos?: boolean;
+        digital?: boolean;
       };
       ativo?: boolean;
       escopo_id?: string;
@@ -147,6 +149,7 @@ export async function POST(req: Request) {
         mod_noticias: Boolean(m.noticias),
         mod_eventos: Boolean(m.eventos),
         mod_projetos: Boolean(m.projetos),
+        mod_digital: Boolean(m.digital),
       });
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });

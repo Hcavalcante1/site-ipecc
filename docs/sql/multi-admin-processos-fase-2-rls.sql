@@ -60,6 +60,7 @@ as $$
             when 'noticias' then e.mod_noticias
             when 'eventos' then e.mod_eventos
             when 'projetos' then e.mod_projetos
+            when 'digital' then e.mod_digital
             else false
           end
       )

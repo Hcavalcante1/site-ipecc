@@ -1,23 +1,11 @@
 import { NextResponse } from "next/server";
-import { verifyAdminSession } from "@/lib/auth/adminSession";
-import { isMestre } from "@/lib/auth/adminEscopo";
 import { generateDigitalDrafts } from "@/lib/digital/draftAgent";
+import { denyIfSemModuloDigital } from "@/lib/digital/adminGate";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export async function POST() {
-  const auth = await verifyAdminSession();
-  if (auth.ok === false) {
-    return NextResponse.json(
-      { ok: false, error: auth.message },
-      { status: auth.status }
-    );
-  }
-  if (!isMestre(auth.contexto)) {
-    return NextResponse.json(
-      { ok: false, error: "Módulo Digital disponível apenas para mestre nesta fase." },
-      { status: 403 }
-    );
-  }
+  const { denied, auth } = await denyIfSemModuloDigital();
+  if (denied || !auth) return denied!;
 
   try {
     const result = await generateDigitalDrafts(supabaseAdmin, {
@@ -44,7 +32,7 @@ export async function POST() {
           ? "Tabelas Digital ausentes. Aplique docs/sql/digital-redes-fase1.sql no Supabase."
           : message,
       },
-      { status: missing ? 503 : 500 }
+      { status: 500 }
     );
   }
 }

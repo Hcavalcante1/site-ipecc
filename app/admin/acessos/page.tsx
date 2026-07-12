@@ -36,6 +36,7 @@ type Escopo = {
   mod_noticias: boolean;
   mod_eventos: boolean;
   mod_projetos: boolean;
+  mod_digital?: boolean;
 };
 
 const chipStyle: CSSProperties = {
@@ -68,6 +69,7 @@ export default function AdminAcessosPage() {
   const [modNoticias, setModNoticias] = useState(false);
   const [modEventos, setModEventos] = useState(false);
   const [modProjetos, setModProjetos] = useState(false);
+  const [modDigital, setModDigital] = useState(false);
 
   async function carregar(preferUserId?: string) {
     setLoading(true);
@@ -187,6 +189,7 @@ export default function AdminAcessosPage() {
           noticias: modNoticias,
           eventos: modEventos,
           projetos: modProjetos,
+          digital: modDigital,
         },
       }),
     });
@@ -350,10 +353,18 @@ export default function AdminAcessosPage() {
             />
             Projetos
           </label>
+          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={modDigital}
+              onChange={(e) => setModDigital(e.target.checked)}
+            />
+            Digital
+          </label>
         </div>
         <p style={{ fontSize: 13, opacity: 0.85 }}>
-          Marque somente os modulos vendidos neste processo. CMS do site IPECC
-          permanece com o mestre.
+          Marque somente os módulos deste processo. Digital libera a fila de
+          redes. CMS do site IPECC permanece com o mestre.
         </p>
         <button type="button" className="admin-button" onClick={criarEscopo}>
           Vincular escopo

@@ -80,11 +80,28 @@ async function main() {
   const { data: perfis, error: e1 } = await admin
     .from("admin_perfis")
     .select("user_id, email, papel, ativo");
-  const { data: escopos, error: e2 } = await admin
+  let { data: escopos, error: e2 } = await admin
     .from("admin_escopos")
     .select(
-      "user_id, processo_id, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos"
+      "user_id, processo_id, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos, mod_digital"
     );
+  if (
+    e2 &&
+    /mod_digital|column .* does not exist/i.test(e2.message || "")
+  ) {
+    const fallback = await admin
+      .from("admin_escopos")
+      .select(
+        "user_id, processo_id, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos"
+      );
+    escopos = fallback.data as typeof escopos;
+    e2 = fallback.error;
+    if (!e2) {
+      console.log(
+        "AVISO: coluna mod_digital ausente — aplique docs/sql/admin-escopos-mod-digital.sql"
+      );
+    }
+  }
   const { data: processos, error: e3 } = await admin
     .from("processos_contratacao")
     .select("id, titulo, tipo, status");
@@ -117,6 +134,9 @@ async function main() {
         mod_noticias: e.mod_noticias,
         mod_eventos: e.mod_eventos,
         mod_projetos: e.mod_projetos,
+        mod_digital: Boolean(
+          (e as { mod_digital?: boolean }).mod_digital
+        ),
       })),
       legadoIsAdmin: false,
     };

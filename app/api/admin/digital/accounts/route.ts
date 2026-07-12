@@ -1,32 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdminSession } from "@/lib/auth/adminSession";
-import { isMestre } from "@/lib/auth/adminEscopo";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { denyIfSemModuloDigital } from "@/lib/digital/adminGate";
 import {
   DIGITAL_PLATFORMS,
   isDigitalPlatform,
   type DigitalAccountScope,
 } from "@/lib/digital/types";
 
-function denyIfNotMestre(auth: Awaited<ReturnType<typeof verifyAdminSession>>) {
-  if (auth.ok === false) {
-    return NextResponse.json(
-      { ok: false, error: auth.message },
-      { status: auth.status }
-    );
-  }
-  if (!isMestre(auth.contexto)) {
-    return NextResponse.json(
-      { ok: false, error: "Módulo Digital disponível apenas para mestre nesta fase." },
-      { status: 403 }
-    );
-  }
-  return null;
-}
-
 export async function GET() {
-  const auth = await verifyAdminSession();
-  const denied = denyIfNotMestre(auth);
+  const { denied } = await denyIfSemModuloDigital();
   if (denied) return denied;
 
   const { data, error } = await supabaseAdmin
@@ -53,8 +35,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await verifyAdminSession();
-  const denied = denyIfNotMestre(auth);
+  const { denied } = await denyIfSemModuloDigital();
   if (denied) return denied;
 
   let body: {
@@ -133,8 +114,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const auth = await verifyAdminSession();
-  const denied = denyIfNotMestre(auth);
+  const { denied } = await denyIfSemModuloDigital();
   if (denied) return denied;
 
   let body: {
