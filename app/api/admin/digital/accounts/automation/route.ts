@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
     account: data,
     aviso:
       action === "request_connect"
-        ? "Status connecting. Rode o worker e faça login manual no navegador aberto (não envie senha ao IPECC)."
+        ? "Status connecting. Rode node scripts/run-digital-publisher.cjs (ou npm run dev em services/digital-publisher) e faça login manual no navegador aberto (não envie senha ao IPECC)."
         : undefined,
   });
 }

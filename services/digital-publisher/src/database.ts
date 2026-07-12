@@ -31,3 +31,38 @@ export async function logEvent(
     details: row.details || {},
   });
 }
+
+/** URL pública ou assinada para o Playwright baixar a mídia. */
+export async function resolvePostMediaUrl(
+  db: SupabaseClient,
+  post: {
+    media_url?: string | null;
+    media_id?: string | null;
+  }
+): Promise<string | null> {
+  const direct = post.media_url?.trim();
+  if (direct && /^https?:\/\//i.test(direct)) return direct;
+
+  if (!post.media_id) return null;
+
+  const { data: media, error } = await db
+    .from("digital_media")
+    .select("storage_path, public_url, deleted_at")
+    .eq("id", post.media_id)
+    .maybeSingle();
+
+  if (error || !media || media.deleted_at) return null;
+
+  if (media.public_url && /^https?:\/\//i.test(media.public_url)) {
+    return media.public_url;
+  }
+
+  if (!media.storage_path) return null;
+
+  const { data: signed, error: signErr } = await db.storage
+    .from("digital-media")
+    .createSignedUrl(media.storage_path, 60 * 60);
+
+  if (signErr || !signed?.signedUrl) return null;
+  return signed.signedUrl;
+}

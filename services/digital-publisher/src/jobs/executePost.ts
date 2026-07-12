@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { WorkerConfig } from "../config";
-import { logEvent } from "../database";
+import { logEvent, resolvePostMediaUrl } from "../database";
 import { getPublisher } from "../publishers/publisher.factory";
 
 function retryAt(attempt: number): string | null {
@@ -24,7 +24,7 @@ export async function executePost(
   const { data: post, error: postErr } = await db
     .from("digital_posts")
     .select(
-      "id, title, body, hashtags, media_url, status, dry_run, content_variants, publish_attempts"
+      "id, title, body, hashtags, media_url, media_id, status, dry_run, content_variants, publish_attempts"
     )
     .eq("id", postId)
     .maybeSingle();
@@ -121,13 +121,14 @@ export async function executePost(
     });
 
     const caption = [post.body, post.hashtags].filter(Boolean).join("\n\n");
+    const mediaUrl = await resolvePostMediaUrl(db, post);
     const result = await publisher.publish({
       postId,
       targetId: (t.id as string) || null,
       accountId: t.account_id,
       platform: String(acc.platform),
       caption,
-      mediaUrl: post.media_url,
+      mediaUrl,
       dryRun,
     });
 

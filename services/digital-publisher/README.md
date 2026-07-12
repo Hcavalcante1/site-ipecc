@@ -14,6 +14,14 @@ Admin cria → revisa → aprova → agenda → este worker publica → confirma
 
 ## Local (desenvolvimento)
 
+Na raiz do projeto (usa `.env.local`):
+
+```bash
+node scripts/run-digital-publisher.cjs
+```
+
+Ou manualmente:
+
 ```bash
 cd services/digital-publisher
 cp .env.example .env
@@ -21,6 +29,12 @@ cp .env.example .env
 npm install
 npx playwright install chromium
 npm run dev
+```
+
+Verificar Supabase:
+
+```bash
+node scripts/probe-digital-readiness.cjs
 ```
 
 ## Conectar conta (login manual)
