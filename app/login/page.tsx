@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { mensagemErroLoginAdmin } from "@/lib/auth/loginAdminMessages";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -26,9 +27,9 @@ export default function LoginPage() {
 
       if (error || !data.session?.access_token) {
         setMsg(
-          error?.message?.toLowerCase().includes("invalid")
-            ? "E-mail ou senha invalidos."
-            : error?.message || "E-mail ou senha invalidos."
+          mensagemErroLoginAdmin({
+            authErrorMessage: error?.message || null,
+          })
         );
         setLoading(false);
         return;
@@ -44,13 +45,28 @@ export default function LoginPage() {
 
       const body = (await gate.json().catch(() => ({}))) as {
         error?: string;
+        modulos?: string[];
+        mestre?: boolean;
       };
 
       if (!gate.ok) {
         await supabase.auth.signOut().catch(() => null);
-        setMsg(body.error || "Acesso admin nao autorizado.");
+        setMsg(
+          mensagemErroLoginAdmin({
+            status: gate.status,
+            apiError: body.error || null,
+          })
+        );
         setLoading(false);
         return;
+      }
+
+      const mods = Array.isArray(body.modulos) ? body.modulos : [];
+      if (!body.mestre && mods.length === 0) {
+        // Entra no admin, mas avisa: falta escopo de modulos
+        sessionStorage.setItem("ipecc_admin_aviso_sem_escopo", "1");
+      } else {
+        sessionStorage.removeItem("ipecc_admin_aviso_sem_escopo");
       }
 
       localStorage.removeItem("ipecc_admin_closed");
@@ -58,7 +74,9 @@ export default function LoginPage() {
       window.location.assign("/admin");
     } catch (err) {
       setMsg(
-        err instanceof Error ? err.message : "Erro ao autenticar."
+        mensagemErroLoginAdmin({
+          apiError: err instanceof Error ? err.message : "Erro ao autenticar.",
+        })
       );
       setLoading(false);
     }

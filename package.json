@@ -59,7 +59,7 @@
     "validar:whatsapp-handoff-fase4": "npx --yes tsx scripts/validar-whatsapp-handoff-fase4.ts",
     "validar:smoke-publico": "npx --yes tsx scripts/validar-smoke-publico-http.ts",
     "check:site": "node scripts/check-site.mjs --http http://localhost:3000",
-    "test:site": "npm run validar:smoke-publico && npm run check:site && npm run validar:public-pages-padrao && npm run validar:admin-rotas",
+    "test:site": "npm run validar:smoke-publico && npm run check:site && npm run validar:public-pages-padrao && npm run validar:admin-rotas && npm run validar:admin-acessos",
     "validar:whatsapp-fase3": "npx --yes tsx scripts/validar-whatsapp-fase3.ts",
     "validar:whatsapp-meta": "npx --yes tsx scripts/validar-whatsapp-meta.ts",
     "validar:whatsapp-persist": "npx --yes tsx scripts/validar-whatsapp-persist-staging.ts",
@@ -71,7 +71,9 @@
     "validar:whatsapp-public-chat": "npx --yes tsx scripts/validar-whatsapp-public-chat.ts",
     "validar:whatsapp-public-pages": "npx --yes tsx scripts/validar-whatsapp-public-pages.ts",
     "validar:public-pages-padrao": "npx --yes tsx scripts/validar-public-pages-padrao.ts",
-    "validar:admin-rotas": "npx --yes tsx scripts/validar-admin-rotas-canonicas.ts"
+    "validar:admin-rotas": "npx --yes tsx scripts/validar-admin-rotas-canonicas.ts",
+    "validar:admin-acessos": "npx --yes tsx scripts/validar-admin-acessos-operador.ts",
+    "grant:admin": "npx --yes tsx scripts/grant-admin-perfil.ts"
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.15.0",

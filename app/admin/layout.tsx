@@ -44,10 +44,20 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const [modulos, setModulos] = useState<AdminModulo[]>([...MODULOS_MESTRE]);
   const [userEmail, setUserEmail] = useState("");
 
+  const [avisoSemEscopo, setAvisoSemEscopo] = useState(false);
+
   const pode = useMemo(() => {
     const set = new Set(modulos);
     return (m: AdminModulo) => set.has(m);
   }, [modulos]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (sessionStorage.getItem("ipecc_admin_aviso_sem_escopo") === "1") {
+      setAvisoSemEscopo(true);
+      sessionStorage.removeItem("ipecc_admin_aviso_sem_escopo");
+    }
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -394,6 +404,22 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </aside>
 
         <main className="admin-main">
+          {avisoSemEscopo ? (
+            <div
+              style={{
+                margin: "12px 16px 0",
+                padding: "12px 14px",
+                borderRadius: 10,
+                border: "1px solid #f59e0b",
+                background: "rgba(245, 158, 11, 0.12)",
+                color: "#fde68a",
+                fontSize: 14,
+              }}
+            >
+              Seu login esta ativo, mas ainda nao ha <strong>escopo de modulos</strong>.
+              Peça ao mestre para vincular um processo em <strong>/admin/acessos</strong>.
+            </div>
+          ) : null}
           <section className="admin-content-shell">{children}</section>
           <footer className="admin-main-footer">
             IPECC | Painel administrativo institucional

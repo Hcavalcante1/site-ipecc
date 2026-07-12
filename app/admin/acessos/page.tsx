@@ -1,9 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { triggerToast } from "@/components/AdminToast";
 import type { AdminPapel } from "@/lib/auth/adminEscopo";
+import {
+  ORDEM_TIPO_PROCESSO,
+  chipsModulosEscopo,
+  labelProcessoCompleto,
+  labelTipoProcesso,
+} from "@/lib/auth/processoLabels";
 
 type Perfil = {
   user_id: string;
@@ -19,21 +25,6 @@ type Processo = {
   status: string;
 };
 
-const LABEL_TIPO_PROCESSO: Record<string, string> = {
-  interno_ipecc: "Interno IPECC",
-  publico_externo: "Contratacao publica externa",
-  privado_externo: "Contratacao privada externa",
-};
-
-function labelTipoProcesso(tipo?: string | null): string {
-  if (!tipo) return "Tipo nao informado";
-  return LABEL_TIPO_PROCESSO[tipo] || tipo;
-}
-
-function labelProcesso(p: Pick<Processo, "titulo" | "tipo" | "status">): string {
-  return `${p.titulo} · ${labelTipoProcesso(p.tipo)} · ${p.status}`;
-}
-
 type Escopo = {
   id: string;
   user_id: string;
@@ -45,6 +36,19 @@ type Escopo = {
   mod_noticias: boolean;
   mod_eventos: boolean;
   mod_projetos: boolean;
+};
+
+const chipStyle: CSSProperties = {
+  display: "inline-block",
+  padding: "2px 8px",
+  borderRadius: 999,
+  border: "1px solid rgba(134, 239, 172, 0.35)",
+  background: "rgba(22, 163, 74, 0.12)",
+  color: "#86efac",
+  fontSize: 11,
+  fontWeight: 600,
+  marginRight: 6,
+  marginTop: 4,
 };
 
 export default function AdminAcessosPage() {
@@ -65,7 +69,7 @@ export default function AdminAcessosPage() {
   const [modEventos, setModEventos] = useState(false);
   const [modProjetos, setModProjetos] = useState(false);
 
-  async function carregar() {
+  async function carregar(preferUserId?: string) {
     setLoading(true);
     setMsg("");
     const res = await fetch("/api/admin/acessos", { credentials: "include" });
@@ -83,26 +87,55 @@ export default function AdminAcessosPage() {
         (p: Perfil) => p.ativo && p.papel !== "mestre"
       );
       setUserIdEscopo((prev) => {
+        if (
+          preferUserId &&
+          operadores.some((p: Perfil) => p.user_id === preferUserId)
+        ) {
+          return preferUserId;
+        }
         if (prev && operadores.some((p: Perfil) => p.user_id === prev)) {
           return prev;
         }
         return operadores[0]?.user_id || "";
       });
-      if (!processoId && json.processos?.[0]?.id) {
-        setProcessoId(json.processos[0].id);
-      }
+      setProcessoId((prev) => {
+        if (prev && (json.processos || []).some((p: Processo) => p.id === prev)) {
+          return prev;
+        }
+        return json.processos?.[0]?.id || "";
+      });
     }
     setLoading(false);
   }
 
   useEffect(() => {
     carregar();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const processosPorTipo = useMemo(() => {
+    const groups = new Map<string, Processo[]>();
+    for (const p of processos) {
+      const key = p.tipo || "_sem_tipo";
+      const list = groups.get(key) || [];
+      list.push(p);
+      groups.set(key, list);
+    }
+    const orderedKeys = [
+      ...ORDEM_TIPO_PROCESSO.filter((t) => groups.has(t)),
+      ...[...groups.keys()].filter(
+        (k) => !(ORDEM_TIPO_PROCESSO as readonly string[]).includes(k)
+      ),
+    ];
+    return orderedKeys.map((key) => ({
+      key,
+      label: labelTipoProcesso(key === "_sem_tipo" ? null : key),
+      items: groups.get(key) || [],
+    }));
+  }, [processos]);
 
   const processoNome = useMemo(() => {
     const map = new Map(
-      processos.map((p) => [p.id, labelProcesso(p)])
+      processos.map((p) => [p.id, labelProcessoCompleto(p)])
     );
     return (id: string | null) => (id ? map.get(id) || id : "—");
   }, [processos]);
@@ -124,9 +157,14 @@ export default function AdminAcessosPage() {
       triggerToast(json.error || "Erro", "error");
       return;
     }
-    triggerToast("Perfil salvo.", "success");
+    triggerToast("Perfil salvo. Selecione o processo e os modulos abaixo.", "success");
     setEmail("");
-    carregar();
+    if (papel !== "mestre" && json.user_id) {
+      setUserIdEscopo(json.user_id);
+      await carregar(json.user_id);
+    } else {
+      await carregar();
+    }
   }
 
   async function criarEscopo() {
@@ -161,7 +199,7 @@ export default function AdminAcessosPage() {
       `Escopo vinculado a ${emailDoUsuario(userIdEscopo)}.`,
       "success"
     );
-    carregar();
+    carregar(userIdEscopo);
   }
 
   async function removerEscopo(id: string) {
@@ -177,7 +215,7 @@ export default function AdminAcessosPage() {
       return;
     }
     triggerToast("Escopo removido.", "success");
-    carregar();
+    carregar(userIdEscopo);
   }
 
   return (
@@ -237,6 +275,9 @@ export default function AdminAcessosPage() {
           value={userIdEscopo}
           onChange={(e) => setUserIdEscopo(e.target.value)}
         >
+          {perfis.filter((p) => p.ativo && p.papel !== "mestre").length === 0 ? (
+            <option value="">Nenhum operador/externo ativo</option>
+          ) : null}
           {perfis
             .filter((p) => p.ativo && p.papel !== "mestre")
             .map((p) => (
@@ -245,15 +286,19 @@ export default function AdminAcessosPage() {
               </option>
             ))}
         </select>
-        <label>Processo</label>
+        <label>Processo (agrupado por tipo)</label>
         <select
           value={processoId}
           onChange={(e) => setProcessoId(e.target.value)}
         >
-          {processos.map((p) => (
-            <option key={p.id} value={p.id}>
-              {labelProcesso(p)}
-            </option>
+          {processosPorTipo.map((grupo) => (
+            <optgroup key={grupo.key} label={grupo.label}>
+              {grupo.items.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.titulo} ({p.status})
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 12 }}>
@@ -348,41 +393,51 @@ export default function AdminAcessosPage() {
           <p>Nenhum escopo vinculado.</p>
         ) : (
           <div style={{ display: "grid", gap: 10 }}>
-            {escopos.map((e) => (
-              <div
-                key={e.id}
-                style={{
-                  border: "1px solid rgba(255,255,255,.14)",
-                  borderRadius: 10,
-                  padding: 12,
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  flexWrap: "wrap",
-                }}
-              >
-                <div>
-                  <strong>{processoNome(e.processo_id)}</strong>
-                  <p style={{ margin: "6px 0 0", fontSize: 13 }}>
-                    usuario: {emailDoUsuario(e.user_id)} · editais{" "}
-                    {e.mod_editais ? "sim" : "nao"} · propostas{" "}
-                    {e.mod_propostas ? "sim" : "nao"} · transparencia{" "}
-                    {e.mod_transparencia ? "sim" : "nao"} · noticias{" "}
-                    {e.mod_noticias ? "sim" : "nao"} · eventos{" "}
-                    {e.mod_eventos ? "sim" : "nao"} · projetos{" "}
-                    {e.mod_projetos ? "sim" : "nao"}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="admin-button"
-                  style={{ background: "#ef4444" }}
-                  onClick={() => removerEscopo(e.id)}
+            {escopos.map((e) => {
+              const chips = chipsModulosEscopo(e);
+              return (
+                <div
+                  key={e.id}
+                  style={{
+                    border: "1px solid rgba(255,255,255,.14)",
+                    borderRadius: 10,
+                    padding: 12,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    flexWrap: "wrap",
+                  }}
                 >
-                  Remover
-                </button>
-              </div>
-            ))}
+                  <div>
+                    <strong>{processoNome(e.processo_id)}</strong>
+                    <p style={{ margin: "6px 0 0", fontSize: 13 }}>
+                      usuario: {emailDoUsuario(e.user_id)}
+                    </p>
+                    <div style={{ marginTop: 6 }}>
+                      {chips.length === 0 ? (
+                        <span style={{ fontSize: 12, opacity: 0.7 }}>
+                          Nenhum modulo marcado
+                        </span>
+                      ) : (
+                        chips.map((c) => (
+                          <span key={c} style={chipStyle}>
+                            {c}
+                          </span>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="admin-button"
+                    style={{ background: "#ef4444" }}
+                    onClick={() => removerEscopo(e.id)}
+                  >
+                    Remover
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </section>
