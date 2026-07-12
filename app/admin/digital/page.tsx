@@ -494,6 +494,46 @@ export default function DigitalAdminPage() {
     setBusy(false);
   }
 
+  /** Enfileira para o worker (não publica nesta requisição). */
+  async function publicarAgoraWorker(post: DigitalPost) {
+    setBusy(true);
+    setAviso(null);
+    const res = await fetch("/api/admin/digital/posts/publish-now", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ post_id: post.id, dry_run: true }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.ok) {
+      setAviso(json.error ?? "Falha ao enfileirar");
+    } else {
+      setAviso(json.message ?? "Enfileirado para o worker (dry-run).");
+      await carregar();
+    }
+    setBusy(false);
+  }
+
+  async function repetirFalhas(post: DigitalPost, accountId?: string) {
+    setBusy(true);
+    setAviso(null);
+    const res = await fetch("/api/admin/digital/posts/retry", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        post_id: post.id,
+        account_id: accountId,
+      }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.ok) {
+      setAviso(json.error ?? "Falha ao repetir");
+    } else {
+      setAviso(json.message ?? "Retentativa enfileirada.");
+      await carregar();
+    }
+    setBusy(false);
+  }
+
   return (
     <div style={pageStyle}>
       <h1 style={{ margin: 0, fontSize: 24 }}>Digital — redes sociais</h1>
@@ -992,18 +1032,59 @@ export default function DigitalAdminPage() {
                           >
                             <span>Destinos:</span>
                             {targets.map((t) => (
-                              <a
+                              <span
                                 key={t.account_id}
-                                href={t.href}
-                                target="_blank"
-                                rel="noreferrer"
-                                style={{ color: "#93c5fd" }}
+                                style={{ display: "inline-flex", gap: 6, alignItems: "center" }}
                               >
-                                Abrir {rotuloPlataforma(t.platform)}
-                              </a>
+                                <a
+                                  href={t.href}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  style={{ color: "#93c5fd" }}
+                                >
+                                  {rotuloPlataforma(t.platform)}
+                                </a>
+                                {t.publish_status ? (
+                                  <span style={{ opacity: 0.85 }}>
+                                    ({t.publish_status}
+                                    {t.publish_error ? `: ${t.publish_error}` : ""})
+                                  </span>
+                                ) : null}
+                                {t.external_post_url ? (
+                                  <a
+                                    href={t.external_post_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    style={{ color: "#86efac" }}
+                                  >
+                                    URL
+                                  </a>
+                                ) : null}
+                                {(t.publish_status === "failed" ||
+                                  t.publish_status === "reconnect_required") && (
+                                  <button
+                                    type="button"
+                                    style={btnGhost}
+                                    disabled={busy}
+                                    onClick={() =>
+                                      void repetirFalhas(p, t.account_id)
+                                    }
+                                  >
+                                    Repetir
+                                  </button>
+                                )}
+                              </span>
                             ))}
                           </div>
                         )}
+                        {p.automation_status ? (
+                          <div style={{ ...metaStyle, marginTop: 4 }}>
+                            Automação: {p.automation_status}
+                            {p.last_publish_error
+                              ? ` — ${p.last_publish_error}`
+                              : ""}
+                          </div>
+                        ) : null}
                         <pre
                           style={{
                             ...metaStyle,
@@ -1133,14 +1214,37 @@ export default function DigitalAdminPage() {
                               type="button"
                               style={btnStyle}
                               disabled={busy}
+                              onClick={() => void publicarAgoraWorker(p)}
+                              title="Enfileira para o worker (dry-run por padrão)"
+                            >
+                              Publicar agora (fila)
+                            </button>
+                          )}
+                          {(p.status === "approved" ||
+                            p.status === "scheduled") && (
+                            <button
+                              type="button"
+                              style={btnStyle}
+                              disabled={busy}
                               onClick={() => void publicarNoInstagram(p)}
                               title={
                                 !p.media_url
                                   ? "Requer URL pública de imagem"
-                                  : "Publicar via Graph API"
+                                  : "Legado: Graph API"
                               }
                             >
-                              Publicar no Instagram
+                              Publicar no Instagram (legado)
+                            </button>
+                          )}
+                          {(p.automation_status === "failed" ||
+                            p.automation_status === "partially_published") && (
+                            <button
+                              type="button"
+                              style={btnGhost}
+                              disabled={busy}
+                              onClick={() => void repetirFalhas(p)}
+                            >
+                              Repetir falhas
                             </button>
                           )}
                           {p.status === "scheduled" && (

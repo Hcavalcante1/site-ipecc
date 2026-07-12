@@ -75,7 +75,9 @@
     "validar:admin-acessos": "npx --yes tsx scripts/validar-admin-acessos-operador.ts",
     "grant:admin": "npx --yes tsx scripts/grant-admin-perfil.ts",
     "digital:gerar-rascunhos": "npx --yes tsx scripts/gerar-digital-rascunhos.ts",
-    "validar:digital": "npx --yes tsx scripts/validar-digital-fase1.ts"
+    "validar:digital": "npx --yes tsx scripts/validar-digital-fase1.ts",
+    "digital:worker": "npm --prefix services/digital-publisher run dev",
+    "aplicar:digital-automation": "node scripts/aplicar-digital-redes-automation-phase1.cjs"
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.15.0",

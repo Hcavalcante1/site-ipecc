@@ -1,0 +1,12 @@
+services:
+  digital-publisher:
+    build: .
+    env_file: .env
+    ports:
+      - "8791:8791"
+    volumes:
+      - browser_profiles:/app/.browser-profiles
+    restart: unless-stopped
+
+volumes:
+  browser_profiles:

@@ -23,6 +23,43 @@ export type DigitalPostSource =
   | "agent_evento"
   | "agent_projeto";
 
+export type DigitalPostTargetBrief = {
+  account_id: string;
+  platform: DigitalPlatform;
+  label: string;
+  href: string;
+  ativo: boolean;
+  publish_status?: string | null;
+  external_post_url?: string | null;
+  publish_error?: string | null;
+  attempt_count?: number | null;
+};
+
+export type DigitalPost = {
+  id: string;
+  title: string;
+  body: string;
+  hashtags: string | null;
+  media_url: string | null;
+  media_id?: string | null;
+  source_type: DigitalPostSource;
+  source_id: string | null;
+  status: DigitalPostStatus;
+  scheduled_at: string | null;
+  published_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  external_post_id?: string | null;
+  publish_error?: string | null;
+  published_via?: "manual" | "instagram_api" | "browser" | "api_legacy" | null;
+  automation_status?: string | null;
+  content_variants?: Record<string, unknown> | null;
+  dry_run?: boolean | null;
+  last_publish_error?: string | null;
+  targets?: DigitalPostTargetBrief[];
+};
+
 export type DigitalAccount = {
   id: string;
   platform: DigitalPlatform;
@@ -34,34 +71,12 @@ export type DigitalAccount = {
   ativo: boolean;
   created_at: string;
   updated_at: string;
-};
-
-export type DigitalPostTargetBrief = {
-  account_id: string;
-  platform: DigitalPlatform;
-  label: string;
-  href: string;
-  ativo: boolean;
-};
-
-export type DigitalPost = {
-  id: string;
-  title: string;
-  body: string;
-  hashtags: string | null;
-  media_url: string | null;
-  source_type: DigitalPostSource;
-  source_id: string | null;
-  status: DigitalPostStatus;
-  scheduled_at: string | null;
-  published_at: string | null;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
-  external_post_id?: string | null;
-  publish_error?: string | null;
-  published_via?: "manual" | "instagram_api" | null;
-  targets?: DigitalPostTargetBrief[];
+  automation_enabled?: boolean;
+  automation_strategy?: string;
+  connection_status?: string;
+  requires_reconnect?: boolean;
+  last_connection_error?: string | null;
+  last_connected_at?: string | null;
 };
 
 export type DigitalDraftInput = {

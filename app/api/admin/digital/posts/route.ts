@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   let query = supabaseAdmin
     .from("digital_posts")
     .select(
-      "id, title, body, hashtags, media_url, source_type, source_id, status, scheduled_at, published_at, created_by, created_at, updated_at, external_post_id, publish_error, published_via"
+      "id, title, body, hashtags, media_url, media_id, source_type, source_id, status, scheduled_at, published_at, created_by, created_at, updated_at, external_post_id, publish_error, published_via, automation_status, content_variants, dry_run, last_publish_error"
     )
     .order("created_at", { ascending: false })
     .limit(100);
@@ -25,7 +25,24 @@ export async function GET(req: NextRequest) {
     query = query.eq("status", status);
   }
 
-  const { data, error } = await query;
+  let { data, error } = await query;
+
+  if (
+    error &&
+    /automation_status|media_id|content_variants|dry_run|column .* does not exist/i.test(
+      error.message || ""
+    )
+  ) {
+    const fallback = await supabaseAdmin
+      .from("digital_posts")
+      .select(
+        "id, title, body, hashtags, media_url, source_type, source_id, status, scheduled_at, published_at, created_by, created_at, updated_at, external_post_id, publish_error, published_via"
+      )
+      .order("created_at", { ascending: false })
+      .limit(100);
+    data = (fallback.data || []) as typeof data;
+    error = fallback.error;
+  }
 
   if (error) {
     const missing =
@@ -81,14 +98,30 @@ export async function GET(req: NextRequest) {
   const targetsByPost = new Map<string, DigitalPostTargetBrief[]>();
 
   if (postIds.length > 0) {
-    const { data: targetRows } = await supabaseAdmin
+    let targetRows: Array<Record<string, unknown>> | null = null;
+    const withStatus = await supabaseAdmin
       .from("digital_post_targets")
       .select(
-        "post_id, account_id, digital_accounts ( id, platform, label, href, ativo )"
+        "post_id, account_id, publish_status, external_post_url, publish_error, attempt_count, digital_accounts ( id, platform, label, href, ativo )"
       )
       .in("post_id", postIds);
 
-    for (const row of targetRows ?? []) {
+    if (
+      withStatus.error &&
+      /publish_status|column .* does not exist/i.test(withStatus.error.message || "")
+    ) {
+      const legacy = await supabaseAdmin
+        .from("digital_post_targets")
+        .select(
+          "post_id, account_id, digital_accounts ( id, platform, label, href, ativo )"
+        )
+        .in("post_id", postIds);
+      targetRows = (legacy.data as Array<Record<string, unknown>>) ?? [];
+    } else {
+      targetRows = (withStatus.data as Array<Record<string, unknown>>) ?? [];
+    }
+
+    for (const row of targetRows) {
       const postId = row.post_id as string;
       const raw = row.digital_accounts as unknown;
       const acc = Array.isArray(raw)
@@ -118,6 +151,11 @@ export async function GET(req: NextRequest) {
         label: acc.label,
         href: acc.href,
         ativo: Boolean(acc.ativo),
+        publish_status: (row.publish_status as string) || null,
+        external_post_url: (row.external_post_url as string) || null,
+        publish_error: (row.publish_error as string) || null,
+        attempt_count:
+          typeof row.attempt_count === "number" ? row.attempt_count : null,
       });
       targetsByPost.set(postId, list);
     }

@@ -14,12 +14,31 @@ export async function GET() {
   const { data, error } = await supabaseAdmin
     .from("digital_accounts")
     .select(
-      "id, platform, label, href, handle, scope, projeto_ref, ativo, created_at, updated_at"
+      "id, platform, label, href, handle, scope, projeto_ref, ativo, created_at, updated_at, automation_enabled, automation_strategy, connection_status, requires_reconnect, last_connection_error, last_connected_at"
     )
     .order("scope", { ascending: true })
     .order("platform", { ascending: true });
 
   if (error) {
+    const missingCol =
+      /automation_|connection_|column .* does not exist/i.test(error.message || "");
+    if (missingCol) {
+      const fallback = await supabaseAdmin
+        .from("digital_accounts")
+        .select(
+          "id, platform, label, href, handle, scope, projeto_ref, ativo, created_at, updated_at"
+        )
+        .order("scope", { ascending: true })
+        .order("platform", { ascending: true });
+      if (!fallback.error) {
+        return NextResponse.json({
+          ok: true,
+          accounts: fallback.data ?? [],
+          aviso:
+            "Colunas de automação ausentes. Aplique docs/sql/digital-redes-automation-phase1.sql.",
+        });
+      }
+    }
     const missing =
       error.message.includes("digital_accounts") || error.code === "42P01";
     return NextResponse.json({

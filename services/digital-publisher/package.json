@@ -1,0 +1,22 @@
+{
+  "name": "@ipecc/digital-publisher",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Worker de publicação técnica Digital IPECC (Playwright). Não decide conteúdo editorial.",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "npx --yes tsx src/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.90.1",
+    "playwright": "^1.49.0"
+  },
+  "devDependencies": {
+    "@types/node": "20.11.30",
+    "tsx": "^4.19.0",
+    "typescript": "5.4.5"
+  }
+}
