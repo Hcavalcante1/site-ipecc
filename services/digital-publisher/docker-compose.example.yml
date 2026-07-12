@@ -2,6 +2,9 @@ services:
   digital-publisher:
     build: .
     env_file: .env
+    environment:
+      DIGITAL_BROWSER_STORAGE_DIR: /app/.browser-profiles
+      DIGITAL_BROWSER_HEADLESS: "true"
     ports:
       - "8791:8791"
     volumes:

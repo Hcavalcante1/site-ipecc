@@ -97,6 +97,7 @@ export async function executePost(
       dryRun,
       strategy,
       platform: String(acc.platform),
+      accountId: t.account_id,
     });
 
     const attempt = Number(t.attempt_count || 0) + 1;
