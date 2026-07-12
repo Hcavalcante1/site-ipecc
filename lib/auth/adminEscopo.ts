@@ -15,6 +15,7 @@ export type AdminModulo =
   | "paginas"
   | "certidoes"
   | "whatsapp"
+  | "digital"
   | "logs"
   | "processos"
   | "acessos";
@@ -49,6 +50,7 @@ export const MODULOS_MESTRE: AdminModulo[] = [
   "propostas",
   "certidoes",
   "whatsapp",
+  "digital",
   "logs",
   "processos",
   "acessos",
@@ -59,7 +61,13 @@ export const MODULOS_MESTRE: AdminModulo[] = [
 const MODULO_FLAG: Record<
   Exclude<
     AdminModulo,
-    "paginas" | "certidoes" | "whatsapp" | "logs" | "processos" | "acessos"
+    | "paginas"
+    | "certidoes"
+    | "whatsapp"
+    | "digital"
+    | "logs"
+    | "processos"
+    | "acessos"
   >,
   keyof Pick<
     AdminEscopo,

@@ -1,6 +1,10 @@
 "use client";
 
-import { PUBLIC_SOCIAL_LINKS } from "@/lib/public/socialLinks";
+import { useEffect, useState } from "react";
+import {
+  PUBLIC_SOCIAL_LINKS,
+  type PublicSocialLink,
+} from "@/lib/public/socialLinks";
 import { useWhatsAppChat } from "./WhatsAppFloatingChat";
 
 type Variant = "topbar" | "footer";
@@ -48,13 +52,37 @@ function SocialIcon({ id }: { id: string }) {
 
 export default function PublicSocialLinks({ variant }: Props) {
   const { openPanel } = useWhatsAppChat();
+  const [links, setLinks] = useState<PublicSocialLink[]>(PUBLIC_SOCIAL_LINKS);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/public/social-links");
+        const json = await res.json();
+        if (
+          !cancelled &&
+          json?.ok &&
+          Array.isArray(json.links) &&
+          json.links.length > 0
+        ) {
+          setLinks(json.links);
+        }
+      } catch {
+        /* mantém fallback */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (variant === "footer") {
     return (
       <div className="site-footer__social">
         <p className="site-footer__nav-title">Redes sociais</p>
         <ul className="site-footer__social-list">
-          {PUBLIC_SOCIAL_LINKS.map((item) => (
+          {links.map((item) => (
             <li key={item.id}>
               <a
                 href={item.href}
@@ -86,7 +114,7 @@ export default function PublicSocialLinks({ variant }: Props) {
 
   return (
     <div className="social">
-      {PUBLIC_SOCIAL_LINKS.map((item) => (
+      {links.map((item) => (
         <a
           key={item.id}
           href={item.href}

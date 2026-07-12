@@ -351,6 +351,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 <NavLabel icon="whatsapp">WhatsApp</NavLabel>
               </Link>
             )}
+            {pode("digital") && (
+              <Link href="/admin/digital" className={navClass(pathname, "/admin/digital")} onClick={(event) => handleMobileNav(event, "/admin/digital")}>
+                <NavLabel icon="digital">Digital</NavLabel>
+              </Link>
+            )}
             {pode("logs") && (
               <Link href="/admin/logs" className={navClass(pathname, "/admin/logs")} onClick={(event) => handleMobileNav(event, "/admin/logs")}>
                 <NavLabel icon="logs">Logs</NavLabel>
