@@ -2,8 +2,8 @@
 
 export const LABEL_TIPO_PROCESSO: Record<string, string> = {
   interno_ipecc: "Interno IPECC",
-  publico_externo: "Contratacao publica externa",
-  privado_externo: "Contratacao privada externa",
+  publico_externo: "Contratação pública externa",
+  privado_externo: "Contratação privada externa",
 };
 
 export const ORDEM_TIPO_PROCESSO = [
@@ -13,7 +13,7 @@ export const ORDEM_TIPO_PROCESSO = [
 ] as const;
 
 export function labelTipoProcesso(tipo?: string | null): string {
-  if (!tipo) return "Tipo nao informado";
+  if (!tipo) return "Tipo não informado";
   return LABEL_TIPO_PROCESSO[tipo] || tipo;
 }
 
@@ -37,8 +37,8 @@ export function chipsModulosEscopo(e: {
   const chips: string[] = [];
   if (e.mod_editais) chips.push("Editais");
   if (e.mod_propostas) chips.push("Propostas");
-  if (e.mod_transparencia) chips.push("Transparencia");
-  if (e.mod_noticias) chips.push("Noticias");
+  if (e.mod_transparencia) chips.push("Transparência");
+  if (e.mod_noticias) chips.push("Notícias");
   if (e.mod_eventos) chips.push("Eventos");
   if (e.mod_projetos) chips.push("Projetos");
   return chips;

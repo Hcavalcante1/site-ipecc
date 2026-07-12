@@ -88,7 +88,7 @@ export default function RequireAdminModulo({ children, modulo }: Props) {
     const msg =
       modulo === "processos" || modulo === "acessos"
         ? "Acesso restrito ao administrador mestre."
-        : "Acesso negado. Este conteudo e do site institucional IPECC e nao faz parte do seu processo.";
+        : "Acesso negado. Este conteúdo é do site institucional IPECC e não faz parte do seu processo.";
     return <div style={{ padding: 24, color: "#e5e7eb" }}>{msg}</div>;
   }
 

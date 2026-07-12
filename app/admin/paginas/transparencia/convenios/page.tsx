@@ -351,7 +351,7 @@ export default function TransparenciaConveniosAdmin() {
         !item.processo_id
       ) {
         setMsg("Informe o processo do convenio (escopo).");
-        setBlockMsg(i, "Processo obrigatorio para o seu login.");
+        setBlockMsg(i, "Processo obrigatório para o seu login.");
         return;
       }
       try {
@@ -374,7 +374,7 @@ export default function TransparenciaConveniosAdmin() {
     setBlockMsg(index, "Salvando este bloco...");
 
     if (escopo.processoIds !== "todos" && !item.processo_id) {
-      setBlockMsg(index, "Processo obrigatorio para o seu login.");
+      setBlockMsg(index, "Processo obrigatório para o seu login.");
       return;
     }
 

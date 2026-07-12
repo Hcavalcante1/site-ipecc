@@ -15,7 +15,7 @@ type Processo = {
 
 const TIPOS = [
   { value: "interno_ipecc", label: "Interno IPECC" },
-  { value: "publico_externo", label: "Contratacao publica externa" },
+  { value: "publico_externo", label: "Contratação pública externa" },
   { value: "privado_externo", label: "Contratacao privada externa" },
 ] as const;
 

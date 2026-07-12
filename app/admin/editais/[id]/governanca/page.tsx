@@ -328,8 +328,8 @@ export default function GovernancaEditalPage() {
 
   const pendencias = useMemo(() => {
     const itens: string[] = [];
-    if (!edital?.arquivo_pdf) itens.push("PDF oficial do edital ainda nao identificado.");
-    if (!edital?.periodo && !edital?.periodo_envio) itens.push("Periodo do edital nao informado.");
+    if (!edital?.arquivo_pdf) itens.push("PDF oficial do edital ainda não identificado.");
+    if (!edital?.periodo && !edital?.periodo_envio) itens.push("Período do edital não informado.");
 
     if (isCotacao) {
       if (faseAtual === "publicado") {
@@ -361,17 +361,17 @@ export default function GovernancaEditalPage() {
 
     if (faseAtual === "resultado_preliminar") {
       const temResultado = documentos.some((doc) => doc.tipo === "resultado_preliminar");
-      if (!temResultado) itens.push("Resultado preliminar ainda nao publicado.");
+      if (!temResultado) itens.push("Resultado preliminar ainda não publicado.");
     }
     if (faseAtual === "homologado") {
       const temHomologacao = documentos.some((doc) => doc.tipo === "homologacao");
-      if (!temHomologacao) itens.push("Documento de homologacao ainda nao publicado.");
+      if (!temHomologacao) itens.push("Documento de homologação ainda não publicado.");
     }
     if (faseAtual === "contratado") {
       const temContrato = documentos.some(
         (doc) => doc.tipo === "contrato" || doc.tipo === "termo_parceria"
       );
-      if (!temContrato) itens.push("Contrato ou termo de parceria ainda nao publicado.");
+      if (!temContrato) itens.push("Contrato ou termo de parceria ainda não publicado.");
     }
     return itens;
   }, [documentos, edital, faseAtual, isCotacao]);
@@ -847,7 +847,7 @@ export default function GovernancaEditalPage() {
         <h1 className="admin-h1">Acesso negado ou edital indisponivel</h1>
         <p>
           {msg ||
-            "Este edital nao esta no seu processo, ou nao foi encontrado."}
+            "Este edital não está no seu processo, ou não foi encontrado."}
         </p>
       </div>
     );
@@ -893,7 +893,7 @@ export default function GovernancaEditalPage() {
             <strong>Visibilidade publica</strong>
             <p style={{ marginBottom: 0 }}>
               {faseAtual === "rascunho"
-                ? "Interno: nao aparece na Transparencia."
+                ? "Interno: não aparece na Transparência."
                 : "Publicado: aparece na Transparencia."}
             </p>
           </div>

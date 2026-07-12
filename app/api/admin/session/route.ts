@@ -112,7 +112,7 @@ export async function POST(req: Request) {
 
       if (error || !user) {
         return NextResponse.json(
-          { error: "Sessao invalida. Faca login novamente." },
+          { error: "Sessão inválida. Faça login novamente." },
           { status: 401 }
         );
       }
@@ -122,7 +122,7 @@ export async function POST(req: Request) {
         return NextResponse.json(
           {
             error:
-              "Acesso admin nao autorizado. Falta perfil ativo em Acessos.",
+              "Acesso admin não autorizado. Falta perfil ativo em Acessos.",
           },
           { status: 403 }
         );
@@ -140,7 +140,7 @@ export async function POST(req: Request) {
 
     if (userError || !user) {
       return NextResponse.json(
-        { error: "Nao autorizado — faca login novamente." },
+        { error: "Não autorizado — faça login novamente." },
         { status: 401 }
       );
     }
@@ -150,7 +150,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error:
-            "Acesso admin nao autorizado. Falta perfil ativo em Acessos.",
+            "Acesso admin não autorizado. Falta perfil ativo em Acessos.",
         },
         { status: 403 }
       );

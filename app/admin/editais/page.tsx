@@ -208,7 +208,7 @@ export default function AdminEditais() {
         escopo.processoIds !== "todos" &&
         !escopo.processoIds.includes(processoId)
       ) {
-        setMsg("Voce nao tem escopo neste processo.");
+        setMsg("Você não tem escopo neste processo.");
         setLoading(false);
         return;
       }
@@ -353,7 +353,7 @@ export default function AdminEditais() {
     }
 
     const confirmado = await confirmAction(
-      `Voltar o edital${titulo ? ` "${titulo}"` : ""} para fase Rascunho? Isso habilita a exclusao de testes e remove o edital do site publico.`
+      `Voltar o edital${titulo ? ` "${titulo}"` : ""} para fase Rascunho? Isso habilita a exclusão de testes e remove o edital do site público.`
     );
     if (!confirmado) {
       if (!isConfirmModalReady()) {
@@ -402,8 +402,8 @@ export default function AdminEditais() {
         return;
       }
 
-      setMsg("Edital voltou para fase Rascunho. Agora voce pode excluir.");
-      triggerToast("Edital em Rascunho — exclusao liberada.", "success");
+      setMsg("Edital voltou para fase Rascunho. Agora você pode excluir.");
+      triggerToast("Edital em Rascunho — exclusão liberada.", "success");
       await carregar();
     } catch (error) {
       console.error("ERRO AO VOLTAR RASCUNHO:", error);

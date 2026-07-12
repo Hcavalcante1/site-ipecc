@@ -182,7 +182,7 @@ async function bloquearForaDoEscopo(
 
   const modulo = TABELA_MODULO[table];
   if (modulo && !podeModulo(ctx, modulo)) {
-    return "Modulo nao liberado para esta operacao.";
+    return "Módulo não liberado para esta operação.";
   }
 
   const precisaEscopo =
@@ -220,7 +220,7 @@ async function bloquearForaDoEscopo(
     if (action === "update" && payload && typeof payload === "object") {
       const row = payload as Record<string, unknown>;
       if (row.processo_id !== undefined && !podeAcessarProcesso(ctx, row.processo_id as string | null)) {
-        return "Nao e permitido mover registro para outro processo.";
+        return "Não é permitido mover registro para outro processo.";
       }
       if (row.edital_id !== undefined) {
         const viaEdital = await processoIdDoEdital(
@@ -254,7 +254,7 @@ async function prepareEditalDelete(editalId: string): Promise<EditalDeletePrep> 
   if (!edital) {
     return {
       ok: false,
-      message: "Edital nao encontrado para exclusao.",
+      message: "Edital não encontrado para exclusão.",
       status: 404,
     };
   }
@@ -306,7 +306,7 @@ function friendlyDeleteError(message: string, table: string) {
     if (table === "editais") {
       return "Nao foi possivel excluir o edital porque ainda existem registros vinculados. Remova ou desvincule propostas e documentos antes de tentar novamente.";
     }
-    return "Nao foi possivel excluir porque ainda existem registros vinculados.";
+    return "Não foi possível excluir porque ainda existem registros vinculados.";
   }
   return message;
 }
@@ -461,14 +461,14 @@ export async function POST(req: Request) {
 
       if (typeof col !== "string" || !IDENTIFIER_PATTERN.test(col)) {
         return NextResponse.json(
-          { ok: false, error: "Filtro invalido" },
+          { ok: false, error: "Filtro inválido" },
           { status: 400 }
         );
       }
 
       if (!ALLOWED_FILTER_OPERATORS.has(op)) {
         return NextResponse.json(
-          { ok: false, error: "Operador de filtro nao permitido" },
+          { ok: false, error: "Operador de filtro não permitido" },
           { status: 400 }
         );
       }

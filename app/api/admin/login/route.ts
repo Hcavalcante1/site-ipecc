@@ -76,7 +76,7 @@ export async function POST(req: Request) {
 
     if (signError || !signed.user) {
       return NextResponse.json(
-        { error: "E-mail ou senha invalidos." },
+        { error: "E-mail ou senha inválidos." },
         { status: 401 }
       );
     }
@@ -101,7 +101,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error:
-            "Acesso admin nao autorizado. Falta perfil ativo em Acessos (admin_perfis).",
+            "Acesso admin não autorizado. Falta perfil ativo em Acessos (admin_perfis).",
         },
         { status: 403 }
       );

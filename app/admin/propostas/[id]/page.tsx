@@ -221,7 +221,7 @@ export default function Page() {
 
     if (!res.ok || !json.ok) {
       triggerToast(
-        `Erro ao excluir proposta: ${json.error || "falha na exclusao"}`,
+        `Erro ao excluir proposta: ${json.error || "falha na exclusão"}`,
         "error"
       );
       return;

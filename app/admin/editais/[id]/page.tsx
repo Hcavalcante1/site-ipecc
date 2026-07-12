@@ -83,8 +83,8 @@ export default function EditarEdital() {
 
     try {
       if (!id) {
-        setMsg("Edital nao identificado.");
-        triggerToast("Edital nao identificado.", "error");
+        setMsg("Edital não identificado.");
+        triggerToast("Edital não identificado.", "error");
         return;
       }
 
@@ -112,7 +112,7 @@ export default function EditarEdital() {
         escopo.processoIds !== "todos" &&
         !escopo.processoIds.includes(processoId)
       ) {
-        setMsg("Voce nao tem escopo neste processo.");
+        setMsg("Você não tem escopo neste processo.");
         return;
       }
 
@@ -268,8 +268,8 @@ export default function EditarEdital() {
         </select>
         <p style={{ marginTop: 8, fontSize: 13, color: "#94a3b8" }}>
           {isEditalFaseRascunho(faseAtual)
-            ? "Fase Rascunho: edital de teste — exclusao permitida na listagem."
-            : "Fora de Rascunho: processo institucional — exclusao bloqueada na listagem."}
+            ? "Fase Rascunho: edital de teste — exclusão permitida na listagem."
+            : "Fora de Rascunho: processo institucional — exclusão bloqueada na listagem."}
         </p>
 
         <label>Status</label>

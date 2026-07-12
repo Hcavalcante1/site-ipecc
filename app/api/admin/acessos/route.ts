@@ -188,7 +188,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    return NextResponse.json({ error: "Acao invalida." }, { status: 400 });
+    return NextResponse.json({ error: "Ação inválida." }, { status: 400 });
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "Erro ao salvar acesso.";

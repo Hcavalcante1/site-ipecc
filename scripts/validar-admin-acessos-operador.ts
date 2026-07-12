@@ -43,7 +43,7 @@ async function main() {
       titulo: "Proc A",
       tipo: "publico_externo",
       status: "ativo",
-    }).includes("publica")
+    }).includes("pública")
   );
   assert(
     "chips modulos",
@@ -51,7 +51,7 @@ async function main() {
       mod_editais: true,
       mod_propostas: false,
       mod_transparencia: true,
-    }).join(",") === "Editais,Transparencia"
+    }).join(",") === "Editais,Transparência"
   );
 
   assert(

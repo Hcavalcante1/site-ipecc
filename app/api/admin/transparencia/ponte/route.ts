@@ -173,7 +173,7 @@ export async function POST(req: Request) {
       }
       default:
         return NextResponse.json(
-          { ok: false, error: "Acao invalida." },
+          { ok: false, error: "Ação inválida." },
           { status: 400 }
         );
     }

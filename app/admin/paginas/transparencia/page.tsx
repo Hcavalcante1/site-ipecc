@@ -69,7 +69,7 @@ export default function TransparenciaAdminIndex() {
           <>
             <AdminHubCard
               titulo="Destaque / topo da página"
-              descricao="Titulo e texto principal do topo da pagina (site IPECC)."
+              descricao="Título e texto principal do topo da página (site IPECC)."
               href={r.hero}
             />
             <AdminHubCard

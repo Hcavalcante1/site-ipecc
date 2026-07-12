@@ -26,7 +26,7 @@ export async function GET() {
         {
           error:
             error.message.includes("schema cache") || error.code === "42P01"
-              ? "Tabela processos_contratacao ainda nao existe. Aplique docs/sql/multi-admin-processos-fase-1.sql no Supabase."
+              ? "Tabela processos_contratacao ainda não existe. Aplique docs/sql/multi-admin-processos-fase-1.sql no Supabase."
               : error.message,
         },
         { status: 500 }
@@ -94,7 +94,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    return NextResponse.json({ error: "Acao invalida." }, { status: 400 });
+    return NextResponse.json({ error: "Ação inválida." }, { status: 400 });
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "Erro ao salvar processo.";

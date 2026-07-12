@@ -437,7 +437,7 @@ export default function AdminDashboardClient({ userEmail }: Props) {
     quickLinks.push({
       href: "/admin/paginas/projetos",
       title: "Projetos",
-      text: "Conteudo publico do processo",
+      text: "Conteúdo público do processo",
     });
   }
 
@@ -572,9 +572,9 @@ export default function AdminDashboardClient({ userEmail }: Props) {
               <table style={styles.table}>
                 <thead>
                   <tr>
-                    <th style={styles.th}>Acao</th>
+                    <th style={styles.th}>Ação</th>
                     <th style={styles.th}>Tabela</th>
-                    <th style={styles.th}>Usuario</th>
+                    <th style={styles.th}>Usuário</th>
                     <th style={styles.th}>Data</th>
                   </tr>
                 </thead>
