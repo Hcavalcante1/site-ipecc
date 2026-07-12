@@ -4,10 +4,23 @@
  * Requer SUPABASE_SERVICE_ROLE_KEY e tabelas de docs/sql/digital-redes-fase1.sql
  */
 
+import fs from "fs";
+import path from "path";
 import { generateDigitalDrafts } from "../lib/digital/draftAgent";
 import { getSupabaseAdmin } from "../lib/supabaseAdmin";
 
+function loadEnvLocal() {
+  const envPath = path.join(process.cwd(), ".env.local");
+  if (!fs.existsSync(envPath)) return;
+  for (const line of fs.readFileSync(envPath, "utf8").split(/\r?\n/)) {
+    const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
+    if (!m) continue;
+    if (!process.env[m[1]]) process.env[m[1]] = m[2].replace(/^"|"$/g, "");
+  }
+}
+
 async function main() {
+  loadEnvLocal();
   const dry = process.argv.includes("--dry");
   const supabase = getSupabaseAdmin();
   const result = await generateDigitalDrafts(supabase, {
