@@ -361,7 +361,7 @@ export default function Page() {
               >
                 {isEditalFaseRascunho(editalRelacionado?.fase_atual)
                   ? "Ver edital (governanca / teste)"
-                  : "Ver edital (publico)"}
+                  : "Ver edital (público)"}
               </a>
               <a
                 href={`/admin/editais/${proposta.edital_id}/governanca`}

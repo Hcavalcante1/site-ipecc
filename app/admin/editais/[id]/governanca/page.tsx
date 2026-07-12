@@ -871,7 +871,7 @@ export default function GovernancaEditalPage() {
       <section className="admin-card">
         <h2 className="admin-h2">{edital.titulo}</h2>
         <p><strong>Tipo:</strong> {edital.tipo || "-"}</p>
-        <p><strong>Status publico:</strong> {edital.status || "-"}</p>
+        <p><strong>Status público:</strong> {edital.status || "-"}</p>
         <p><strong>Periodo:</strong> {edital.periodo || edital.periodo_envio || "-"}</p>
         <p><strong>Fase atual:</strong> {label(faseAtual)}</p>
         <div
@@ -915,7 +915,7 @@ export default function GovernancaEditalPage() {
         </div>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 12 }}>
           <Link className="admin-button" href={`/editais/${edital.id}`} target="_blank">
-            Ver edital publico
+            Ver edital público
           </Link>
           <Link className="admin-button" href="/transparencia" target="_blank">
             Ver Transparencia (site)

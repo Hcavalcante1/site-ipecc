@@ -388,7 +388,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             </div>
 
             <div className="admin-sidebar-footer-user">
-              <span className="admin-sidebar-footer-label">Sessao administrativa</span>
+              <span className="admin-sidebar-footer-label">Sessão administrativa</span>
               <span
                 className="admin-sidebar-footer-email"
                 title={userEmail || undefined}
@@ -396,7 +396,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 {userEmail || "Conta administrativa"}
               </span>
               <span className="admin-sidebar-footer-badge">
-                Area restrita - acesso autorizado
+                Área restrita - acesso autorizado
               </span>
             </div>
 

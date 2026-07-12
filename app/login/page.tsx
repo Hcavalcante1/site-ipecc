@@ -98,7 +98,7 @@ export default function LoginPage() {
             </p>
             <h1 style={styles.title}>Painel Administrativo</h1>
             <p style={styles.subtitle}>Acesso restrito ao sistema interno</p>
-            <span style={styles.badge}>Area restrita - acesso autorizado</span>
+            <span style={styles.badge}>Área restrita - acesso autorizado</span>
           </div>
 
           <form onSubmit={handleLogin} style={styles.form}>

@@ -169,7 +169,7 @@ export default function AdminAcessosPage() {
 
   async function criarEscopo() {
     if (!userIdEscopo || !processoId) {
-      triggerToast("Selecione usuario (operador/externo) e processo.", "error");
+      triggerToast("Selecione usuário (operador/externo) e processo.", "error");
       return;
     }
     const res = await fetch("/api/admin/acessos", {
