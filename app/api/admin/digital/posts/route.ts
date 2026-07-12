@@ -240,12 +240,12 @@ export async function PATCH(req: NextRequest) {
         { status: 404 }
       );
     }
-    if (atual.status !== "draft" && atual.status !== "approved") {
+    if (atual.status !== "draft" && atual.status !== "approved" && atual.status !== "scheduled") {
       return NextResponse.json(
         {
           ok: false,
           error:
-            "Só é possível editar o texto em rascunho ou aprovado. Arquive e crie outro se precisar.",
+            "Só é possível editar o texto em rascunho, aprovado ou agendado. Arquive e crie outro se precisar.",
         },
         { status: 400 }
       );

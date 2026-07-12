@@ -13,9 +13,20 @@ export const LABEL_STATUS: Record<DigitalPostStatus, string> = {
   archived: "arquivado",
 };
 
-/** Ajuda do fluxo assistido (copiar → colar na rede → marcar). */
 export const AJUDA_PUBLICACAO_ASSISTIDA =
-  "Fluxo assistido: aprove o rascunho, copie o texto, cole na rede e marque como publicado. A publicação automática nas APIs das redes fica para uma fase futura.";
+  "Fluxo assistido: aprove o rascunho, agende se quiser, copie o texto, abra o perfil da rede, cole e marque como publicado. A publicação automática nas APIs das redes fica para uma fase futura.";
+
+export function formatarDataAgendada(iso: string | null | undefined): string {
+  if (!iso) return "";
+  try {
+    return new Date(iso).toLocaleString("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    });
+  } catch {
+    return iso;
+  }
+}
 
 export const LABEL_ORIGEM: Record<DigitalPostSource, string> = {
   manual: "manual",

@@ -69,6 +69,8 @@ function main() {
   assert("ui editar texto", pageText.includes("Editar texto"));
   assert("ui destinos", pageText.includes("Destinos"));
   assert("ui midia", pageText.includes("URL de mídia"));
+  assert("ui agendar", pageText.includes("Agendar"));
+  assert("ui abrir rede", pageText.includes("Abrir"));
   const api = path.join(
     process.cwd(),
     "app/api/admin/digital/generate/route.ts"

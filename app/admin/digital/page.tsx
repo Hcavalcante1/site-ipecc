@@ -14,6 +14,7 @@ import {
   LABEL_ESCOPO,
   LABEL_PLATAFORMA,
   LABEL_STATUS,
+  formatarDataAgendada,
   rotuloOrigem,
   rotuloPlataforma,
   rotuloStatus,
@@ -86,6 +87,14 @@ function primeiroLink(post: DigitalPost): string | null {
   return m?.[0] ?? null;
 }
 
+function toDatetimeLocalValue(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function DigitalAdminPage() {
   const [tab, setTab] = useState<Tab>("fila");
   const [aviso, setAviso] = useState<string | null>(null);
@@ -115,6 +124,8 @@ export default function DigitalAdminPage() {
   const [editTags, setEditTags] = useState("");
   const [editMedia, setEditMedia] = useState("");
   const [editAccountIds, setEditAccountIds] = useState<string[]>([]);
+  const [scheduleForId, setScheduleForId] = useState<string | null>(null);
+  const [scheduleValue, setScheduleValue] = useState("");
 
   const contasDestino = accounts.filter((a) => a.ativo);
 
@@ -253,23 +264,60 @@ export default function DigitalAdminPage() {
     setBusy(false);
   }
 
-  async function setPostStatus(post: DigitalPost, status: DigitalPostStatus) {
+  async function setPostStatus(
+    post: DigitalPost,
+    status: DigitalPostStatus,
+    extra?: { scheduled_at?: string | null }
+  ) {
     setBusy(true);
     const res = await fetch("/api/admin/digital/posts", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: post.id, status }),
+      body: JSON.stringify({
+        id: post.id,
+        status,
+        ...(extra?.scheduled_at !== undefined
+          ? { scheduled_at: extra.scheduled_at }
+          : status === "approved"
+            ? { scheduled_at: null }
+            : {}),
+      }),
     });
     const json = await res.json();
     if (!res.ok || !json.ok) setAviso(json.error ?? "Falha ao atualizar post");
     else {
       if (status === "published_manual") {
         setAviso("Marcado como publicado manualmente nas redes.");
+      } else if (status === "scheduled") {
+        setAviso("Post agendado na fila (lembrete editorial — sem envio automático).");
+        setScheduleForId(null);
       }
       if (editingId === post.id) setEditingId(null);
       await carregar();
     }
     setBusy(false);
+  }
+
+  function abrirAgendar(post: DigitalPost) {
+    setScheduleForId(post.id);
+    setScheduleValue(
+      toDatetimeLocalValue(post.scheduled_at) ||
+        toDatetimeLocalValue(new Date(Date.now() + 60 * 60 * 1000).toISOString())
+    );
+    setAviso(null);
+  }
+
+  async function confirmarAgendamento(post: DigitalPost) {
+    if (!scheduleValue) {
+      setAviso("Informe data e hora do agendamento.");
+      return;
+    }
+    const iso = new Date(scheduleValue).toISOString();
+    if (Number.isNaN(new Date(scheduleValue).getTime())) {
+      setAviso("Data/hora inválida.");
+      return;
+    }
+    await setPostStatus(post, "scheduled", { scheduled_at: iso });
   }
 
   function iniciarEdicao(post: DigitalPost) {
@@ -593,10 +641,17 @@ export default function DigitalAdminPage() {
             ) : (
               posts.map((p) => {
                 const editavel =
-                  p.status === "draft" || p.status === "approved";
+                  p.status === "draft" ||
+                  p.status === "approved" ||
+                  p.status === "scheduled";
                 const editando = editingId === p.id;
                 const link = primeiroLink(p);
                 const targets = p.targets ?? [];
+                const podeCopiar =
+                  p.status === "approved" ||
+                  p.status === "draft" ||
+                  p.status === "scheduled";
+                const agendando = scheduleForId === p.id;
 
                 return (
                   <div
@@ -671,18 +726,33 @@ export default function DigitalAdminPage() {
                         <div style={metaStyle}>
                           {rotuloStatus(p.status)} · {rotuloOrigem(p.source_type)}
                           {p.source_id ? ` · ${p.source_id}` : ""}
+                          {p.scheduled_at
+                            ? ` · agendado para ${formatarDataAgendada(p.scheduled_at)}`
+                            : ""}
                         </div>
                         {targets.length > 0 && (
-                          <div style={{ ...metaStyle, marginTop: 4 }}>
-                            Destinos:{" "}
-                            {targets
-                              .map(
-                                (t) =>
-                                  `${rotuloPlataforma(t.platform)}${
-                                    t.label ? ` (${t.label})` : ""
-                                  }`
-                              )
-                              .join(" · ")}
+                          <div
+                            style={{
+                              ...metaStyle,
+                              marginTop: 4,
+                              display: "flex",
+                              flexWrap: "wrap",
+                              gap: 8,
+                              alignItems: "center",
+                            }}
+                          >
+                            <span>Destinos:</span>
+                            {targets.map((t) => (
+                              <a
+                                key={t.account_id}
+                                href={t.href}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{ color: "#93c5fd" }}
+                              >
+                                Abrir {rotuloPlataforma(t.platform)}
+                              </a>
+                            ))}
                           </div>
                         )}
                         <pre
@@ -695,6 +765,38 @@ export default function DigitalAdminPage() {
                           {p.hashtags ? `\n\n${p.hashtags}` : ""}
                         </pre>
                       </>
+                    )}
+                    {agendando && !editando && (
+                      <div
+                        style={{
+                          ...rowStyle,
+                          marginBottom: adminTokens.spacing.sm,
+                        }}
+                      >
+                        <input
+                          type="datetime-local"
+                          style={inputStyle}
+                          value={scheduleValue}
+                          onChange={(e) => setScheduleValue(e.target.value)}
+                          aria-label="Data e hora do agendamento"
+                        />
+                        <button
+                          type="button"
+                          style={btnStyle}
+                          disabled={busy || !scheduleValue}
+                          onClick={() => void confirmarAgendamento(p)}
+                        >
+                          Confirmar agendamento
+                        </button>
+                        <button
+                          type="button"
+                          style={btnGhost}
+                          disabled={busy}
+                          onClick={() => setScheduleForId(null)}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
                     )}
                     <div style={rowStyle}>
                       {editando ? (
@@ -733,8 +835,7 @@ export default function DigitalAdminPage() {
                               Editar texto
                             </button>
                           )}
-                          {(p.status === "approved" ||
-                            p.status === "draft") && (
+                          {podeCopiar && (
                             <button
                               type="button"
                               style={btnGhost}
@@ -744,18 +845,16 @@ export default function DigitalAdminPage() {
                               Copiar texto
                             </button>
                           )}
-                          {link &&
-                            (p.status === "approved" ||
-                              p.status === "draft") && (
-                              <button
-                                type="button"
-                                style={btnGhost}
-                                disabled={busy}
-                                onClick={() => void copiarLink(p)}
-                              >
-                                Copiar link
-                              </button>
-                            )}
+                          {link && podeCopiar && (
+                            <button
+                              type="button"
+                              style={btnGhost}
+                              disabled={busy}
+                              onClick={() => void copiarLink(p)}
+                            >
+                              Copiar link
+                            </button>
+                          )}
                           {p.status === "draft" && (
                             <button
                               type="button"
@@ -767,7 +866,31 @@ export default function DigitalAdminPage() {
                             </button>
                           )}
                           {(p.status === "draft" ||
-                            p.status === "approved") && (
+                            p.status === "approved" ||
+                            p.status === "scheduled") &&
+                            !agendando && (
+                              <button
+                                type="button"
+                                style={btnGhost}
+                                disabled={busy}
+                                onClick={() => abrirAgendar(p)}
+                              >
+                                Agendar
+                              </button>
+                            )}
+                          {p.status === "scheduled" && (
+                            <button
+                              type="button"
+                              style={btnGhost}
+                              disabled={busy}
+                              onClick={() => void setPostStatus(p, "approved")}
+                            >
+                              Tirar agendamento
+                            </button>
+                          )}
+                          {(p.status === "draft" ||
+                            p.status === "approved" ||
+                            p.status === "scheduled") && (
                             <button
                               type="button"
                               style={btnGhost}
