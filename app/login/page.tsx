@@ -19,64 +19,34 @@ export default function LoginPage() {
       const emailTrim = email.trim();
       const passwordTrim = password.trim();
 
-      // 1) Sessao no browser (cookies legíveis pelo cliente Supabase)
-      const { error: clientErr } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: emailTrim,
         password: passwordTrim,
       });
 
-      if (clientErr) {
-        setMsg("E-mail ou senha invalidos.");
+      if (error || !data.session?.access_token) {
+        setMsg(
+          error?.message?.toLowerCase().includes("invalid")
+            ? "E-mail ou senha invalidos."
+            : error?.message || "E-mail ou senha invalidos."
+        );
         setLoading(false);
         return;
       }
 
-      await supabase.auth.getSession();
-
-      // 2) Gate admin + cookies de servidor
-      let gate = await fetch("/api/admin/session", {
+      const gate = await fetch("/api/admin/session", {
         method: "POST",
         credentials: "include",
+        headers: {
+          Authorization: `Bearer ${data.session.access_token}`,
+        },
       });
 
-      if (!gate.ok) {
-        // Fallback: login server-side + setSession com tokens
-        const serverLogin = await fetch("/api/admin/login", {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: emailTrim, password: passwordTrim }),
-        });
-        const serverJson = (await serverLogin.json().catch(() => ({}))) as {
-          error?: string;
-          session?: {
-            access_token: string;
-            refresh_token: string;
-          } | null;
-        };
-
-        if (!serverLogin.ok) {
-          await supabase.auth.signOut().catch(() => null);
-          setMsg(serverJson.error || "Acesso admin nao autorizado.");
-          setLoading(false);
-          return;
-        }
-
-        if (serverJson.session?.access_token && serverJson.session.refresh_token) {
-          await supabase.auth.setSession({
-            access_token: serverJson.session.access_token,
-            refresh_token: serverJson.session.refresh_token,
-          });
-        }
-
-        gate = await fetch("/api/admin/session", {
-          method: "POST",
-          credentials: "include",
-        });
-      }
+      const body = (await gate.json().catch(() => ({}))) as {
+        error?: string;
+      };
 
       if (!gate.ok) {
-        const body = (await gate.json().catch(() => ({}))) as { error?: string };
         await supabase.auth.signOut().catch(() => null);
         setMsg(body.error || "Acesso admin nao autorizado.");
         setLoading(false);
@@ -85,9 +55,11 @@ export default function LoginPage() {
 
       localStorage.removeItem("ipecc_admin_closed");
       sessionStorage.setItem("ipecc_admin_active", "1");
-      window.location.href = "/admin";
-    } catch {
-      setMsg("Erro ao autenticar.");
+      window.location.assign("/admin");
+    } catch (err) {
+      setMsg(
+        err instanceof Error ? err.message : "Erro ao autenticar."
+      );
       setLoading(false);
     }
   }
@@ -119,6 +91,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               style={styles.input}
+              autoComplete="username"
             />
 
             <input
@@ -128,6 +101,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               style={styles.input}
+              autoComplete="current-password"
             />
 
             <button
@@ -158,8 +132,6 @@ export default function LoginPage() {
   );
 }
 
-/* ================= ESTILO ================= */
-
 const styles: { [key: string]: React.CSSProperties } = {
   wrapper: {
     minHeight: "100vh",
@@ -169,7 +141,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     background: "linear-gradient(135deg, #020617, #0f172a)",
     padding: 20,
   },
-
   shell: {
     width: "100%",
     maxWidth: 420,
@@ -177,7 +148,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     flexDirection: "column",
     gap: 16,
   },
-
   card: {
     width: "100%",
     background: "rgba(255,255,255,0.04)",
@@ -187,12 +157,10 @@ const styles: { [key: string]: React.CSSProperties } = {
     boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
     backdropFilter: "blur(10px)",
   },
-
   logoBlock: {
     textAlign: "center",
     marginBottom: 30,
   },
-
   logoImg: {
     maxWidth: 150,
     width: "100%",
@@ -201,7 +169,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     margin: "0 auto 14px auto",
     objectFit: "contain",
   },
-
   brandName: {
     margin: 0,
     fontSize: 13,
@@ -209,27 +176,23 @@ const styles: { [key: string]: React.CSSProperties } = {
     letterSpacing: "0.08em",
     color: "#e2e8f0",
   },
-
   brandTag: {
     margin: "6px 0 14px",
     fontSize: 12,
     lineHeight: 1.4,
     color: "#94a3b8",
   },
-
   title: {
     margin: 0,
     fontSize: 20,
     fontWeight: 700,
     color: "#e5e7eb",
   },
-
   subtitle: {
     marginTop: 6,
     fontSize: 13,
     color: "#94a3b8",
   },
-
   badge: {
     display: "inline-block",
     marginTop: 12,
@@ -241,13 +204,11 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontSize: 11,
     fontWeight: 700,
   },
-
   form: {
     display: "flex",
     flexDirection: "column",
     gap: 16,
   },
-
   input: {
     padding: 14,
     borderRadius: 10,
@@ -256,7 +217,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: "#e5e7eb",
     fontSize: 14,
   },
-
   button: {
     padding: 14,
     borderRadius: 10,
@@ -267,24 +227,20 @@ const styles: { [key: string]: React.CSSProperties } = {
     cursor: "pointer",
     transition: "all 0.2s ease",
   },
-
   error: {
     color: "#f87171",
     fontSize: 13,
     textAlign: "center",
   },
-
   footer: {
     textAlign: "center",
     padding: "4px 8px 0",
   },
-
   footerLine: {
     margin: 0,
     fontSize: 12,
     color: "#94a3b8",
   },
-
   footerMeta: {
     margin: "6px 0 0",
     fontSize: 11,

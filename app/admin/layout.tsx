@@ -83,9 +83,17 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         setUserEmail(user.email || "");
       }
 
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+
       const sessionRes = await fetch("/api/admin/session", {
         method: "POST",
         credentials: "include",
+        headers: accessToken
+          ? { Authorization: `Bearer ${accessToken}` }
+          : undefined,
       }).catch(() => null);
 
       if (!sessionRes || !sessionRes.ok) {
@@ -110,20 +118,26 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           return;
         }
 
-        // Autorizado por perfil, mas session falhou: tenta de novo uma vez
+        // Autorizado por perfil, mas session falhou: tenta de novo com token
         const retry = await fetch("/api/admin/session", {
           method: "POST",
           credentials: "include",
+          headers: accessToken
+            ? { Authorization: `Bearer ${accessToken}` }
+            : undefined,
         }).catch(() => null);
         if (retry?.ok) {
           const json = (await retry.json()) as {
             modulos?: AdminModulo[];
+            mestre?: boolean;
           };
           if (mounted) {
             setModulos(
               Array.isArray(json.modulos) && json.modulos.length > 0
                 ? json.modulos
-                : []
+                : json.mestre
+                  ? [...MODULOS_MESTRE]
+                  : []
             );
             setChecking(false);
           }
@@ -138,13 +152,16 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       const json = (await sessionRes.json()) as {
         ok?: boolean;
         modulos?: AdminModulo[];
+        mestre?: boolean;
       };
 
       if (mounted) {
         setModulos(
           Array.isArray(json.modulos) && json.modulos.length > 0
             ? json.modulos
-            : [...MODULOS_MESTRE]
+            : json.mestre
+              ? [...MODULOS_MESTRE]
+              : []
         );
         setChecking(false);
       }
@@ -152,7 +169,16 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
     async function renovarEntradaAdmin() {
       if (sessionStorage.getItem(ADMIN_ACTIVE_KEY) !== "1") return;
-      await fetch("/api/admin/session", { method: "POST" }).catch(() => null);
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      await fetch("/api/admin/session", {
+        method: "POST",
+        credentials: "include",
+        headers: session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : undefined,
+      }).catch(() => null);
     }
 
     checkAuth();
