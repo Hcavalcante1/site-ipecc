@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import type { CookieOptions } from "@supabase/ssr";
 import {
   type AdminContexto,
   type AdminEscopo,
@@ -20,9 +21,14 @@ type PerfilRow = {
   ativo: boolean;
 };
 
+type PendingCookie = {
+  name: string;
+  value: string;
+  options: CookieOptions;
+};
+
 /**
- * Login admin server-side: Auth + gate na mesma resposta.
- * Usa o mesmo client apos signIn (evita race de cookie no verify separado).
+ * Login admin server-side: Auth + gate na mesma resposta HTTP.
  */
 export async function POST(req: Request) {
   try {
@@ -41,6 +47,8 @@ export async function POST(req: Request) {
     }
 
     const cookieStore = cookies();
+    const pendingCookies: PendingCookie[] = [];
+
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -50,12 +58,13 @@ export async function POST(req: Request) {
             return cookieStore.getAll();
           },
           setAll(cookiesToSet) {
-            try {
-              for (const { name, value, options } of cookiesToSet) {
+            for (const { name, value, options } of cookiesToSet) {
+              pendingCookies.push({ name, value, options });
+              try {
                 cookieStore.set({ name, value, ...options });
+              } catch {
+                /* ignore */
               }
-            } catch {
-              /* ignore */
             }
           },
         },
@@ -143,6 +152,10 @@ export async function POST(req: Request) {
       modulos: modulosPermitidos(contexto),
       processoIds: processoIdsDoEscopo(contexto),
     });
+
+    for (const { name, value, options } of pendingCookies) {
+      res.cookies.set(name, value, options);
+    }
 
     res.cookies.set(ADMIN_GATE_COOKIE, "1", {
       httpOnly: true,

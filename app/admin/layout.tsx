@@ -89,18 +89,49 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       }).catch(() => null);
 
       if (!sessionRes || !sessionRes.ok) {
-        const { data: isAdmin, error } = await supabase.rpc("is_admin", {
-          user_id: user.id,
-        });
-        if (error || !isAdmin) {
-          await encerrarSessaoAdmin();
-          router.replace("/");
+        // Operador/externo nao passa em is_admin — usar gate de perfil
+        const { data: autorizado, error: gateErr } = await supabase.rpc(
+          "is_admin_ou_perfil",
+          { p_user_id: user.id }
+        );
+        if (gateErr || !autorizado) {
+          const { data: isAdmin, error } = await supabase.rpc("is_admin", {
+            user_id: user.id,
+          });
+          if (error || !isAdmin) {
+            await encerrarSessaoAdmin();
+            router.replace("/login");
+            return;
+          }
+          if (mounted) {
+            setModulos([...MODULOS_MESTRE]);
+            setChecking(false);
+          }
           return;
         }
-        if (mounted) {
-          setModulos([...MODULOS_MESTRE]);
-          setChecking(false);
+
+        // Autorizado por perfil, mas session falhou: tenta de novo uma vez
+        const retry = await fetch("/api/admin/session", {
+          method: "POST",
+          credentials: "include",
+        }).catch(() => null);
+        if (retry?.ok) {
+          const json = (await retry.json()) as {
+            modulos?: AdminModulo[];
+          };
+          if (mounted) {
+            setModulos(
+              Array.isArray(json.modulos) && json.modulos.length > 0
+                ? json.modulos
+                : []
+            );
+            setChecking(false);
+          }
+          return;
         }
+
+        await encerrarSessaoAdmin();
+        router.replace("/login");
         return;
       }
 
