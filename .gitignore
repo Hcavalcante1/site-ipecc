@@ -2,7 +2,7 @@
 node_modules
 .next
 .cursor/
-automation/
+/automation/
 .env
 .env.local
 .env.*.local
