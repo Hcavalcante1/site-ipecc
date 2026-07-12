@@ -10,6 +10,7 @@ import type {
 } from "@/lib/digital/types";
 import { DIGITAL_PLATFORMS } from "@/lib/digital/types";
 import {
+  AJUDA_PUBLICACAO_ASSISTIDA,
   LABEL_ESCOPO,
   LABEL_PLATAFORMA,
   LABEL_STATUS,
@@ -73,6 +74,18 @@ const metaStyle: CSSProperties = {
   whiteSpace: "pre-wrap",
 };
 
+function textoPublicavel(post: DigitalPost): string {
+  return [post.body?.trim(), post.hashtags?.trim()]
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+function primeiroLink(post: DigitalPost): string | null {
+  if (post.media_url?.trim()) return post.media_url.trim();
+  const m = post.body?.match(/https?:\/\/[^\s)]+/i);
+  return m?.[0] ?? null;
+}
+
 export default function DigitalAdminPage() {
   const [tab, setTab] = useState<Tab>("fila");
   const [aviso, setAviso] = useState<string | null>(null);
@@ -93,6 +106,11 @@ export default function DigitalAdminPage() {
   const [manualTitle, setManualTitle] = useState("");
   const [manualBody, setManualBody] = useState("");
   const [manualTags, setManualTags] = useState("#IPECC");
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editBody, setEditBody] = useState("");
+  const [editTags, setEditTags] = useState("");
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -219,8 +237,69 @@ export default function DigitalAdminPage() {
     });
     const json = await res.json();
     if (!res.ok || !json.ok) setAviso(json.error ?? "Falha ao atualizar post");
-    else await carregar();
+    else {
+      if (status === "published_manual") {
+        setAviso("Marcado como publicado manualmente nas redes.");
+      }
+      if (editingId === post.id) setEditingId(null);
+      await carregar();
+    }
     setBusy(false);
+  }
+
+  function iniciarEdicao(post: DigitalPost) {
+    setEditingId(post.id);
+    setEditTitle(post.title);
+    setEditBody(post.body);
+    setEditTags(post.hashtags ?? "");
+    setAviso(null);
+  }
+
+  async function salvarEdicao(postId: string) {
+    setBusy(true);
+    const res = await fetch("/api/admin/digital/posts", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: postId,
+        title: editTitle,
+        body: editBody,
+        hashtags: editTags,
+      }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.ok) {
+      setAviso(json.error ?? "Falha ao salvar edição");
+    } else {
+      setEditingId(null);
+      setAviso("Texto atualizado.");
+      await carregar();
+    }
+    setBusy(false);
+  }
+
+  async function copiarTexto(post: DigitalPost) {
+    const texto = textoPublicavel(post);
+    try {
+      await navigator.clipboard.writeText(texto);
+      setAviso("Texto copiado. Cole na rede e, em seguida, marque como publicado.");
+    } catch {
+      setAviso("Não foi possível copiar. Selecione o texto manualmente.");
+    }
+  }
+
+  async function copiarLink(post: DigitalPost) {
+    const link = primeiroLink(post);
+    if (!link) {
+      setAviso("Este post não tem link para copiar.");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(link);
+      setAviso("Link copiado.");
+    } catch {
+      setAviso("Não foi possível copiar o link.");
+    }
   }
 
   return (
@@ -228,8 +307,7 @@ export default function DigitalAdminPage() {
       <h1 style={{ margin: 0, fontSize: 24 }}>Digital — redes sociais</h1>
       <p style={{ ...metaStyle, marginTop: adminTokens.spacing.sm }}>
         Gerencie perfis do site e por projeto, e a fila editorial. O agente gera
-        rascunhos a partir de notícias, eventos e programas. Publicação automática
-        nas interfaces das redes fica para a Fase 2.
+        rascunhos a partir de notícias, eventos e programas. {AJUDA_PUBLICACAO_ASSISTIDA}
       </p>
 
       <div style={{ ...rowStyle, marginTop: adminTokens.spacing.base }}>
@@ -429,57 +507,168 @@ export default function DigitalAdminPage() {
                 Nenhum post. Use “Gerar rascunhos” ou crie um manual.
               </p>
             ) : (
-              posts.map((p) => (
-                <div
-                  key={p.id}
-                  style={{
-                    borderBottom: "1px solid #334155",
-                    padding: `${adminTokens.spacing.sm}px 0`,
-                  }}
-                >
-                  <strong>{p.title}</strong>
-                  <div style={metaStyle}>
-                    {rotuloStatus(p.status)} · {rotuloOrigem(p.source_type)}
-                    {p.source_id ? ` · ${p.source_id}` : ""}
+              posts.map((p) => {
+                const editavel =
+                  p.status === "draft" || p.status === "approved";
+                const editando = editingId === p.id;
+                const link = primeiroLink(p);
+                const targets = p.targets ?? [];
+
+                return (
+                  <div
+                    key={p.id}
+                    style={{
+                      borderBottom: "1px solid #334155",
+                      padding: `${adminTokens.spacing.sm}px 0`,
+                    }}
+                  >
+                    {editando ? (
+                      <div style={{ display: "grid", gap: adminTokens.spacing.sm }}>
+                        <input
+                          style={inputStyle}
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          aria-label="Título do post"
+                        />
+                        <textarea
+                          style={{ ...inputStyle, minHeight: 120 }}
+                          value={editBody}
+                          onChange={(e) => setEditBody(e.target.value)}
+                          aria-label="Texto do post"
+                        />
+                        <input
+                          style={inputStyle}
+                          value={editTags}
+                          onChange={(e) => setEditTags(e.target.value)}
+                          placeholder="Marcadores (#)"
+                          aria-label="Marcadores"
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <strong>{p.title}</strong>
+                        <div style={metaStyle}>
+                          {rotuloStatus(p.status)} · {rotuloOrigem(p.source_type)}
+                          {p.source_id ? ` · ${p.source_id}` : ""}
+                        </div>
+                        {targets.length > 0 && (
+                          <div style={{ ...metaStyle, marginTop: 4 }}>
+                            Destinos:{" "}
+                            {targets
+                              .map(
+                                (t) =>
+                                  `${rotuloPlataforma(t.platform)}${
+                                    t.label ? ` (${t.label})` : ""
+                                  }`
+                              )
+                              .join(" · ")}
+                          </div>
+                        )}
+                        <pre
+                          style={{
+                            ...metaStyle,
+                            margin: `${adminTokens.spacing.sm}px 0`,
+                          }}
+                        >
+                          {p.body}
+                          {p.hashtags ? `\n\n${p.hashtags}` : ""}
+                        </pre>
+                      </>
+                    )}
+                    <div style={rowStyle}>
+                      {editando ? (
+                        <>
+                          <button
+                            type="button"
+                            style={btnStyle}
+                            disabled={busy || !editTitle.trim() || !editBody.trim()}
+                            onClick={() => void salvarEdicao(p.id)}
+                          >
+                            Salvar texto
+                          </button>
+                          <button
+                            type="button"
+                            style={btnGhost}
+                            disabled={busy}
+                            onClick={() => setEditingId(null)}
+                          >
+                            Cancelar
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          {editavel && (
+                            <button
+                              type="button"
+                              style={btnGhost}
+                              disabled={busy}
+                              onClick={() => iniciarEdicao(p)}
+                            >
+                              Editar texto
+                            </button>
+                          )}
+                          {(p.status === "approved" ||
+                            p.status === "draft") && (
+                            <button
+                              type="button"
+                              style={btnGhost}
+                              disabled={busy}
+                              onClick={() => void copiarTexto(p)}
+                            >
+                              Copiar texto
+                            </button>
+                          )}
+                          {link &&
+                            (p.status === "approved" ||
+                              p.status === "draft") && (
+                              <button
+                                type="button"
+                                style={btnGhost}
+                                disabled={busy}
+                                onClick={() => void copiarLink(p)}
+                              >
+                                Copiar link
+                              </button>
+                            )}
+                          {p.status === "draft" && (
+                            <button
+                              type="button"
+                              style={btnStyle}
+                              disabled={busy}
+                              onClick={() => void setPostStatus(p, "approved")}
+                            >
+                              Aprovar
+                            </button>
+                          )}
+                          {(p.status === "draft" ||
+                            p.status === "approved") && (
+                            <button
+                              type="button"
+                              style={btnGhost}
+                              disabled={busy}
+                              onClick={() =>
+                                void setPostStatus(p, "published_manual")
+                              }
+                            >
+                              Marcar publicado nas redes
+                            </button>
+                          )}
+                          {p.status !== "archived" && (
+                            <button
+                              type="button"
+                              style={btnGhost}
+                              disabled={busy}
+                              onClick={() => void setPostStatus(p, "archived")}
+                            >
+                              Arquivar
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </div>
-                  <pre style={{ ...metaStyle, margin: `${adminTokens.spacing.sm}px 0` }}>
-                    {p.body}
-                    {p.hashtags ? `\n\n${p.hashtags}` : ""}
-                  </pre>
-                  <div style={rowStyle}>
-                    {p.status === "draft" && (
-                      <button
-                        type="button"
-                        style={btnStyle}
-                        disabled={busy}
-                        onClick={() => void setPostStatus(p, "approved")}
-                      >
-                        Aprovar
-                      </button>
-                    )}
-                    {(p.status === "draft" || p.status === "approved") && (
-                      <button
-                        type="button"
-                        style={btnGhost}
-                        disabled={busy}
-                        onClick={() => void setPostStatus(p, "published_manual")}
-                      >
-                        Marcar publicado (manual)
-                      </button>
-                    )}
-                    {p.status !== "archived" && (
-                      <button
-                        type="button"
-                        style={btnGhost}
-                        disabled={busy}
-                        onClick={() => void setPostStatus(p, "archived")}
-                      >
-                        Arquivar
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </>

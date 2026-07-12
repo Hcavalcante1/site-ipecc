@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminSession } from "@/lib/auth/adminSession";
 import { isMestre } from "@/lib/auth/adminEscopo";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { isDigitalPostStatus } from "@/lib/digital/types";
+import {
+  isDigitalPlatform,
+  isDigitalPostStatus,
+  type DigitalPostTargetBrief,
+} from "@/lib/digital/types";
 
 function denyIfNotMestre(auth: Awaited<ReturnType<typeof verifyAdminSession>>) {
   if (auth.ok === false) {
@@ -53,7 +57,61 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  return NextResponse.json({ ok: true, posts: data ?? [] });
+  const posts = data ?? [];
+  const postIds = posts.map((p) => p.id as string).filter(Boolean);
+
+  const targetsByPost = new Map<string, DigitalPostTargetBrief[]>();
+
+  if (postIds.length > 0) {
+    const { data: targetRows } = await supabaseAdmin
+      .from("digital_post_targets")
+      .select(
+        "post_id, account_id, digital_accounts ( id, platform, label, href, ativo )"
+      )
+      .in("post_id", postIds);
+
+    for (const row of targetRows ?? []) {
+      const postId = row.post_id as string;
+      const raw = row.digital_accounts as unknown;
+      const acc = Array.isArray(raw)
+        ? (raw[0] as
+            | {
+                id: string;
+                platform: string;
+                label: string;
+                href: string;
+                ativo: boolean;
+              }
+            | undefined)
+        : (raw as
+            | {
+                id: string;
+                platform: string;
+                label: string;
+                href: string;
+                ativo: boolean;
+              }
+            | null);
+      if (!acc || !isDigitalPlatform(acc.platform)) continue;
+      const list = targetsByPost.get(postId) ?? [];
+      list.push({
+        account_id: acc.id,
+        platform: acc.platform,
+        label: acc.label,
+        href: acc.href,
+        ativo: Boolean(acc.ativo),
+      });
+      targetsByPost.set(postId, list);
+    }
+  }
+
+  return NextResponse.json({
+    ok: true,
+    posts: posts.map((p) => ({
+      ...p,
+      targets: targetsByPost.get(p.id as string) ?? [],
+    })),
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -155,12 +213,67 @@ export async function PATCH(req: NextRequest) {
     );
   }
 
+  const contentEdit =
+    body.title !== undefined ||
+    body.body !== undefined ||
+    body.hashtags !== undefined ||
+    body.media_url !== undefined;
+
+  if (contentEdit) {
+    const { data: atual, error: errAtual } = await supabaseAdmin
+      .from("digital_posts")
+      .select("status")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (errAtual) {
+      return NextResponse.json(
+        { ok: false, error: errAtual.message },
+        { status: 400 }
+      );
+    }
+    if (!atual) {
+      return NextResponse.json(
+        { ok: false, error: "Post não encontrado" },
+        { status: 404 }
+      );
+    }
+    if (atual.status !== "draft" && atual.status !== "approved") {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "Só é possível editar o texto em rascunho ou aprovado. Arquive e crie outro se precisar.",
+        },
+        { status: 400 }
+      );
+    }
+  }
+
   const patch: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
   };
 
-  if (body.title !== undefined) patch.title = body.title.trim();
-  if (body.body !== undefined) patch.body = body.body.trim();
+  if (body.title !== undefined) {
+    const title = body.title.trim();
+    if (!title) {
+      return NextResponse.json(
+        { ok: false, error: "Título não pode ficar vazio" },
+        { status: 400 }
+      );
+    }
+    patch.title = title;
+  }
+  if (body.body !== undefined) {
+    const text = body.body.trim();
+    if (!text) {
+      return NextResponse.json(
+        { ok: false, error: "Texto não pode ficar vazio" },
+        { status: 400 }
+      );
+    }
+    patch.body = text;
+  }
   if (body.hashtags !== undefined) {
     patch.hashtags =
       body.hashtags === null || body.hashtags === ""

@@ -64,11 +64,21 @@ function main() {
 
   const page = path.join(process.cwd(), "app/admin/digital/page.tsx");
   assert("admin page", fs.existsSync(page));
+  const pageText = fs.readFileSync(page, "utf8");
+  assert("ui copiar texto", pageText.includes("Copiar texto"));
+  assert("ui editar texto", pageText.includes("Editar texto"));
   const api = path.join(
     process.cwd(),
     "app/api/admin/digital/generate/route.ts"
   );
   assert("generate api", fs.existsSync(api));
+
+  const labels = path.join(process.cwd(), "lib/digital/labels.ts");
+  const labelsText = fs.readFileSync(labels, "utf8");
+  assert(
+    "ajuda publicacao assistida",
+    labelsText.includes("AJUDA_PUBLICACAO_ASSISTIDA")
+  );
 
   console.log(`\nOK: ${ok} | Falhas: ${fail}`);
   process.exit(fail > 0 ? 1 : 0);

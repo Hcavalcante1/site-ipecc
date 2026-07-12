@@ -9,9 +9,13 @@ export const LABEL_STATUS: Record<DigitalPostStatus, string> = {
   draft: "rascunho",
   approved: "aprovado",
   scheduled: "agendado",
-  published_manual: "publicado (manual)",
+  published_manual: "publicado manualmente nas redes",
   archived: "arquivado",
 };
+
+/** Ajuda do fluxo assistido (copiar → colar na rede → marcar). */
+export const AJUDA_PUBLICACAO_ASSISTIDA =
+  "Fluxo assistido: aprove o rascunho, copie o texto, cole na rede e marque como publicado. A publicação automática nas APIs das redes fica para uma fase futura.";
 
 export const LABEL_ORIGEM: Record<DigitalPostSource, string> = {
   manual: "manual",

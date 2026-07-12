@@ -36,6 +36,14 @@ export type DigitalAccount = {
   updated_at: string;
 };
 
+export type DigitalPostTargetBrief = {
+  account_id: string;
+  platform: DigitalPlatform;
+  label: string;
+  href: string;
+  ativo: boolean;
+};
+
 export type DigitalPost = {
   id: string;
   title: string;
@@ -50,6 +58,7 @@ export type DigitalPost = {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  targets?: DigitalPostTargetBrief[];
 };
 
 export type DigitalDraftInput = {
