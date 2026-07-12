@@ -30,7 +30,7 @@ async function main() {
 
   console.log(
     dry
-      ? `[dry] drafts montados: ${result.drafts.length}`
+      ? `[simulação] rascunhos montados: ${result.drafts.length}`
       : `Gerados: ${result.generated} | Ignorados: ${result.skipped}`
   );
   for (const d of result.drafts) {

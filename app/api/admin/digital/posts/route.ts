@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
   const text = body.body?.trim();
   if (!title || !text) {
     return NextResponse.json(
-      { ok: false, error: "title e body são obrigatórios" },
+      { ok: false, error: "Título e texto são obrigatórios" },
       { status: 400 }
     );
   }
@@ -149,7 +149,10 @@ export async function PATCH(req: NextRequest) {
 
   const id = body.id?.trim();
   if (!id) {
-    return NextResponse.json({ ok: false, error: "id obrigatório" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Identificador obrigatório" },
+      { status: 400 }
+    );
   }
 
   const patch: Record<string, unknown> = {
@@ -173,7 +176,7 @@ export async function PATCH(req: NextRequest) {
   if (body.status !== undefined) {
     if (!isDigitalPostStatus(body.status)) {
       return NextResponse.json(
-        { ok: false, error: "status inválido" },
+        { ok: false, error: "Status inválido" },
         { status: 400 }
       );
     }

@@ -18,7 +18,7 @@ type GenerateOptions = {
   limitNoticias?: number;
   limitEventos?: number;
   includeProjetos?: boolean;
-  /** Se false, só monta drafts sem gravar. */
+  /** Se false, só monta rascunhos sem gravar no banco. */
   persist?: boolean;
   createdBy?: string | null;
 };
@@ -40,8 +40,8 @@ async function alreadyExists(
 }
 
 /**
- * Agent Fase 1: gera rascunhos a partir de notícias, eventos e programas do site.
- * Sem chamada a APIs de redes sociais.
+ * Agente da Fase 1: gera rascunhos a partir de notícias, eventos e programas do site.
+ * Sem publicação automática nas redes sociais.
  */
 export async function generateDigitalDrafts(
   supabase: SupabaseClient,
@@ -174,7 +174,7 @@ export async function generateDigitalDrafts(
         source_type: d.source_type,
         source_id: d.source_id,
         status: "draft",
-        created_by: options.createdBy ?? "digital-agent",
+        created_by: options.createdBy ?? "agente-digital",
         updated_at: new Date().toISOString(),
       })
       .select("id")

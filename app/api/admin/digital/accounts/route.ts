@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         ok: false,
-        error: `platform inválida. Use: ${DIGITAL_PLATFORMS.join(", ")}`,
+        error: `Rede inválida. Use: ${DIGITAL_PLATFORMS.join(", ")}`,
       },
       { status: 400 }
     );
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
   const href = body.href?.trim();
   if (!label || !href) {
     return NextResponse.json(
-      { ok: false, error: "label e href são obrigatórios" },
+      { ok: false, error: "Rótulo e endereço (URL) são obrigatórios" },
       { status: 400 }
     );
   }
@@ -100,7 +100,10 @@ export async function POST(req: NextRequest) {
 
   if (scope === "projeto" && !projeto_ref) {
     return NextResponse.json(
-      { ok: false, error: "projeto_ref obrigatório quando scope=projeto" },
+      {
+        ok: false,
+        error: "Referência do projeto é obrigatória quando o escopo é por projeto",
+      },
       { status: 400 }
     );
   }
@@ -152,7 +155,7 @@ export async function PATCH(req: NextRequest) {
 
   const id = body.id?.trim();
   if (!id) {
-    return NextResponse.json({ ok: false, error: "id obrigatório" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "Identificador obrigatório" }, { status: 400 });
   }
 
   const patch: Record<string, unknown> = {

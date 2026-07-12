@@ -3,8 +3,8 @@ import { PUBLIC_SOCIAL_LINKS } from "@/lib/public/socialLinks";
 import { supabasePublic } from "@/lib/supabasePublic";
 
 /**
- * Links oficiais do site para topbar/rodapé.
- * Fallback hardcoded se a tabela Digital ainda não existir.
+ * Links oficiais do site para topbar e rodapé.
+ * Usa a lista fixa se a tabela Digital ainda não existir.
  */
 export async function GET() {
   try {

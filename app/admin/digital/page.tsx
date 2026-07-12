@@ -9,6 +9,14 @@ import type {
   DigitalPostStatus,
 } from "@/lib/digital/types";
 import { DIGITAL_PLATFORMS } from "@/lib/digital/types";
+import {
+  LABEL_ESCOPO,
+  LABEL_PLATAFORMA,
+  LABEL_STATUS,
+  rotuloOrigem,
+  rotuloPlataforma,
+  rotuloStatus,
+} from "@/lib/digital/labels";
 
 type Tab = "perfis" | "fila";
 
@@ -130,7 +138,7 @@ export default function DigitalAdminPage() {
       setAviso(json.error ?? "Falha ao gerar rascunhos");
     } else {
       setAviso(
-        `Agent: ${json.generated} gerado(s), ${json.skipped} ignorado(s).` +
+        `Agente: ${json.generated} gerado(s), ${json.skipped} ignorado(s).` +
           (json.errors?.length ? ` Avisos: ${json.errors.length}` : "")
       );
       setTab("fila");
@@ -219,7 +227,7 @@ export default function DigitalAdminPage() {
     <div style={pageStyle}>
       <h1 style={{ margin: 0, fontSize: 24 }}>Digital — redes sociais</h1>
       <p style={{ ...metaStyle, marginTop: adminTokens.spacing.sm }}>
-        Gerencie perfis do site e por projeto, e a fila editorial. O agent gera
+        Gerencie perfis do site e por projeto, e a fila editorial. O agente gera
         rascunhos a partir de notícias, eventos e programas. Publicação automática
         nas APIs das redes fica para a Fase 2.
       </p>
@@ -245,7 +253,7 @@ export default function DigitalAdminPage() {
           disabled={busy}
           onClick={() => void gerarRascunhos()}
         >
-          {busy ? "Aguarde…" : "Gerar rascunhos (agent)"}
+          {busy ? "Aguarde…" : "Gerar rascunhos (agente)"}
         </button>
       </div>
 
@@ -269,7 +277,7 @@ export default function DigitalAdminPage() {
               >
                 {DIGITAL_PLATFORMS.map((p) => (
                   <option key={p} value={p}>
-                    {p}
+                    {LABEL_PLATAFORMA[p]}
                   </option>
                 ))}
               </select>
@@ -280,8 +288,8 @@ export default function DigitalAdminPage() {
                   setNewScope(e.target.value === "projeto" ? "projeto" : "site")
                 }
               >
-                <option value="site">Site (institucional)</option>
-                <option value="projeto">Por projeto</option>
+                <option value="site">{LABEL_ESCOPO.site}</option>
+                <option value="projeto">{LABEL_ESCOPO.projeto}</option>
               </select>
               <input
                 style={inputStyle}
@@ -291,20 +299,20 @@ export default function DigitalAdminPage() {
               />
               <input
                 style={inputStyle}
-                placeholder="URL"
+                placeholder="Endereço (URL)"
                 value={newHref}
                 onChange={(e) => setNewHref(e.target.value)}
               />
               <input
                 style={inputStyle}
-                placeholder="Handle (opcional)"
+                placeholder="Identificador na rede (opcional)"
                 value={newHandle}
                 onChange={(e) => setNewHandle(e.target.value)}
               />
               {newScope === "projeto" && (
                 <input
                   style={inputStyle}
-                  placeholder="projeto_ref (ex.: valer-mais)"
+                  placeholder="Referência do projeto (ex.: valer-mais)"
                   value={newProjetoRef}
                   onChange={(e) => setNewProjetoRef(e.target.value)}
                 />
@@ -337,10 +345,12 @@ export default function DigitalAdminPage() {
                 >
                   <div>
                     <strong>
-                      {a.label} · {a.platform}
+                      {a.label} · {rotuloPlataforma(a.platform)}
                     </strong>
                     <div style={metaStyle}>
-                      {a.scope}
+                      {a.scope === "projeto"
+                        ? LABEL_ESCOPO.projeto
+                        : LABEL_ESCOPO.site}
                       {a.projeto_ref ? ` / ${a.projeto_ref}` : ""} ·{" "}
                       {a.ativo ? "ativo" : "inativo"}
                       <br />
@@ -404,11 +414,11 @@ export default function DigitalAdminPage() {
               onChange={(e) => setStatusFilter(e.target.value)}
             >
               <option value="">Todos</option>
-              <option value="draft">draft</option>
-              <option value="approved">approved</option>
-              <option value="scheduled">scheduled</option>
-              <option value="published_manual">published_manual</option>
-              <option value="archived">archived</option>
+              {(Object.keys(LABEL_STATUS) as DigitalPostStatus[]).map((s) => (
+                <option key={s} value={s}>
+                  {LABEL_STATUS[s]}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -429,7 +439,7 @@ export default function DigitalAdminPage() {
                 >
                   <strong>{p.title}</strong>
                   <div style={metaStyle}>
-                    {p.status} · {p.source_type}
+                    {rotuloStatus(p.status)} · {rotuloOrigem(p.source_type)}
                     {p.source_id ? ` · ${p.source_id}` : ""}
                   </div>
                   <pre style={{ ...metaStyle, margin: `${adminTokens.spacing.sm}px 0` }}>
