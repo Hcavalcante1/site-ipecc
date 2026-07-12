@@ -7,13 +7,12 @@ const ADMIN_GATE_COOKIE = "ipecc_admin_gate";
 export async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
   const isAdminPath = pathname.startsWith("/admin");
-  const res = NextResponse.next();
 
   if (!isAdminPath) {
+    const res = NextResponse.next();
     if (req.cookies.has(ADMIN_GATE_COOKIE)) {
       res.cookies.set(ADMIN_GATE_COOKIE, "", { path: "/", maxAge: 0 });
     }
-
     return res;
   }
 
@@ -23,19 +22,28 @@ export async function middleware(req: NextRequest) {
     return redirect;
   }
 
+  let res = NextResponse.next({
+    request: { headers: req.headers },
+  });
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name) {
-          return req.cookies.get(name)?.value;
+        getAll() {
+          return req.cookies.getAll();
         },
-        set(name, value, options) {
-          res.cookies.set({ name, value, ...options });
-        },
-        remove(name, options) {
-          res.cookies.set({ name, value: "", ...options });
+        setAll(cookiesToSet) {
+          for (const { name, value } of cookiesToSet) {
+            req.cookies.set(name, value);
+          }
+          res = NextResponse.next({
+            request: { headers: req.headers },
+          });
+          for (const { name, value, options } of cookiesToSet) {
+            res.cookies.set(name, value, options);
+          }
         },
       },
     }
@@ -46,7 +54,9 @@ export async function middleware(req: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.redirect(new URL("/login", req.url));
+    const redirect = NextResponse.redirect(new URL("/login", req.url));
+    redirect.cookies.set(ADMIN_GATE_COOKIE, "", { path: "/", maxAge: 0 });
+    return redirect;
   }
 
   const { data: gateNovo, error: gateNovoError } = await supabase.rpc(

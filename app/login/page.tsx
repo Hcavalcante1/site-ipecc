@@ -16,29 +16,72 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/admin/login", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.trim(),
-          password: password.trim(),
-        }),
+      const emailTrim = email.trim();
+      const passwordTrim = password.trim();
+
+      // 1) Sessao no browser (cookies legíveis pelo cliente Supabase)
+      const { error: clientErr } = await supabase.auth.signInWithPassword({
+        email: emailTrim,
+        password: passwordTrim,
       });
 
-      const json = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        ok?: boolean;
-      };
-
-      if (!res.ok) {
-        setMsg(json.error || "Acesso admin nao autorizado.");
+      if (clientErr) {
+        setMsg("E-mail ou senha invalidos.");
         setLoading(false);
         return;
       }
 
-      // Sincroniza cliente browser com a sessao ja gravada nos cookies
       await supabase.auth.getSession();
+
+      // 2) Gate admin + cookies de servidor
+      let gate = await fetch("/api/admin/session", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (!gate.ok) {
+        // Fallback: login server-side + setSession com tokens
+        const serverLogin = await fetch("/api/admin/login", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: emailTrim, password: passwordTrim }),
+        });
+        const serverJson = (await serverLogin.json().catch(() => ({}))) as {
+          error?: string;
+          session?: {
+            access_token: string;
+            refresh_token: string;
+          } | null;
+        };
+
+        if (!serverLogin.ok) {
+          await supabase.auth.signOut().catch(() => null);
+          setMsg(serverJson.error || "Acesso admin nao autorizado.");
+          setLoading(false);
+          return;
+        }
+
+        if (serverJson.session?.access_token && serverJson.session.refresh_token) {
+          await supabase.auth.setSession({
+            access_token: serverJson.session.access_token,
+            refresh_token: serverJson.session.refresh_token,
+          });
+        }
+
+        gate = await fetch("/api/admin/session", {
+          method: "POST",
+          credentials: "include",
+        });
+      }
+
+      if (!gate.ok) {
+        const body = (await gate.json().catch(() => ({}))) as { error?: string };
+        await supabase.auth.signOut().catch(() => null);
+        setMsg(body.error || "Acesso admin nao autorizado.");
+        setLoading(false);
+        return;
+      }
 
       localStorage.removeItem("ipecc_admin_closed");
       sessionStorage.setItem("ipecc_admin_active", "1");

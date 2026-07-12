@@ -151,6 +151,13 @@ export async function POST(req: Request) {
       mestre: isMestre(contexto),
       modulos: modulosPermitidos(contexto),
       processoIds: processoIdsDoEscopo(contexto),
+      session: signed.session
+        ? {
+            access_token: signed.session.access_token,
+            refresh_token: signed.session.refresh_token,
+            expires_at: signed.session.expires_at,
+          }
+        : null,
     });
 
     for (const { name, value, options } of pendingCookies) {
