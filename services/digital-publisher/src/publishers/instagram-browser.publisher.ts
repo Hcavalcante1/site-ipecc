@@ -1,7 +1,33 @@
 import { chromium, type BrowserContext } from "playwright";
 import fs from "fs";
+import os from "os";
 import path from "path";
 import type { PublishInput, PublishResult, SocialPublisher } from "./publisher.types";
+
+async function downloadMediaToTemp(mediaUrl: string): Promise<string> {
+  const res = await fetch(mediaUrl);
+  if (!res.ok) {
+    throw new Error(`Falha ao baixar mídia (${res.status}).`);
+  }
+  const ct = (res.headers.get("content-type") || "").toLowerCase();
+  const ext =
+    ct.includes("png")
+      ? ".png"
+      : ct.includes("webp")
+        ? ".webp"
+        : ct.includes("mp4")
+          ? ".mp4"
+          : ct.includes("jpeg") || ct.includes("jpg")
+            ? ".jpg"
+            : path.extname(new URL(mediaUrl).pathname) || ".jpg";
+  const tmp = path.join(
+    os.tmpdir(),
+    `ig-media-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`
+  );
+  const buf = Buffer.from(await res.arrayBuffer());
+  fs.writeFileSync(tmp, buf);
+  return tmp;
+}
 
 /**
  * Publicador Instagram via navegador (feed + imagem + legenda).
@@ -35,7 +61,10 @@ export function createInstagramBrowserPublisher(opts: {
       fs.mkdirSync(profile, { recursive: true });
 
       let context: BrowserContext | null = null;
+      let mediaPath: string | null = null;
       try {
+        mediaPath = await downloadMediaToTemp(input.mediaUrl);
+
         context = await chromium.launchPersistentContext(profile, {
           headless: opts.headless,
           viewport: { width: 1280, height: 900 },
@@ -46,7 +75,6 @@ export function createInstagramBrowserPublisher(opts: {
           timeout: 60000,
         });
 
-        // Sessão inválida → pedir reconexão (não contornar login/2FA)
         const needsLogin =
           (await page.getByRole("button", { name: /log in|entrar/i }).count()) >
             0 ||
@@ -61,25 +89,68 @@ export function createInstagramBrowserPublisher(opts: {
           };
         }
 
-        // Fluxo mínimo: abrir criação de post (seletores frágeis — evoluir com evidências)
-        const newPost = page.getByRole("link", { name: /new post|nova publicação|create/i }).first();
-        if ((await newPost.count()) === 0) {
+        // Atalho: criação via /create/select (mais estável que caçar ícone)
+        await page.goto("https://www.instagram.com/create/select/", {
+          waitUntil: "domcontentloaded",
+          timeout: 60000,
+        });
+
+        const fileInput = page.locator('input[type="file"]').first();
+        await fileInput.waitFor({ state: "attached", timeout: 30000 });
+        await fileInput.setInputFiles(mediaPath);
+
+        // Avançar etapas (seletores frágeis — texto PT/EN)
+        for (let i = 0; i < 3; i++) {
+          const next = page.getByRole("button", {
+            name: /next|avançar|continuar/i,
+          });
+          if ((await next.count()) === 0) break;
+          await next.first().click({ timeout: 10000 }).catch(() => {});
+          await page.waitForTimeout(800);
+        }
+
+        const captionBox = page
+          .locator(
+            'div[aria-label*="caption" i], div[aria-label*="legenda" i], textarea, [contenteditable="true"]'
+          )
+          .first();
+        if ((await captionBox.count()) > 0) {
+          await captionBox.click({ timeout: 10000 }).catch(() => {});
+          await page.keyboard.type(input.caption.slice(0, 2200), {
+            delay: 5,
+          });
+        }
+
+        const share = page.getByRole("button", {
+          name: /share|compartilhar|publicar/i,
+        });
+        if ((await share.count()) === 0) {
           return {
             success: false,
             errorCode: "ui_changed",
             errorMessage:
-              "Não encontrou o botão de nova publicação. Interface pode ter mudado.",
-            requiresReconnect: false,
+              "Mídia anexada, mas não encontrou botão Compartilhar. Interface pode ter mudado.",
+            rawResponse: { media_attached: true },
           };
         }
+        await share.first().click({ timeout: 15000 });
 
-        // Nesta fase: validação de sessão OK; upload real será completado com mídia local
+        // Espera curta pós-publicação
+        await page.waitForTimeout(4000);
+        const evidenceDir = path.join(opts.profileDir, "_evidence");
+        fs.mkdirSync(evidenceDir, { recursive: true });
+        const evidencePath = path.join(
+          evidenceDir,
+          `ig-${input.postId}-${Date.now()}.png`
+        );
+        await page.screenshot({ path: evidencePath, fullPage: false });
+
         return {
-          success: false,
-          errorCode: "partial_implementation",
-          errorMessage:
-            "Sessão Instagram válida detectada; upload automático de mídia ainda em implementação. Use dry-run ou legado temporariamente.",
-          rawResponse: { session_ok: true },
+          success: true,
+          externalPostId: `ig-browser-${Date.now()}`,
+          externalPostUrl: page.url(),
+          evidencePath,
+          rawResponse: { session_ok: true, uploaded: true },
         };
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -92,6 +163,11 @@ export function createInstagramBrowserPublisher(opts: {
         try {
           await context?.close();
         } catch {}
+        if (mediaPath) {
+          try {
+            fs.unlinkSync(mediaPath);
+          } catch {}
+        }
       }
     },
   };

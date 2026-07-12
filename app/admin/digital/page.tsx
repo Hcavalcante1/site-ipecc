@@ -267,6 +267,35 @@ export default function DigitalAdminPage() {
     setBusy(false);
   }
 
+  /** Conectar / ativar automação browser (sem senha; sessão no worker). */
+  async function atualizarAutomacaoConta(
+    account: DigitalAccount,
+    opts: {
+      action: "enable" | "disable" | "request_connect" | "mark_disconnected";
+      automation_strategy?: string;
+    }
+  ) {
+    setBusy(true);
+    setAviso(null);
+    const res = await fetch("/api/admin/digital/accounts/automation", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        account_id: account.id,
+        action: opts.action,
+        automation_strategy: opts.automation_strategy,
+      }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.ok) {
+      setAviso(json.error ?? "Falha ao atualizar automação");
+    } else {
+      setAviso(json.aviso ?? "Automação da conta atualizada.");
+      await carregar();
+    }
+    setBusy(false);
+  }
+
   function iniciarEdicaoPerfil(account: DigitalAccount) {
     setEditingAccountId(account.id);
     setEditAccLabel(account.label);
@@ -726,6 +755,17 @@ export default function DigitalAdminPage() {
                             {a.projeto_ref ? ` / ${a.projeto_ref}` : ""}
                             {a.handle ? ` · ${a.handle}` : ""} ·{" "}
                             {a.ativo ? "ativo" : "inativo"}
+                            {a.automation_strategy
+                              ? ` · estratégia: ${a.automation_strategy}`
+                              : ""}
+                            {a.connection_status
+                              ? ` · conexão: ${a.connection_status}`
+                              : ""}
+                            {a.automation_enabled ? " · automação ON" : ""}
+                            {a.requires_reconnect ? " · reconectar" : ""}
+                            {a.last_connection_error
+                              ? ` · erro: ${a.last_connection_error}`
+                              : ""}
                             <br />
                             <a
                               href={a.href}
@@ -745,6 +785,37 @@ export default function DigitalAdminPage() {
                             onClick={() => iniciarEdicaoPerfil(a)}
                           >
                             Editar perfil
+                          </button>
+                          <button
+                            type="button"
+                            style={btnGhost}
+                            disabled={busy}
+                            onClick={() =>
+                              void atualizarAutomacaoConta(a, {
+                                action: "request_connect",
+                                automation_strategy: "browser",
+                              })
+                            }
+                            title="Marca connecting; login manual no worker (sem senha no IPECC)"
+                          >
+                            Conectar (browser)
+                          </button>
+                          <button
+                            type="button"
+                            style={btnGhost}
+                            disabled={busy}
+                            onClick={() =>
+                              void atualizarAutomacaoConta(a, {
+                                action: a.automation_enabled
+                                  ? "disable"
+                                  : "enable",
+                                automation_strategy: "browser",
+                              })
+                            }
+                          >
+                            {a.automation_enabled
+                              ? "Desativar automação"
+                              : "Ativar automação"}
                           </button>
                           <button
                             type="button"
