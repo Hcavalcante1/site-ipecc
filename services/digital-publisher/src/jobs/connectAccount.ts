@@ -319,9 +319,8 @@ export async function processConnectRequests(
   const publisherConfig =
     (acc.publisher_config as Record<string, unknown>) || {};
   const loginUrl = LOGIN_URL[acc.platform];
-  const startUrl = resolveStartUrl(acc);
-  const probe = SESSION_PROBE_URL[acc.platform] || startUrl;
-  if (!loginUrl || !startUrl) {
+  const probe = SESSION_PROBE_URL[acc.platform] || loginUrl;
+  if (!loginUrl) {
     await markConnectError(
       db,
       acc,
@@ -337,8 +336,8 @@ export async function processConnectRequests(
     account_id: acc.id,
     platform: acc.platform,
     event_type: "account_connect_started",
-    message: `Abrindo navegador em ${acc.label}.`,
-    details: { profile, startUrl, probe },
+    message: `Abrindo login de ${acc.label}.`,
+    details: { profile, loginUrl, probe },
   });
 
   let context: BrowserContext | null = null;
@@ -353,22 +352,25 @@ export async function processConnectRequests(
       viewport: { width: 1280, height: 900 },
     });
     const page = context.pages()[0] || (await context.newPage());
-    await page.goto(startUrl, {
+    // Conectar = sempre tela de login (perfil público não prova sessão)
+    await page.goto(loginUrl, {
       waitUntil: "domcontentloaded",
       timeout: 60000,
     });
 
     console.log(
-      `[digital-publisher] Conectar ${acc.platform} (${acc.label}): ${startUrl}. Faça login; só conecta com cookie de sessão.`
+      `[digital-publisher] Conectar ${acc.platform} (${acc.label}): ${loginUrl}. Faça login; só conecta com cookie de sessão.`
     );
 
     while (Date.now() - started < timeoutMs) {
-      // Prova no feed/home (perfil público não basta)
-      if (!page.url().includes("/login")) {
-        await page.goto(probe, {
-          waitUntil: "domcontentloaded",
-          timeout: 30000,
-        }).catch(() => {});
+      // Após login, prova no feed/home (não no perfil público)
+      if (!/\/login|login\.php|accounts\/login/i.test(page.url())) {
+        await page
+          .goto(probe, {
+            waitUntil: "domcontentloaded",
+            timeout: 30000,
+          })
+          .catch(() => {});
         await page.waitForTimeout(1500);
       }
 
@@ -379,7 +381,7 @@ export async function processConnectRequests(
           platform: acc.platform,
           event_type: "account_connect_success",
           message: "Sessão conectada (cookies de autenticação confirmados).",
-          details: { profile },
+          details: { profile, loginUrl, probe },
         });
         console.log(`[digital-publisher] Conta ${acc.label} conectada.`);
         return true;
