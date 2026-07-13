@@ -1,7 +1,7 @@
 # Motor de assinatura Documento (self-host)
 
 O admin IPECC chama isso de **Documento**. Esta pasta sobe o motor open source
-compatível (imagem Documenso) usado só no servidor.
+compatível (imagem open-source do motor) usado só no servidor.
 
 ## Subir
 
