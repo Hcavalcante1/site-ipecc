@@ -32,7 +32,7 @@ export const LABEL_TEMPLATE_KIND: Record<string, string> = {
 };
 
 export function rotuloTipoModelo(kind: string): string {
-  return LABEL_TEMPLATE_KIND[kind] || kind;
+  return LABEL_TEMPLATE_KIND[kind] || kind.replace(/_/g, " ");
 }
 
 export const LABEL_PERMISSION: Record<string, string> = {

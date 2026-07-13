@@ -7,6 +7,7 @@ import {
   getProximaFaseTimeline,
   indiceFaseNaTimeline,
   labelFaseEdital,
+  labelTipoDocumentoEdital,
 } from "@/lib/editais/publicDetail";
 import { createClient } from "@/lib/supabaseServer";
 import { logPublicFetch } from "@/lib/observability/publicFetchLog";
@@ -381,7 +382,11 @@ function labelFase(value?: string | null, tipo?: string | null): string {
 function labelTipoDocumentoGovernanca(value?: string | null): string {
   const clean = safeText(value);
   if (!clean) return "";
-  return TIPO_DOCUMENTO_GOVERNANCA_LABELS[clean] || clean.replace(/_/g, " ");
+  return (
+    labelTipoDocumentoEdital(clean) ||
+    TIPO_DOCUMENTO_GOVERNANCA_LABELS[clean] ||
+    clean.replace(/_/g, " ")
+  );
 }
 
 function getProximaFaseGovernanca(

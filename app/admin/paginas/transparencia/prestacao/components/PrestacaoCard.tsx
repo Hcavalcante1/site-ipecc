@@ -1,7 +1,9 @@
 import type { ChangeEvent, CSSProperties } from "react";
 import classes from "../page.module.css";
 import { AdminButton, AdminCard, AdminMessage, AdminInput, AdminTextarea, AdminSelect, AdminFileInput } from "@/components/admin";
-import { Convenio, PrestacaoConta, LoadingOperationType, FASE_OPTIONS, STATUS_OPTIONS, TIPO_DOCUMENTO_OPTIONS } from "../index";
+import { Convenio, PrestacaoConta, LoadingOperationType, FASE_OPTIONS, STATUS_OPTIONS } from "../index";
+import TipoDocumentoField from "@/components/admin/TipoDocumentoField";
+import { TIPO_DOCUMENTO_OPTIONS } from "../constants";
 
 type Props = {
   item: PrestacaoConta;
@@ -222,17 +224,27 @@ export default function PrestacaoCard({
 
         <div style={styles.fieldWrap}>
           <label style={styles.label}>Tipo de documento</label>
-          <AdminSelect
-            className={classes.select}
+          <TipoDocumentoField
             value={item.tipo_documento || ""}
-            onChange={(e) => updatePrestacao(index, "tipo_documento", e.target.value)}
-          >
-            {TIPO_DOCUMENTO_OPTIONS.map((option) => (
-              <option key={option || "empty-tipo"} value={option}>
-                {option || "Selecione"}
-              </option>
-            ))}
-          </AdminSelect>
+            onChange={(v) => updatePrestacao(index, "tipo_documento", v)}
+            para="prestacao"
+            valueMode="label"
+            emptyOption="Selecione"
+            extraOptions={TIPO_DOCUMENTO_OPTIONS.filter(Boolean).map((label) => ({
+              codigo: label
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "_"),
+              label,
+            }))}
+            createDefaults={{
+              para_publicacao: false,
+              para_emissao: false,
+              para_prestacao: true,
+              criar_modelo: false,
+            }}
+          />
         </div>
 
         <div style={styles.fieldWrap}>

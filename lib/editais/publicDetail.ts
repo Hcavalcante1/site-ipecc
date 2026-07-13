@@ -5,6 +5,7 @@ import {
   getMensagemEnvioPropostaInstitucional,
 } from "@/lib/editais/governancaRules";
 import { isModalidadeCotacaoPrevia } from "@/lib/editais/tiposAdmin";
+import { labelTipoDocumento as labelTipoDocumentoCatalogo } from "@/lib/editais/documentosTipos";
 
 export type EditalPublicoDetalhe = {
   id: string;
@@ -221,7 +222,11 @@ export function labelFaseEdital(value?: string | null, tipo?: string | null) {
 export function labelTipoDocumentoEdital(value?: string | null) {
   const clean = normalizarTextoEdital(value);
   if (!clean) return "";
-  return TIPO_DOCUMENTO_LABELS[clean] || clean.replace(/_/g, " ");
+  return (
+    labelTipoDocumentoCatalogo(clean) ||
+    TIPO_DOCUMENTO_LABELS[clean] ||
+    clean.replace(/_/g, " ")
+  );
 }
 
 export function getDocumentoPublicoDownloadUrl(url?: string | null) {

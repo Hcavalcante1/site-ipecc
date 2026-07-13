@@ -10,30 +10,16 @@ import {
   documentoConfigurado,
 } from "@/lib/documentos/signatureService";
 import { espelharDocumentoGovernanca } from "@/lib/transparencia/ponteCiclo";
+import { obterTipoPublicacaoPadrao } from "@/lib/editais/documentosTipos";
 import { renderPdfOficial } from "./renderPdf";
 import {
-  LABEL_TIPO_EMISSAO,
-  isTipoEmissaoOficial,
+  labelTipoEmissao,
   type SignatarioInput,
   type TipoEmissaoOficial,
 } from "./types";
 
-function tipoPublicacaoPadrao(tipo: TipoEmissaoOficial): string {
-  switch (tipo) {
-    case "edital_cotacao":
-    case "edital_chamamento":
-      return "edital";
-    case "ata_selecao":
-      return "ata";
-    case "homologacao":
-      return "homologacao";
-    case "contrato":
-      return "contrato";
-  }
-}
-
 function modalidadeCompativel(
-  tipo: TipoEmissaoOficial,
+  tipo: string,
   tipoEdital: string | null | undefined
 ): boolean {
   const cotacao = isModalidadeCotacaoPrevia(tipoEdital);
@@ -72,7 +58,6 @@ export async function modelosDisponiveisParaEdital(opts: {
   if (error) return { data: null, error };
 
   const filtered = (data || []).filter((m) => {
-    if (!isTipoEmissaoOficial(m.tipo_emissao)) return false;
     if (!modalidadeCompativel(m.tipo_emissao, opts.tipoEdital)) return false;
     return true;
   });
@@ -194,7 +179,7 @@ export async function iniciarGerarAssinarPublicar(opts: {
   const buffer = Buffer.from(pdfBytes);
   const hash = createHash("sha256").update(buffer).digest("hex");
 
-  const tituloDoc = `${LABEL_TIPO_EMISSAO[opts.tipoEmissao]} — ${dados.titulo}`.slice(
+  const tituloDoc = `${labelTipoEmissao(opts.tipoEmissao)} — ${dados.titulo}`.slice(
     0,
     200
   );
@@ -281,7 +266,9 @@ export async function iniciarGerarAssinarPublicar(opts: {
     actor_email: opts.actorEmail,
   });
 
-  const tipoPub = modelo.tipo_publicacao || tipoPublicacaoPadrao(opts.tipoEmissao);
+  const tipoPub =
+    modelo.tipo_publicacao ||
+    (await obterTipoPublicacaoPadrao(opts.tipoEmissao));
 
   const { data: emissao, error: emErr } = await admin
     .from("documentos_oficiais_emissoes")

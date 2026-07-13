@@ -4,7 +4,6 @@ import { podeAcessarProcesso } from "@/lib/auth/adminEscopo";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   iniciarGerarAssinarPublicar,
-  isTipoEmissaoOficial,
   listarEmissoesDoEdital,
   modelosDisponiveisParaEdital,
 } from "@/lib/documentos-oficiais";
@@ -105,7 +104,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   }
 
   const tipo = String(body.tipoEmissao || "").trim();
-  if (!isTipoEmissaoOficial(tipo)) {
+  if (!tipo) {
     return NextResponse.json(
       { ok: false, error: "Tipo de emissão oficial inválido." },
       { status: 400 }

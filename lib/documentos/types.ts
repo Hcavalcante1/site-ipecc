@@ -101,10 +101,14 @@ export const GD_TEMPLATE_KINDS = [
   "outro",
 ] as const;
 
-export type GdTemplateKind = (typeof GD_TEMPLATE_KINDS)[number];
+/** Aceita seeds do enum ou tipos criados no catálogo (códigos livres). */
+export type GdTemplateKind = string;
 
 export function isGdTemplateKind(v: string): v is GdTemplateKind {
-  return (GD_TEMPLATE_KINDS as readonly string[]).includes(v);
+  const s = String(v || "").trim();
+  if (!s) return false;
+  if ((GD_TEMPLATE_KINDS as readonly string[]).includes(s)) return true;
+  return /^[a-z][a-z0-9_]{1,62}$/.test(s);
 }
 
 export const GD_TEMPLATE_FORMATS = ["pdf", "docx", "html"] as const;

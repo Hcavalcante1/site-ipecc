@@ -433,6 +433,8 @@ export default function AdminEditais() {
         <Link href={adminCanonicalRoutes.editaisCms.hub}>
           Editar textos da página pública Editais →
         </Link>
+        {" · "}
+        <Link href="/admin/editais/tipos">Tipos de documento (criar ata, declaração…) →</Link>
       </p>
 
       <h2 className="admin-h2">Cadastrar novo edital</h2>

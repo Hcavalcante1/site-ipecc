@@ -1,12 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { GdDocumentTemplate, GdTemplateFormat, GdTemplateKind } from "@/lib/documentos/types";
+import type {
+  GdDocumentTemplate,
+  GdTemplateFormat,
+  GdTemplateKind,
+} from "@/lib/documentos/types";
 import {
   GD_TEMPLATE_FORMATS,
   GD_TEMPLATE_KINDS,
 } from "@/lib/documentos/types";
 import { rotuloTipoModelo } from "@/lib/documentos/labels";
+import TipoDocumentoField from "@/components/admin/TipoDocumentoField";
 import GestaoDocumentalShell, {
   gdBtnStyle,
   gdCardStyle,
@@ -106,7 +111,7 @@ export default function ModelosPage() {
   return (
     <GestaoDocumentalShell
       title="Modelos"
-      description="Cadastro de modelos (contrato, ofício, ata, PDF, DOCX, HTML)."
+      description="Cadastro de modelos. O tipo vem do catálogo (pode criar novos: ata, declaração, etc.)."
     >
       <div style={gdCardStyle}>
         <h2 className="admin-h2" style={{ marginTop: 0 }}>
@@ -119,20 +124,39 @@ export default function ModelosPage() {
           onChange={(e) => setName(e.target.value)}
           placeholder="Ex.: Contrato padrão de parceria"
         />
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-          <div>
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            flexWrap: "wrap",
+            marginBottom: 10,
+          }}
+        >
+          <div style={{ flex: "1 1 280px" }}>
             <label>Tipo</label>
-            <select
-              style={{ ...gdInputStyle, marginTop: 6, display: "block" }}
-              value={kind}
-              onChange={(e) => setKind(e.target.value as GdTemplateKind)}
-            >
-              {GD_TEMPLATE_KINDS.map((k) => (
-                <option key={k} value={k}>
-                  {rotuloTipoModelo(k)}
-                </option>
-              ))}
-            </select>
+            <div style={{ marginTop: 6 }}>
+              <TipoDocumentoField
+                value={kind}
+                onChange={(v) => setKind(v)}
+                para="emissao"
+                valueMode="codigo"
+                selectStyle={{
+                  ...gdInputStyle,
+                  display: "block",
+                  width: "100%",
+                }}
+                extraOptions={GD_TEMPLATE_KINDS.map((k) => ({
+                  codigo: k,
+                  label: rotuloTipoModelo(k),
+                }))}
+                createDefaults={{
+                  para_publicacao: false,
+                  para_emissao: true,
+                  para_prestacao: false,
+                  criar_modelo: false,
+                }}
+              />
+            </div>
           </div>
           <div>
             <label>Formato</label>
@@ -160,80 +184,64 @@ export default function ModelosPage() {
           }}
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          placeholder="Texto-base do modelo (opcional nesta fase)"
         />
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            type="button"
-            style={gdBtnStyle}
-            disabled={!name.trim()}
-            onClick={salvar}
-          >
-            {editingId ? "Atualizar" : "Criar modelo"}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button type="button" style={gdBtnStyle} onClick={salvar}>
+            {editingId ? "Salvar alterações" : "Criar modelo"}
           </button>
           {editingId ? (
-            <button
-              type="button"
-              style={{ ...gdBtnStyle, background: "#334155" }}
-              onClick={limparForm}
-            >
+            <button type="button" style={gdBtnStyle} onClick={limparForm}>
               Cancelar
             </button>
           ) : null}
         </div>
       </div>
 
-      {aviso ? (
-        <div style={{ ...gdCardStyle, borderColor: "#f59e0b", color: "#fde68a" }}>
-          {aviso}
-        </div>
-      ) : null}
-
-      {loading ? (
-        <p>Carregando...</p>
-      ) : templates.length === 0 ? (
-        <div style={gdCardStyle}>Nenhum modelo cadastrado.</div>
-      ) : (
-        <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
+      <div style={gdCardStyle}>
+        <h2 className="admin-h2" style={{ marginTop: 0 }}>
+          Modelos cadastrados
+        </h2>
+        {loading ? <p>Carregando...</p> : null}
+        {aviso ? <p>{aviso}</p> : null}
+        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
           {templates.map((t) => (
-            <div
+            <li
               key={t.id}
               style={{
-                ...gdCardStyle,
-                marginTop: 0,
+                borderTop: "1px solid #334155",
+                padding: "12px 0",
                 display: "flex",
-                justifyContent: "space-between",
-                gap: 8,
                 flexWrap: "wrap",
+                gap: 8,
+                justifyContent: "space-between",
               }}
             >
               <div>
                 <strong>{t.name}</strong>
-                <p style={{ margin: "6px 0 0", fontSize: 13, opacity: 0.85 }}>
-                  {rotuloTipoModelo(t.kind)} · {t.format.toUpperCase()}
-                  {t.ativo ? "" : " · inativo"}
-                </p>
+                <div style={{ fontSize: 13, opacity: 0.85 }}>
+                  {rotuloTipoModelo(t.kind)} · {t.format}
+                </div>
               </div>
               <div style={{ display: "flex", gap: 8 }}>
                 <button
                   type="button"
-                  style={{ ...gdBtnStyle, background: "#334155" }}
+                  style={gdBtnStyle}
                   onClick={() => editar(t)}
                 >
                   Editar
                 </button>
                 <button
                   type="button"
-                  style={{ ...gdBtnStyle, background: "#ef4444" }}
+                  style={gdBtnStyle}
                   onClick={() => remover(t.id)}
                 >
                   Remover
                 </button>
               </div>
-            </div>
+            </li>
           ))}
-        </div>
-      )}
+        </ul>
+      </div>
     </GestaoDocumentalShell>
   );
 }

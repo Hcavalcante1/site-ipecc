@@ -20,6 +20,7 @@ import {
 } from "@/lib/editais/governancaRules";
 import { isModalidadeCotacaoPrevia } from "@/lib/editais/tiposAdmin";
 import AssinarNoAdminModal from "@/app/admin/documentos/components/AssinarNoAdminModal";
+import TipoDocumentoField from "@/components/admin/TipoDocumentoField";
 
 type Edital = {
   id: string;
@@ -113,6 +114,9 @@ const TIPOS_DOCUMENTO = [
   "termo_parceria",
   "prestacao_de_contas",
   "encerramento",
+  "declaracao",
+  "nota_esclarecimento",
+  "esclarecimento",
 ];
 
 /** Tipos relevantes para Cotação prévia (já existem no constraint do banco). */
@@ -123,6 +127,8 @@ const TIPOS_DOCUMENTO_COTACAO = [
   "parecer",
   "resultado_final",
   "encerramento",
+  "declaracao",
+  "nota_esclarecimento",
 ] as const;
 
 const TIPO_DOCUMENTO_LABELS: Record<string, string> = {
@@ -140,6 +146,9 @@ const TIPO_DOCUMENTO_LABELS: Record<string, string> = {
   termo_parceria: "Termo de parceria",
   prestacao_de_contas: "Prestacao de contas",
   encerramento: "Encerramento",
+  declaracao: "Declaracao",
+  nota_esclarecimento: "Nota de esclarecimento",
+  esclarecimento: "Esclarecimento",
 };
 
 const TIPO_DOCUMENTO_LABELS_COTACAO: Record<string, string> = {
@@ -182,11 +191,24 @@ const DOCS_SUGERIDOS_COTACAO: Record<
   },
 };
 
-function labelTipoDocumento(valor?: string | null, cotacao = false) {
+type CatalogTipo = {
+  codigo: string;
+  label: string;
+  para_publicacao?: boolean;
+  para_emissao?: boolean;
+};
+
+function labelTipoDocumento(
+  valor?: string | null,
+  cotacao = false,
+  catalog?: CatalogTipo[]
+) {
   if (!valor) return "-";
   if (cotacao && TIPO_DOCUMENTO_LABELS_COTACAO[valor]) {
     return TIPO_DOCUMENTO_LABELS_COTACAO[valor];
   }
+  const fromCat = catalog?.find((t) => t.codigo === valor);
+  if (fromCat?.label) return fromCat.label;
   return TIPO_DOCUMENTO_LABELS[valor] || valor.replace(/_/g, " ");
 }
 
@@ -250,6 +272,7 @@ export default function GovernancaEditalPage() {
   const [oficialSigningUrl, setOficialSigningUrl] = useState<string | null>(
     null
   );
+  const [catalogTipos, setCatalogTipos] = useState<CatalogTipo[]>([]);
 
   const fases = useMemo(
     () => [...getFasesGovernancaAdmin(edital?.tipo)],
@@ -421,15 +444,43 @@ export default function GovernancaEditalPage() {
     return itens;
   }, [documentos, edital, faseAtual, isCotacao]);
 
-  const tiposDocumentoDisponiveis = useMemo(
-    () => (isCotacao ? [...TIPOS_DOCUMENTO_COTACAO] : TIPOS_DOCUMENTO),
-    [isCotacao]
-  );
+  const tiposDocumentoDisponiveis = useMemo(() => {
+    const fromCatalog = catalogTipos
+      .filter((t) => t.para_publicacao !== false)
+      .map((t) => t.codigo);
+    if (fromCatalog.length > 0) {
+      if (isCotacao) {
+        const preferidos = new Set<string>([
+          ...TIPOS_DOCUMENTO_COTACAO,
+          "declaracao",
+          "nota_esclarecimento",
+        ]);
+        const filtrados = fromCatalog.filter((c) => preferidos.has(c));
+        return filtrados.length > 0 ? filtrados : fromCatalog;
+      }
+      return fromCatalog;
+    }
+    return isCotacao ? [...TIPOS_DOCUMENTO_COTACAO] : TIPOS_DOCUMENTO;
+  }, [catalogTipos, isCotacao]);
 
   const sugestaoDocsFase =
     isCotacao && DOCS_SUGERIDOS_COTACAO[faseAtual]
       ? DOCS_SUGERIDOS_COTACAO[faseAtual]
       : null;
+
+  async function carregarCatalogTipos() {
+    try {
+      const res = await fetch("/api/admin/documentos-tipos?para=publicacao", {
+        credentials: "include",
+      });
+      const json = await res.json();
+      if (res.ok && json.ok) {
+        setCatalogTipos(json.tipos || []);
+      }
+    } catch {
+      /* fallback local */
+    }
+  }
 
   useEffect(() => {
     if (!edital) return;
@@ -443,12 +494,18 @@ export default function GovernancaEditalPage() {
     if (isCotacao) {
       const sugeridos = DOCS_SUGERIDOS_COTACAO[fasePadrao]?.tipos;
       setDocTipo((atual) =>
-        (TIPOS_DOCUMENTO_COTACAO as readonly string[]).includes(atual)
+        tiposDocumentoDisponiveis.includes(atual)
           ? atual
-          : sugeridos?.[0] || "edital"
+          : sugeridos?.[0] || tiposDocumentoDisponiveis[0] || "edital"
       );
     }
-  }, [edital, faseAtual, fases, isCotacao]);
+  }, [edital, faseAtual, fases, isCotacao, tiposDocumentoDisponiveis]);
+
+  useEffect(() => {
+    if (editalId) {
+      void carregarCatalogTipos();
+    }
+  }, [editalId]);
 
   async function carregar() {
     setLoading(true);
@@ -1129,7 +1186,7 @@ export default function GovernancaEditalPage() {
                   <p style={{ marginTop: 6, marginBottom: 0, fontSize: 12, opacity: 0.8 }}>
                     Ex.:{" "}
                     {sugestao.tipos
-                      .map((tipo) => labelTipoDocumento(tipo, true))
+                      .map((tipo) => labelTipoDocumento(tipo, true, catalogTipos))
                       .join(", ")}
                   </p>
                 ) : null}
@@ -1250,7 +1307,8 @@ export default function GovernancaEditalPage() {
           Gera o PDF oficial a partir do modelo. Você pode <strong>assinar
           agora no admin</strong> ou enviar o link por e-mail a um signatário.
           A publicação na página pública do edital ocorre somente após a
-          assinatura.
+          assinatura.{" "}
+          <Link href="/admin/editais/tipos">Gerenciar tipos de documento</Link>
         </p>
 
         <AssinarNoAdminModal
@@ -1403,20 +1461,29 @@ export default function GovernancaEditalPage() {
             <p style={{ margin: "8px 0 0", fontSize: 13 }}>
               Tipos sugeridos:{" "}
               {sugestaoDocsFase.tipos
-                .map((tipo) => labelTipoDocumento(tipo, true))
+                .map((tipo) => labelTipoDocumento(tipo, true, catalogTipos))
                 .join(" · ")}
             </p>
           </div>
         ) : null}
 
         <label>Tipo do documento</label>
-        <select value={docTipo} onChange={(e) => setDocTipo(e.target.value)}>
-          {tiposDocumentoDisponiveis.map((tipo) => (
-            <option key={tipo} value={tipo}>
-              {labelTipoDocumento(tipo, isCotacao)}
-            </option>
-          ))}
-        </select>
+        <TipoDocumentoField
+          value={docTipo}
+          onChange={setDocTipo}
+          para="publicacao"
+          valueMode="codigo"
+          extraOptions={TIPOS_DOCUMENTO.map((codigo) => ({
+            codigo,
+            label: labelTipoDocumento(codigo, isCotacao),
+          }))}
+          createDefaults={{
+            para_publicacao: true,
+            para_emissao: true,
+            para_prestacao: false,
+            criar_modelo: true,
+          }}
+        />
 
         <label>Fase relacionada</label>
         <select value={docFase} onChange={(e) => setDocFase(e.target.value)}>
@@ -1471,7 +1538,7 @@ export default function GovernancaEditalPage() {
           documentosOrdenados.map((doc) => (
             <div key={doc.id} style={{ borderTop: "1px solid rgba(255,255,255,.15)", paddingTop: 12, marginTop: 12 }}>
               <strong>{doc.titulo}</strong>
-              <p><strong>Tipo:</strong> {labelTipoDocumento(doc.tipo, isCotacao)} | <strong>Fase:</strong> {label(doc.fase)}</p>
+              <p><strong>Tipo:</strong> {labelTipoDocumento(doc.tipo, isCotacao, catalogTipos)} | <strong>Fase:</strong> {label(doc.fase)}</p>
               <p><strong>Publicado em:</strong> {formatDate(doc.publicado_em || doc.created_at)}</p>
               {doc.descricao && <p>{doc.descricao}</p>}
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 10 }}>
