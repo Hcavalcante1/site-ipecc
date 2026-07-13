@@ -29,7 +29,7 @@ export default function AssinaturasClient() {
   const [aviso, setAviso] = useState("");
   const [loading, setLoading] = useState(true);
   const [state, setState] = useState("");
-  const [documensoOk, setDocumensoOk] = useState(false);
+  const [documentoOk, setDocumentoOk] = useState(false);
   const [govbrOk, setGovbrOk] = useState(false);
   const [provedorPadrao, setProvedorPadrao] = useState<string | null>(null);
 
@@ -48,7 +48,7 @@ export default function AssinaturasClient() {
       setAviso(sig.error || "Erro ao carregar assinaturas.");
     }
     if (cfgRes.ok) {
-      setDocumensoOk(Boolean(cfg.documenso?.configurado));
+      setDocumentoOk(Boolean(cfg.documento?.configurado));
       setGovbrOk(Boolean(cfg.govbrConfigurado));
       setProvedorPadrao(cfg.provedorPadrao || null);
     }
@@ -88,7 +88,7 @@ export default function AssinaturasClient() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         document_id: documentId.trim(),
-        provider_code: documensoOk ? "documento" : undefined,
+        provider_code: documentoOk ? "documento" : undefined,
         signer_email: signerEmail.trim() || undefined,
         signer_name: signerName.trim() || undefined,
       }),
@@ -107,13 +107,13 @@ export default function AssinaturasClient() {
     carregar();
   }
 
-  async function enviarDocumenso(signatureId: string) {
+  async function enviarDocumento(signatureId: string) {
     if (!signerEmail.trim()) {
       setAviso("Informe o e-mail do signatário acima antes de enviar.");
       return;
     }
     const res = await fetch(
-      `/api/admin/documentos/assinaturas/${signatureId}/enviar-documenso`,
+      `/api/admin/documentos/assinaturas/${signatureId}/enviar`,
       {
         method: "POST",
         credentials: "include",
@@ -187,7 +187,7 @@ export default function AssinaturasClient() {
           <strong>{provedorPadrao || "nenhum configurado"}</strong>
           {" · "}
           Assinatura:{" "}
-          <strong>{documensoOk ? "pronta" : "não configurada"}</strong>
+          <strong>{documentoOk ? "pronta" : "não configurada"}</strong>
           {" · "}
           gov.br: <strong>{govbrOk ? "pronto" : "ausente"}</strong>
         </p>
@@ -273,7 +273,7 @@ export default function AssinaturasClient() {
                     <button
                       type="button"
                       style={{ ...gdBtnStyle, background: "#0f766e" }}
-                      onClick={() => enviarDocumenso(row.id)}
+                      onClick={() => enviarDocumento(row.id)}
                       disabled={Boolean(row.external_session_id)}
                     >
                       {row.external_session_id

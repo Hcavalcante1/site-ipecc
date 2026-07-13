@@ -43,17 +43,17 @@ npx tsc --noEmit
 
 - [x] Menu + tabelas GD + código em Vercel  
 - [x] SQL provedor `documento` (nome Documento, ativo)  
-- [ ] Subir motor self-host: `services/documenso/` (Docker + SMTP)  
-- [ ] `DOCUMENSO_API_URL` + `DOCUMENSO_API_TOKEN` na Vercel  
-- [ ] Webhook do motor → `https://www.ipecc.org.br/api/webhooks/documenso`  
+- [ ] Subir motor self-host Documento: `services/documenso/` (Docker + SMTP; pasta técnica no repo)  
+- [ ] `DOCUMENTO_API_URL` + `DOCUMENTO_API_TOKEN` na Vercel  
+- [ ] Webhook → `https://www.ipecc.org.br/api/webhooks/documento`  
 - [ ] Smoke test: Pedir assinatura → e-mail → assinar → status `signed`  
 
 ### Env obrigatório (ente privado)
 
 ```
-DOCUMENSO_API_URL=https://seu-dominio-assinaturas/api/v2
-DOCUMENSO_API_TOKEN=
-DOCUMENSO_WEBHOOK_SECRET=
+DOCUMENTO_API_URL=https://seu-dominio-assinaturas/api/v2
+DOCUMENTO_API_TOKEN=
+DOCUMENTO_WEBHOOK_SECRET=
 ```
 
 ### Env opcional (só órgãos públicos / ITI)

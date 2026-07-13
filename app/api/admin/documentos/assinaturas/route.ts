@@ -106,6 +106,7 @@ export async function POST(req: NextRequest) {
       }
       const status =
         code === "NO_PROVIDER" ||
+        code === "DOCUMENTO_MISSING" ||
         code === "DOCUMENSO_MISSING" ||
         code === "GOVBR_MISSING"
           ? 400

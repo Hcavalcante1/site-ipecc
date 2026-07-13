@@ -167,19 +167,19 @@ async function main() {
   assert("sql fase3", existe("docs", "sql", "gestao-documental-fase-3.sql"));
   assert("sql fase4-6", existe("docs", "sql", "gestao-documental-fase-4-6.sql"));
   assert(
-    "sql documenso",
+    "sql provedor documento",
     existe("docs", "sql", "gestao-documental-documenso.sql")
   );
   assert(
-    "documenso provider file",
-    existe("lib", "documentos", "signature", "DocumensoProvider.ts")
+    "provider documento file",
+    existe("lib", "documentos", "signature", "DocumentoProvider.ts")
   );
   assert(
-    "webhook documenso",
-    existe("app", "api", "webhooks", "documenso", "route.ts")
+    "webhook documento",
+    existe("app", "api", "webhooks", "documento", "route.ts")
   );
   assert(
-    "documenso compose",
+    "motor compose",
     existe("services", "documenso", "docker-compose.yml")
   );
   assert("docs fase3", existe("docs", "gestao-documental-fase-3.md"));
@@ -244,7 +244,7 @@ async function main() {
       "documentos",
       "assinaturas",
       "[id]",
-      "enviar-documenso",
+      "enviar",
       "route.ts"
     )
   );

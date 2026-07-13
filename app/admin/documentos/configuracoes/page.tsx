@@ -18,7 +18,7 @@ export default function ConfiguracoesPage() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [configurado, setConfigurado] = useState(false);
   const [govbrOk, setGovbrOk] = useState(false);
-  const [documensoOk, setDocumensoOk] = useState(false);
+  const [documentoOk, setDocumentoOk] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState("");
   const [apiUrl, setApiUrl] = useState("");
   const [provedorPadrao, setProvedorPadrao] = useState<string | null>(null);
@@ -38,9 +38,9 @@ export default function ConfiguracoesPage() {
     setProviders(json.providers || []);
     setConfigurado(Boolean(json.configurado));
     setGovbrOk(Boolean(json.govbrConfigurado));
-    setDocumensoOk(Boolean(json.documenso?.configurado));
-    setWebhookUrl(json.documenso?.webhookUrl || "");
-    setApiUrl(json.documenso?.apiUrl || "");
+    setDocumentoOk(Boolean(json.documento?.configurado));
+    setWebhookUrl(json.documento?.webhookUrl || "");
+    setApiUrl(json.documento?.apiUrl || "");
     setProvedorPadrao(json.provedorPadrao || null);
     setRedirectUri(json.redirectUri || "");
     setEnv(json.env || "staging");
@@ -82,7 +82,7 @@ export default function ConfiguracoesPage() {
         <p style={{ marginTop: 0 }}>
           Status:{" "}
           <strong>
-            {documensoOk ? "API token presente" : "não configurado"}
+            {documentoOk ? "API token presente" : "não configurado"}
           </strong>
           {" · "}
           Padrão atual: <strong>{provedorPadrao || "nenhum"}</strong>
@@ -93,19 +93,19 @@ export default function ConfiguracoesPage() {
         <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14 }}>
           <li>
             API URL:{" "}
-            <code>{apiUrl || "(defina DOCUMENSO_API_URL da sua instância)"}</code>
+            <code>{apiUrl || "(defina DOCUMENTO_API_URL da sua instância)"}</code>
           </li>
           <li>
             Webhook (configure no motor de assinatura):{" "}
             <code>{webhookUrl}</code>
           </li>
-          <li>DOCUMENSO_API_URL (obrigatório)</li>
-          <li>DOCUMENSO_API_TOKEN (obrigatório)</li>
-          <li>DOCUMENSO_WEBHOOK_SECRET (opcional)</li>
+          <li>DOCUMENTO_API_URL (obrigatório)</li>
+          <li>DOCUMENTO_API_TOKEN (obrigatório)</li>
+          <li>DOCUMENTO_WEBHOOK_SECRET (opcional)</li>
         </ul>
         <p style={{ fontSize: 13, opacity: 0.85, marginBottom: 0 }}>
-          Suba o motor self-host: <code>services/documenso/</code> (veja o
-          README da pasta).
+          Suba o motor self-host Documento: <code>services/documenso/</code>{" "}
+          (pasta técnica no repositório; veja o README).
         </p>
       </div>
 

@@ -1,11 +1,10 @@
 import type { SignatureProvider } from "./SignatureProvider";
-import { DocumensoProvider } from "./DocumensoProvider";
+import { DocumentoProvider } from "./DocumentoProvider";
 import { GovBrProvider } from "./GovBrProvider";
 
 const providers: Record<string, () => SignatureProvider> = {
-  documento: () => new DocumensoProvider(),
-  // alias legado
-  documenso: () => new DocumensoProvider(),
+  documento: () => new DocumentoProvider(),
+  documenso: () => new DocumentoProvider(), // legado
   govbr: () => new GovBrProvider(),
 };
 

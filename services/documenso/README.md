@@ -1,6 +1,7 @@
-# Documenso (self-host) para o IPECC
+# Motor de assinatura Documento (self-host)
 
-Assinatura digital open source para **ente privado**. A API gov.br de órgão público **não** se aplica ao IPECC.
+O admin IPECC chama isso de **Documento**. Esta pasta sobe o motor open source
+compatível (imagem Documenso) usado só no servidor.
 
 ## Subir
 
@@ -11,25 +12,16 @@ cp env.example .env
 docker compose up -d
 ```
 
-Abra a URL em `NEXT_PUBLIC_WEBAPP_URL`, crie a conta admin e um **API token**.
+Crie um API token no painel do motor.
 
-## Ligar ao admin IPECC
-
-No `.env.local` / Vercel:
+## Ligar ao IPECC (Vercel / .env.local)
 
 ```
-DOCUMENSO_API_URL=https://seu-dominio-documenso/api/v2
-DOCUMENSO_API_TOKEN=api_xxxx
-DOCUMENSO_WEBHOOK_SECRET=opcional
+DOCUMENTO_API_URL=https://seu-dominio/api/v2
+DOCUMENTO_API_TOKEN=api_xxxx
+DOCUMENTO_WEBHOOK_SECRET=opcional
 ```
 
-Webhook no Documenso apontando para:
+Webhook no motor → `https://www.ipecc.org.br/api/webhooks/documento`
 
-`https://www.ipecc.org.br/api/webhooks/documenso`
-
-SQL no Supabase: `docs/sql/gestao-documental-documenso.sql`
-
-## Documentação oficial
-
-- https://docs.documenso.com/docs/self-hosting/deployment/docker-compose
-- https://docs.documenso.com/docs/developers
+SQL: `docs/sql/gestao-documental-documenso.sql`

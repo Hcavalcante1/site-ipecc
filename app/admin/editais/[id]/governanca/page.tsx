@@ -68,6 +68,35 @@ type Proposta = {
   created_at?: string | null;
 };
 
+type ModeloOficial = {
+  id: string;
+  slug: string;
+  titulo: string;
+  tipo_emissao: string;
+  tipo_publicacao: string;
+};
+
+type EmissaoOficial = {
+  id: string;
+  tipo_emissao: string;
+  titulo: string;
+  status: string;
+  gd_document_id?: string | null;
+  arquivo_url_publico?: string | null;
+  error_message?: string | null;
+  created_at?: string | null;
+  publicado_em?: string | null;
+};
+
+const LABEL_STATUS_EMISSAO: Record<string, string> = {
+  gerado: "Gerado",
+  aguardando_assinatura: "Aguardando assinatura",
+  assinado: "Assinado",
+  publicado: "Publicado",
+  erro_assinatura: "Erro na assinatura",
+  erro_publicacao: "Erro na publicação",
+};
+
 const TIPOS_DOCUMENTO = [
   "edital",
   "anexo",
@@ -205,6 +234,16 @@ export default function GovernancaEditalPage() {
   const [docTitulo, setDocTitulo] = useState("");
   const [docDescricao, setDocDescricao] = useState("");
   const [docArquivo, setDocArquivo] = useState<File | null>(null);
+
+  const [modelosOficiais, setModelosOficiais] = useState<ModeloOficial[]>([]);
+  const [emissoesOficiais, setEmissoesOficiais] = useState<EmissaoOficial[]>(
+    []
+  );
+  const [tipoEmissaoOficial, setTipoEmissaoOficial] = useState("");
+  const [signatarioNome, setSignatarioNome] = useState("");
+  const [signatarioEmail, setSignatarioEmail] = useState("");
+  const [oficialMsg, setOficialMsg] = useState("");
+  const [oficialSaving, setOficialSaving] = useState(false);
 
   const fases = useMemo(
     () => [...getFasesGovernancaAdmin(edital?.tipo)],
@@ -430,10 +469,89 @@ export default function GovernancaEditalPage() {
           json.edital?.tipo
         )
       );
+
+      await carregarEmissoesOficiais();
     } catch {
       setMsg("Erro inesperado ao carregar governanca.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function carregarEmissoesOficiais() {
+    try {
+      const res = await fetch(
+        `/api/admin/editais/${editalId}/gerar-assinar-publicar`,
+        { credentials: "include" }
+      );
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        setOficialMsg(
+          json.error ||
+            json.warnings?.modelos ||
+            json.warnings?.emissoes ||
+            ""
+        );
+        return;
+      }
+      const modelos = (json.modelos || []) as ModeloOficial[];
+      setModelosOficiais(modelos);
+      setEmissoesOficiais(json.emissoes || []);
+      setTipoEmissaoOficial((atual) => {
+        if (atual && modelos.some((m) => m.tipo_emissao === atual)) return atual;
+        return modelos[0]?.tipo_emissao || "";
+      });
+      setOficialMsg("");
+    } catch {
+      setOficialMsg("Não foi possível carregar documentos oficiais.");
+    }
+  }
+
+  async function gerarAssinarPublicar() {
+    if (!tipoEmissaoOficial) {
+      setOficialMsg("Selecione o tipo de documento oficial.");
+      return;
+    }
+    if (!signatarioEmail.trim() || !signatarioEmail.includes("@")) {
+      setOficialMsg("Informe o e-mail válido do signatário.");
+      return;
+    }
+
+    setOficialSaving(true);
+    setOficialMsg("");
+    try {
+      const res = await fetch(
+        `/api/admin/editais/${editalId}/gerar-assinar-publicar`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tipoEmissao: tipoEmissaoOficial,
+            signatario: {
+              nome: signatarioNome.trim(),
+              email: signatarioEmail.trim(),
+            },
+          }),
+        }
+      );
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        setOficialMsg(json.error || "Falha ao gerar e enviar para assinatura.");
+        triggerToast(
+          json.error || "Falha ao gerar documento oficial.",
+          "error"
+        );
+        return;
+      }
+      setOficialMsg(json.aviso || "Documento enviado para assinatura.");
+      triggerToast("Documento gerado e enviado para assinatura.", "success");
+      await carregarEmissoesOficiais();
+    } catch {
+      setOficialMsg("Erro inesperado ao gerar documento oficial.");
+      triggerToast("Erro inesperado ao gerar documento oficial.", "error");
+    } finally {
+      setOficialSaving(false);
     }
   }
 
@@ -1100,6 +1218,108 @@ export default function GovernancaEditalPage() {
         </AdminLoadingButton>
 
         {faseMsg && <p style={{ marginTop: 12, fontWeight: 700 }}>{faseMsg}</p>}
+      </section>
+
+      <section className="admin-card">
+        <h2 className="admin-h2">Gerar, assinar e publicar</h2>
+        <p>
+          Gera o PDF oficial a partir do modelo, envia para assinatura
+          (Documento) e publica automaticamente na página pública do edital
+          somente após a assinatura.
+        </p>
+
+        <label>Tipo de documento</label>
+        <select
+          value={tipoEmissaoOficial}
+          onChange={(e) => setTipoEmissaoOficial(e.target.value)}
+        >
+          {modelosOficiais.length === 0 ? (
+            <option value="">Nenhum modelo disponível</option>
+          ) : (
+            modelosOficiais.map((m) => (
+              <option key={m.id} value={m.tipo_emissao}>
+                {m.titulo}
+              </option>
+            ))
+          )}
+        </select>
+
+        <label>Nome do signatário</label>
+        <input
+          value={signatarioNome}
+          onChange={(e) => setSignatarioNome(e.target.value)}
+          placeholder="Nome completo"
+        />
+
+        <label>E-mail do signatário</label>
+        <input
+          type="email"
+          value={signatarioEmail}
+          onChange={(e) => setSignatarioEmail(e.target.value)}
+          placeholder="email@exemplo.com"
+        />
+
+        <AdminLoadingButton
+          type="button"
+          className="admin-button"
+          disabled={oficialSaving || !tipoEmissaoOficial}
+          loading={oficialSaving}
+          loadingText="Gerando..."
+          onClick={gerarAssinarPublicar}
+          style={{ marginTop: 16 }}
+        >
+          Gerar, assinar e publicar
+        </AdminLoadingButton>
+
+        {oficialMsg && (
+          <p style={{ marginTop: 12, fontWeight: 700 }}>{oficialMsg}</p>
+        )}
+
+        <div style={{ marginTop: 20 }}>
+          <strong>Emissões deste edital</strong>
+          {emissoesOficiais.length === 0 ? (
+            <p style={{ marginTop: 8 }}>Nenhuma emissão oficial ainda.</p>
+          ) : (
+            emissoesOficiais.map((em) => (
+              <div
+                key={em.id}
+                style={{
+                  borderTop: "1px solid rgba(255,255,255,.15)",
+                  paddingTop: 12,
+                  marginTop: 12,
+                }}
+              >
+                <strong>{em.titulo}</strong>
+                <p>
+                  <strong>Status:</strong>{" "}
+                  {LABEL_STATUS_EMISSAO[em.status] || em.status}
+                  {em.publicado_em
+                    ? ` · Publicado em ${new Date(
+                        em.publicado_em
+                      ).toLocaleString("pt-BR")}`
+                    : ""}
+                </p>
+                {em.error_message ? (
+                  <p style={{ color: "#fca5a5" }}>{em.error_message}</p>
+                ) : null}
+                <p style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                  {em.gd_document_id ? (
+                    <Link
+                      href={`/admin/documentos/documentos/${em.gd_document_id}`}
+                    >
+                      Abrir na Gestão Documental
+                    </Link>
+                  ) : null}
+                  {em.status === "publicado" ? (
+                    <Link href={`/editais/${editalId}`} target="_blank">
+                      Ver página pública
+                    </Link>
+                  ) : null}
+                </p>
+              </div>
+            ))
+          )}
+        </div>
       </section>
 
       <section className="admin-card">

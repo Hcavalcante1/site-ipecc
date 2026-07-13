@@ -3,9 +3,9 @@ import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { GD_STORAGE_BUCKET } from "./types";
 import { registrarLog } from "./documentsService";
 import {
-  DocumensoProvider,
-  documensoConfigurado,
-} from "./signature/DocumensoProvider";
+  DocumentoProvider,
+  documentoConfigurado,
+} from "./signature/DocumentoProvider";
 import {
   GovBrProvider,
   govbrConfigurado,
@@ -16,7 +16,7 @@ import { notificarEventoDocumental } from "./notificationsService";
 export type SignatureProviderCode = "documento" | "govbr";
 
 export function resolverProviderPadrao(): SignatureProviderCode | null {
-  if (documensoConfigurado()) return "documento";
+  if (documentoConfigurado()) return "documento";
   if (govbrConfigurado()) return "govbr";
   return null;
 }
@@ -47,7 +47,8 @@ function tabelaAusente(message?: string, code?: string) {
 export {
   tabelaAusente as tabelaAssinaturaAusente,
   govbrConfigurado,
-  documensoConfigurado,
+  documentoConfigurado,
+  documentoConfigurado as documensoConfigurado,
 };
 
 export async function listarAssinaturas(opts?: {
@@ -123,19 +124,19 @@ export async function criarAssinaturaDocumento(opts: {
       data: null,
       error: {
         message:
-          "Nenhum provedor de assinatura configurado. Defina DOCUMENSO_API_TOKEN (recomendado) ou credenciais GOVBR_SIGNATURE_* (só órgãos públicos).",
+          "Nenhum provedor de assinatura configurado. Defina DOCUMENTO_API_TOKEN (recomendado) ou credenciais GOVBR_SIGNATURE_* (só órgãos públicos).",
         code: "NO_PROVIDER",
       },
     };
   }
 
-  if (code === "documento" && !documensoConfigurado()) {
+  if (code === "documento" && !documentoConfigurado()) {
     return {
       data: null,
       error: {
         message:
-          "Assinatura Documento não configurada. Defina DOCUMENSO_API_URL e DOCUMENSO_API_TOKEN no servidor.",
-        code: "DOCUMENSO_MISSING",
+          "Assinatura Documento não configurada. Defina DOCUMENTO_API_URL e DOCUMENTO_API_TOKEN no servidor.",
+        code: "DOCUMENTO_MISSING",
       },
     };
   }
@@ -221,7 +222,7 @@ export async function criarAssinaturaDocumento(opts: {
     Boolean(signerEmail);
 
   if (shouldDistribute) {
-    const sent = await enviarParaAssinaturaDocumenso({
+    const sent = await enviarParaAssinaturaDocumento({
       signatureDocumentId: data.id,
       userId: opts.userId,
       actorEmail: opts.actorEmail,
@@ -239,7 +240,7 @@ export async function criarAssinaturaDocumento(opts: {
   return { data, error: null };
 }
 
-export async function enviarParaAssinaturaDocumenso(opts: {
+export async function enviarParaAssinaturaDocumento(opts: {
   signatureDocumentId: string;
   userId: string;
   actorEmail?: string | null;
@@ -248,10 +249,10 @@ export async function enviarParaAssinaturaDocumenso(opts: {
   signerEmail?: string | null;
   signerName?: string | null;
 }) {
-  if (!documensoConfigurado()) {
+  if (!documentoConfigurado()) {
     return {
       error:
-        "Assinatura Documento não configurada. Defina DOCUMENSO_API_TOKEN no servidor.",
+        "Assinatura Documento não configurada. Defina DOCUMENTO_API_TOKEN no servidor.",
     };
   }
 
@@ -324,7 +325,7 @@ export async function enviarParaAssinaturaDocumenso(opts: {
     .eq("id", sig.id);
 
   try {
-    const provider = new DocumensoProvider();
+    const provider = new DocumentoProvider();
     const envelope = await provider.createAndDistribute({
       title: doc.title || "Documento IPECC",
       pdfBytes,
@@ -402,7 +403,7 @@ export async function enviarParaAssinaturaDocumenso(opts: {
   }
 }
 
-export async function concluirAssinaturaDocumensoWebhook(opts: {
+export async function concluirAssinaturaDocumentoWebhook(opts: {
   envelopeId: string;
   event?: string | null;
 }) {
@@ -451,7 +452,7 @@ export async function concluirAssinaturaDocumensoWebhook(opts: {
     .maybeSingle();
 
   try {
-    const provider = new DocumensoProvider();
+    const provider = new DocumentoProvider();
     const pdf = await provider.downloadSignedPdf(envelopeId);
     const signedHash = createHash("sha256").update(pdf).digest("hex");
     const signedPath = `${doc?.processo_id || "geral"}/${sig.document_id}/assinado-documento-${Date.now()}.pdf`;
@@ -820,10 +821,10 @@ export async function enviarLoteParaAssinaturaDocumento(opts: {
   if (!signerEmail) {
     return { error: "Informe o e-mail do signatário do lote." };
   }
-  if (!documensoConfigurado()) {
+  if (!documentoConfigurado()) {
     return {
       error:
-        "Assinatura Documento não configurada. Defina DOCUMENSO_API_URL e DOCUMENSO_API_TOKEN.",
+        "Assinatura Documento não configurada. Defina DOCUMENTO_API_URL e DOCUMENTO_API_TOKEN.",
     };
   }
 
@@ -894,7 +895,7 @@ export async function enviarLoteParaAssinaturaDocumento(opts: {
           .eq("id", item.id);
       }
 
-      const sent = await enviarParaAssinaturaDocumenso({
+      const sent = await enviarParaAssinaturaDocumento({
         signatureDocumentId: sigId!,
         userId: opts.userId,
         actorEmail: opts.actorEmail,
@@ -1008,12 +1009,12 @@ export async function providerStatusResumo() {
     "https://www.ipecc.org.br";
 
   return {
-    configurado: documensoConfigurado() || govbrConfigurado(),
+    configurado: documentoConfigurado() || govbrConfigurado(),
     provedorPadrao: resolverProviderPadrao(),
-    documenso: {
-      configurado: documensoConfigurado(),
-      apiUrl: process.env.DOCUMENSO_API_URL || null,
-      webhookUrl: `${site}/api/webhooks/documenso`,
+    documento: {
+      configurado: documentoConfigurado(),
+      apiUrl: process.env.DOCUMENTO_API_URL || process.env.DOCUMENSO_API_URL || null,
+      webhookUrl: `${site}/api/webhooks/documento`,
     },
     redirectUri: govbrRedirectUriPadrao(),
     env: process.env.GOVBR_SIGNATURE_ENV || "staging",
@@ -1022,7 +1023,7 @@ export async function providerStatusResumo() {
       ...p,
       servidor_pronto:
         p.code === "documento" || p.code === "documenso"
-          ? documensoConfigurado()
+          ? documentoConfigurado()
           : p.code === "govbr"
             ? govbrConfigurado()
             : false,
