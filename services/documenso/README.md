@@ -6,7 +6,7 @@ Assinatura digital open source para **ente privado**. A API gov.br de órgão p�
 
 ```bash
 cd services/documenso
-cp .env.example .env
+cp env.example .env
 # preencha segredos e SMTP
 docker compose up -d
 ```
