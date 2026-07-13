@@ -62,6 +62,61 @@ function profileDir(cfg: WorkerConfig, accountId: string) {
   return path.join(base, accountId);
 }
 
+function clearChromeLocks(profile: string) {
+  for (const name of [
+    "SingletonLock",
+    "SingletonCookie",
+    "SingletonSocket",
+    "lockfile",
+  ]) {
+    try {
+      fs.unlinkSync(path.join(profile, name));
+    } catch {
+      /* ok */
+    }
+  }
+}
+
+async function clearPlatformAuthCookies(
+  context: BrowserContext,
+  platform: string
+) {
+  const cookies = await context.cookies();
+  const dropNames =
+    platform === "facebook"
+      ? new Set(["c_user", "xs", "fr", "datr", "sb"])
+      : platform === "instagram"
+        ? new Set(["sessionid", "ds_user_id", "csrftoken", "mid"])
+        : platform === "linkedin"
+          ? new Set(["li_at", "JSESSIONID"])
+          : platform === "tiktok"
+            ? new Set(["sessionid", "sid_tt"])
+            : new Set(["SID", "SSID", "SAPISID", "HSID"]);
+
+  const keep = cookies.filter((c) => !dropNames.has(c.name));
+  await context.clearCookies();
+  if (keep.length) {
+    await context.addCookies(keep).catch(() => {});
+  }
+}
+
+async function launchConnectBrowser(profile: string): Promise<BrowserContext> {
+  clearChromeLocks(profile);
+  fs.mkdirSync(profile, { recursive: true });
+  return chromium.launchPersistentContext(profile, {
+    headless: false,
+    viewport: { width: 1280, height: 900 },
+    args: [
+      "--disable-dev-shm-usage",
+      "--no-first-run",
+      "--no-default-browser-check",
+      "--disable-session-crashed-bubble",
+      "--hide-crash-restore-bubble",
+    ],
+    ignoreDefaultArgs: ["--enable-automation"],
+  });
+}
+
 /** Prova real de sessão: cookies de autenticação (não perfil público). */
 async function hasAuthCookies(
   context: BrowserContext,
@@ -244,10 +299,12 @@ export async function processVerifyRequests(
 
   let context: BrowserContext | null = null;
   try {
+    clearChromeLocks(profile);
     fs.mkdirSync(profile, { recursive: true });
     context = await chromium.launchPersistentContext(profile, {
       headless: process.env.DIGITAL_BROWSER_HEADLESS !== "false",
       viewport: { width: 1280, height: 900 },
+      args: ["--disable-dev-shm-usage", "--no-first-run"],
     });
     const page = context.pages()[0] || (await context.newPage());
     await page.goto(probe, { waitUntil: "domcontentloaded", timeout: 60000 });
@@ -344,19 +401,21 @@ export async function processConnectRequests(
   const timeoutMs = Number(
     process.env.DIGITAL_CONNECT_TIMEOUT_MS || 15 * 60 * 1000
   );
+  const keepOpenMs = Number(
+    process.env.DIGITAL_CONNECT_KEEP_OPEN_MS || 90 * 1000
+  );
   const started = Date.now();
 
   try {
-    context = await chromium.launchPersistentContext(profile, {
-      headless: false,
-      viewport: { width: 1280, height: 900 },
-    });
-    // Descarta abas antigas e abre a URL cadastrada (ex.: profile.php?id=...)
+    context = await launchConnectBrowser(profile);
     const existing = context.pages();
     const page = existing[0] || (await context.newPage());
     for (const extra of existing.slice(1)) {
       await extra.close().catch(() => {});
     }
+
+    // Limpa cookies antigos para a janela não “conectar e fechar” na hora
+    await clearPlatformAuthCookies(context, acc.platform);
 
     await page.goto(startUrl, {
       waitUntil: "domcontentloaded",
@@ -364,13 +423,20 @@ export async function processConnectRequests(
     });
 
     console.log(
-      `[digital-publisher] Conectar ${acc.platform} (${acc.label}): aberto em ${startUrl}. Faça login se a rede pedir (a página não será recarregada).`
+      `[digital-publisher] Conectar ${acc.platform} (${acc.label}): ${startUrl}. Faça login — a janela fica aberta (sem reload).`
     );
 
-    // Não navegar de novo enquanto o usuário loga — só observar cookies
     while (Date.now() - started < timeoutMs) {
-      if (await hasAuthCookies(context, acc.platform)) {
-        if (await sessionIsAuthenticated(context, page, acc.platform)) {
+      try {
+        if (page.isClosed()) {
+          await markConnectError(
+            db,
+            acc,
+            "Janela do navegador foi fechada. Clique Conectar de novo e mantenha aberta até concluir o login."
+          );
+          return true;
+        }
+        if (await hasAuthCookies(context, acc.platform)) {
           await markConnected(db, acc, profile, publisherConfig);
           await logEvent(db, {
             account_id: acc.id,
@@ -379,11 +445,26 @@ export async function processConnectRequests(
             message: "Sessão conectada (cookies confirmados).",
             details: { profile, startUrl, finalUrl: page.url() },
           });
-          console.log(`[digital-publisher] Conta ${acc.label} conectada.`);
+          console.log(
+            `[digital-publisher] Conta ${acc.label} conectada. Mantendo janela aberta ${Math.round(keepOpenMs / 1000)}s.`
+          );
+          await page.waitForTimeout(keepOpenMs);
           return true;
         }
+        await page.waitForTimeout(2000);
+      } catch (loopErr) {
+        const msg =
+          loopErr instanceof Error ? loopErr.message : String(loopErr);
+        if (/has been closed|Target closed|browser has been closed/i.test(msg)) {
+          await markConnectError(
+            db,
+            acc,
+            "Janela do navegador foi fechada. Clique Conectar de novo e mantenha aberta até concluir o login."
+          );
+          return true;
+        }
+        throw loopErr;
       }
-      await page.waitForTimeout(2000);
     }
 
     await markConnectError(
