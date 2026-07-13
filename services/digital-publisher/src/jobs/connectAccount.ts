@@ -10,6 +10,7 @@ type AccountRow = {
   platform: string;
   label: string;
   href?: string | null;
+  handle?: string | null;
 };
 
 const LOGIN_URL: Record<string, string> = {
@@ -19,6 +20,32 @@ const LOGIN_URL: Record<string, string> = {
   tiktok: "https://www.tiktok.com/login",
   youtube: "https://accounts.google.com/",
 };
+
+const PLATFORM_HOST: Record<string, RegExp> = {
+  instagram: /(^|\.)instagram\.com$/i,
+  facebook: /(^|\.)facebook\.com$/i,
+  linkedin: /(^|\.)linkedin\.com$/i,
+  tiktok: /(^|\.)tiktok\.com$/i,
+  youtube: /(^|\.)google\.com$/i,
+};
+
+/** Abre no perfil cadastrado (href); se não logado, a rede redireciona ao login. */
+function resolveStartUrl(acc: AccountRow): string {
+  const fallback = LOGIN_URL[acc.platform];
+  if (!fallback) return "";
+
+  const href = acc.href?.trim();
+  if (!href || !/^https?:\/\//i.test(href)) return fallback;
+
+  try {
+    const fullHost = new URL(href).hostname;
+    const ok = PLATFORM_HOST[acc.platform]?.test(fullHost);
+    if (ok) return href;
+  } catch {
+    /* usa fallback */
+  }
+  return fallback;
+}
 
 function profileDir(cfg: WorkerConfig, accountId: string) {
   const base =
@@ -58,7 +85,9 @@ export async function processConnectRequests(
 ): Promise<boolean> {
   const { data: accounts, error } = await db
     .from("digital_accounts")
-    .select("id, platform, label, href, connection_status, automation_strategy")
+    .select(
+      "id, platform, label, href, handle, connection_status, automation_strategy"
+    )
     .eq("connection_status", "connecting")
     .eq("automation_strategy", "browser")
     .order("updated_at", { ascending: true })
@@ -68,7 +97,8 @@ export async function processConnectRequests(
 
   const acc = accounts[0] as AccountRow;
   const loginUrl = LOGIN_URL[acc.platform];
-  if (!loginUrl) {
+  const startUrl = resolveStartUrl(acc);
+  if (!loginUrl || !startUrl) {
     await markConnectError(
       db,
       acc,
@@ -84,8 +114,8 @@ export async function processConnectRequests(
     account_id: acc.id,
     platform: acc.platform,
     event_type: "account_connect_started",
-    message: `Abrindo navegador para login em ${acc.label}.`,
-    details: { profile, loginUrl },
+    message: `Abrindo navegador em ${acc.label}.`,
+    details: { profile, startUrl, loginFallback: loginUrl },
   });
 
   let context: BrowserContext | null = null;
@@ -100,13 +130,13 @@ export async function processConnectRequests(
       viewport: { width: 1280, height: 900 },
     });
     const page = context.pages()[0] || (await context.newPage());
-    await page.goto(loginUrl, {
+    await page.goto(startUrl, {
       waitUntil: "domcontentloaded",
       timeout: 60000,
     });
 
     console.log(
-      `[digital-publisher] Conectar ${acc.platform} (${acc.label}): faça login no navegador aberto.`
+      `[digital-publisher] Conectar ${acc.platform} (${acc.label}): aberto em ${startUrl}. Faça login se a rede pedir.`
     );
 
     while (Date.now() - started < timeoutMs) {
