@@ -16,10 +16,10 @@ type AccountRow = {
 
 const LOGIN_URL: Record<string, string> = {
   instagram: "https://www.instagram.com/accounts/login/",
-  facebook: "https://www.facebook.com/login/",
+  facebook: "https://www.facebook.com/login.php",
   linkedin: "https://www.linkedin.com/login",
   tiktok: "https://www.tiktok.com/login",
-  youtube: "https://accounts.google.com/",
+  youtube: "https://accounts.google.com/ServiceLogin?service=youtube",
 };
 
 const SESSION_PROBE_URL: Record<string, string> = {
@@ -319,12 +319,12 @@ export async function processConnectRequests(
   const publisherConfig =
     (acc.publisher_config as Record<string, unknown>) || {};
   const loginUrl = LOGIN_URL[acc.platform];
-  const probe = SESSION_PROBE_URL[acc.platform] || loginUrl;
-  if (!loginUrl) {
+  const startUrl = resolveStartUrl(acc);
+  if (!loginUrl || !startUrl) {
     await markConnectError(
       db,
       acc,
-      `Plataforma ${acc.platform} sem URL de login configurada.`
+      `Plataforma ${acc.platform} sem URL de login/perfil configurada.`
     );
     return true;
   }
@@ -336,8 +336,8 @@ export async function processConnectRequests(
     account_id: acc.id,
     platform: acc.platform,
     event_type: "account_connect_started",
-    message: `Abrindo login de ${acc.label}.`,
-    details: { profile, loginUrl, probe },
+    message: `Abrindo URL cadastrada de ${acc.label}.`,
+    details: { profile, startUrl, href: acc.href },
   });
 
   let context: BrowserContext | null = null;
@@ -351,27 +351,45 @@ export async function processConnectRequests(
       headless: false,
       viewport: { width: 1280, height: 900 },
     });
-    const page = context.pages()[0] || (await context.newPage());
-    // Conectar = sempre tela de login (perfil público não prova sessão)
-    await page.goto(loginUrl, {
+    // Descarta abas antigas e abre a URL cadastrada (ex.: profile.php?id=...)
+    const existing = context.pages();
+    const page = existing[0] || (await context.newPage());
+    for (const extra of existing.slice(1)) {
+      await extra.close().catch(() => {});
+    }
+
+    await page.goto(startUrl, {
       waitUntil: "domcontentloaded",
       timeout: 60000,
     });
 
     console.log(
-      `[digital-publisher] Conectar ${acc.platform} (${acc.label}): ${loginUrl}. Faça login; só conecta com cookie de sessão.`
+      `[digital-publisher] Conectar ${acc.platform} (${acc.label}): aberto em ${startUrl}. Faça login se a rede pedir; só conecta com cookie de sessão.`
     );
 
     while (Date.now() - started < timeoutMs) {
-      // Após login, prova no feed/home (não no perfil público)
-      if (!/\/login|login\.php|accounts\/login/i.test(page.url())) {
-        await page
-          .goto(probe, {
-            waitUntil: "domcontentloaded",
-            timeout: 30000,
-          })
-          .catch(() => {});
-        await page.waitForTimeout(1500);
+      // Sem cookie: permanece na URL cadastrada (não redireciona para home genérica)
+      if (!(await hasAuthCookies(context, acc.platform))) {
+        const url = page.url();
+        let leftCadastro = false;
+        try {
+          leftCadastro =
+            !!acc.href &&
+            !url.includes(new URL(startUrl).pathname.split("?")[0]) &&
+            !/login\.php|\/login|accounts\/login/i.test(url);
+        } catch {
+          leftCadastro = false;
+        }
+        if (leftCadastro) {
+          await page
+            .goto(startUrl, {
+              waitUntil: "domcontentloaded",
+              timeout: 30000,
+            })
+            .catch(() => {});
+        }
+        await page.waitForTimeout(2500);
+        continue;
       }
 
       if (await sessionIsAuthenticated(context, page, acc.platform)) {
@@ -380,8 +398,8 @@ export async function processConnectRequests(
           account_id: acc.id,
           platform: acc.platform,
           event_type: "account_connect_success",
-          message: "Sessão conectada (cookies de autenticação confirmados).",
-          details: { profile, loginUrl, probe },
+          message: "Sessão conectada (cookies confirmados) na URL cadastrada.",
+          details: { profile, startUrl },
         });
         console.log(`[digital-publisher] Conta ${acc.label} conectada.`);
         return true;
