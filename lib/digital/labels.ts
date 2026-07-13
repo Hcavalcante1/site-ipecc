@@ -14,8 +14,36 @@ export const LABEL_STATUS: Record<DigitalPostStatus, string> = {
 };
 
 export const AJUDA_PUBLICACAO_ASSISTIDA =
-  "Fluxo assistido: aprove, agende se quiser, copie o texto ou publique no Instagram (exige imagem pública e tokens Meta no servidor).";
+  "Fluxo assistido: aprove e use «Publicar agora (fila)». Com o agente Windows instalado uma vez, a publicação sai sozinha. Alternativa: Instagram legado (API Meta).";
 
+/** Instalação única do agente residente (PowerShell na raiz do projeto). */
+export const COMANDO_INSTALAR_AGENTE =
+  "powershell -ExecutionPolicy Bypass -File scripts\\install-digital-agent-windows.ps1";
+
+/** Rótulos de automação da fila (worker Playwright). */
+export const LABEL_AUTOMACAO: Record<string, string> = {
+  pending: "Pendente",
+  queued: "Na fila",
+  processing: "Processando",
+  partially_published: "Parcialmente publicado",
+  published: "Publicado",
+  failed: "Falhou",
+  cancelled: "Cancelado",
+};
+
+export function rotuloAutomacao(
+  status: string | null | undefined,
+  opts?: { agentOnline?: boolean }
+): string {
+  if (!status) return "—";
+  if (
+    (status === "queued" || status === "pending") &&
+    opts?.agentOnline === false
+  ) {
+    return "Na fila · aguardando computador";
+  }
+  return LABEL_AUTOMACAO[status] ?? status;
+}
 export function formatarDataAgendada(iso: string | null | undefined): string {
   if (!iso) return "";
   try {

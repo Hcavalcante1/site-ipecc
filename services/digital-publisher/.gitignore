@@ -3,6 +3,7 @@
 .env.local
 data/
 .browser-profiles/
+digital-agent.lock
 node_modules/
 dist/
 *.log

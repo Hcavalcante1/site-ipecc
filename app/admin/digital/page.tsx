@@ -11,10 +11,12 @@ import type {
 import { DIGITAL_PLATFORMS } from "@/lib/digital/types";
 import {
   AJUDA_PUBLICACAO_ASSISTIDA,
+  COMANDO_INSTALAR_AGENTE,
   LABEL_ESCOPO,
   LABEL_PLATAFORMA,
   LABEL_STATUS,
   formatarDataAgendada,
+  rotuloAutomacao,
   rotuloOrigem,
   rotuloPlataforma,
   rotuloStatus,
@@ -22,6 +24,14 @@ import {
 
 type Tab = "perfis" | "fila";
 
+type AgentPrimary = {
+  label: string;
+  online: boolean;
+  machine_name: string | null;
+  meta_session_status: string;
+  last_heartbeat_at: string | null;
+  dry_run: boolean;
+};
 const pageStyle: CSSProperties = {
   maxWidth: 960,
   color: "#e5e7eb",
@@ -157,7 +167,38 @@ export default function DigitalAdminPage() {
   const [editAccHandle, setEditAccHandle] = useState("");
   const [editAccProjetoRef, setEditAccProjetoRef] = useState("");
 
+  const [agentPrimary, setAgentPrimary] = useState<AgentPrimary | null>(null);
+  const [agentAviso, setAgentAviso] = useState<string | null>(null);
+  const [queueWaiting, setQueueWaiting] = useState(0);
+
   const contasDestino = accounts.filter((a) => a.ativo);
+
+  const carregarAgente = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/digital/agent", { cache: "no-store" });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        setAgentAviso(json.error ?? "Falha ao consultar agente");
+        return;
+      }
+      setAgentAviso(json.aviso ?? null);
+      setAgentPrimary(json.primary ?? null);
+      setQueueWaiting(typeof json.queue_waiting === "number" ? json.queue_waiting : 0);
+    } catch {
+      setAgentAviso("Falha de rede ao consultar agente");
+    }
+  }, []);
+
+  async function copiarComandoInstalar() {
+    try {
+      await navigator.clipboard.writeText(COMANDO_INSTALAR_AGENTE);
+      setAviso(
+        "Comando de instalação copiado. Cole no PowerShell na pasta do projeto (uma única vez)."
+      );
+    } catch {
+      setAviso(`Copie manualmente: ${COMANDO_INSTALAR_AGENTE}`);
+    }
+  }
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -190,11 +231,17 @@ export default function DigitalAdminPage() {
     }
 
     setLoading(false);
-  }, [statusFilter]);
+    void carregarAgente();
+  }, [statusFilter, carregarAgente]);
 
   useEffect(() => {
     void carregar();
   }, [carregar]);
+
+  useEffect(() => {
+    const t = setInterval(() => void carregarAgente(), 30000);
+    return () => clearInterval(t);
+  }, [carregarAgente]);
 
   useEffect(() => {
     const siteAtivos = accounts
@@ -528,20 +575,23 @@ export default function DigitalAdminPage() {
     setBusy(false);
   }
 
-  /** Enfileira para o worker (não publica nesta requisição). */
+  /** Enfileira para o worker no PC (não executa Playwright nesta requisição). */
   async function publicarAgoraWorker(post: DigitalPost) {
     setBusy(true);
     setAviso(null);
     const res = await fetch("/api/admin/digital/posts/publish-now", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ post_id: post.id, dry_run: true }),
+      body: JSON.stringify({ post_id: post.id, dry_run: false }),
     });
     const json = await res.json();
     if (!res.ok || !json.ok) {
       setAviso(json.error ?? "Falha ao enfileirar");
     } else {
-      setAviso(json.message ?? "Enfileirado para o worker (dry-run).");
+      setAviso(
+        json.message ??
+          "Enfileirado. Se o agente estiver online, publica em seguida; se offline, fica na fila."
+      );
       await carregar();
     }
     setBusy(false);
@@ -606,6 +656,52 @@ export default function DigitalAdminPage() {
           {aviso}
         </p>
       )}
+
+      <div style={cardStyle}>
+        <h2 style={{ marginTop: 0, fontSize: 18 }}>Agente de publicação</h2>
+        <p style={{ ...metaStyle, marginTop: 0 }}>
+          Instalação única no Windows. Depois só use o admin: aprovar →
+          «Publicar agora (fila)». Sem script a cada post.
+        </p>
+        <p style={{ ...metaStyle, marginTop: adminTokens.spacing.sm }}>
+          Status:{" "}
+          {agentPrimary
+            ? agentPrimary.label
+            : agentAviso
+              ? "sem heartbeat ainda"
+              : "consultando…"}
+          {agentPrimary?.machine_name
+            ? ` · PC: ${agentPrimary.machine_name}`
+            : ""}
+          {queueWaiting > 0 ? ` · ${queueWaiting} na fila` : ""}
+        </p>
+        {agentAviso && (
+          <p style={{ ...metaStyle, marginTop: adminTokens.spacing.sm, color: "#b45309" }}>
+            {agentAviso}
+          </p>
+        )}
+        <div style={{ ...rowStyle, marginTop: adminTokens.spacing.sm }}>
+          <button
+            type="button"
+            style={btnGhost}
+            disabled={busy}
+            onClick={() => void carregarAgente()}
+          >
+            Atualizar status
+          </button>
+          <button
+            type="button"
+            style={btnStyle}
+            disabled={busy}
+            onClick={() => void copiarComandoInstalar()}
+          >
+            Copiar instalação (uma vez)
+          </button>
+        </div>
+        <p style={{ ...metaStyle, marginTop: adminTokens.spacing.sm }}>
+          {COMANDO_INSTALAR_AGENTE}
+        </p>
+      </div>
 
       {loading ? (
         <p style={{ marginTop: adminTokens.spacing.base }}>Carregando…</p>
@@ -1183,7 +1279,10 @@ export default function DigitalAdminPage() {
                         )}
                         {p.automation_status ? (
                           <div style={{ ...metaStyle, marginTop: 4 }}>
-                            Automação: {p.automation_status}
+                            Automação:{" "}
+                            {rotuloAutomacao(p.automation_status, {
+                              agentOnline: agentPrimary?.online,
+                            })}
                             {p.last_publish_error
                               ? ` — ${p.last_publish_error}`
                               : ""}
@@ -1319,7 +1418,7 @@ export default function DigitalAdminPage() {
                               style={btnStyle}
                               disabled={busy}
                               onClick={() => void publicarAgoraWorker(p)}
-                              title="Enfileira para o worker (dry-run por padrão)"
+                              title="Enfileira para o agente no PC. Se o PC estiver off, fica na fila."
                             >
                               Publicar agora (fila)
                             </button>

@@ -29,10 +29,28 @@ export async function POST(req: NextRequest) {
   });
 
   if (result.ok) {
+    const dry = body.dry_run === true;
+
+    let agentOnline = false;
+    const { data: agents } = await supabaseAdmin
+      .from("digital_agents")
+      .select("last_heartbeat_at")
+      .order("last_heartbeat_at", { ascending: false })
+      .limit(3);
+    const now = Date.now();
+    agentOnline = (agents ?? []).some((a) => {
+      if (!a.last_heartbeat_at) return false;
+      return now - new Date(a.last_heartbeat_at).getTime() < 90_000;
+    });
+
     return NextResponse.json({
       ok: true,
-      message:
-        "Post enfileirado. O worker publicará em seguida (não nesta requisição).",
+      agent_online: agentOnline,
+      message: dry
+        ? "Post enfileirado em dry-run. O agente simulará a publicação."
+        : agentOnline
+          ? "Post enfileirado. O agente no PC deve publicar em seguida."
+          : "Post na fila. O agente está offline — a publicação sai quando o computador com o agente estiver ligado.",
     });
   }
 

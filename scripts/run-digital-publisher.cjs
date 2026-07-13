@@ -1,6 +1,12 @@
 /**
  * Sobe o worker Digital usando variáveis do .env.local na raiz do projeto.
- * Uso: node scripts/run-digital-publisher.cjs
+ *
+ * Uso:
+ *   node scripts/run-digital-publisher.cjs              # dry-run
+ *   node scripts/run-digital-publisher.cjs --publish    # publicação real
+ *   node scripts/run-digital-publisher.cjs --resident   # agente Windows (real + id fixo)
+ *
+ * Instalação única (Agendador): scripts/install-digital-agent-windows.ps1
  */
 const fs = require("fs");
 const path = require("path");
@@ -18,6 +24,33 @@ function loadEnvLocal() {
 
 function main() {
   loadEnvLocal();
+  const args = process.argv.slice(2);
+  const publishMode =
+    args.includes("--publish") ||
+    args.includes("--real") ||
+    args.includes("-p") ||
+    args.includes("--resident");
+  const resident = args.includes("--resident");
+
+  if (publishMode) {
+    process.env.DIGITAL_PUBLISH_DRY_RUN = "false";
+    if (!process.env.DIGITAL_BROWSER_CHANNEL) {
+      process.env.DIGITAL_BROWSER_CHANNEL = "chrome";
+    }
+    if (!process.env.DIGITAL_BROWSER_HEADLESS) {
+      // Residente: headless true evita janelas; Conectar (login) usa headed no job
+      process.env.DIGITAL_BROWSER_HEADLESS = resident ? "true" : "false";
+    }
+    if (!process.env.DIGITAL_WORKER_ID) {
+      process.env.DIGITAL_WORKER_ID = resident ? "worker-pc" : "worker-pc";
+    }
+  }
+
+  if (resident) {
+    process.env.DIGITAL_WORKER_ID = process.env.DIGITAL_WORKER_ID || "worker-pc";
+    process.env.DIGITAL_PUBLISH_DRY_RUN = "false";
+  }
+
   const workerDir = path.join(process.cwd(), "services", "digital-publisher");
   if (!fs.existsSync(workerDir)) {
     console.error("Pasta services/digital-publisher não encontrada.");
@@ -35,19 +68,32 @@ function main() {
     process.exit(1);
   }
 
+  const dryRun = process.env.DIGITAL_PUBLISH_DRY_RUN !== "false";
+  console.log("");
+  console.log("=== Agente Digital IPECC ===");
   console.log(
-    "[run-digital-publisher] Iniciando worker (dry-run=%s)...",
-    process.env.DIGITAL_PUBLISH_DRY_RUN !== "false" ? "true" : "false"
+    dryRun
+      ? "Modo: DRY-RUN (simula; não publica de verdade)"
+      : "Modo: PUBLICAÇÃO REAL"
   );
-  console.log(
-    "[run-digital-publisher] Conectar conta: clique em Perfis → Conectar (browser) no admin."
-  );
+  if (resident) {
+    console.log("Modo residente: fila automática — não feche se instalado no Agendador.");
+  }
+  console.log("Health: http://127.0.0.1:8791/");
+  console.log("Guia: docs/DIGITAL-PUBLISHER-AGENTE-WINDOWS.md");
+  console.log("");
+
+  const logDir = path.join(workerDir, "data", "logs");
+  if (resident) {
+    fs.mkdirSync(logDir, { recursive: true });
+  }
 
   const child = spawn("npm", ["run", "dev"], {
     cwd: workerDir,
     stdio: "inherit",
     shell: true,
     env: { ...process.env },
+    windowsHide: resident,
   });
 
   child.on("exit", (code) => process.exit(code ?? 0));

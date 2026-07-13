@@ -2,6 +2,9 @@
 
 A Vercel **não** roda este serviço. Em produção o worker fica em um VPS com Docker.
 
+**Sem VPS?** Use o **agente residente Windows** (recomendado, R$ 0): [`DIGITAL-PUBLISHER-AGENTE-WINDOWS.md`](./DIGITAL-PUBLISHER-AGENTE-WINDOWS.md)  
+Sob demanda (legado): [`DIGITAL-PUBLISHER-PC.md`](./DIGITAL-PUBLISHER-PC.md)
+
 ## O que o VPS faz
 
 - Publica posts **aprovados/agendados** (Playwright headless)

@@ -12,12 +12,29 @@ Admin cria → revisa → aprova → agenda → este worker publica → confirma
 1. SQL Digital: `docs/sql/digital-redes-fase1.sql` + `digital-redes-automation-phase1.sql`
 2. Bucket Storage: `docs/sql/digital-media-storage-bucket.sql` (privado `digital-media`)
 
-## Local (desenvolvimento)
+## Publicar pelo PC (agente residente — recomendado)
+
+Instalação **uma vez** (Agendador de Tarefas). Depois só o admin.
+
+Guia: [`docs/DIGITAL-PUBLISHER-AGENTE-WINDOWS.md`](../../docs/DIGITAL-PUBLISHER-AGENTE-WINDOWS.md)
+
+```powershell
+node scripts/aplicar-digital-agents-resident.cjs
+powershell -ExecutionPolicy Bypass -File scripts\install-digital-agent-windows.ps1
+```
+
+## Local (desenvolvimento / dry-run)
 
 Na raiz do projeto (usa `.env.local`):
 
 ```bash
 node scripts/run-digital-publisher.cjs
+```
+
+Publicação real pontual (sem Agendador):
+
+```bash
+node scripts/run-digital-publisher.cjs --publish
 ```
 
 Ou manualmente:
