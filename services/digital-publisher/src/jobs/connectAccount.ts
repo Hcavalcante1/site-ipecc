@@ -59,6 +59,7 @@ async function sessionLooksLoggedIn(
   page: Awaited<ReturnType<BrowserContext["newPage"]>>
 ): Promise<boolean> {
   const url = page.url();
+
   if (platform === "instagram") {
     if (url.includes("/accounts/login")) return false;
     const loginBtn = await page
@@ -66,15 +67,53 @@ async function sessionLooksLoggedIn(
       .count();
     return loginBtn === 0 && !url.includes("/challenge/");
   }
+
   if (platform === "facebook") {
-    return !url.includes("/login") && url.includes("facebook.com");
+    if (/\/login|login\.php/i.test(url)) return false;
+
+    const loginBtn = await page
+      .getByRole("button", { name: /entrar|log in|log into facebook/i })
+      .count();
+    const emailField = await page
+      .locator('input[name="email"], input#email, input[type="email"]')
+      .count();
+    const passField = await page
+      .locator('input[name="pass"], input[type="password"]')
+      .count();
+    if (loginBtn > 0 || (emailField > 0 && passField > 0)) return false;
+
+    // Perfil público abre sem login — exige sinal de sessão autenticada
+    const accountUi = await page
+      .locator(
+        '[aria-label*="Conta"], [aria-label*="Account"], [aria-label*="Seu perfil"], [aria-label*="Your profile"], [aria-label*="Menu da conta"]'
+      )
+      .count();
+    const composer = await page
+      .getByRole("link", {
+        name: /criar publicação|what'?s on your mind|no que você está pensando/i,
+      })
+      .count();
+    const onHome = /facebook\.com\/?(\?.*)?$/.test(url) || url.includes("/home");
+    return accountUi > 0 || composer > 0 || onHome;
   }
+
   if (platform === "linkedin") {
-    return url.includes("linkedin.com/feed") || url.includes("linkedin.com/in/");
+    if (url.includes("/login") || url.includes("/uas/login")) return false;
+    return (
+      url.includes("linkedin.com/feed") ||
+      url.includes("linkedin.com/in/") ||
+      (await page.locator('[data-control-name="nav.settings"]').count()) > 0
+    );
   }
+
   if (platform === "tiktok") {
-    return !url.includes("/login");
+    if (url.includes("/login")) return false;
+    const loginBtn = await page
+      .getByRole("button", { name: /log in|entrar/i })
+      .count();
+    return loginBtn === 0;
   }
+
   return !url.includes("accounts.google.com/signin");
 }
 
@@ -136,8 +175,11 @@ export async function processConnectRequests(
     });
 
     console.log(
-      `[digital-publisher] Conectar ${acc.platform} (${acc.label}): aberto em ${startUrl}. Faça login se a rede pedir.`
+      `[digital-publisher] Conectar ${acc.platform} (${acc.label}): aberto em ${startUrl}. Faça login completo na janela — só marca connected após sessão real.`
     );
+
+    // Evita falso positivo (ex.: perfil Facebook público sem login)
+    await page.waitForTimeout(2000);
 
     while (Date.now() - started < timeoutMs) {
       if (await sessionLooksLoggedIn(acc.platform, page)) {
