@@ -10,6 +10,7 @@ export type AdminNavIconName =
   | "certidoes"
   | "whatsapp"
   | "digital"
+  | "documentos"
   | "logs"
   | "processos"
   | "acessos"
@@ -71,6 +72,12 @@ const PATHS: Record<AdminNavIconName, ReactElement> = {
     <>
       <circle cx="12" cy="12" r="3" />
       <path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1" />
+    </>
+  ),
+  documentos: (
+    <>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+      <path d="M14 2v6h6M12 18v-6M9 15h6" />
     </>
   ),
   logs: (

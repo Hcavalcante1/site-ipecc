@@ -440,6 +440,13 @@ export default function AdminDashboardClient({ userEmail }: Props) {
       text: "Conteúdo público do processo",
     });
   }
+  if (pode("documentos")) {
+    quickLinks.push({
+      href: "/admin/documentos/dashboard",
+      title: "Gestão Documental",
+      text: "Documentos, fluxos e assinaturas",
+    });
+  }
 
   return (
     <div style={styles.wrapper}>

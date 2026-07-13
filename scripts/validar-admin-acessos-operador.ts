@@ -83,8 +83,28 @@ async function main() {
   let { data: escopos, error: e2 } = await admin
     .from("admin_escopos")
     .select(
-      "user_id, processo_id, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos, mod_digital"
+      "user_id, processo_id, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos, mod_digital, mod_documentos"
     );
+  if (
+    e2 &&
+    /mod_documentos|column .* does not exist/i.test(e2.message || "")
+  ) {
+    const mid = await admin
+      .from("admin_escopos")
+      .select(
+        "user_id, processo_id, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos, mod_digital"
+      );
+    escopos = (mid.data || []).map((e) => ({
+      ...e,
+      mod_documentos: false,
+    })) as typeof escopos;
+    e2 = mid.error;
+    if (!e2) {
+      console.log(
+        "AVISO: coluna mod_documentos ausente — aplique docs/sql/admin-escopos-mod-documentos.sql"
+      );
+    }
+  }
   if (
     e2 &&
     /mod_digital|column .* does not exist/i.test(e2.message || "")
@@ -94,7 +114,11 @@ async function main() {
       .select(
         "user_id, processo_id, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos"
       );
-    escopos = fallback.data as typeof escopos;
+    escopos = (fallback.data || []).map((e) => ({
+      ...e,
+      mod_digital: false,
+      mod_documentos: false,
+    })) as typeof escopos;
     e2 = fallback.error;
     if (!e2) {
       console.log(
@@ -136,6 +160,9 @@ async function main() {
         mod_projetos: e.mod_projetos,
         mod_digital: Boolean(
           (e as { mod_digital?: boolean }).mod_digital
+        ),
+        mod_documentos: Boolean(
+          (e as { mod_documentos?: boolean }).mod_documentos
         ),
       })),
       legadoIsAdmin: false,

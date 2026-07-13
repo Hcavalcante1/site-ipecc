@@ -3,6 +3,13 @@ import { requireMestreSession } from "@/lib/auth/adminSession";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import type { AdminPapel } from "@/lib/auth/adminEscopo";
 
+const SELECT_COM_TUDO =
+  "id, user_id, processo_id, modalidade, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos, mod_digital, mod_documentos";
+const SELECT_COM_DIGITAL =
+  "id, user_id, processo_id, modalidade, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos, mod_digital";
+const SELECT_BASE =
+  "id, user_id, processo_id, modalidade, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos";
+
 export async function GET() {
   const auth = await requireMestreSession();
   if (auth.ok === false) {
@@ -11,10 +18,6 @@ export async function GET() {
 
   try {
     const admin = getSupabaseAdmin();
-    const selectComDigital =
-      "id, user_id, processo_id, modalidade, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos, mod_digital";
-    const selectSemDigital =
-      "id, user_id, processo_id, modalidade, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos";
 
     const [{ data: perfis, error: e1 }, escoposRes, { data: processos, error: e3 }] =
       await Promise.all([
@@ -22,7 +25,7 @@ export async function GET() {
           .from("admin_perfis")
           .select("user_id, email, papel, ativo, created_at")
           .order("created_at", { ascending: false }),
-        admin.from("admin_escopos").select(selectComDigital),
+        admin.from("admin_escopos").select(SELECT_COM_TUDO),
         admin
           .from("processos_contratacao")
           .select("id, titulo, tipo, status")
@@ -31,22 +34,37 @@ export async function GET() {
 
     let escopos = escoposRes.data;
     let e2 = escoposRes.error;
-    let avisoSqlDigital: string | undefined;
+    const avisos: string[] = [];
+
+    if (
+      e2 &&
+      /mod_documentos|column .* does not exist/i.test(e2.message || "")
+    ) {
+      const mid = await admin.from("admin_escopos").select(SELECT_COM_DIGITAL);
+      escopos = (mid.data || []).map((e) => ({
+        ...e,
+        mod_documentos: false,
+      }));
+      e2 = mid.error;
+      avisos.push(
+        "Coluna mod_documentos ausente. Aplique docs/sql/admin-escopos-mod-documentos.sql no Supabase para liberar o checkbox Documentos."
+      );
+    }
 
     if (
       e2 &&
       /mod_digital|column .* does not exist/i.test(e2.message || "")
     ) {
-      const fallback = await admin
-        .from("admin_escopos")
-        .select(selectSemDigital);
+      const fallback = await admin.from("admin_escopos").select(SELECT_BASE);
       escopos = (fallback.data || []).map((e) => ({
         ...e,
         mod_digital: false,
+        mod_documentos: false,
       }));
       e2 = fallback.error;
-      avisoSqlDigital =
-        "Coluna mod_digital ausente. Aplique docs/sql/admin-escopos-mod-digital.sql no Supabase para liberar o checkbox Digital.";
+      avisos.push(
+        "Coluna mod_digital ausente. Aplique docs/sql/admin-escopos-mod-digital.sql no Supabase para liberar o checkbox Digital."
+      );
     }
 
     if (e1 || e2 || e3) {
@@ -64,7 +82,7 @@ export async function GET() {
       perfis: perfis || [],
       escopos: escopos || [],
       processos: processos || [],
-      ...(avisoSqlDigital ? { aviso: avisoSqlDigital } : {}),
+      ...(avisos.length ? { aviso: avisos.join(" ") } : {}),
     });
   } catch (err) {
     const message =
@@ -95,6 +113,7 @@ export async function POST(req: Request) {
         eventos?: boolean;
         projetos?: boolean;
         digital?: boolean;
+        documentos?: boolean;
       };
       ativo?: boolean;
       escopo_id?: string;
@@ -157,7 +176,7 @@ export async function POST(req: Request) {
         );
       }
       const m = body.modulos || {};
-      const { error } = await admin.from("admin_escopos").insert({
+      const payload: Record<string, unknown> = {
         user_id: body.user_id,
         processo_id: body.processo_id,
         modalidade: body.modalidade || null,
@@ -168,7 +187,29 @@ export async function POST(req: Request) {
         mod_eventos: Boolean(m.eventos),
         mod_projetos: Boolean(m.projetos),
         mod_digital: Boolean(m.digital),
-      });
+        mod_documentos: Boolean(m.documentos),
+      };
+
+      let { error } = await admin.from("admin_escopos").insert(payload);
+
+      if (
+        error &&
+        /mod_documentos|column .* does not exist/i.test(error.message || "")
+      ) {
+        delete payload.mod_documentos;
+        const retry = await admin.from("admin_escopos").insert(payload);
+        error = retry.error;
+        if (!error && m.documentos) {
+          return NextResponse.json(
+            {
+              error:
+                "Coluna mod_documentos ausente. Aplique docs/sql/admin-escopos-mod-documentos.sql no Supabase e tente de novo.",
+            },
+            { status: 500 }
+          );
+        }
+      }
+
       if (error) {
         const faltaDigital =
           /mod_digital/i.test(error.message || "") ||

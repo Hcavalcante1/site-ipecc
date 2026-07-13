@@ -16,6 +16,7 @@ export type AdminModulo =
   | "certidoes"
   | "whatsapp"
   | "digital"
+  | "documentos"
   | "logs"
   | "processos"
   | "acessos";
@@ -31,6 +32,7 @@ export type AdminEscopo = {
   mod_eventos: boolean;
   mod_projetos: boolean;
   mod_digital: boolean;
+  mod_documentos: boolean;
 };
 
 export type AdminContexto = {
@@ -52,6 +54,7 @@ export const MODULOS_MESTRE: AdminModulo[] = [
   "certidoes",
   "whatsapp",
   "digital",
+  "documentos",
   "logs",
   "processos",
   "acessos",
@@ -78,6 +81,7 @@ const MODULO_FLAG: Record<
     | "mod_eventos"
     | "mod_projetos"
     | "mod_digital"
+    | "mod_documentos"
   >
 > = {
   editais: "mod_editais",
@@ -87,6 +91,7 @@ const MODULO_FLAG: Record<
   eventos: "mod_eventos",
   projetos: "mod_projetos",
   digital: "mod_digital",
+  documentos: "mod_documentos",
 };
 
 export function isMestre(ctx: AdminContexto | null | undefined): boolean {
@@ -108,6 +113,7 @@ export function modulosPermitidos(ctx: AdminContexto): AdminModulo[] {
       set.add("projetos");
     }
     if (escopo.mod_digital) set.add("digital");
+    if (escopo.mod_documentos) set.add("documentos");
   }
   return Array.from(set);
 }

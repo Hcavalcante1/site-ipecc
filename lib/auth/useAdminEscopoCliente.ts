@@ -87,12 +87,11 @@ export function useAdminEscopoCliente(): AdminEscopoCliente {
           loading: false,
           mestre,
           papel: json.papel || (mestre ? "mestre" : "operador"),
-          modulos:
-            Array.isArray(json.modulos) && json.modulos.length > 0
+          modulos: mestre
+            ? [...MODULOS_MESTRE]
+            : Array.isArray(json.modulos) && json.modulos.length > 0
               ? json.modulos
-              : mestre
-                ? [...MODULOS_MESTRE]
-                : [],
+              : [],
           processoIds:
             json.processoIds === "todos" || Array.isArray(json.processoIds)
               ? json.processoIds

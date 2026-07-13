@@ -39,7 +39,8 @@ function NavLabel({
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [checking, setChecking] = useState(true);
+  // Menu aparece imediatamente; a sessão só ajusta os módulos depois
+  const [checking, setChecking] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [modulos, setModulos] = useState<AdminModulo[]>([...MODULOS_MESTRE]);
   const [userEmail, setUserEmail] = useState("");
@@ -70,110 +71,122 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       await supabase.auth.signOut().catch(() => null);
     }
 
+    function aplicarModulosSessao(json: {
+      modulos?: AdminModulo[];
+      mestre?: boolean;
+    }) {
+      if (!mounted) return;
+      if (json.mestre) {
+        setModulos([...MODULOS_MESTRE]);
+        setAvisoSemEscopo(false);
+        return;
+      }
+      const lista =
+        Array.isArray(json.modulos) && json.modulos.length > 0
+          ? json.modulos
+          : [];
+      setModulos(lista);
+      if (lista.length === 0) {
+        setAvisoSemEscopo(true);
+      }
+    }
+
     async function checkAuth() {
-      if (
-        localStorage.getItem(ADMIN_CLOSED_KEY) === "1" ||
-        sessionStorage.getItem(ADMIN_ACTIVE_KEY) !== "1"
-      ) {
-        await encerrarSessaoAdmin();
-        router.replace("/login");
-        return;
-      }
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        router.replace("/login");
-        return;
-      }
-
-      if (mounted) {
-        setUserEmail(user.email || "");
-      }
-
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const accessToken = session?.access_token;
-
-      const sessionRes = await fetch("/api/admin/session", {
-        method: "POST",
-        credentials: "include",
-        headers: accessToken
-          ? { Authorization: `Bearer ${accessToken}` }
-          : undefined,
-      }).catch(() => null);
-
-      if (!sessionRes || !sessionRes.ok) {
-        // Operador/externo nao passa em is_admin — usar gate de perfil
-        const { data: autorizado, error: gateErr } = await supabase.rpc(
-          "is_admin_ou_perfil",
-          { p_user_id: user.id }
-        );
-        if (gateErr || !autorizado) {
-          const { data: isAdmin, error } = await supabase.rpc("is_admin", {
-            user_id: user.id,
-          });
-          if (error || !isAdmin) {
-            await encerrarSessaoAdmin();
-            router.replace("/login");
-            return;
-          }
-          if (mounted) {
-            setModulos([...MODULOS_MESTRE]);
-            setChecking(false);
-          }
+      setChecking(true);
+      try {
+        if (
+          localStorage.getItem(ADMIN_CLOSED_KEY) === "1" ||
+          sessionStorage.getItem(ADMIN_ACTIVE_KEY) !== "1"
+        ) {
+          await encerrarSessaoAdmin();
+          router.replace("/login");
           return;
         }
 
-        // Autorizado por perfil, mas session falhou: tenta de novo com token
-        const retry = await fetch("/api/admin/session", {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+          router.replace("/login");
+          return;
+        }
+
+        if (mounted) {
+          setUserEmail(user.email || "");
+        }
+
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const accessToken = session?.access_token;
+
+        const sessionRes = await fetch("/api/admin/session", {
           method: "POST",
           credentials: "include",
           headers: accessToken
             ? { Authorization: `Bearer ${accessToken}` }
             : undefined,
         }).catch(() => null);
-        if (retry?.ok) {
-          const json = (await retry.json()) as {
-            modulos?: AdminModulo[];
-            mestre?: boolean;
-          };
+
+        if (!sessionRes || !sessionRes.ok) {
+          const { data: autorizado, error: gateErr } = await supabase.rpc(
+            "is_admin_ou_perfil",
+            { p_user_id: user.id }
+          );
+          if (gateErr || !autorizado) {
+            const { data: isAdmin, error } = await supabase.rpc("is_admin", {
+              user_id: user.id,
+            });
+            if (error || !isAdmin) {
+              await encerrarSessaoAdmin();
+              router.replace("/login");
+              return;
+            }
+            if (mounted) {
+              setModulos([...MODULOS_MESTRE]);
+              setAvisoSemEscopo(false);
+            }
+            return;
+          }
+
+          const retry = await fetch("/api/admin/session", {
+            method: "POST",
+            credentials: "include",
+            headers: accessToken
+              ? { Authorization: `Bearer ${accessToken}` }
+              : undefined,
+          }).catch(() => null);
+          if (retry?.ok) {
+            const json = (await retry.json()) as {
+              modulos?: AdminModulo[];
+              mestre?: boolean;
+            };
+            aplicarModulosSessao(json);
+            return;
+          }
+
+          // Perfil ok mas session falhou: mantém menu para não ficar em branco
           if (mounted) {
-            setModulos(
-              Array.isArray(json.modulos) && json.modulos.length > 0
-                ? json.modulos
-                : json.mestre
-                  ? [...MODULOS_MESTRE]
-                  : []
-            );
-            setChecking(false);
+            setModulos([...MODULOS_MESTRE]);
           }
           return;
         }
 
-        await encerrarSessaoAdmin();
-        router.replace("/login");
-        return;
-      }
+        const json = (await sessionRes.json()) as {
+          ok?: boolean;
+          modulos?: AdminModulo[];
+          mestre?: boolean;
+        };
 
-      const json = (await sessionRes.json()) as {
-        ok?: boolean;
-        modulos?: AdminModulo[];
-        mestre?: boolean;
-      };
-
-      if (mounted) {
-        setModulos(
-          Array.isArray(json.modulos) && json.modulos.length > 0
-            ? json.modulos
-            : json.mestre
-              ? [...MODULOS_MESTRE]
-              : []
-        );
-        setChecking(false);
+        aplicarModulosSessao(json);
+      } catch (err) {
+        console.error("Falha ao verificar sessão admin:", err);
+        if (mounted) {
+          setModulos((prev) => (prev.length > 0 ? prev : [...MODULOS_MESTRE]));
+        }
+      } finally {
+        if (mounted) setChecking(false);
       }
     }
 
@@ -191,7 +204,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       }).catch(() => null);
     }
 
-    checkAuth();
+    void checkAuth();
     const heartbeat = window.setInterval(renovarEntradaAdmin, 4000);
 
     function marcarAdminComoFechado() {
@@ -210,25 +223,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       window.removeEventListener("beforeunload", marcarAdminComoFechado);
     };
   }, [router]);
-
-  if (checking) {
-    return (
-      <div className="admin-body">
-        <div
-          style={{
-            minHeight: "100vh",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#e5e7eb",
-            fontSize: 16,
-          }}
-        >
-          Verificando acesso...
-        </div>
-      </div>
-    );
-  }
 
   function handleMobileNav(event: MouseEvent<HTMLAnchorElement>, href: string) {
     if (window.innerWidth > 900) return;
@@ -356,6 +350,16 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 <NavLabel icon="digital">Digital</NavLabel>
               </Link>
             )}
+            {/* Sempre visível após login — o gate fino fica no layout do módulo */}
+            <Link
+              href="/admin/documentos/dashboard"
+              className={navClass(pathname, "/admin/documentos")}
+              onClick={(event) =>
+                handleMobileNav(event, "/admin/documentos/dashboard")
+              }
+            >
+              <NavLabel icon="documentos">Gestão Documental</NavLabel>
+            </Link>
             {pode("logs") && (
               <Link href="/admin/logs" className={navClass(pathname, "/admin/logs")} onClick={(event) => handleMobileNav(event, "/admin/logs")}>
                 <NavLabel icon="logs">Registros</NavLabel>
@@ -409,6 +413,20 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </aside>
 
         <main className="admin-main">
+          {checking ? (
+            <div
+              style={{
+                margin: "12px 16px 0",
+                padding: "8px 12px",
+                borderRadius: 8,
+                background: "rgba(59,130,246,0.12)",
+                color: "#bfdbfe",
+                fontSize: 13,
+              }}
+            >
+              Atualizando permissões da sessão...
+            </div>
+          ) : null}
           {avisoSemEscopo ? (
             <div
               style={{

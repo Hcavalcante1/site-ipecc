@@ -2,20 +2,42 @@ import { NextResponse } from "next/server";
 import { verifyAdminSession } from "@/lib/auth/adminSession";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
-const ALLOWED_BUCKETS = new Set(["docs", "editais", "propostas", "media"]);
+const ALLOWED_BUCKETS = new Set([
+  "docs",
+  "editais",
+  "propostas",
+  "media",
+  "gestao-documental",
+]);
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 const ALLOWED_EXTENSIONS_BY_BUCKET: Record<string, Set<string>> = {
   docs: new Set(["pdf", "png", "jpg", "jpeg", "webp"]),
   editais: new Set(["pdf"]),
   propostas: new Set(["pdf"]),
   media: new Set(["png", "jpg", "jpeg", "webp"]),
+  "gestao-documental": new Set([
+    "pdf",
+    "docx",
+    "doc",
+    "png",
+    "jpg",
+    "jpeg",
+    "webp",
+    "txt",
+  ]),
 };
 const ALLOWED_MIME_BY_EXTENSION: Record<string, Set<string>> = {
   pdf: new Set(["application/pdf"]),
+  docx: new Set([
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/octet-stream",
+  ]),
+  doc: new Set(["application/msword", "application/octet-stream"]),
   png: new Set(["image/png"]),
   jpg: new Set(["image/jpeg"]),
   jpeg: new Set(["image/jpeg"]),
   webp: new Set(["image/webp"]),
+  txt: new Set(["text/plain", "application/octet-stream"]),
 };
 
 function isSafeStoragePath(path: string) {

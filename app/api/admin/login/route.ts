@@ -117,12 +117,74 @@ export async function POST(req: Request) {
     let contexto: AdminContexto;
 
     if (row?.ativo) {
-      const { data: escoposData } = await supabase
-        .from("admin_escopos")
-        .select(
-          "id, processo_id, modalidade, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos"
-        )
-        .eq("user_id", user.id);
+      const selectComTudo =
+        "id, processo_id, modalidade, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos, mod_digital, mod_documentos";
+      const selectComDigital =
+        "id, processo_id, modalidade, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos, mod_digital";
+      const selectBase =
+        "id, processo_id, modalidade, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos";
+
+      type EscopoPartial = {
+        id: string;
+        processo_id: string | null;
+        modalidade: string | null;
+        mod_editais?: boolean;
+        mod_propostas?: boolean;
+        mod_transparencia?: boolean;
+        mod_noticias?: boolean;
+        mod_eventos?: boolean;
+        mod_projetos?: boolean;
+        mod_digital?: boolean;
+        mod_documentos?: boolean;
+      };
+
+      let rows: EscopoPartial[] = [];
+      let escoposError: { message?: string } | null = null;
+
+      {
+        const first = await supabase
+          .from("admin_escopos")
+          .select(selectComTudo)
+          .eq("user_id", user.id);
+        rows = (first.data || []) as EscopoPartial[];
+        escoposError = first.error;
+
+        if (
+          escoposError &&
+          /mod_documentos|column .* does not exist/i.test(
+            escoposError.message || ""
+          )
+        ) {
+          const mid = await supabase
+            .from("admin_escopos")
+            .select(selectComDigital)
+            .eq("user_id", user.id);
+          rows = ((mid.data || []) as EscopoPartial[]).map((e) => ({
+            ...e,
+            mod_documentos: false,
+          }));
+          escoposError = mid.error;
+        }
+
+        if (
+          escoposError &&
+          /mod_digital|column .* does not exist/i.test(
+            escoposError.message || ""
+          )
+        ) {
+          const base = await supabase
+            .from("admin_escopos")
+            .select(selectBase)
+            .eq("user_id", user.id);
+          rows = ((base.data || []) as EscopoPartial[]).map((e) => ({
+            ...e,
+            mod_digital: false,
+            mod_documentos: false,
+          }));
+          escoposError = base.error;
+        }
+      }
+
       const { data: isAdmin } = await supabase.rpc("is_admin", {
         user_id: user.id,
       });
@@ -131,7 +193,21 @@ export async function POST(req: Request) {
         email: row.email ?? user.email ?? null,
         papel: row.papel,
         ativo: true,
-        escopos: (escoposData || []) as AdminEscopo[],
+        escopos: escoposError
+          ? []
+          : rows.map((e) => ({
+              id: e.id,
+              processo_id: e.processo_id,
+              modalidade: e.modalidade,
+              mod_editais: Boolean(e.mod_editais),
+              mod_propostas: Boolean(e.mod_propostas),
+              mod_transparencia: Boolean(e.mod_transparencia),
+              mod_noticias: Boolean(e.mod_noticias),
+              mod_eventos: Boolean(e.mod_eventos),
+              mod_projetos: Boolean(e.mod_projetos),
+              mod_digital: Boolean(e.mod_digital),
+              mod_documentos: Boolean(e.mod_documentos),
+            })),
         legadoIsAdmin: Boolean(isAdmin),
       };
     } else {

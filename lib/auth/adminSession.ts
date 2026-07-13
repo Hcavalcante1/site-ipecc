@@ -28,6 +28,7 @@ type EscopoRow = {
   mod_eventos: boolean;
   mod_projetos: boolean;
   mod_digital: boolean;
+  mod_documentos: boolean;
 };
 
 async function carregarContexto(
@@ -60,31 +61,46 @@ async function carregarContexto(
 
   const row = perfil as PerfilRow | null;
   if (row?.ativo) {
+    const selectComTudo =
+      "id, processo_id, modalidade, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos, mod_digital, mod_documentos";
     const selectComDigital =
       "id, processo_id, modalidade, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos, mod_digital";
-    const selectSemDigital =
+    const selectBase =
       "id, processo_id, modalidade, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos";
 
-    let escoposData: Array<Partial<EscopoRow> & Omit<EscopoRow, "mod_digital">> | null =
-      null;
+    let escoposData: Array<Partial<EscopoRow>> | null = null;
     let escoposError: { message?: string } | null = null;
 
     {
       const first = await supabase
         .from("admin_escopos")
-        .select(selectComDigital)
+        .select(selectComTudo)
         .eq("user_id", userId);
       escoposData = first.data as typeof escoposData;
       escoposError = first.error;
 
-      // Coluna ainda não aplicada → fallback sem quebrar menus dos outros módulos
+      // Colunas ainda não aplicadas → fallback sem quebrar menus dos outros módulos
+      if (
+        escoposError &&
+        /mod_documentos|column .* does not exist/i.test(
+          escoposError.message || ""
+        )
+      ) {
+        const mid = await supabase
+          .from("admin_escopos")
+          .select(selectComDigital)
+          .eq("user_id", userId);
+        escoposData = mid.data as typeof escoposData;
+        escoposError = mid.error;
+      }
+
       if (
         escoposError &&
         /mod_digital|column .* does not exist/i.test(escoposError.message || "")
       ) {
         const fallback = await supabase
           .from("admin_escopos")
-          .select(selectSemDigital)
+          .select(selectBase)
           .eq("user_id", userId);
         escoposData = fallback.data as typeof escoposData;
         escoposError = fallback.error;
@@ -115,6 +131,7 @@ async function carregarContexto(
         mod_eventos: Boolean(e.mod_eventos),
         mod_projetos: Boolean(e.mod_projetos),
         mod_digital: Boolean(e.mod_digital),
+        mod_documentos: Boolean(e.mod_documentos),
       })),
       // is_admin legado continua contando como mestre (acesso total)
       legadoIsAdmin: Boolean(isAdmin),

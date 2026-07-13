@@ -34,6 +34,7 @@ export function chipsModulosEscopo(e: {
   mod_eventos?: boolean;
   mod_projetos?: boolean;
   mod_digital?: boolean;
+  mod_documentos?: boolean;
 }): string[] {
   const chips: string[] = [];
   if (e.mod_editais) chips.push("Editais");
@@ -43,5 +44,6 @@ export function chipsModulosEscopo(e: {
   if (e.mod_eventos) chips.push("Eventos");
   if (e.mod_projetos) chips.push("Projetos");
   if (e.mod_digital) chips.push("Digital");
+  if (e.mod_documentos) chips.push("Documentos");
   return chips;
 }
