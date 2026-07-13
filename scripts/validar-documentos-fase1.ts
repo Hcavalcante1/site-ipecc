@@ -175,6 +175,14 @@ async function main() {
     existe("app", "admin", "documentos", "notificacoes", "page.tsx")
   );
   assert(
+    "docs fechamento",
+    existe("docs", "gestao-documental-fechamento.md")
+  );
+  assert(
+    "shell placeholder removido",
+    !existe("app", "admin", "documentos", "components", "ShellPlaceholder.tsx")
+  );
+  assert(
     "api assinaturas",
     existe("app", "api", "admin", "documentos", "assinaturas", "route.ts")
   );

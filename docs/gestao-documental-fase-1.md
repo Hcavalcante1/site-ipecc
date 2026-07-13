@@ -51,8 +51,10 @@ GOVBR_SIGNATURE_REDIRECT_URI=
 
 ## Próximas fases
 
-2. Gestão completa (tags, favoritos, preview, modelos)  
-3. Workflows e permissões internas  
-4. Integração gov.br real  
-5. Lotes e multi-signatários  
-6. Notificações e integrações entre módulos  
+Concluídas nas entregas seguintes. Ver **fechamento**: `docs/gestao-documental-fechamento.md`.
+
+~~2. Gestão completa (tags, favoritos, preview, modelos)~~  
+~~3. Workflows e permissões internas~~  
+~~4. Integração gov.br real~~  
+~~5. Lotes e multi-signatários~~  
+~~6. Notificações e integrações entre módulos~~

@@ -55,6 +55,8 @@ export default function AssinaturasClient() {
     const ok = search.get("ok");
     const st = search.get("state");
     const sigId = search.get("signature_id");
+    const docId = search.get("document_id");
+    if (docId) setDocumentId(docId);
     if (erro) setAviso(erro);
     if (ok && st) {
       setState(st);

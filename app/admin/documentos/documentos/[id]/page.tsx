@@ -263,6 +263,23 @@ export default function DocumentoDetalhePage() {
     router.push(`/admin/documentos/documentos/${json.document.id}`);
   }
 
+  async function pedirAssinatura() {
+    const res = await fetch("/api/admin/documentos/assinaturas", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ document_id: id }),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      setAviso(json.error || "Erro ao criar pedido de assinatura.");
+      return;
+    }
+    router.push(
+      `/admin/documentos/assinaturas?signature_id=${json.signature?.id || ""}&document_id=${id}`
+    );
+  }
+
   if (!document && !aviso) {
     return (
       <GestaoDocumentalShell title="Documento">
@@ -284,6 +301,15 @@ export default function DocumentoDetalhePage() {
             <button type="button" style={{ ...gdBtnStyle, background: "#475569" }} onClick={duplicar}>
               Duplicar
             </button>
+            {document.storage_path ? (
+              <button
+                type="button"
+                style={{ ...gdBtnStyle, background: "#0f766e" }}
+                onClick={pedirAssinatura}
+              >
+                Pedir assinatura
+              </button>
+            ) : null}
           </div>
         ) : null
       }
