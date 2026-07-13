@@ -364,47 +364,26 @@ export async function processConnectRequests(
     });
 
     console.log(
-      `[digital-publisher] Conectar ${acc.platform} (${acc.label}): aberto em ${startUrl}. Faça login se a rede pedir; só conecta com cookie de sessão.`
+      `[digital-publisher] Conectar ${acc.platform} (${acc.label}): aberto em ${startUrl}. Faça login se a rede pedir (a página não será recarregada).`
     );
 
+    // Não navegar de novo enquanto o usuário loga — só observar cookies
     while (Date.now() - started < timeoutMs) {
-      // Sem cookie: permanece na URL cadastrada (não redireciona para home genérica)
-      if (!(await hasAuthCookies(context, acc.platform))) {
-        const url = page.url();
-        let leftCadastro = false;
-        try {
-          leftCadastro =
-            !!acc.href &&
-            !url.includes(new URL(startUrl).pathname.split("?")[0]) &&
-            !/login\.php|\/login|accounts\/login/i.test(url);
-        } catch {
-          leftCadastro = false;
+      if (await hasAuthCookies(context, acc.platform)) {
+        if (await sessionIsAuthenticated(context, page, acc.platform)) {
+          await markConnected(db, acc, profile, publisherConfig);
+          await logEvent(db, {
+            account_id: acc.id,
+            platform: acc.platform,
+            event_type: "account_connect_success",
+            message: "Sessão conectada (cookies confirmados).",
+            details: { profile, startUrl, finalUrl: page.url() },
+          });
+          console.log(`[digital-publisher] Conta ${acc.label} conectada.`);
+          return true;
         }
-        if (leftCadastro) {
-          await page
-            .goto(startUrl, {
-              waitUntil: "domcontentloaded",
-              timeout: 30000,
-            })
-            .catch(() => {});
-        }
-        await page.waitForTimeout(2500);
-        continue;
       }
-
-      if (await sessionIsAuthenticated(context, page, acc.platform)) {
-        await markConnected(db, acc, profile, publisherConfig);
-        await logEvent(db, {
-          account_id: acc.id,
-          platform: acc.platform,
-          event_type: "account_connect_success",
-          message: "Sessão conectada (cookies confirmados) na URL cadastrada.",
-          details: { profile, startUrl },
-        });
-        console.log(`[digital-publisher] Conta ${acc.label} conectada.`);
-        return true;
-      }
-      await page.waitForTimeout(3000);
+      await page.waitForTimeout(2000);
     }
 
     await markConnectError(
