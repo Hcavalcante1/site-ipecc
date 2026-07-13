@@ -264,11 +264,23 @@ export default function DocumentoDetalhePage() {
   }
 
   async function pedirAssinatura() {
+    const email = window.prompt(
+      "E-mail do signatário (Documenso enviará o link):",
+      ""
+    );
+    if (email === null) return;
+    const name =
+      window.prompt("Nome do signatário (opcional):", "") || undefined;
     const res = await fetch("/api/admin/documentos/assinaturas", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ document_id: id }),
+      body: JSON.stringify({
+        document_id: id,
+        provider_code: "documenso",
+        signer_email: email.trim() || undefined,
+        signer_name: name?.trim() || undefined,
+      }),
     });
     const json = await res.json();
     if (!res.ok) {

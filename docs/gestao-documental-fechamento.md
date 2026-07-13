@@ -10,7 +10,7 @@ Entregue e publicado em `main` (`site-ipecc` / Vercel).
 | 1 | Schema `gd_*`, escopo `documentos`, CRUD, bucket, stub provider | OK |
 | 2 | Filtros, favoritos, lixeira, tags, preview, modelos | OK |
 | 3 | Fluxos, passos, transições, ACL documento, auditoria IP/UA | OK |
-| 4 | OAuth2 gov.br + PKCS#7 + UI Assinaturas/Configurações | OK (aguarda credenciais ITI) |
+| 4 | Assinatura: Documenso (ente privado) + gov.br OAuth/PKCS#7 | OK (Documenso self-host; gov.br só órgãos públicos) |
 | 5 | Lotes, itens, signatários sequencial/paralelo | OK |
 | 6 | Notificações in-app + eventos de fluxo/assinatura | OK |
 
@@ -30,6 +30,7 @@ No detalhe do documento: **Pedir assinatura** (quando houver arquivo).
 3. `docs/sql/gestao-documental-storage-bucket.sql`
 4. `docs/sql/gestao-documental-fase-3.sql`
 5. `docs/sql/gestao-documental-fase-4-6.sql`
+6. `docs/sql/gestao-documental-documenso.sql`
 
 Reaplicar (idempotente): `node scripts/aplicar-gestao-documental.cjs`
 
@@ -45,11 +46,20 @@ npx tsc --noEmit
 - [x] Menu Admin com Gestão Documental  
 - [x] Tabelas `gd_*` + `mod_documentos` + bucket `gestao-documental`  
 - [x] Código em `site-ipecc` / Vercel  
-- [ ] Vars `GOVBR_SIGNATURE_*` na Vercel (assinatura real)  
-- [ ] Redirect URI cadastrado no portal ITI/gov.br  
-- [ ] Credenciais staging testadas antes de `GOVBR_SIGNATURE_ENV=production`  
+- [ ] Documenso self-host (`services/documenso`) + `DOCUMENSO_API_*` na Vercel  
+- [ ] Webhook Documenso → `/api/webhooks/documenso`  
+- [ ] SQL `gestao-documental-documenso.sql` aplicado  
+- [ ] Vars `GOVBR_SIGNATURE_*` (somente se órgão público / ITI)  
 
-### Env obrigatório só para assinatura gov.br
+### Env recomendado — Documenso (ente privado)
+
+```
+DOCUMENSO_API_URL=https://seu-documenso/api/v2
+DOCUMENSO_API_TOKEN=
+DOCUMENSO_WEBHOOK_SECRET=
+```
+
+### Env opcional — gov.br (só órgãos públicos)
 
 ```
 GOVBR_SIGNATURE_CLIENT_ID=
@@ -58,36 +68,24 @@ GOVBR_SIGNATURE_REDIRECT_URI=https://www.ipecc.org.br/api/admin/documentos/assin
 GOVBR_SIGNATURE_ENV=staging
 ```
 
-Roteiro oficial (ITI):  
-https://manual-integracao-assinatura-eletronica.servicos.gov.br/pt-br/7.4/iniciarintegracao.html
-
-Credenciais / formalização:  
-https://www.gov.br/governodigital/integrarprodutoid
-
-Pontos do manual já cobertos no código:
-- OAuth authorize → code → token (`.../token?`)
-- Escopos `sign` / `signature_session` mutuamente exclusivos
-- `certificadoPublico` antes do PKCS#7 (valida Prata/Ouro e CPF)
-- `assinarPKCS7` com `hashBase64`
-- Mensagens 403 amigáveis (nível bronze / CPF inválido)
-- Homologação: verificador.staging.iti.br · Produção: validar.iti.gov.br
-
-Sem essas vars: criar/revisar documentos, fluxos, lotes, signatários e notificações funcionam; **Autorizar gov.br** retorna erro claro de configuração.
+A API gov.br **não libera** integração para ente privado. Use Documenso.
 
 ## Fluxo operacional recomendado
 
 1. Criar documento (+ upload)  
 2. Vincular fluxo e avançar status até **Pronto para assinatura**  
-3. **Pedir assinatura** no detalhe  
-4. Em Assinaturas: Autorizar gov.br → Assinar PKCS#7  
-5. (Opcional) Lote + signatários para múltiplos documentos/pessoas  
-6. Acompanhar em Notificações e Auditoria  
+3. **Pedir assinatura** no detalhe (e-mail do signatário → Documenso)  
+4. Signatário assina pelo e-mail/link; webhook conclui no admin  
+5. (Opcional / órgão público) Autorizar gov.br → Assinar PKCS#7  
+6. (Opcional) Lote + signatários  
+7. Acompanhar em Notificações e Auditoria  
 
 ## Fora deste fechamento (evolução futura)
 
-- Provedores adicionais (ICP-Brasil, Clicksign, etc.)  
-- Envio SMTP real da fila `channel=email`  
-- Assinatura envelopada em PDF (além do `.p7s` detached)  
+- Certificado ICP-Brasil A1 no Documenso  
+- Embed iframe React do Documenso no admin  
+- Provedores SaaS (Clicksign, etc.)  
+- Envio SMTP real da fila `channel=email`
 - Integração automática bi-direcional com Propostas/Editais  
 
 ## Documentação por fase

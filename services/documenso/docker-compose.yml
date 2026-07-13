@@ -1,0 +1,61 @@
+# Documenso — assinatura open source self-hosted (IPECC)
+#
+# Uso:
+#   1. cp .env.example .env  e preencha segredos / SMTP
+#   2. docker compose up -d
+#   3. Abra NEXT_PUBLIC_WEBAPP_URL, crie usuário admin e um API token
+#   4. No app IPECC (Vercel / .env.local):
+#        DOCUMENSO_API_URL=https://seu-dominio/api/v2
+#        DOCUMENSO_API_TOKEN=api_...
+#        DOCUMENSO_WEBHOOK_SECRET=...
+#   5. No Documenso, configure webhook → https://www.ipecc.org.br/api/webhooks/documenso
+#   6. Aplique docs/sql/gestao-documental-documenso.sql no Supabase
+#
+# Compose baseado no oficial: https://github.com/documenso/documenso/blob/main/docker/production/compose.yml
+# Docs: https://docs.documenso.com/docs/self-hosting/deployment/docker-compose
+
+services:
+  database:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-documenso}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-documenso}
+    volumes:
+      - documenso_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-documenso}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  documenso:
+    image: documenso/documenso:latest
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+    ports:
+      - "${PORT:-3001}:3000"
+    environment:
+      PORT: 3000
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?defina NEXTAUTH_SECRET}
+      NEXT_PRIVATE_ENCRYPTION_KEY: ${NEXT_PRIVATE_ENCRYPTION_KEY:?defina}
+      NEXT_PRIVATE_ENCRYPTION_SECONDARY_KEY: ${NEXT_PRIVATE_ENCRYPTION_SECONDARY_KEY:?defina}
+      NEXT_PUBLIC_WEBAPP_URL: ${NEXT_PUBLIC_WEBAPP_URL:?defina URL pública}
+      NEXT_PRIVATE_INTERNAL_WEBAPP_URL: ${NEXT_PRIVATE_INTERNAL_WEBAPP_URL:-http://localhost:3000}
+      NEXT_PRIVATE_DATABASE_URL: postgresql://${POSTGRES_USER:-documenso}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB:-documenso}
+      NEXT_PRIVATE_DIRECT_DATABASE_URL: postgresql://${POSTGRES_USER:-documenso}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB:-documenso}
+      NEXT_PUBLIC_UPLOAD_TRANSPORT: ${NEXT_PUBLIC_UPLOAD_TRANSPORT:-database}
+      NEXT_PRIVATE_SMTP_TRANSPORT: ${NEXT_PRIVATE_SMTP_TRANSPORT:-smtp-auth}
+      NEXT_PRIVATE_SMTP_HOST: ${NEXT_PRIVATE_SMTP_HOST:-}
+      NEXT_PRIVATE_SMTP_PORT: ${NEXT_PRIVATE_SMTP_PORT:-587}
+      NEXT_PRIVATE_SMTP_USERNAME: ${NEXT_PRIVATE_SMTP_USERNAME:-}
+      NEXT_PRIVATE_SMTP_PASSWORD: ${NEXT_PRIVATE_SMTP_PASSWORD:-}
+      NEXT_PRIVATE_SMTP_FROM_NAME: ${NEXT_PRIVATE_SMTP_FROM_NAME:-IPECC Assinaturas}
+      NEXT_PRIVATE_SMTP_FROM_ADDRESS: ${NEXT_PRIVATE_SMTP_FROM_ADDRESS:-noreply@ipecc.org.br}
+      NEXT_PRIVATE_RESEND_API_KEY: ${NEXT_PRIVATE_RESEND_API_KEY:-}
+
+volumes:
+  documenso_pg:

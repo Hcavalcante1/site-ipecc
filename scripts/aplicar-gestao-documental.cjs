@@ -17,6 +17,7 @@ const SQL_FILES = [
   "docs/sql/gestao-documental-storage-bucket.sql",
   "docs/sql/gestao-documental-fase-3.sql",
   "docs/sql/gestao-documental-fase-4-6.sql",
+  "docs/sql/gestao-documental-documenso.sql",
 ];
 
 function loadEnvLocal() {

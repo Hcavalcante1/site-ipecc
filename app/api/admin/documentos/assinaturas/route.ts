@@ -42,7 +42,13 @@ export async function POST(req: NextRequest) {
   if (denied || !auth) return denied!;
 
   try {
-    const body = (await req.json()) as { document_id?: string };
+    const body = (await req.json()) as {
+      document_id?: string;
+      provider_code?: string;
+      signer_email?: string;
+      signer_name?: string;
+      distribute?: boolean;
+    };
     const documentId = String(body.document_id || "").trim();
     if (!documentId) {
       return NextResponse.json(
@@ -73,10 +79,22 @@ export async function POST(req: NextRequest) {
       processoId: doc.processo_id,
       ip: meta.ip,
       userAgent: meta.user_agent,
+      providerCode: body.provider_code,
+      signerEmail: body.signer_email,
+      signerName: body.signer_name,
+      distribute: body.distribute,
     });
 
     if (error) {
-      if (tabelaAssinaturaAusente(error.message, error.code)) {
+      const msg =
+        typeof error === "object" && error && "message" in error
+          ? String((error as { message: string }).message)
+          : String(error);
+      const code =
+        typeof error === "object" && error && "code" in error
+          ? String((error as { code?: string }).code || "")
+          : "";
+      if (tabelaAssinaturaAusente(msg, code)) {
         return NextResponse.json(
           {
             ok: false,
@@ -86,10 +104,13 @@ export async function POST(req: NextRequest) {
           { status: 503 }
         );
       }
-      return NextResponse.json(
-        { ok: false, error: error.message },
-        { status: 500 }
-      );
+      const status =
+        code === "NO_PROVIDER" ||
+        code === "DOCUMENSO_MISSING" ||
+        code === "GOVBR_MISSING"
+          ? 400
+          : 500;
+      return NextResponse.json({ ok: false, error: msg }, { status });
     }
 
     return NextResponse.json({ ok: true, signature: data });

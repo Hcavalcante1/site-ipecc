@@ -17,6 +17,11 @@ type Provider = {
 export default function ConfiguracoesPage() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [configurado, setConfigurado] = useState(false);
+  const [govbrOk, setGovbrOk] = useState(false);
+  const [documensoOk, setDocumensoOk] = useState(false);
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [apiUrl, setApiUrl] = useState("");
+  const [provedorPadrao, setProvedorPadrao] = useState<string | null>(null);
   const [redirectUri, setRedirectUri] = useState("");
   const [env, setEnv] = useState("staging");
   const [aviso, setAviso] = useState("");
@@ -32,6 +37,11 @@ export default function ConfiguracoesPage() {
     }
     setProviders(json.providers || []);
     setConfigurado(Boolean(json.configurado));
+    setGovbrOk(Boolean(json.govbrConfigurado));
+    setDocumensoOk(Boolean(json.documenso?.configurado));
+    setWebhookUrl(json.documenso?.webhookUrl || "");
+    setApiUrl(json.documenso?.apiUrl || "");
+    setProvedorPadrao(json.provedorPadrao || null);
     setRedirectUri(json.redirectUri || "");
     setEnv(json.env || "staging");
     setAviso("");
@@ -67,11 +77,55 @@ export default function ConfiguracoesPage() {
 
       <div style={gdCardStyle}>
         <h2 className="admin-h2" style={{ marginTop: 0 }}>
-          gov.br (Fase 4)
+          Documenso (recomendado — ente privado)
+        </h2>
+        <p style={{ marginTop: 0 }}>
+          Status:{" "}
+          <strong>
+            {documensoOk ? "API token presente" : "não configurado"}
+          </strong>
+          {" · "}
+          Padrão atual: <strong>{provedorPadrao || "nenhum"}</strong>
+          {" · "}
+          Algum provedor pronto:{" "}
+          <strong>{configurado ? "sim" : "não"}</strong>
+        </p>
+        <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14 }}>
+          <li>
+            API URL: <code>{apiUrl || "https://app.documenso.com/api/v2"}</code>
+          </li>
+          <li>
+            Webhook (configure no Documenso): <code>{webhookUrl}</code>
+          </li>
+          <li>DOCUMENSO_API_URL</li>
+          <li>DOCUMENSO_API_TOKEN</li>
+          <li>DOCUMENSO_WEBHOOK_SECRET (opcional)</li>
+        </ul>
+        <p style={{ fontSize: 13, opacity: 0.85, marginBottom: 0 }}>
+          Self-host: veja <code>services/documenso/</code>. Open source:{" "}
+          <a
+            href="https://github.com/documenso/documenso"
+            target="_blank"
+            rel="noreferrer"
+          >
+            github.com/documenso/documenso
+          </a>
+          .
+        </p>
+      </div>
+
+      <div style={gdCardStyle}>
+        <h2 className="admin-h2" style={{ marginTop: 0 }}>
+          gov.br (somente órgãos públicos)
         </h2>
         <p style={{ marginTop: 0 }}>
           Status servidor:{" "}
-          <strong>{configurado ? "credenciais presentes" : "ausentes"}</strong>
+          <strong>{govbrOk ? "credenciais presentes" : "ausentes"}</strong>
+        </p>
+        <p style={{ fontSize: 13, opacity: 0.9 }}>
+          A API de Assinatura Avançada gov.br{" "}
+          <strong>não libera credenciais para entes privados</strong>. Use
+          Documenso no IPECC.
         </p>
         <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14 }}>
           <li>
@@ -80,48 +134,16 @@ export default function ConfiguracoesPage() {
           <li>
             Redirect URI: <code>{redirectUri}</code>
           </li>
-          <li>GOVBR_SIGNATURE_CLIENT_ID</li>
-          <li>GOVBR_SIGNATURE_CLIENT_SECRET</li>
-          <li>GOVBR_SIGNATURE_REDIRECT_URI (opcional)</li>
-          <li>
-            GOVBR_SIGNATURE_SCOPE_EXTRA (opcional; ex.: <code>govbr</code>)
-          </li>
+          <li>GOVBR_SIGNATURE_CLIENT_ID / SECRET</li>
         </ul>
-        <p style={{ fontSize: 13, opacity: 0.85 }}>
-          Credenciais:{" "}
-          <a
-            href="https://www.gov.br/governodigital/integrarprodutoid"
-            target="_blank"
-            rel="noreferrer"
-          >
-            portal de integração gov.br
-          </a>
-          . Roteiro técnico:{" "}
+        <p style={{ fontSize: 13, opacity: 0.85, marginBottom: 0 }}>
+          Manual ITI:{" "}
           <a
             href="https://manual-integracao-assinatura-eletronica.servicos.gov.br/pt-br/7.4/iniciarintegracao.html"
             target="_blank"
             rel="noreferrer"
           >
-            manual ITI v7.4
-          </a>
-          .
-        </p>
-        <p style={{ fontSize: 13, opacity: 0.85, marginBottom: 0 }}>
-          Homologação: conta Prata/Ouro em{" "}
-          <a
-            href="https://sso.staging.acesso.gov.br/"
-            target="_blank"
-            rel="noreferrer"
-          >
-            sso.staging.acesso.gov.br
-          </a>
-          ; SMS pode ser <code>12345</code>. Validar .p7s em{" "}
-          <a
-            href="https://verificador.staging.iti.br"
-            target="_blank"
-            rel="noreferrer"
-          >
-            verificador.staging.iti.br
+            roteiro v7.4
           </a>
           .
         </p>
@@ -162,8 +184,8 @@ export default function ConfiguracoesPage() {
           ))}
         </ul>
         <p style={{ marginTop: 12, fontSize: 13, opacity: 0.85 }}>
-          Futuros: icp_brasil, clicksign, autentique, docusign, zapsign,
-          adobe_sign.
+          Ativos no código: documenso, govbr. Futuros: icp_brasil, clicksign,
+          autentique, docusign, zapsign, adobe_sign.
         </p>
       </div>
     </GestaoDocumentalShell>

@@ -1,12 +1,25 @@
+import { createHash } from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { GD_STORAGE_BUCKET } from "./types";
 import { registrarLog } from "./documentsService";
+import {
+  DocumensoProvider,
+  documensoConfigurado,
+} from "./signature/DocumensoProvider";
 import {
   GovBrProvider,
   govbrConfigurado,
   govbrRedirectUriPadrao,
 } from "./signature/GovBrProvider";
 import { notificarEventoDocumental } from "./notificationsService";
+
+export type SignatureProviderCode = "documenso" | "govbr";
+
+export function resolverProviderPadrao(): SignatureProviderCode | null {
+  if (documensoConfigurado()) return "documenso";
+  if (govbrConfigurado()) return "govbr";
+  return null;
+}
 
 export const SIG_DOC_SELECT =
   "id, document_id, version_id, provider_id, provider_code, status, external_session_id, signed_storage_path, signed_hash, error_message, created_by, created_at, updated_at, deleted_at";
@@ -27,7 +40,11 @@ function tabelaAusente(message?: string, code?: string) {
   );
 }
 
-export { tabelaAusente as tabelaAssinaturaAusente, govbrConfigurado };
+export {
+  tabelaAusente as tabelaAssinaturaAusente,
+  govbrConfigurado,
+  documensoConfigurado,
+};
 
 export async function listarAssinaturas(opts?: {
   processoIds?: string[] | "todos";
@@ -82,12 +99,56 @@ export async function criarAssinaturaDocumento(opts: {
   processoId?: string | null;
   ip?: string | null;
   userAgent?: string | null;
+  providerCode?: SignatureProviderCode | string | null;
+  signerEmail?: string | null;
+  signerName?: string | null;
+  /** Se true (padrão Documenso), cria envelope e envia e-mail ao signatário. */
+  distribute?: boolean;
 }) {
   const admin = getSupabaseAdmin();
+  const requested = String(opts.providerCode || "").trim().toLowerCase();
+  const code =
+    (requested === "documenso" || requested === "govbr"
+      ? (requested as SignatureProviderCode)
+      : null) || resolverProviderPadrao();
+
+  if (!code) {
+    return {
+      data: null,
+      error: {
+        message:
+          "Nenhum provedor de assinatura configurado. Defina DOCUMENSO_API_TOKEN (recomendado) ou credenciais GOVBR_SIGNATURE_* (só órgãos públicos).",
+        code: "NO_PROVIDER",
+      },
+    };
+  }
+
+  if (code === "documenso" && !documensoConfigurado()) {
+    return {
+      data: null,
+      error: {
+        message:
+          "Documenso não configurado. Defina DOCUMENSO_API_URL e DOCUMENSO_API_TOKEN no servidor.",
+        code: "DOCUMENSO_MISSING",
+      },
+    };
+  }
+
+  if (code === "govbr" && !govbrConfigurado()) {
+    return {
+      data: null,
+      error: {
+        message:
+          "gov.br não configurado. Esse provedor é só para órgãos públicos com credenciais ITI.",
+        code: "GOVBR_MISSING",
+      },
+    };
+  }
+
   const provider = await admin
     .from("gd_signature_providers")
     .select("id")
-    .eq("code", "govbr")
+    .eq("code", code)
     .maybeSingle();
 
   const { data, error } = await admin
@@ -96,37 +157,354 @@ export async function criarAssinaturaDocumento(opts: {
       document_id: opts.documentId,
       version_id: opts.versionId || null,
       provider_id: provider.data?.id || null,
-      provider_code: "govbr",
+      provider_code: code,
       status: "pending",
       created_by: opts.userId,
     })
     .select(SIG_DOC_SELECT)
     .single();
 
-  if (!error && data) {
-    await registrarLog({
-      processo_id: opts.processoId,
+  if (error || !data) {
+    return { data, error };
+  }
+
+  const signerEmail = String(opts.signerEmail || "").trim().toLowerCase();
+  const signerName = String(opts.signerName || signerEmail || "").trim();
+
+  if (signerEmail) {
+    await admin.from("gd_signature_signers").insert({
+      signature_document_id: data.id,
       document_id: opts.documentId,
-      action: "assinatura_criada",
-      detail: { signature_document_id: data.id },
+      name: signerName || signerEmail,
+      email: signerEmail,
+      mode: "sequential",
+      required: true,
+      sort_order: 0,
+      status: "pending",
+      created_by: opts.userId,
+    });
+  }
+
+  await registrarLog({
+    processo_id: opts.processoId,
+    document_id: opts.documentId,
+    action: "assinatura_criada",
+    detail: {
+      signature_document_id: data.id,
+      provider_code: code,
+    },
+    actor_id: opts.userId,
+    actor_email: opts.actorEmail,
+    ip: opts.ip,
+    user_agent: opts.userAgent,
+  });
+  await notificarEventoDocumental({
+    event_type: "assinatura_criada",
+    title: "Pedido de assinatura criado",
+    body: `Documento encaminhado para assinatura (${code}).`,
+    document_id: opts.documentId,
+    processo_id: opts.processoId,
+    user_id: opts.userId,
+    link_path: `/admin/documentos/assinaturas`,
+    created_by: opts.userId,
+  });
+
+  const shouldDistribute =
+    code === "documenso" &&
+    opts.distribute !== false &&
+    Boolean(signerEmail);
+
+  if (shouldDistribute) {
+    const sent = await enviarParaAssinaturaDocumenso({
+      signatureDocumentId: data.id,
+      userId: opts.userId,
+      actorEmail: opts.actorEmail,
+      ip: opts.ip,
+      userAgent: opts.userAgent,
+      signerEmail,
+      signerName: signerName || signerEmail,
+    });
+    if (sent.error) {
+      return { data: sent.data || data, error: { message: sent.error } };
+    }
+    return { data: sent.data || data, error: null };
+  }
+
+  return { data, error: null };
+}
+
+export async function enviarParaAssinaturaDocumenso(opts: {
+  signatureDocumentId: string;
+  userId: string;
+  actorEmail?: string | null;
+  ip?: string | null;
+  userAgent?: string | null;
+  signerEmail?: string | null;
+  signerName?: string | null;
+}) {
+  if (!documensoConfigurado()) {
+    return {
+      error:
+        "Documenso não configurado. Defina DOCUMENSO_API_TOKEN no servidor.",
+    };
+  }
+
+  const admin = getSupabaseAdmin();
+  const { data: sig } = await admin
+    .from("gd_signature_documents")
+    .select(SIG_DOC_SELECT)
+    .eq("id", opts.signatureDocumentId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (!sig) return { error: "Pedido de assinatura não encontrado." };
+  if (sig.provider_code !== "documenso") {
+    return { error: "Este pedido não usa o provedor Documenso." };
+  }
+
+  let signerEmail = String(opts.signerEmail || "").trim().toLowerCase();
+  let signerName = String(opts.signerName || "").trim();
+
+  if (!signerEmail) {
+    const { data: signers } = await admin
+      .from("gd_signature_signers")
+      .select("email, name")
+      .eq("signature_document_id", sig.id)
+      .is("deleted_at", null)
+      .order("sort_order")
+      .limit(1);
+    signerEmail = String(signers?.[0]?.email || "").trim().toLowerCase();
+    signerName = String(signers?.[0]?.name || signerEmail).trim();
+  }
+
+  if (!signerEmail) {
+    return {
+      error: "Informe o e-mail do signatário para enviar via Documenso.",
+    };
+  }
+
+  const { data: doc } = await admin
+    .from("gd_documents")
+    .select(
+      "id, processo_id, title, storage_path, file_name, mime_type, status"
+    )
+    .eq("id", sig.document_id)
+    .maybeSingle();
+
+  if (!doc?.storage_path) {
+    return { error: "Documento sem arquivo para assinar." };
+  }
+
+  const downloaded = await admin.storage
+    .from(GD_STORAGE_BUCKET)
+    .download(doc.storage_path);
+  if (downloaded.error || !downloaded.data) {
+    return {
+      error:
+        downloaded.error?.message ||
+        "Não foi possível baixar o PDF do Storage.",
+    };
+  }
+
+  const pdfBytes = new Uint8Array(await downloaded.data.arrayBuffer());
+  const fileName =
+    doc.file_name && /\.pdf$/i.test(doc.file_name)
+      ? doc.file_name
+      : `${(doc.title || "documento").replace(/[^\w.-]+/g, "_")}.pdf`;
+
+  await admin
+    .from("gd_signature_documents")
+    .update({ status: "signing", updated_at: new Date().toISOString() })
+    .eq("id", sig.id);
+
+  try {
+    const provider = new DocumensoProvider();
+    const envelope = await provider.createAndDistribute({
+      title: doc.title || "Documento IPECC",
+      pdfBytes,
+      fileName,
+      externalId: sig.id,
+      recipients: [
+        {
+          email: signerEmail,
+          name: signerName || signerEmail,
+          role: "SIGNER",
+        },
+      ],
+    });
+
+    const { data: updated, error } = await admin
+      .from("gd_signature_documents")
+      .update({
+        status: "pending",
+        external_session_id: envelope.id,
+        error_message: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", sig.id)
+      .select(SIG_DOC_SELECT)
+      .single();
+
+    if (error) throw new Error(error.message);
+
+    await admin.from("gd_signature_events").insert({
+      signature_document_id: sig.id,
+      event_type: "documenso_enviado",
+      payload: { envelope_id: envelope.id, signer_email: signerEmail },
+      ip: opts.ip,
+      user_agent: opts.userAgent,
+      created_by: opts.userId,
+    });
+
+    await registrarLog({
+      processo_id: doc.processo_id,
+      document_id: doc.id,
+      action: "assinatura_enviada_documenso",
+      detail: {
+        signature_document_id: sig.id,
+        envelope_id: envelope.id,
+      },
       actor_id: opts.userId,
       actor_email: opts.actorEmail,
       ip: opts.ip,
       user_agent: opts.userAgent,
     });
+
     await notificarEventoDocumental({
-      event_type: "assinatura_criada",
-      title: "Pedido de assinatura criado",
-      body: "Um documento foi encaminhado para assinatura digital.",
-      document_id: opts.documentId,
-      processo_id: opts.processoId,
+      event_type: "assinatura_enviada",
+      title: `Assinatura enviada: ${doc.title}`,
+      body: `Envelope Documenso enviado para ${signerEmail}.`,
+      document_id: doc.id,
+      processo_id: doc.processo_id,
       user_id: opts.userId,
       link_path: `/admin/documentos/assinaturas`,
       created_by: opts.userId,
     });
+
+    return { data: updated, error: null as string | null };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    await admin
+      .from("gd_signature_documents")
+      .update({
+        status: "failed",
+        error_message: msg,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", sig.id);
+    return { error: msg };
+  }
+}
+
+export async function concluirAssinaturaDocumensoWebhook(opts: {
+  envelopeId: string;
+  event?: string | null;
+}) {
+  const admin = getSupabaseAdmin();
+  let { data: sig } = await admin
+    .from("gd_signature_documents")
+    .select(SIG_DOC_SELECT)
+    .eq("external_session_id", opts.envelopeId)
+    .eq("provider_code", "documenso")
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (!sig) {
+    const byId = await admin
+      .from("gd_signature_documents")
+      .select(SIG_DOC_SELECT)
+      .eq("id", opts.envelopeId)
+      .eq("provider_code", "documenso")
+      .is("deleted_at", null)
+      .maybeSingle();
+    sig = byId.data;
   }
 
-  return { data, error };
+  if (!sig) {
+    return { error: "Assinatura local não encontrada para este envelope." };
+  }
+
+  const envelopeId = sig.external_session_id || opts.envelopeId;
+
+  if (sig.status === "signed" && sig.signed_storage_path) {
+    return { data: sig, error: null };
+  }
+
+  const { data: doc } = await admin
+    .from("gd_documents")
+    .select("id, processo_id, title")
+    .eq("id", sig.document_id)
+    .maybeSingle();
+
+  try {
+    const provider = new DocumensoProvider();
+    const pdf = await provider.downloadSignedPdf(envelopeId);
+    const signedHash = createHash("sha256").update(pdf).digest("hex");
+    const signedPath = `${doc?.processo_id || "geral"}/${sig.document_id}/assinado-documenso-${Date.now()}.pdf`;
+
+    const upload = await admin.storage
+      .from(GD_STORAGE_BUCKET)
+      .upload(signedPath, pdf, {
+        contentType: "application/pdf",
+        upsert: false,
+      });
+    if (upload.error) throw new Error(upload.error.message);
+
+    const { data: updated, error } = await admin
+      .from("gd_signature_documents")
+      .update({
+        status: "signed",
+        signed_storage_path: signedPath,
+        signed_hash: signedHash,
+        error_message: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", sig.id)
+      .select(SIG_DOC_SELECT)
+      .single();
+    if (error) throw new Error(error.message);
+
+    await admin
+      .from("gd_documents")
+      .update({ status: "signed", updated_at: new Date().toISOString() })
+      .eq("id", sig.document_id);
+
+    await admin.from("gd_signature_events").insert({
+      signature_document_id: sig.id,
+      event_type: "signed",
+      payload: {
+        provider: "documenso",
+        envelope_id: envelopeId,
+        webhook_event: opts.event,
+        path: signedPath,
+      },
+      created_by: sig.created_by,
+    });
+
+    await notificarEventoDocumental({
+      event_type: "documento_assinado",
+      title: `Documento assinado: ${doc?.title || "Documento"}`,
+      body: "A assinatura Documenso foi concluída com sucesso.",
+      document_id: sig.document_id,
+      processo_id: doc?.processo_id,
+      user_id: sig.created_by,
+      link_path: `/admin/documentos/documentos/${sig.document_id}`,
+      created_by: sig.created_by,
+    });
+
+    return { data: updated, error: null };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    await admin
+      .from("gd_signature_documents")
+      .update({
+        status: "failed",
+        error_message: msg,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", sig.id);
+    return { error: msg };
+  }
 }
 
 export async function iniciarAutorizeGovBr(opts: {
@@ -299,8 +677,7 @@ export async function executarAssinaturaComToken(opts: {
           "Não foi possível baixar o arquivo para calcular o hash.",
       };
     }
-    const { createHash } = await import("crypto");
-    const buf = Buffer.from(await downloaded.data.arrayBuffer());
+      const buf = Buffer.from(await downloaded.data.arrayBuffer());
     fileHash = createHash("sha256").update(buf).digest("hex");
     await admin
       .from("gd_documents")
@@ -455,13 +832,29 @@ export async function providerStatusResumo() {
     .is("deleted_at", null)
     .order("code");
 
+  const site =
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "") ||
+    "https://www.ipecc.org.br";
+
   return {
-    configurado: govbrConfigurado(),
+    configurado: documensoConfigurado() || govbrConfigurado(),
+    provedorPadrao: resolverProviderPadrao(),
+    documenso: {
+      configurado: documensoConfigurado(),
+      apiUrl: process.env.DOCUMENSO_API_URL || null,
+      webhookUrl: `${site}/api/webhooks/documenso`,
+    },
     redirectUri: govbrRedirectUriPadrao(),
     env: process.env.GOVBR_SIGNATURE_ENV || "staging",
+    govbrConfigurado: govbrConfigurado(),
     providers: (data || []).map((p) => ({
       ...p,
-      servidor_pronto: p.code === "govbr" ? govbrConfigurado() : false,
+      servidor_pronto:
+        p.code === "documenso"
+          ? documensoConfigurado()
+          : p.code === "govbr"
+            ? govbrConfigurado()
+            : false,
     })),
   };
 }

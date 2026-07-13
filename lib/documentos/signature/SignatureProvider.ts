@@ -1,6 +1,6 @@
 /**
  * Interface comum para provedores de assinatura eletrônica.
- * Implementações concretas: GovBr (Fase 4), ICP Brasil, Clicksign, etc.
+ * Implementações: Documenso (padrão ente privado), GovBr (órgãos públicos), futuros ICP/Clicksign etc.
  */
 
 export type SignatureAuthorizeInput = {

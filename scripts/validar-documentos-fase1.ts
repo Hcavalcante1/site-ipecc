@@ -149,7 +149,15 @@ async function main() {
   assert("audit ua", meta.user_agent === "IPECC-Test/1.0");
 
   assert("provider govbr", listSignatureProviderCodes().includes("govbr"));
+  assert(
+    "provider documenso",
+    listSignatureProviderCodes().includes("documenso")
+  );
   assert("provider code", getSignatureProvider("govbr").code === "govbr");
+  assert(
+    "provider documenso code",
+    getSignatureProvider("documenso").code === "documenso"
+  );
   assert(
     "nav notificacoes",
     NAV_GESTAO_DOCUMENTAL.some((i) => i.href.includes("/notificacoes"))
@@ -158,6 +166,22 @@ async function main() {
   assert("sql fase1", existe("docs", "sql", "gestao-documental-fase-1.sql"));
   assert("sql fase3", existe("docs", "sql", "gestao-documental-fase-3.sql"));
   assert("sql fase4-6", existe("docs", "sql", "gestao-documental-fase-4-6.sql"));
+  assert(
+    "sql documenso",
+    existe("docs", "sql", "gestao-documental-documenso.sql")
+  );
+  assert(
+    "documenso provider file",
+    existe("lib", "documentos", "signature", "DocumensoProvider.ts")
+  );
+  assert(
+    "webhook documenso",
+    existe("app", "api", "webhooks", "documenso", "route.ts")
+  );
+  assert(
+    "documenso compose",
+    existe("services", "documenso", "docker-compose.yml")
+  );
   assert("docs fase3", existe("docs", "gestao-documental-fase-3.md"));
   assert("docs fase4-6", existe("docs", "gestao-documental-fase-4-6.md"));
   assert("fluxos page", existe("app", "admin", "documentos", "fluxos", "page.tsx"));

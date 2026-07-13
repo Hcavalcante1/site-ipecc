@@ -90,7 +90,12 @@ export {
   govbrRedirectUriPadrao,
 } from "./signature/GovBrProvider";
 export {
+  documensoConfigurado,
+  documensoApiBaseUrl,
+} from "./signature/DocumensoProvider";
+export {
   criarAssinaturaDocumento,
+  enviarParaAssinaturaDocumenso,
   listarAssinaturas,
   listarLotes,
   listarSignatarios,
