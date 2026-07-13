@@ -13,6 +13,7 @@ import {
   BATCH_SELECT,
   listarItensLote,
   listarLotes,
+  resolverProviderPadrao,
   tabelaAssinaturaAusente,
 } from "@/lib/documentos/signatureService";
 import { notificarEventoDocumental } from "@/lib/documentos/notificationsService";
@@ -114,13 +115,20 @@ export async function POST(req: NextRequest) {
       ? body.document_ids.filter(Boolean)
       : [];
 
+    const providerCode =
+      String(body.provider_code || "").trim().toLowerCase() === "documenso"
+        ? "documento"
+        : String(body.provider_code || "").trim() ||
+          resolverProviderPadrao() ||
+          "documento";
+
     const admin = getSupabaseAdmin();
     const { data: batch, error } = await admin
       .from("gd_signature_batches")
       .insert({
         title,
         processo_id: processoId,
-        provider_code: body.provider_code || "govbr",
+        provider_code: providerCode,
         status: "draft",
         progress_done: 0,
         progress_total: documentIds.length,

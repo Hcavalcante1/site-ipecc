@@ -104,9 +104,9 @@ async function validarSupabaseRemoto() {
   const provider = await admin
     .from("gd_signature_providers")
     .select("code")
-    .eq("code", "govbr")
+    .eq("code", "documento")
     .maybeSingle();
-  assert("provider govbr seed", provider.data?.code === "govbr");
+  assert("provider documento seed", provider.data?.code === "documento");
 }
 
 async function main() {
@@ -223,8 +223,30 @@ async function main() {
     )
   );
   assert(
-    "api lotes",
-    existe("app", "api", "admin", "documentos", "lotes", "route.ts")
+    "api enviar lote",
+    existe(
+      "app",
+      "api",
+      "admin",
+      "documentos",
+      "lotes",
+      "[id]",
+      "enviar",
+      "route.ts"
+    )
+  );
+  assert(
+    "api enviar documento",
+    existe(
+      "app",
+      "api",
+      "admin",
+      "documentos",
+      "assinaturas",
+      "[id]",
+      "enviar-documenso",
+      "route.ts"
+    )
   );
   assert(
     "api signatarios",

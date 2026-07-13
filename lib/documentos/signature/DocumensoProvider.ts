@@ -16,14 +16,20 @@ import type {
 } from "./SignatureProvider";
 
 export function documensoApiBaseUrl(): string {
-  const raw =
-    process.env.DOCUMENSO_API_URL?.trim() ||
-    "https://app.documenso.com/api/v2";
+  const raw = process.env.DOCUMENSO_API_URL?.trim();
+  if (!raw) {
+    throw new Error(
+      "Assinatura Documento: defina DOCUMENSO_API_URL apontando para a sua instância (self-host)."
+    );
+  }
   return raw.replace(/\/+$/, "");
 }
 
 export function documensoConfigurado(): boolean {
-  return Boolean(process.env.DOCUMENSO_API_TOKEN?.trim());
+  return Boolean(
+    process.env.DOCUMENSO_API_TOKEN?.trim() &&
+      process.env.DOCUMENSO_API_URL?.trim()
+  );
 }
 
 function apiToken(): string {

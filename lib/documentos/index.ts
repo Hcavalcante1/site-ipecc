@@ -96,6 +96,7 @@ export {
 export {
   criarAssinaturaDocumento,
   enviarParaAssinaturaDocumenso,
+  enviarLoteParaAssinaturaDocumento,
   listarAssinaturas,
   listarLotes,
   listarSignatarios,

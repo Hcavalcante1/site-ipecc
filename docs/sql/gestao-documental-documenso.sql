@@ -44,5 +44,11 @@ UPDATE public.gd_signature_providers
 SET ativo = false, updated_at = now()
 WHERE code IN ('govbr', 'documenso');
 
+ALTER TABLE public.gd_signature_documents
+  ALTER COLUMN provider_code SET DEFAULT 'documento';
+
+ALTER TABLE public.gd_signature_batches
+  ALTER COLUMN provider_code SET DEFAULT 'documento';
+
 COMMENT ON TABLE public.gd_signature_providers IS
   'Provedores: documento (padrão ente privado), govbr (órgãos públicos), demais futuros.';

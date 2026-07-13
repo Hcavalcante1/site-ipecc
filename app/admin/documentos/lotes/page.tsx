@@ -29,6 +29,8 @@ export default function LotesPage() {
   const [items, setItems] = useState<BatchItem[]>([]);
   const [title, setTitle] = useState("");
   const [docIds, setDocIds] = useState("");
+  const [signerEmail, setSignerEmail] = useState("");
+  const [signerName, setSignerName] = useState("");
   const [aviso, setAviso] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -120,6 +122,37 @@ export default function LotesPage() {
     carregar();
   }
 
+  async function enviarLoteDocumento() {
+    if (!selectedId) return;
+    if (!signerEmail.trim()) {
+      setAviso("Informe o e-mail do signatário para enviar o lote.");
+      return;
+    }
+    const res = await fetch(
+      `/api/admin/documentos/lotes/${selectedId}/enviar`,
+      {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          signer_email: signerEmail.trim(),
+          signer_name: signerName.trim() || undefined,
+        }),
+      }
+    );
+    const json = await res.json();
+    if (!res.ok) {
+      setAviso(json.error || "Erro ao enviar lote.");
+      return;
+    }
+    setAviso(
+      json.aviso ||
+        `Lote enviado: ${json.result?.done || 0}/${json.result?.total || 0}.`
+    );
+    await carregar();
+    await carregarDetalhe(selectedId);
+  }
+
   async function autorizarLote() {
     if (!selectedId) return;
     const res = await fetch("/api/admin/documentos/assinaturas/authorize", {
@@ -142,7 +175,7 @@ export default function LotesPage() {
   return (
     <GestaoDocumentalShell
       title="Lotes"
-      description="Assinatura em lote com progresso, pausa e retomada (scope signature_session)."
+      description="Assinatura em lote via Documento (padrão) ou sessão gov.br (órgãos públicos)."
     >
       {aviso ? (
         <div style={{ ...gdCardStyle, borderColor: "#f59e0b" }}>{aviso}</div>
@@ -164,6 +197,18 @@ export default function LotesPage() {
             placeholder="IDs dos documentos (separados por vírgula)"
             value={docIds}
             onChange={(e) => setDocIds(e.target.value)}
+          />
+          <input
+            style={gdInputStyle}
+            placeholder="E-mail do signatário (para envio em lote)"
+            value={signerEmail}
+            onChange={(e) => setSignerEmail(e.target.value)}
+          />
+          <input
+            style={gdInputStyle}
+            placeholder="Nome do signatário (opcional)"
+            value={signerName}
+            onChange={(e) => setSignerName(e.target.value)}
           />
           <button type="button" style={gdBtnStyle} onClick={criar}>
             Criar lote
@@ -236,6 +281,13 @@ export default function LotesPage() {
             <button
               type="button"
               style={{ ...gdBtnStyle, background: "#0f766e" }}
+              onClick={enviarLoteDocumento}
+            >
+              Enviar lote (Documento)
+            </button>
+            <button
+              type="button"
+              style={{ ...gdBtnStyle, background: "#334155" }}
               onClick={autorizarLote}
             >
               Autorizar sessão gov.br

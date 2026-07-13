@@ -92,27 +92,20 @@ export default function ConfiguracoesPage() {
         </p>
         <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14 }}>
           <li>
-            API URL: <code>{apiUrl || "https://app.documenso.com/api/v2"}</code>
+            API URL:{" "}
+            <code>{apiUrl || "(defina DOCUMENSO_API_URL da sua instância)"}</code>
           </li>
           <li>
             Webhook (configure no motor de assinatura):{" "}
             <code>{webhookUrl}</code>
           </li>
-          <li>DOCUMENSO_API_URL</li>
-          <li>DOCUMENSO_API_TOKEN</li>
+          <li>DOCUMENSO_API_URL (obrigatório)</li>
+          <li>DOCUMENSO_API_TOKEN (obrigatório)</li>
           <li>DOCUMENSO_WEBHOOK_SECRET (opcional)</li>
         </ul>
         <p style={{ fontSize: 13, opacity: 0.85, marginBottom: 0 }}>
-          Motor open source (self-host): pasta{" "}
-          <code>services/documenso/</code> ·{" "}
-          <a
-            href="https://github.com/documenso/documenso"
-            target="_blank"
-            rel="noreferrer"
-          >
-            GitHub
-          </a>
-          .
+          Suba o motor self-host: <code>services/documenso/</code> (veja o
+          README da pasta).
         </p>
       </div>
 

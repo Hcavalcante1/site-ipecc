@@ -433,6 +433,14 @@ export async function concluirAssinaturaDocumensoWebhook(opts: {
   const envelopeId = sig.external_session_id || opts.envelopeId;
 
   if (sig.status === "signed" && sig.signed_storage_path) {
+    await import("@/lib/documentos-oficiais")
+      .then((m) =>
+        m.publicarEmissaoAposAssinatura({
+          gdDocumentId: sig.document_id,
+          signedStoragePath: sig.signed_storage_path as string,
+        })
+      )
+      .catch(() => null);
     return { data: sig, error: null };
   }
 
@@ -497,6 +505,15 @@ export async function concluirAssinaturaDocumensoWebhook(opts: {
       link_path: `/admin/documentos/documentos/${sig.document_id}`,
       created_by: sig.created_by,
     });
+
+    await import("@/lib/documentos-oficiais")
+      .then((m) =>
+        m.publicarEmissaoAposAssinatura({
+          gdDocumentId: sig.document_id,
+          signedStoragePath: signedPath,
+        })
+      )
+      .catch(() => null);
 
     return { data: updated, error: null };
   } catch (err) {
@@ -785,6 +802,154 @@ export async function executarAssinaturaComToken(opts: {
       .eq("id", sig.id);
     return { error: msg };
   }
+}
+
+/**
+ * Envia cada item do lote via provedor Documento (um envelope por PDF).
+ */
+export async function enviarLoteParaAssinaturaDocumento(opts: {
+  batchId: string;
+  userId: string;
+  actorEmail?: string | null;
+  ip?: string | null;
+  userAgent?: string | null;
+  signerEmail: string;
+  signerName?: string | null;
+}) {
+  const signerEmail = String(opts.signerEmail || "").trim().toLowerCase();
+  if (!signerEmail) {
+    return { error: "Informe o e-mail do signatário do lote." };
+  }
+  if (!documensoConfigurado()) {
+    return {
+      error:
+        "Assinatura Documento não configurada. Defina DOCUMENSO_API_URL e DOCUMENSO_API_TOKEN.",
+    };
+  }
+
+  const admin = getSupabaseAdmin();
+  const { data: batch } = await admin
+    .from("gd_signature_batches")
+    .select(BATCH_SELECT)
+    .eq("id", opts.batchId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (!batch) return { error: "Lote não encontrado." };
+  if (!isDocumentoProvider(batch.provider_code)) {
+    await admin
+      .from("gd_signature_batches")
+      .update({
+        provider_code: "documento",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", batch.id);
+  }
+
+  const { data: items } = await listarItensLote(opts.batchId);
+  if (!items?.length) {
+    return { error: "Lote sem documentos." };
+  }
+
+  await admin
+    .from("gd_signature_batches")
+    .update({ status: "running", updated_at: new Date().toISOString() })
+    .eq("id", batch.id);
+
+  let done = 0;
+  const errors: string[] = [];
+
+  for (const item of items) {
+    try {
+      let sigId = item.signature_document_id as string | null;
+      if (!sigId) {
+        const created = await criarAssinaturaDocumento({
+          documentId: item.document_id,
+          userId: opts.userId,
+          actorEmail: opts.actorEmail,
+          processoId: batch.processo_id,
+          ip: opts.ip,
+          userAgent: opts.userAgent,
+          providerCode: "documento",
+          signerEmail,
+          signerName: opts.signerName,
+          distribute: false,
+        });
+        if (created.error || !created.data) {
+          const msg =
+            typeof created.error === "object" &&
+            created.error &&
+            "message" in created.error
+              ? String((created.error as { message: string }).message)
+              : "Falha ao criar pedido.";
+          throw new Error(msg);
+        }
+        sigId = created.data.id;
+        await admin
+          .from("gd_signature_batch_items")
+          .update({
+            signature_document_id: sigId,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", item.id);
+      }
+
+      const sent = await enviarParaAssinaturaDocumenso({
+        signatureDocumentId: sigId!,
+        userId: opts.userId,
+        actorEmail: opts.actorEmail,
+        ip: opts.ip,
+        userAgent: opts.userAgent,
+        signerEmail,
+        signerName: opts.signerName,
+      });
+      if (sent.error) throw new Error(sent.error);
+
+      await admin
+        .from("gd_signature_batch_items")
+        .update({
+          status: "running",
+          error_message: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", item.id);
+      done += 1;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      errors.push(`${item.document_id}: ${msg}`);
+      await admin
+        .from("gd_signature_batch_items")
+        .update({
+          status: "failed",
+          error_message: msg,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", item.id);
+    }
+  }
+
+  const status =
+    done === items.length
+      ? "completed"
+      : done > 0
+        ? "running"
+        : "failed";
+
+  await admin
+    .from("gd_signature_batches")
+    .update({
+      status,
+      progress_done: done,
+      progress_total: items.length,
+      error_message: errors.length ? errors.slice(0, 5).join(" | ") : null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", batch.id);
+
+  return {
+    data: { done, total: items.length, errors },
+    error: done === 0 ? errors[0] || "Nenhum documento enviado." : null,
+  };
 }
 
 export async function listarLotes(processoIds: string[] | "todos") {
