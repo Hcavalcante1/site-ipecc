@@ -1,3 +1,4 @@
+# Exemplo legado — use docker-compose.yml na mesma pasta.
 services:
   digital-publisher:
     build: .
@@ -5,6 +6,7 @@ services:
     environment:
       DIGITAL_BROWSER_STORAGE_DIR: /app/.browser-profiles
       DIGITAL_BROWSER_HEADLESS: "true"
+      DIGITAL_BROWSER_CHANNEL: chromium
     ports:
       - "8791:8791"
     volumes:

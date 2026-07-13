@@ -55,17 +55,21 @@ Se a Meta ainda bloquear: use o Instagram Graph (token) como contingência, ou f
 
 Post individual: checkbox dry-run na fila ou API `publish-now`.
 
-## Docker (VPS / máquina dedicada)
+## Docker / VPS 24h
+
+Guia completo: [`docs/DIGITAL-PUBLISHER-VPS.md`](../../docs/DIGITAL-PUBLISHER-VPS.md)
 
 ```bash
+# Na raiz do projeto (gera .env do worker a partir do .env.local)
+node scripts/gerar-env-digital-publisher-vps.cjs
+
 cd services/digital-publisher
-cp .env.example .env
-# DIGITAL_PUBLISH_DRY_RUN=false para publicação real
-docker compose -f docker-compose.example.yml up -d --build
-curl http://localhost:8791/   # health JSON
+docker compose up -d --build
+curl http://127.0.0.1:8791/
 ```
 
-**Importante:** Vercel **não** roda Playwright. O worker fica fora (Docker, VPS ou PC local).
+**Importante:** Vercel **não** roda Playwright. O worker fica no VPS (ou PC).  
+Login Meta: preferir no PC e copiar `data/browser-profiles` para o VPS.
 
 ## Health
 

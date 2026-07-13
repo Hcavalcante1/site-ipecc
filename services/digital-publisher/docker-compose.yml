@@ -1,0 +1,41 @@
+# Produção — worker Digital IPECC (VPS 24h)
+# Uso:
+#   node scripts/gerar-env-digital-publisher-vps.cjs   # na raiz do repo
+#   cd services/digital-publisher && docker compose up -d --build
+#   curl http://127.0.0.1:8791/
+# Guia: docs/DIGITAL-PUBLISHER-VPS.md
+
+services:
+  digital-publisher:
+    build: .
+    container_name: ipecc-digital-publisher
+    env_file: .env
+    environment:
+      DIGITAL_WORKER_ID: worker-vps
+      DIGITAL_BROWSER_STORAGE_DIR: /app/.browser-profiles
+      DIGITAL_BROWSER_HEADLESS: "true"
+      DIGITAL_BROWSER_CHANNEL: chromium
+      PORT: "8791"
+    ports:
+      - "8791:8791"
+    volumes:
+      # Fácil copiar sessões do PC → VPS (./data/browser-profiles/chrome/{id})
+      - ./data/browser-profiles:/app/.browser-profiles
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8791/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

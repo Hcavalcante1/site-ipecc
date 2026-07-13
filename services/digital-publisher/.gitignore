@@ -1,0 +1,8 @@
+# Env e sessões locais (nunca versionar)
+.env
+.env.local
+data/
+.browser-profiles/
+node_modules/
+dist/
+*.log
