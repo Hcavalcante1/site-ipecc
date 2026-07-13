@@ -59,7 +59,8 @@ function profileDir(cfg: WorkerConfig, accountId: string) {
   const base =
     process.env.DIGITAL_BROWSER_STORAGE_DIR ||
     path.join(process.cwd(), ".browser-profiles");
-  return path.join(base, accountId);
+  // Perfil separado do Chromium bundlado — evita conflito com Chrome do sistema
+  return path.join(base, "chrome", accountId);
 }
 
 function clearChromeLocks(profile: string) {
@@ -81,18 +82,21 @@ async function clearPlatformAuthCookies(
   context: BrowserContext,
   platform: string
 ) {
+  // Só sessão — mantém cookies de dispositivo (datr/mid) para a Meta não tratar como robô novo
   const cookies = await context.cookies();
   const dropNames =
     platform === "facebook"
-      ? new Set(["c_user", "xs", "fr", "datr", "sb"])
+      ? new Set(["c_user", "xs"])
       : platform === "instagram"
-        ? new Set(["sessionid", "ds_user_id", "csrftoken", "mid"])
+        ? new Set(["sessionid", "ds_user_id"])
         : platform === "linkedin"
-          ? new Set(["li_at", "JSESSIONID"])
+          ? new Set(["li_at"])
           : platform === "tiktok"
             ? new Set(["sessionid", "sid_tt"])
-            : new Set(["SID", "SSID", "SAPISID", "HSID"]);
+            : new Set(["SID", "SSID", "SAPISID"]);
 
+  const toDrop = cookies.filter((c) => dropNames.has(c.name));
+  if (!toDrop.length) return;
   const keep = cookies.filter((c) => !dropNames.has(c.name));
   await context.clearCookies();
   if (keep.length) {
@@ -103,18 +107,51 @@ async function clearPlatformAuthCookies(
 async function launchConnectBrowser(profile: string): Promise<BrowserContext> {
   clearChromeLocks(profile);
   fs.mkdirSync(profile, { recursive: true });
-  return chromium.launchPersistentContext(profile, {
+
+  // Preferir Chrome instalado no Windows (Meta bloqueia Chromium do Playwright)
+  const useSystemChrome =
+    process.env.DIGITAL_BROWSER_CHANNEL !== "chromium" &&
+    (process.env.DIGITAL_BROWSER_CHANNEL === "chrome" ||
+      fs.existsSync(
+        "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+      ) ||
+      fs.existsSync(
+        path.join(
+          process.env.LOCALAPPDATA || "",
+          "Google",
+          "Chrome",
+          "Application",
+          "chrome.exe"
+        )
+      ));
+
+  const context = await chromium.launchPersistentContext(profile, {
     headless: false,
-    viewport: { width: 1280, height: 900 },
+    channel: useSystemChrome ? "chrome" : undefined,
+    viewport: { width: 1366, height: 768 },
+    locale: "pt-BR",
+    timezoneId: "America/Sao_Paulo",
+    colorScheme: "light",
     args: [
       "--disable-dev-shm-usage",
       "--no-first-run",
       "--no-default-browser-check",
       "--disable-session-crashed-bubble",
       "--hide-crash-restore-bubble",
+      "--disable-blink-features=AutomationControlled",
     ],
     ignoreDefaultArgs: ["--enable-automation"],
   });
+
+  await context.addInitScript(`
+    Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+    window.chrome = window.chrome || { runtime: {} };
+  `);
+
+  console.log(
+    `[digital-publisher] Navegador: ${useSystemChrome ? "Chrome do sistema" : "Chromium Playwright"}`
+  );
+  return context;
 }
 
 /** Prova real de sessão: cookies de autenticação (não perfil público). */

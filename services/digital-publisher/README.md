@@ -40,9 +40,11 @@ node scripts/probe-digital-readiness.cjs
 ## Conectar conta (login manual)
 
 1. No admin `/admin/digital` → Perfis → **Conectar (browser)**
-2. Com o worker rodando (`npm run dev`), abre um **Chromium visível**
-3. Faça login na rede (Instagram etc.) — **não envie senha ao IPECC**
-4. Ao detectar sessão válida, status vira `connected`
+2. O worker abre o **Chrome instalado no PC** (não o Chromium do Playwright — a Meta bloqueia)
+3. Faça login na rede — **não envie senha ao IPECC**
+4. Ao detectar cookie de sessão, status vira `connected`
+
+Se a Meta ainda bloquear: use o Instagram Graph (token) como contingência, ou faça login no Chrome normal uma vez e tente de novo no Conectar.
 
 ## Dry-run vs publicação real
 
