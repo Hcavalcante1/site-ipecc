@@ -267,11 +267,16 @@ export default function DigitalAdminPage() {
     setBusy(false);
   }
 
-  /** Conectar / ativar automação browser (sem senha; sessão no worker). */
+  /** Conectar / ativar / verificar sessão (sem senha; sessão no worker). */
   async function atualizarAutomacaoConta(
     account: DigitalAccount,
     opts: {
-      action: "enable" | "disable" | "request_connect" | "mark_disconnected";
+      action:
+        | "enable"
+        | "disable"
+        | "request_connect"
+        | "mark_disconnected"
+        | "verify_session";
       automation_strategy?: string;
     }
   ) {
@@ -767,6 +772,20 @@ export default function DigitalAdminPage() {
                               ? ` · erro: ${a.last_connection_error}`
                               : ""}
                             <br />
+                            <span style={{ color: "#94a3b8" }}>
+                              Última conexão:{" "}
+                              {a.last_connected_at
+                                ? new Date(a.last_connected_at).toLocaleString(
+                                    "pt-BR"
+                                  )
+                                : "nunca"}
+                              {a.last_connection_check_at
+                                ? ` · última verificação: ${new Date(
+                                    a.last_connection_check_at
+                                  ).toLocaleString("pt-BR")}`
+                                : ""}
+                            </span>
+                            <br />
                             <a
                               href={a.href}
                               target="_blank"
@@ -799,6 +818,20 @@ export default function DigitalAdminPage() {
                             title="Marca connecting; login manual no worker (sem senha no IPECC)"
                           >
                             Conectar (browser)
+                          </button>
+                          <button
+                            type="button"
+                            style={btnGhost}
+                            disabled={busy}
+                            onClick={() =>
+                              void atualizarAutomacaoConta(a, {
+                                action: "verify_session",
+                                automation_strategy: "browser",
+                              })
+                            }
+                            title="O worker confere cookies de sessão (prova real)"
+                          >
+                            Verificar sessão
                           </button>
                           <button
                             type="button"

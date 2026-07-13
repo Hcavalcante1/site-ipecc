@@ -77,6 +77,7 @@ export type DigitalAccount = {
   requires_reconnect?: boolean;
   last_connection_error?: string | null;
   last_connected_at?: string | null;
+  last_connection_check_at?: string | null;
 };
 
 export type DigitalDraftInput = {

@@ -8,7 +8,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 /**
  * Atualiza estratégia/automação da conta.
- * Conectar sessão real é feito pelo worker (navegador); aqui só marca intenção.
+ * Conectar/verificar sessão real é feito pelo worker (navegador); aqui só marca intenção.
  */
 export async function POST(req: NextRequest) {
   const { denied } = await denyIfSemModuloDigital();
@@ -18,7 +18,12 @@ export async function POST(req: NextRequest) {
     account_id?: string;
     automation_enabled?: boolean;
     automation_strategy?: string;
-    action?: "enable" | "disable" | "request_connect" | "mark_disconnected";
+    action?:
+      | "enable"
+      | "disable"
+      | "request_connect"
+      | "mark_disconnected"
+      | "verify_session";
   };
 
   try {
@@ -58,7 +63,6 @@ export async function POST(req: NextRequest) {
     patch.connection_status = "connecting";
     patch.requires_reconnect = false;
     patch.last_connection_error = null;
-    // Worker deve abrir browser; session_reference preenchido após login manual
   }
   if (action === "mark_disconnected") {
     patch.connection_status = "disconnected";
@@ -69,13 +73,39 @@ export async function POST(req: NextRequest) {
     patch.automation_enabled = true;
     if (!patch.automation_strategy) patch.automation_strategy = "browser";
   }
+  if (action === "verify_session") {
+    const { data: current, error: curErr } = await supabaseAdmin
+      .from("digital_accounts")
+      .select("id, publisher_config, automation_strategy")
+      .eq("id", accountId)
+      .maybeSingle();
+
+    if (curErr) {
+      return NextResponse.json({ ok: false, error: curErr.message }, { status: 500 });
+    }
+    if (!current) {
+      return NextResponse.json({ ok: false, error: "Conta não encontrada." }, { status: 404 });
+    }
+
+    const cfg =
+      current.publisher_config &&
+      typeof current.publisher_config === "object" &&
+      !Array.isArray(current.publisher_config)
+        ? { ...(current.publisher_config as Record<string, unknown>) }
+        : {};
+    cfg.verify_pending = true;
+    patch.publisher_config = cfg;
+    patch.automation_strategy =
+      patch.automation_strategy || current.automation_strategy || "browser";
+    patch.last_connection_error = null;
+  }
 
   const { data, error } = await supabaseAdmin
     .from("digital_accounts")
     .update(patch)
     .eq("id", accountId)
     .select(
-      "id, platform, automation_enabled, automation_strategy, connection_status, requires_reconnect"
+      "id, platform, automation_enabled, automation_strategy, connection_status, requires_reconnect, last_connected_at, last_connection_check_at, last_connection_error"
     )
     .maybeSingle();
 
@@ -98,9 +128,13 @@ export async function POST(req: NextRequest) {
 
   await supabaseAdmin.from("digital_publish_logs").insert({
     account_id: accountId,
-    platform: null,
+    platform: data.platform ?? null,
     event_type:
-      action === "request_connect" ? "account_connect_requested" : "account_automation_updated",
+      action === "request_connect"
+        ? "account_connect_requested"
+        : action === "verify_session"
+          ? "account_verify_requested"
+          : "account_automation_updated",
     severity: "info",
     message: `Automação da conta atualizada (${action}).`,
     details: patch,
@@ -111,7 +145,9 @@ export async function POST(req: NextRequest) {
     account: data,
     aviso:
       action === "request_connect"
-        ? "Status connecting. Rode node scripts/run-digital-publisher.cjs (ou npm run dev em services/digital-publisher) e faça login manual no navegador aberto (não envie senha ao IPECC)."
-        : undefined,
+        ? "Status connecting. Com o worker rodando, faça login na janela aberta (não envie senha ao IPECC). Só marca connected com cookie de sessão."
+        : action === "verify_session"
+          ? "Verificação enfileirada. O worker confirma cookies de sessão em alguns segundos — atualize a página."
+          : undefined,
   });
 }

@@ -14,7 +14,7 @@ export async function GET() {
   const { data, error } = await supabaseAdmin
     .from("digital_accounts")
     .select(
-      "id, platform, label, href, handle, scope, projeto_ref, ativo, created_at, updated_at, automation_enabled, automation_strategy, connection_status, requires_reconnect, last_connection_error, last_connected_at"
+      "id, platform, label, href, handle, scope, projeto_ref, ativo, created_at, updated_at, automation_enabled, automation_strategy, connection_status, requires_reconnect, last_connection_error, last_connected_at, last_connection_check_at"
     )
     .order("scope", { ascending: true })
     .order("platform", { ascending: true });
