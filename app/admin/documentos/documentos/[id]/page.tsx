@@ -265,7 +265,7 @@ export default function DocumentoDetalhePage() {
 
   async function pedirAssinatura() {
     const email = window.prompt(
-      "E-mail do signatário (Documenso enviará o link):",
+      "E-mail do signatário (enviaremos o link de assinatura):",
       ""
     );
     if (email === null) return;
@@ -277,7 +277,7 @@ export default function DocumentoDetalhePage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         document_id: id,
-        provider_code: "documenso",
+        provider_code: "documento",
         signer_email: email.trim() || undefined,
         signer_name: name?.trim() || undefined,
       }),

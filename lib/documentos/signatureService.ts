@@ -13,12 +13,16 @@ import {
 } from "./signature/GovBrProvider";
 import { notificarEventoDocumental } from "./notificationsService";
 
-export type SignatureProviderCode = "documenso" | "govbr";
+export type SignatureProviderCode = "documento" | "govbr";
 
 export function resolverProviderPadrao(): SignatureProviderCode | null {
-  if (documensoConfigurado()) return "documenso";
+  if (documensoConfigurado()) return "documento";
   if (govbrConfigurado()) return "govbr";
   return null;
+}
+
+function isDocumentoProvider(code: string | null | undefined) {
+  return code === "documento" || code === "documenso";
 }
 
 export const SIG_DOC_SELECT =
@@ -102,14 +106,16 @@ export async function criarAssinaturaDocumento(opts: {
   providerCode?: SignatureProviderCode | string | null;
   signerEmail?: string | null;
   signerName?: string | null;
-  /** Se true (padrão Documenso), cria envelope e envia e-mail ao signatário. */
+  /** Se true (padrão Documento), cria envelope e envia e-mail ao signatário. */
   distribute?: boolean;
 }) {
   const admin = getSupabaseAdmin();
   const requested = String(opts.providerCode || "").trim().toLowerCase();
+  const normalized =
+    requested === "documenso" ? "documento" : requested;
   const code =
-    (requested === "documenso" || requested === "govbr"
-      ? (requested as SignatureProviderCode)
+    (normalized === "documento" || normalized === "govbr"
+      ? (normalized as SignatureProviderCode)
       : null) || resolverProviderPadrao();
 
   if (!code) {
@@ -123,12 +129,12 @@ export async function criarAssinaturaDocumento(opts: {
     };
   }
 
-  if (code === "documenso" && !documensoConfigurado()) {
+  if (code === "documento" && !documensoConfigurado()) {
     return {
       data: null,
       error: {
         message:
-          "Documenso não configurado. Defina DOCUMENSO_API_URL e DOCUMENSO_API_TOKEN no servidor.",
+          "Assinatura Documento não configurada. Defina DOCUMENSO_API_URL e DOCUMENSO_API_TOKEN no servidor.",
         code: "DOCUMENSO_MISSING",
       },
     };
@@ -210,7 +216,7 @@ export async function criarAssinaturaDocumento(opts: {
   });
 
   const shouldDistribute =
-    code === "documenso" &&
+    code === "documento" &&
     opts.distribute !== false &&
     Boolean(signerEmail);
 
@@ -245,7 +251,7 @@ export async function enviarParaAssinaturaDocumenso(opts: {
   if (!documensoConfigurado()) {
     return {
       error:
-        "Documenso não configurado. Defina DOCUMENSO_API_TOKEN no servidor.",
+        "Assinatura Documento não configurada. Defina DOCUMENSO_API_TOKEN no servidor.",
     };
   }
 
@@ -258,8 +264,8 @@ export async function enviarParaAssinaturaDocumenso(opts: {
     .maybeSingle();
 
   if (!sig) return { error: "Pedido de assinatura não encontrado." };
-  if (sig.provider_code !== "documenso") {
-    return { error: "Este pedido não usa o provedor Documenso." };
+  if (!isDocumentoProvider(sig.provider_code)) {
+    return { error: "Este pedido não usa o provedor Documento." };
   }
 
   let signerEmail = String(opts.signerEmail || "").trim().toLowerCase();
@@ -279,7 +285,7 @@ export async function enviarParaAssinaturaDocumenso(opts: {
 
   if (!signerEmail) {
     return {
-      error: "Informe o e-mail do signatário para enviar via Documenso.",
+      error: "Informe o e-mail do signatário para enviar a assinatura.",
     };
   }
 
@@ -349,7 +355,7 @@ export async function enviarParaAssinaturaDocumenso(opts: {
 
     await admin.from("gd_signature_events").insert({
       signature_document_id: sig.id,
-      event_type: "documenso_enviado",
+      event_type: "documento_enviado",
       payload: { envelope_id: envelope.id, signer_email: signerEmail },
       ip: opts.ip,
       user_agent: opts.userAgent,
@@ -359,7 +365,7 @@ export async function enviarParaAssinaturaDocumenso(opts: {
     await registrarLog({
       processo_id: doc.processo_id,
       document_id: doc.id,
-      action: "assinatura_enviada_documenso",
+      action: "assinatura_enviada_documento",
       detail: {
         signature_document_id: sig.id,
         envelope_id: envelope.id,
@@ -373,7 +379,7 @@ export async function enviarParaAssinaturaDocumenso(opts: {
     await notificarEventoDocumental({
       event_type: "assinatura_enviada",
       title: `Assinatura enviada: ${doc.title}`,
-      body: `Envelope Documenso enviado para ${signerEmail}.`,
+      body: `Pedido de assinatura enviado para ${signerEmail}.`,
       document_id: doc.id,
       processo_id: doc.processo_id,
       user_id: opts.userId,
@@ -405,7 +411,7 @@ export async function concluirAssinaturaDocumensoWebhook(opts: {
     .from("gd_signature_documents")
     .select(SIG_DOC_SELECT)
     .eq("external_session_id", opts.envelopeId)
-    .eq("provider_code", "documenso")
+    .in("provider_code", ["documento", "documenso"])
     .is("deleted_at", null)
     .maybeSingle();
 
@@ -414,7 +420,7 @@ export async function concluirAssinaturaDocumensoWebhook(opts: {
       .from("gd_signature_documents")
       .select(SIG_DOC_SELECT)
       .eq("id", opts.envelopeId)
-      .eq("provider_code", "documenso")
+      .in("provider_code", ["documento", "documenso"])
       .is("deleted_at", null)
       .maybeSingle();
     sig = byId.data;
@@ -440,7 +446,7 @@ export async function concluirAssinaturaDocumensoWebhook(opts: {
     const provider = new DocumensoProvider();
     const pdf = await provider.downloadSignedPdf(envelopeId);
     const signedHash = createHash("sha256").update(pdf).digest("hex");
-    const signedPath = `${doc?.processo_id || "geral"}/${sig.document_id}/assinado-documenso-${Date.now()}.pdf`;
+    const signedPath = `${doc?.processo_id || "geral"}/${sig.document_id}/assinado-documento-${Date.now()}.pdf`;
 
     const upload = await admin.storage
       .from(GD_STORAGE_BUCKET)
@@ -473,7 +479,7 @@ export async function concluirAssinaturaDocumensoWebhook(opts: {
       signature_document_id: sig.id,
       event_type: "signed",
       payload: {
-        provider: "documenso",
+        provider: "documento",
         envelope_id: envelopeId,
         webhook_event: opts.event,
         path: signedPath,
@@ -484,7 +490,7 @@ export async function concluirAssinaturaDocumensoWebhook(opts: {
     await notificarEventoDocumental({
       event_type: "documento_assinado",
       title: `Documento assinado: ${doc?.title || "Documento"}`,
-      body: "A assinatura Documenso foi concluída com sucesso.",
+      body: "A assinatura do documento foi concluída com sucesso.",
       document_id: sig.document_id,
       processo_id: doc?.processo_id,
       user_id: sig.created_by,
@@ -850,7 +856,7 @@ export async function providerStatusResumo() {
     providers: (data || []).map((p) => ({
       ...p,
       servidor_pronto:
-        p.code === "documenso"
+        p.code === "documento" || p.code === "documenso"
           ? documensoConfigurado()
           : p.code === "govbr"
             ? govbrConfigurado()

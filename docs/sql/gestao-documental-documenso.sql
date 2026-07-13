@@ -1,5 +1,5 @@
--- Gestão Documental — provedor Documenso (ente privado / self-hosted)
--- Aplique no SQL Editor do Supabase após gestao-documental-fase-1.sql
+-- Gestão Documental — provedor Documento (assinatura ente privado)
+-- Código interno: documento (motor open source self-host em services/documenso)
 
 DO $$
 BEGIN
@@ -12,6 +12,7 @@ END $$;
 ALTER TABLE public.gd_signature_providers
   ADD CONSTRAINT gd_signature_providers_code_check
   CHECK (code IN (
+    'documento',
     'documenso',
     'govbr',
     'icp_brasil',
@@ -23,16 +24,25 @@ ALTER TABLE public.gd_signature_providers
   ));
 
 INSERT INTO public.gd_signature_providers (code, name, ativo)
-VALUES ('documenso', 'Documenso (open source)', true)
+VALUES ('documento', 'Documento', true)
 ON CONFLICT (code) DO UPDATE
 SET
   name = EXCLUDED.name,
   ativo = true,
   updated_at = now();
 
+-- Migra seed legado documenso → documento
+UPDATE public.gd_signature_documents
+SET provider_code = 'documento', updated_at = now()
+WHERE provider_code = 'documenso';
+
+UPDATE public.gd_signature_batches
+SET provider_code = 'documento', updated_at = now()
+WHERE provider_code = 'documenso';
+
 UPDATE public.gd_signature_providers
 SET ativo = false, updated_at = now()
-WHERE code = 'govbr';
+WHERE code IN ('govbr', 'documenso');
 
 COMMENT ON TABLE public.gd_signature_providers IS
-  'Provedores de assinatura: documenso (padrão ente privado), govbr (órgãos públicos), demais futuros.';
+  'Provedores: documento (padrão ente privado), govbr (órgãos públicos), demais futuros.';

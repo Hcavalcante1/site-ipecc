@@ -30,7 +30,7 @@ function apiToken(): string {
   const t = process.env.DOCUMENSO_API_TOKEN?.trim();
   if (!t) {
     throw new Error(
-      "Provedor Documenso não configurado. Defina DOCUMENSO_API_TOKEN no servidor."
+        "Provedor Documento não configurado. Defina DOCUMENSO_API_TOKEN no servidor."
     );
   }
   return t;
@@ -81,8 +81,8 @@ async function parseError(res: Response): Promise<string> {
 }
 
 export class DocumensoProvider implements SignatureProvider {
-  readonly code = "documenso";
-  readonly name = "Documenso";
+  readonly code = "documento";
+  readonly name = "Documento";
 
   async authorize(
     input: SignatureAuthorizeInput
@@ -161,7 +161,7 @@ export class DocumensoProvider implements SignatureProvider {
       body: form,
     });
     if (!res.ok) {
-      throw new Error(`Documenso criar envelope: ${await parseError(res)}`);
+      throw new Error(`Assinatura Documento — criar envelope: ${await parseError(res)}`);
     }
     return (await res.json()) as DocumensoEnvelopeSummary;
   }
@@ -176,7 +176,7 @@ export class DocumensoProvider implements SignatureProvider {
       }
     );
     if (!res.ok) {
-      throw new Error(`Documenso enviar envelope: ${await parseError(res)}`);
+      throw new Error(`Assinatura Documento — enviar: ${await parseError(res)}`);
     }
   }
 
@@ -186,7 +186,7 @@ export class DocumensoProvider implements SignatureProvider {
       { headers: authHeaders() }
     );
     if (!res.ok) {
-      throw new Error(`Documenso obter envelope: ${await parseError(res)}`);
+      throw new Error(`Assinatura Documento — obter: ${await parseError(res)}`);
     }
     return (await res.json()) as DocumensoEnvelopeSummary;
   }
@@ -220,7 +220,7 @@ export class DocumensoProvider implements SignatureProvider {
           return Buffer.from(await dl.arrayBuffer());
         }
       }
-      throw new Error(`Documenso download: ${await parseError(res)}`);
+      throw new Error(`Assinatura Documento — download: ${await parseError(res)}`);
     }
     const ct = res.headers.get("content-type") || "";
     if (ct.includes("application/json")) {
@@ -252,7 +252,7 @@ export class DocumensoProvider implements SignatureProvider {
       items: input.items.map((i) => ({
         documentId: i.documentId,
         status: "unsupported",
-        error: "Lote Documenso via API individual (envie um envelope por documento).",
+        error: "Lote: envie um envelope por documento.",
       })),
     };
   }
@@ -261,14 +261,14 @@ export class DocumensoProvider implements SignatureProvider {
     return {
       valid: false,
       detail:
-        "Validação criptográfica fica no Documenso / leitor PDF. Use o PDF assinado armazenado.",
+        "Validação fica no motor de assinatura / leitor PDF. Use o PDF assinado armazenado.",
     };
   }
 
   async cancel(externalId: string): Promise<SignatureStatusResult> {
     return {
       status: "cancelled_local",
-      detail: `Cancele o envelope ${externalId} na UI do Documenso se necessário.`,
+      detail: `Cancele o envelope ${externalId} no painel de assinatura se necessário.`,
     };
   }
 

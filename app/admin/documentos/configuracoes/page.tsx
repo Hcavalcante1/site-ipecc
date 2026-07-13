@@ -77,7 +77,7 @@ export default function ConfiguracoesPage() {
 
       <div style={gdCardStyle}>
         <h2 className="admin-h2" style={{ marginTop: 0 }}>
-          Documenso (recomendado — ente privado)
+          Documento — assinatura digital (ente privado)
         </h2>
         <p style={{ marginTop: 0 }}>
           Status:{" "}
@@ -95,20 +95,22 @@ export default function ConfiguracoesPage() {
             API URL: <code>{apiUrl || "https://app.documenso.com/api/v2"}</code>
           </li>
           <li>
-            Webhook (configure no Documenso): <code>{webhookUrl}</code>
+            Webhook (configure no motor de assinatura):{" "}
+            <code>{webhookUrl}</code>
           </li>
           <li>DOCUMENSO_API_URL</li>
           <li>DOCUMENSO_API_TOKEN</li>
           <li>DOCUMENSO_WEBHOOK_SECRET (opcional)</li>
         </ul>
         <p style={{ fontSize: 13, opacity: 0.85, marginBottom: 0 }}>
-          Self-host: veja <code>services/documenso/</code>. Open source:{" "}
+          Motor open source (self-host): pasta{" "}
+          <code>services/documenso/</code> ·{" "}
           <a
             href="https://github.com/documenso/documenso"
             target="_blank"
             rel="noreferrer"
           >
-            github.com/documenso/documenso
+            GitHub
           </a>
           .
         </p>
@@ -125,7 +127,7 @@ export default function ConfiguracoesPage() {
         <p style={{ fontSize: 13, opacity: 0.9 }}>
           A API de Assinatura Avançada gov.br{" "}
           <strong>não libera credenciais para entes privados</strong>. Use
-          Documenso no IPECC.
+          o provedor Documento no IPECC.
         </p>
         <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14 }}>
           <li>
@@ -184,7 +186,7 @@ export default function ConfiguracoesPage() {
           ))}
         </ul>
         <p style={{ marginTop: 12, fontSize: 13, opacity: 0.85 }}>
-          Ativos no código: documenso, govbr. Futuros: icp_brasil, clicksign,
+          Ativos no código: documento, govbr. Futuros: icp_brasil, clicksign,
           autentique, docusign, zapsign, adobe_sign.
         </p>
       </div>

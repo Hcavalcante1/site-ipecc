@@ -150,13 +150,13 @@ async function main() {
 
   assert("provider govbr", listSignatureProviderCodes().includes("govbr"));
   assert(
-    "provider documenso",
-    listSignatureProviderCodes().includes("documenso")
+    "provider documento",
+    listSignatureProviderCodes().includes("documento")
   );
   assert("provider code", getSignatureProvider("govbr").code === "govbr");
   assert(
-    "provider documenso code",
-    getSignatureProvider("documenso").code === "documenso"
+    "provider documento code",
+    getSignatureProvider("documento").code === "documento"
   );
   assert(
     "nav notificacoes",

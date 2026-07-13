@@ -88,7 +88,7 @@ export default function AssinaturasClient() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         document_id: documentId.trim(),
-        provider_code: documensoOk ? "documenso" : undefined,
+        provider_code: documensoOk ? "documento" : undefined,
         signer_email: signerEmail.trim() || undefined,
         signer_name: signerName.trim() || undefined,
       }),
@@ -101,7 +101,7 @@ export default function AssinaturasClient() {
     setDocumentId("");
     setAviso(
       json.signature?.external_session_id
-        ? "Pedido criado e enviado ao Documenso (e-mail ao signatário)."
+        ? "Pedido criado e enviado para assinatura (e-mail ao signatário)."
         : "Pedido de assinatura criado."
     );
     carregar();
@@ -126,10 +126,10 @@ export default function AssinaturasClient() {
     );
     const json = await res.json();
     if (!res.ok) {
-      setAviso(json.error || "Erro ao enviar ao Documenso.");
+      setAviso(json.error || "Erro ao enviar para assinatura.");
       return;
     }
-    setAviso("Envelope enviado ao Documenso.");
+    setAviso("Envelope enviado ao signatário.");
     carregar();
   }
 
@@ -175,7 +175,7 @@ export default function AssinaturasClient() {
   return (
     <GestaoDocumentalShell
       title="Assinaturas"
-      description="Assinatura digital via Documenso (recomendado) ou gov.br (somente órgãos públicos)."
+      description="Assinatura digital do módulo Documentos (open source) ou gov.br (somente órgãos públicos)."
     >
       {aviso ? (
         <div style={{ ...gdCardStyle, borderColor: "#f59e0b" }}>{aviso}</div>
@@ -186,8 +186,8 @@ export default function AssinaturasClient() {
           Padrão:{" "}
           <strong>{provedorPadrao || "nenhum configurado"}</strong>
           {" · "}
-          Documenso:{" "}
-          <strong>{documensoOk ? "pronto" : "não configurado"}</strong>
+          Assinatura:{" "}
+          <strong>{documensoOk ? "pronta" : "não configurada"}</strong>
           {" · "}
           gov.br: <strong>{govbrOk ? "pronto" : "ausente"}</strong>
         </p>
@@ -268,6 +268,7 @@ export default function AssinaturasClient() {
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {row.status !== "signed" ? (
+                  row.provider_code === "documento" ||
                   row.provider_code === "documenso" ? (
                     <button
                       type="button"
@@ -277,7 +278,7 @@ export default function AssinaturasClient() {
                     >
                       {row.external_session_id
                         ? "Aguardando assinatura"
-                        : "Enviar Documenso"}
+                        : "Enviar para assinatura"}
                     </button>
                   ) : (
                     <>

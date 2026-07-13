@@ -10,7 +10,7 @@ Entregue e publicado em `main` (`site-ipecc` / Vercel).
 | 1 | Schema `gd_*`, escopo `documentos`, CRUD, bucket, stub provider | OK |
 | 2 | Filtros, favoritos, lixeira, tags, preview, modelos | OK |
 | 3 | Fluxos, passos, transições, ACL documento, auditoria IP/UA | OK |
-| 4 | Assinatura: Documenso (ente privado) + gov.br OAuth/PKCS#7 | OK (Documenso self-host; gov.br só órgãos públicos) |
+| 4 | Assinatura: Documento (ente privado) + gov.br OAuth/PKCS#7 | OK (motor self-host; gov.br só órgãos públicos) |
 | 5 | Lotes, itens, signatários sequencial/paralelo | OK |
 | 6 | Notificações in-app + eventos de fluxo/assinatura | OK |
 
