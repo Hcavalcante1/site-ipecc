@@ -5,6 +5,7 @@ import { registrarLog } from "./documentsService";
 import {
   DocumentoProvider,
   documentoConfigurado,
+  pickRecipientSigning,
 } from "./signature/DocumentoProvider";
 import {
   GovBrProvider,
@@ -14,6 +15,15 @@ import {
 import { notificarEventoDocumental } from "./notificationsService";
 
 export type SignatureProviderCode = "documento" | "govbr";
+
+/** eu_assino = admin assina no painel; enviar_signatarios = e-mail externo. */
+export type ModoAssinatura = "eu_assino" | "enviar_signatarios";
+
+export type AssinaturaLinks = {
+  signingUrl: string | null;
+  embedUrl: string | null;
+  token: string | null;
+};
 
 export function resolverProviderPadrao(): SignatureProviderCode | null {
   if (documentoConfigurado()) return "documento";
@@ -109,6 +119,8 @@ export async function criarAssinaturaDocumento(opts: {
   signerName?: string | null;
   /** Se true (padrão Documento), cria envelope e envia e-mail ao signatário. */
   distribute?: boolean;
+  /** Assinar no admin (eu) ou enviar a signatários externos. */
+  modo?: ModoAssinatura;
 }) {
   const admin = getSupabaseAdmin();
   const requested = String(opts.providerCode || "").trim().toLowerCase();
@@ -118,6 +130,8 @@ export async function criarAssinaturaDocumento(opts: {
     (normalized === "documento" || normalized === "govbr"
       ? (normalized as SignatureProviderCode)
       : null) || resolverProviderPadrao();
+  const modo: ModoAssinatura =
+    opts.modo === "eu_assino" ? "eu_assino" : "enviar_signatarios";
 
   if (!code) {
     return {
@@ -127,6 +141,8 @@ export async function criarAssinaturaDocumento(opts: {
           "Nenhum provedor de assinatura configurado. Defina DOCUMENTO_API_TOKEN (recomendado) ou credenciais GOVBR_SIGNATURE_* (só órgãos públicos).",
         code: "NO_PROVIDER",
       },
+      signingUrl: null as string | null,
+      embedUrl: null as string | null,
     };
   }
 
@@ -138,6 +154,8 @@ export async function criarAssinaturaDocumento(opts: {
           "Assinatura Documento não configurada. Defina DOCUMENTO_API_URL e DOCUMENTO_API_TOKEN no servidor.",
         code: "DOCUMENTO_MISSING",
       },
+      signingUrl: null as string | null,
+      embedUrl: null as string | null,
     };
   }
 
@@ -149,6 +167,8 @@ export async function criarAssinaturaDocumento(opts: {
           "gov.br não configurado. Esse provedor é só para órgãos públicos com credenciais ITI.",
         code: "GOVBR_MISSING",
       },
+      signingUrl: null as string | null,
+      embedUrl: null as string | null,
     };
   }
 
@@ -172,11 +192,37 @@ export async function criarAssinaturaDocumento(opts: {
     .single();
 
   if (error || !data) {
-    return { data, error };
+    return {
+      data,
+      error,
+      signingUrl: null as string | null,
+      embedUrl: null as string | null,
+    };
   }
 
-  const signerEmail = String(opts.signerEmail || "").trim().toLowerCase();
-  const signerName = String(opts.signerName || signerEmail || "").trim();
+  let signerEmail = String(opts.signerEmail || "").trim().toLowerCase();
+  let signerName = String(opts.signerName || signerEmail || "").trim();
+
+  if (modo === "eu_assino") {
+    const actor = String(opts.actorEmail || "").trim().toLowerCase();
+    if (!actor || !actor.includes("@")) {
+      return {
+        data,
+        error: {
+          message:
+            "Não foi possível identificar o e-mail do usuário logado para assinar no admin.",
+          code: "NO_ACTOR_EMAIL",
+        },
+        signingUrl: null as string | null,
+        embedUrl: null as string | null,
+      };
+    }
+    signerEmail = actor;
+    signerName =
+      String(opts.signerName || "").trim() ||
+      actor.split("@")[0] ||
+      actor;
+  }
 
   if (signerEmail) {
     await admin.from("gd_signature_signers").insert({
@@ -199,6 +245,7 @@ export async function criarAssinaturaDocumento(opts: {
     detail: {
       signature_document_id: data.id,
       provider_code: code,
+      modo,
     },
     actor_id: opts.userId,
     actor_email: opts.actorEmail,
@@ -208,7 +255,10 @@ export async function criarAssinaturaDocumento(opts: {
   await notificarEventoDocumental({
     event_type: "assinatura_criada",
     title: "Pedido de assinatura criado",
-    body: `Documento encaminhado para assinatura (${code}).`,
+    body:
+      modo === "eu_assino"
+        ? `Documento pronto para você assinar no admin (${code}).`
+        : `Documento encaminhado para assinatura (${code}).`,
     document_id: opts.documentId,
     processo_id: opts.processoId,
     user_id: opts.userId,
@@ -230,14 +280,30 @@ export async function criarAssinaturaDocumento(opts: {
       userAgent: opts.userAgent,
       signerEmail,
       signerName: signerName || signerEmail,
+      modo,
     });
     if (sent.error) {
-      return { data: sent.data || data, error: { message: sent.error } };
+      return {
+        data: sent.data || data,
+        error: { message: sent.error },
+        signingUrl: sent.signingUrl ?? null,
+        embedUrl: sent.embedUrl ?? null,
+      };
     }
-    return { data: sent.data || data, error: null };
+    return {
+      data: sent.data || data,
+      error: null,
+      signingUrl: sent.signingUrl ?? null,
+      embedUrl: sent.embedUrl ?? null,
+    };
   }
 
-  return { data, error: null };
+  return {
+    data,
+    error: null,
+    signingUrl: null as string | null,
+    embedUrl: null as string | null,
+  };
 }
 
 export async function enviarParaAssinaturaDocumento(opts: {
@@ -248,15 +314,20 @@ export async function enviarParaAssinaturaDocumento(opts: {
   userAgent?: string | null;
   signerEmail?: string | null;
   signerName?: string | null;
+  modo?: ModoAssinatura;
 }) {
   if (!documentoConfigurado()) {
     return {
       error:
         "Assinatura Documento não configurada. Defina DOCUMENTO_API_TOKEN no servidor.",
+      signingUrl: null as string | null,
+      embedUrl: null as string | null,
     };
   }
 
   const admin = getSupabaseAdmin();
+  const modo: ModoAssinatura =
+    opts.modo === "eu_assino" ? "eu_assino" : "enviar_signatarios";
   const { data: sig } = await admin
     .from("gd_signature_documents")
     .select(SIG_DOC_SELECT)
@@ -264,13 +335,31 @@ export async function enviarParaAssinaturaDocumento(opts: {
     .is("deleted_at", null)
     .maybeSingle();
 
-  if (!sig) return { error: "Pedido de assinatura não encontrado." };
+  if (!sig) {
+    return {
+      error: "Pedido de assinatura não encontrado.",
+      signingUrl: null as string | null,
+      embedUrl: null as string | null,
+    };
+  }
   if (!isDocumentoProvider(sig.provider_code)) {
-    return { error: "Este pedido não usa o provedor Documento." };
+    return {
+      error: "Este pedido não usa o provedor Documento.",
+      signingUrl: null as string | null,
+      embedUrl: null as string | null,
+    };
   }
 
   let signerEmail = String(opts.signerEmail || "").trim().toLowerCase();
   let signerName = String(opts.signerName || "").trim();
+
+  if (modo === "eu_assino") {
+    const actor = String(opts.actorEmail || "").trim().toLowerCase();
+    if (actor && actor.includes("@")) {
+      signerEmail = actor;
+      if (!signerName) signerName = actor.split("@")[0] || actor;
+    }
+  }
 
   if (!signerEmail) {
     const { data: signers } = await admin
@@ -286,7 +375,12 @@ export async function enviarParaAssinaturaDocumento(opts: {
 
   if (!signerEmail) {
     return {
-      error: "Informe o e-mail do signatário para enviar a assinatura.",
+      error:
+        modo === "eu_assino"
+          ? "Não foi possível identificar o e-mail do usuário logado."
+          : "Informe o e-mail do signatário para enviar a assinatura.",
+      signingUrl: null as string | null,
+      embedUrl: null as string | null,
     };
   }
 
@@ -299,7 +393,11 @@ export async function enviarParaAssinaturaDocumento(opts: {
     .maybeSingle();
 
   if (!doc?.storage_path) {
-    return { error: "Documento sem arquivo para assinar." };
+    return {
+      error: "Documento sem arquivo para assinar.",
+      signingUrl: null as string | null,
+      embedUrl: null as string | null,
+    };
   }
 
   const downloaded = await admin.storage
@@ -310,6 +408,8 @@ export async function enviarParaAssinaturaDocumento(opts: {
       error:
         downloaded.error?.message ||
         "Não foi possível baixar o PDF do Storage.",
+      signingUrl: null as string | null,
+      embedUrl: null as string | null,
     };
   }
 
@@ -340,6 +440,8 @@ export async function enviarParaAssinaturaDocumento(opts: {
       ],
     });
 
+    const links = pickRecipientSigning(envelope, signerEmail);
+
     const { data: updated, error } = await admin
       .from("gd_signature_documents")
       .update({
@@ -356,8 +458,14 @@ export async function enviarParaAssinaturaDocumento(opts: {
 
     await admin.from("gd_signature_events").insert({
       signature_document_id: sig.id,
-      event_type: "documento_enviado",
-      payload: { envelope_id: envelope.id, signer_email: signerEmail },
+      event_type:
+        modo === "eu_assino" ? "documento_pronto_admin" : "documento_enviado",
+      payload: {
+        envelope_id: envelope.id,
+        signer_email: signerEmail,
+        modo,
+        embed_url: links.embedUrl,
+      },
       ip: opts.ip,
       user_agent: opts.userAgent,
       created_by: opts.userId,
@@ -366,10 +474,14 @@ export async function enviarParaAssinaturaDocumento(opts: {
     await registrarLog({
       processo_id: doc.processo_id,
       document_id: doc.id,
-      action: "assinatura_enviada_documento",
+      action:
+        modo === "eu_assino"
+          ? "assinatura_pronta_admin"
+          : "assinatura_enviada_documento",
       detail: {
         signature_document_id: sig.id,
         envelope_id: envelope.id,
+        modo,
       },
       actor_id: opts.userId,
       actor_email: opts.actorEmail,
@@ -379,8 +491,14 @@ export async function enviarParaAssinaturaDocumento(opts: {
 
     await notificarEventoDocumental({
       event_type: "assinatura_enviada",
-      title: `Assinatura enviada: ${doc.title}`,
-      body: `Pedido de assinatura enviado para ${signerEmail}.`,
+      title:
+        modo === "eu_assino"
+          ? `Assine no admin: ${doc.title}`
+          : `Assinatura enviada: ${doc.title}`,
+      body:
+        modo === "eu_assino"
+          ? "Abra o painel de assinatura no admin para concluir."
+          : `Pedido de assinatura enviado para ${signerEmail}.`,
       document_id: doc.id,
       processo_id: doc.processo_id,
       user_id: opts.userId,
@@ -388,7 +506,12 @@ export async function enviarParaAssinaturaDocumento(opts: {
       created_by: opts.userId,
     });
 
-    return { data: updated, error: null as string | null };
+    return {
+      data: updated,
+      error: null as string | null,
+      signingUrl: links.signingUrl,
+      embedUrl: links.embedUrl,
+    };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     await admin
@@ -399,7 +522,71 @@ export async function enviarParaAssinaturaDocumento(opts: {
         updated_at: new Date().toISOString(),
       })
       .eq("id", sig.id);
-    return { error: msg };
+    return {
+      error: msg,
+      signingUrl: null as string | null,
+      embedUrl: null as string | null,
+    };
+  }
+}
+
+/** Recupera link de assinatura de um pedido já enviado (para reabrir no admin). */
+export async function obterLinkAssinaturaDocumento(opts: {
+  signatureDocumentId: string;
+  signerEmail?: string | null;
+}): Promise<AssinaturaLinks & { error: string | null }> {
+  if (!documentoConfigurado()) {
+    return {
+      error: "Assinatura Documento não configurada.",
+      signingUrl: null,
+      embedUrl: null,
+      token: null,
+    };
+  }
+
+  const admin = getSupabaseAdmin();
+  const { data: sig } = await admin
+    .from("gd_signature_documents")
+    .select(SIG_DOC_SELECT)
+    .eq("id", opts.signatureDocumentId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (!sig?.external_session_id) {
+    return {
+      error: "Pedido ainda sem envelope no motor de assinatura.",
+      signingUrl: null,
+      embedUrl: null,
+      token: null,
+    };
+  }
+  if (!isDocumentoProvider(sig.provider_code)) {
+    return {
+      error: "Este pedido não usa o provedor Documento.",
+      signingUrl: null,
+      embedUrl: null,
+      token: null,
+    };
+  }
+
+  try {
+    const provider = new DocumentoProvider();
+    const envelope = await provider.getEnvelope(sig.external_session_id);
+    const links = pickRecipientSigning(envelope, opts.signerEmail);
+    if (!links.embedUrl && !links.signingUrl) {
+      return {
+        error: "Link de assinatura ainda não disponível neste envelope.",
+        ...links,
+      };
+    }
+    return { error: null, ...links };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : String(err),
+      signingUrl: null,
+      embedUrl: null,
+      token: null,
+    };
   }
 }
 

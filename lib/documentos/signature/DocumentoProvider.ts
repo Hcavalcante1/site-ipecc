@@ -46,8 +46,82 @@ export function documentoApiBaseUrl(): string {
   return raw.replace(/\/+$/, "");
 }
 
+/** Base da UI do motor (sem /api/v2), para embed de assinatura. */
+export function documentoAppBaseUrl(): string {
+  return documentoApiBaseUrl()
+    .replace(/\/api\/v2\/?$/i, "")
+    .replace(/\/+$/, "");
+}
+
 export function documentoConfigurado(): boolean {
   return Boolean(envApiToken() && envApiUrl());
+}
+
+export type DocumentoRecipientInfo = {
+  id?: number | string;
+  email?: string;
+  name?: string;
+  token?: string;
+  signingUrl?: string;
+  signingStatus?: string;
+};
+
+export function signingTokenFromRecipient(
+  r: DocumentoRecipientInfo
+): string | null {
+  if (r.token) return String(r.token).trim() || null;
+  if (r.signingUrl) {
+    const m = String(r.signingUrl).match(
+      /\/(?:embed\/)?sign\/([^/?#]+)/i
+    );
+    return m?.[1] || null;
+  }
+  return null;
+}
+
+export function signingEmbedUrl(tokenOrUrl: string): string {
+  const host = documentoAppBaseUrl();
+  const raw = String(tokenOrUrl || "").trim();
+  if (!raw) return host;
+  if (!raw.includes("/")) {
+    return `${host}/embed/sign/${raw}`;
+  }
+  const token = signingTokenFromRecipient({ signingUrl: raw });
+  if (token) return `${host}/embed/sign/${token}`;
+  return raw.replace(/\/sign\//i, "/embed/sign/");
+}
+
+export function pickRecipientSigning(
+  envelope: DocumentoEnvelopeSummary,
+  email?: string | null
+): {
+  signingUrl: string | null;
+  embedUrl: string | null;
+  token: string | null;
+} {
+  const recipients = envelope.recipients || [];
+  const emailNorm = String(email || "")
+    .trim()
+    .toLowerCase();
+  const target =
+    (emailNorm
+      ? recipients.find(
+          (r) => String(r.email || "").trim().toLowerCase() === emailNorm
+        )
+      : null) || recipients[0];
+  if (!target) {
+    return { signingUrl: null, embedUrl: null, token: null };
+  }
+  const token = signingTokenFromRecipient(target);
+  const signingUrl =
+    target.signingUrl ||
+    (token ? `${documentoAppBaseUrl()}/sign/${token}` : null);
+  const embedUrl = token
+    ? signingEmbedUrl(token)
+    : signingUrl
+      ? signingEmbedUrl(signingUrl)
+      : null;
+  return { signingUrl, embedUrl, token };
 }
 
 export function documentoWebhookSecret(): string | undefined {
@@ -91,12 +165,7 @@ export type DocumentoEnvelopeSummary = {
   status?: string;
   title?: string;
   envelopeItems?: Array<{ id: string }>;
-  recipients?: Array<{
-    id?: number | string;
-    email?: string;
-    signingUrl?: string;
-    signingStatus?: string;
-  }>;
+  recipients?: DocumentoRecipientInfo[];
 };
 
 async function parseError(res: Response): Promise<string> {
@@ -127,8 +196,15 @@ export class DocumentoProvider implements SignatureProvider {
     input: DocumentoCreateEnvelopeInput
   ): Promise<DocumentoEnvelopeSummary> {
     const envelope = await this.createEnvelope(input);
-    await this.distribute(envelope.id);
-    return envelope;
+    const distributed = await this.distribute(envelope.id);
+    if (distributed?.recipients?.length) {
+      return { ...envelope, ...distributed, id: distributed.id || envelope.id };
+    }
+    try {
+      return await this.getEnvelope(envelope.id);
+    } catch {
+      return envelope;
+    }
   }
 
   async createEnvelope(
@@ -196,7 +272,9 @@ export class DocumentoProvider implements SignatureProvider {
     return (await res.json()) as DocumentoEnvelopeSummary;
   }
 
-  async distribute(envelopeId: string): Promise<void> {
+  async distribute(
+    envelopeId: string
+  ): Promise<DocumentoEnvelopeSummary | null> {
     const res = await fetch(
       `${documentoApiBaseUrl()}/envelope/${encodeURIComponent(envelopeId)}/distribute`,
       {
@@ -210,6 +288,13 @@ export class DocumentoProvider implements SignatureProvider {
         `Assinatura Documento — enviar: ${await parseError(res)}`
       );
     }
+    try {
+      const json = (await res.json()) as DocumentoEnvelopeSummary;
+      if (json && (json.id || json.recipients)) return json;
+    } catch {
+      /* resposta vazia ou não JSON */
+    }
+    return null;
   }
 
   async getEnvelope(envelopeId: string): Promise<DocumentoEnvelopeSummary> {

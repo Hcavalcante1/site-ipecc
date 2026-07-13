@@ -31,12 +31,26 @@ export async function POST(
   const loaded = await carregarDocumentoNoEscopo(sig.document_id, auth);
   if (loaded.error) return loaded.error;
 
-  let body: { signer_email?: string; signer_name?: string } = {};
+  let body: {
+    signer_email?: string;
+    signer_name?: string;
+    modo?: "eu_assino" | "enviar_signatarios";
+  } = {};
   try {
     body = (await req.json()) as typeof body;
   } catch {
     body = {};
   }
+
+  const modoExplicit =
+    body.modo === "eu_assino" || body.modo === "enviar_signatarios"
+      ? body.modo
+      : null;
+  const modo =
+    modoExplicit ||
+    (String(body.signer_email || "").trim()
+      ? "enviar_signatarios"
+      : "eu_assino");
 
   const meta = requestAuditMeta(req);
   const result = await enviarParaAssinaturaDocumento({
@@ -47,6 +61,7 @@ export async function POST(
     userAgent: meta.user_agent,
     signerEmail: body.signer_email,
     signerName: body.signer_name,
+    modo,
   });
 
   if (result.error) {
@@ -56,5 +71,11 @@ export async function POST(
     );
   }
 
-  return NextResponse.json({ ok: true, signature: result.data });
+  return NextResponse.json({
+    ok: true,
+    signature: result.data,
+    signingUrl: result.signingUrl,
+    embedUrl: result.embedUrl,
+    modo,
+  });
 }

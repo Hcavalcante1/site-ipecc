@@ -93,6 +93,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   let body: {
     tipoEmissao?: string;
     signatario?: { nome?: string; email?: string };
+    modo?: "eu_assino" | "enviar_signatarios";
   } = {};
   try {
     body = (await req.json()) as typeof body;
@@ -111,6 +112,9 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     );
   }
 
+  const modo =
+    body.modo === "enviar_signatarios" ? "enviar_signatarios" : "eu_assino";
+
   const result = await iniciarGerarAssinarPublicar({
     editalId: params.id,
     tipoEmissao: tipo,
@@ -120,6 +124,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     },
     userId: auth.userId,
     actorEmail: auth.contexto.email,
+    modo,
   });
 
   if (!result.ok) {
@@ -134,6 +139,9 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     emissaoId: result.emissaoId,
     gdDocumentId: result.gdDocumentId,
     signatureDocumentId: result.signatureDocumentId,
+    signingUrl: result.signingUrl,
+    embedUrl: result.embedUrl,
+    modo: result.modo,
     aviso: result.aviso,
   });
 }

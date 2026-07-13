@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
       signer_email?: string;
       signer_name?: string;
       distribute?: boolean;
+      modo?: "eu_assino" | "enviar_signatarios";
     };
     const documentId = String(body.document_id || "").trim();
     if (!documentId) {
@@ -71,19 +72,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const modoExplicit =
+      body.modo === "eu_assino" || body.modo === "enviar_signatarios"
+        ? body.modo
+        : null;
+    const modo =
+      modoExplicit ||
+      (String(body.signer_email || "").trim()
+        ? "enviar_signatarios"
+        : "eu_assino");
+
     const meta = requestAuditMeta(req);
-    const { data, error } = await criarAssinaturaDocumento({
-      documentId,
-      userId: auth.userId,
-      actorEmail: auth.contexto.email,
-      processoId: doc.processo_id,
-      ip: meta.ip,
-      userAgent: meta.user_agent,
-      providerCode: body.provider_code,
-      signerEmail: body.signer_email,
-      signerName: body.signer_name,
-      distribute: body.distribute,
-    });
+    const { data, error, signingUrl, embedUrl } = await criarAssinaturaDocumento(
+      {
+        documentId,
+        userId: auth.userId,
+        actorEmail: auth.contexto.email,
+        processoId: doc.processo_id,
+        ip: meta.ip,
+        userAgent: meta.user_agent,
+        providerCode: body.provider_code,
+        signerEmail: body.signer_email,
+        signerName: body.signer_name,
+        distribute: body.distribute,
+        modo,
+      }
+    );
 
     if (error) {
       const msg =
@@ -108,13 +122,20 @@ export async function POST(req: NextRequest) {
         code === "NO_PROVIDER" ||
         code === "DOCUMENTO_MISSING" ||
         code === "DOCUMENSO_MISSING" ||
-        code === "GOVBR_MISSING"
+        code === "GOVBR_MISSING" ||
+        code === "NO_ACTOR_EMAIL"
           ? 400
           : 500;
       return NextResponse.json({ ok: false, error: msg }, { status });
     }
 
-    return NextResponse.json({ ok: true, signature: data });
+    return NextResponse.json({
+      ok: true,
+      signature: data,
+      signingUrl,
+      embedUrl,
+      modo,
+    });
   } catch (err) {
     return NextResponse.json(
       {

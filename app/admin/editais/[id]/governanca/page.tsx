@@ -19,6 +19,7 @@ import {
   MSG_SAIDA_RASCUNHO,
 } from "@/lib/editais/governancaRules";
 import { isModalidadeCotacaoPrevia } from "@/lib/editais/tiposAdmin";
+import AssinarNoAdminModal from "@/app/admin/documentos/components/AssinarNoAdminModal";
 
 type Edital = {
   id: string;
@@ -244,6 +245,11 @@ export default function GovernancaEditalPage() {
   const [signatarioEmail, setSignatarioEmail] = useState("");
   const [oficialMsg, setOficialMsg] = useState("");
   const [oficialSaving, setOficialSaving] = useState(false);
+  const [oficialEmbedOpen, setOficialEmbedOpen] = useState(false);
+  const [oficialEmbedUrl, setOficialEmbedUrl] = useState<string | null>(null);
+  const [oficialSigningUrl, setOficialSigningUrl] = useState<string | null>(
+    null
+  );
 
   const fases = useMemo(
     () => [...getFasesGovernancaAdmin(edital?.tipo)],
@@ -507,14 +513,18 @@ export default function GovernancaEditalPage() {
     }
   }
 
-  async function gerarAssinarPublicar() {
+  async function gerarAssinarPublicar(
+    modo: "eu_assino" | "enviar_signatarios" = "eu_assino"
+  ) {
     if (!tipoEmissaoOficial) {
       setOficialMsg("Selecione o tipo de documento oficial.");
       return;
     }
-    if (!signatarioEmail.trim() || !signatarioEmail.includes("@")) {
-      setOficialMsg("Informe o e-mail válido do signatário.");
-      return;
+    if (modo === "enviar_signatarios") {
+      if (!signatarioEmail.trim() || !signatarioEmail.includes("@")) {
+        setOficialMsg("Informe o e-mail válido do signatário.");
+        return;
+      }
     }
 
     setOficialSaving(true);
@@ -528,6 +538,7 @@ export default function GovernancaEditalPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             tipoEmissao: tipoEmissaoOficial,
+            modo,
             signatario: {
               nome: signatarioNome.trim(),
               email: signatarioEmail.trim(),
@@ -544,9 +555,22 @@ export default function GovernancaEditalPage() {
         );
         return;
       }
-      setOficialMsg(json.aviso || "Documento enviado para assinatura.");
-      triggerToast("Documento gerado e enviado para assinatura.", "success");
+      setOficialMsg(json.aviso || "Documento gerado.");
       await carregarEmissoesOficiais();
+
+      if (modo === "eu_assino" && (json.embedUrl || json.signingUrl)) {
+        setOficialEmbedUrl(json.embedUrl || null);
+        setOficialSigningUrl(json.signingUrl || null);
+        setOficialEmbedOpen(true);
+        triggerToast("Documento gerado — assine no painel.", "success");
+      } else {
+        triggerToast(
+          modo === "eu_assino"
+            ? "Documento gerado. Abra Assinaturas se o painel não abrir."
+            : "Documento gerado e enviado para assinatura.",
+          "success"
+        );
+      }
     } catch {
       setOficialMsg("Erro inesperado ao gerar documento oficial.");
       triggerToast("Erro inesperado ao gerar documento oficial.", "error");
@@ -1223,10 +1247,23 @@ export default function GovernancaEditalPage() {
       <section className="admin-card">
         <h2 className="admin-h2">Gerar, assinar e publicar</h2>
         <p>
-          Gera o PDF oficial a partir do modelo, envia para assinatura
-          (Documento) e publica automaticamente na página pública do edital
-          somente após a assinatura.
+          Gera o PDF oficial a partir do modelo. Você pode <strong>assinar
+          agora no admin</strong> ou enviar o link por e-mail a um signatário.
+          A publicação na página pública do edital ocorre somente após a
+          assinatura.
         </p>
+
+        <AssinarNoAdminModal
+          open={oficialEmbedOpen}
+          embedUrl={oficialEmbedUrl}
+          signingUrl={oficialSigningUrl}
+          title="Assinar documento oficial"
+          onClose={() => setOficialEmbedOpen(false)}
+          onCompleted={() => {
+            setOficialMsg("Atualizando status da emissão…");
+            carregarEmissoesOficiais();
+          }}
+        />
 
         <label>Tipo de documento</label>
         <select
@@ -1244,14 +1281,14 @@ export default function GovernancaEditalPage() {
           )}
         </select>
 
-        <label>Nome do signatário</label>
+        <label>Nome (opcional se você assinar agora)</label>
         <input
           value={signatarioNome}
           onChange={(e) => setSignatarioNome(e.target.value)}
-          placeholder="Nome completo"
+          placeholder="Seu nome ou nome do signatário externo"
         />
 
-        <label>E-mail do signatário</label>
+        <label>E-mail do signatário (só para envio externo)</label>
         <input
           type="email"
           value={signatarioEmail}
@@ -1259,17 +1296,35 @@ export default function GovernancaEditalPage() {
           placeholder="email@exemplo.com"
         />
 
-        <AdminLoadingButton
-          type="button"
-          className="admin-button"
-          disabled={oficialSaving || !tipoEmissaoOficial}
-          loading={oficialSaving}
-          loadingText="Gerando..."
-          onClick={gerarAssinarPublicar}
-          style={{ marginTop: 16 }}
+        <div
+          style={{
+            display: "flex",
+            gap: 10,
+            flexWrap: "wrap",
+            marginTop: 16,
+          }}
         >
-          Gerar, assinar e publicar
-        </AdminLoadingButton>
+          <AdminLoadingButton
+            type="button"
+            className="admin-button"
+            disabled={oficialSaving || !tipoEmissaoOficial}
+            loading={oficialSaving}
+            loadingText="Gerando..."
+            onClick={() => gerarAssinarPublicar("eu_assino")}
+          >
+            Gerar e assinar agora
+          </AdminLoadingButton>
+          <AdminLoadingButton
+            type="button"
+            className="admin-button"
+            disabled={oficialSaving || !tipoEmissaoOficial}
+            loading={oficialSaving}
+            loadingText="Enviando..."
+            onClick={() => gerarAssinarPublicar("enviar_signatarios")}
+          >
+            Gerar e enviar a signatário
+          </AdminLoadingButton>
+        </div>
 
         {oficialMsg && (
           <p style={{ marginTop: 12, fontWeight: 700 }}>{oficialMsg}</p>

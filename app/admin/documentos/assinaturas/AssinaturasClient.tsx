@@ -8,6 +8,7 @@ import GestaoDocumentalShell, {
   gdCardStyle,
   gdInputStyle,
 } from "../components/GestaoDocumentalShell";
+import AssinarNoAdminModal from "../components/AssinarNoAdminModal";
 
 type SignatureRow = {
   id: string;
@@ -32,6 +33,9 @@ export default function AssinaturasClient() {
   const [documentoOk, setDocumentoOk] = useState(false);
   const [govbrOk, setGovbrOk] = useState(false);
   const [provedorPadrao, setProvedorPadrao] = useState<string | null>(null);
+  const [embedOpen, setEmbedOpen] = useState(false);
+  const [embedUrl, setEmbedUrl] = useState<string | null>(null);
+  const [signingUrl, setSigningUrl] = useState<string | null>(null);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -77,7 +81,24 @@ export default function AssinaturasClient() {
     }
   }, [search]);
 
-  async function criarPedido() {
+  function abrirAssinatura(urls: {
+    embedUrl?: string | null;
+    signingUrl?: string | null;
+  }) {
+    const embed = urls.embedUrl || null;
+    const sign = urls.signingUrl || null;
+    if (!embed && !sign) {
+      setAviso(
+        "Pedido criado, mas o link de assinatura não veio do motor. Verifique DOCUMENTO_API_URL."
+      );
+      return;
+    }
+    setEmbedUrl(embed);
+    setSigningUrl(sign);
+    setEmbedOpen(true);
+  }
+
+  async function criarEAssinarAgora() {
     if (!documentId.trim()) {
       setAviso("Informe o ID do documento.");
       return;
@@ -89,8 +110,7 @@ export default function AssinaturasClient() {
       body: JSON.stringify({
         document_id: documentId.trim(),
         provider_code: documentoOk ? "documento" : undefined,
-        signer_email: signerEmail.trim() || undefined,
-        signer_name: signerName.trim() || undefined,
+        modo: "eu_assino",
       }),
     });
     const json = await res.json();
@@ -99,11 +119,39 @@ export default function AssinaturasClient() {
       return;
     }
     setDocumentId("");
-    setAviso(
-      json.signature?.external_session_id
-        ? "Pedido criado e enviado para assinatura (e-mail ao signatário)."
-        : "Pedido de assinatura criado."
-    );
+    setAviso("Documento pronto. Assine no painel abaixo.");
+    abrirAssinatura(json);
+    carregar();
+  }
+
+  async function criarEEnviarSignatario() {
+    if (!documentId.trim()) {
+      setAviso("Informe o ID do documento.");
+      return;
+    }
+    if (!signerEmail.trim()) {
+      setAviso("Informe o e-mail do signatário para envio externo.");
+      return;
+    }
+    const res = await fetch("/api/admin/documentos/assinaturas", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        document_id: documentId.trim(),
+        provider_code: documentoOk ? "documento" : undefined,
+        signer_email: signerEmail.trim(),
+        signer_name: signerName.trim() || undefined,
+        modo: "enviar_signatarios",
+      }),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      setAviso(json.error || "Erro ao criar pedido.");
+      return;
+    }
+    setDocumentId("");
+    setAviso("Pedido criado e enviado por e-mail ao signatário.");
     carregar();
   }
 
@@ -121,6 +169,7 @@ export default function AssinaturasClient() {
         body: JSON.stringify({
           signer_email: signerEmail.trim(),
           signer_name: signerName.trim() || undefined,
+          modo: "enviar_signatarios",
         }),
       }
     );
@@ -130,6 +179,46 @@ export default function AssinaturasClient() {
       return;
     }
     setAviso("Envelope enviado ao signatário.");
+    carregar();
+  }
+
+  async function assinarAgoraPedido(signatureId: string) {
+    const row = rows.find((r) => r.id === signatureId);
+    if (row?.external_session_id) {
+      const linkRes = await fetch(
+        `/api/admin/documentos/assinaturas/${signatureId}/link`,
+        { credentials: "include" }
+      );
+      const linkJson = await linkRes.json();
+      if (!linkRes.ok) {
+        setAviso(linkJson.error || "Não foi possível obter o link.");
+        return;
+      }
+      if (linkJson.signed) {
+        setAviso("Este pedido já está assinado.");
+        carregar();
+        return;
+      }
+      abrirAssinatura(linkJson);
+      return;
+    }
+
+    const res = await fetch(
+      `/api/admin/documentos/assinaturas/${signatureId}/enviar`,
+      {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ modo: "eu_assino" }),
+      }
+    );
+    const json = await res.json();
+    if (!res.ok) {
+      setAviso(json.error || "Erro ao preparar assinatura no admin.");
+      return;
+    }
+    setAviso("Assine no painel.");
+    abrirAssinatura(json);
     carregar();
   }
 
@@ -175,8 +264,19 @@ export default function AssinaturasClient() {
   return (
     <GestaoDocumentalShell
       title="Assinaturas"
-      description="Assinatura digital do módulo Documentos (open source) ou gov.br (somente órgãos públicos)."
+      description="Assine no próprio admin ou envie o link por e-mail ao signatário. gov.br só para órgãos públicos."
     >
+      <AssinarNoAdminModal
+        open={embedOpen}
+        embedUrl={embedUrl}
+        signingUrl={signingUrl}
+        onClose={() => setEmbedOpen(false)}
+        onCompleted={() => {
+          setAviso("Atualizando status da assinatura…");
+          carregar();
+        }}
+      />
+
       {aviso ? (
         <div style={{ ...gdCardStyle, borderColor: "#f59e0b" }}>{aviso}</div>
       ) : null}
@@ -207,7 +307,7 @@ export default function AssinaturasClient() {
           />
           <input
             style={gdInputStyle}
-            placeholder="E-mail do signatário"
+            placeholder="E-mail do signatário (só envio externo)"
             value={signerEmail}
             onChange={(e) => setSignerEmail(e.target.value)}
           />
@@ -217,8 +317,15 @@ export default function AssinaturasClient() {
             value={signerName}
             onChange={(e) => setSignerName(e.target.value)}
           />
-          <button type="button" style={gdBtnStyle} onClick={criarPedido}>
-            Criar pedido
+          <button
+            type="button"
+            style={{ ...gdBtnStyle, background: "#0f766e" }}
+            onClick={criarEAssinarAgora}
+          >
+            Gerar e assinar agora
+          </button>
+          <button type="button" style={gdBtnStyle} onClick={criarEEnviarSignatario}>
+            Enviar a signatário
           </button>
         </div>
       </div>
@@ -270,16 +377,25 @@ export default function AssinaturasClient() {
                 {row.status !== "signed" ? (
                   row.provider_code === "documento" ||
                   row.provider_code === "documenso" ? (
-                    <button
-                      type="button"
-                      style={{ ...gdBtnStyle, background: "#0f766e" }}
-                      onClick={() => enviarDocumento(row.id)}
-                      disabled={Boolean(row.external_session_id)}
-                    >
-                      {row.external_session_id
-                        ? "Aguardando assinatura"
-                        : "Enviar para assinatura"}
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        style={{ ...gdBtnStyle, background: "#0f766e" }}
+                        onClick={() => assinarAgoraPedido(row.id)}
+                      >
+                        Assinar agora
+                      </button>
+                      <button
+                        type="button"
+                        style={gdBtnStyle}
+                        onClick={() => enviarDocumento(row.id)}
+                        disabled={Boolean(row.external_session_id)}
+                      >
+                        {row.external_session_id
+                          ? "Já enviado"
+                          : "Enviar a signatário"}
+                      </button>
+                    </>
                   ) : (
                     <>
                       <button

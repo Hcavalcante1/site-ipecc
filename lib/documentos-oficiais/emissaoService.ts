@@ -87,6 +87,8 @@ export async function iniciarGerarAssinarPublicar(opts: {
   signatario: SignatarioInput;
   userId: string;
   actorEmail?: string | null;
+  /** eu_assino = admin assina no painel; enviar_signatarios = e-mail externo. */
+  modo?: "eu_assino" | "enviar_signatarios";
 }) {
   if (!documentoConfigurado()) {
     return {
@@ -96,9 +98,24 @@ export async function iniciarGerarAssinarPublicar(opts: {
     };
   }
 
-  const email = opts.signatario.email.trim().toLowerCase();
-  const nome = opts.signatario.nome.trim() || email;
-  if (!email || !email.includes("@")) {
+  const modo =
+    opts.modo === "eu_assino" ? "eu_assino" : "enviar_signatarios";
+
+  let email = opts.signatario.email.trim().toLowerCase();
+  let nome = opts.signatario.nome.trim() || email;
+
+  if (modo === "eu_assino") {
+    const actor = String(opts.actorEmail || "").trim().toLowerCase();
+    if (!actor || !actor.includes("@")) {
+      return {
+        ok: false as const,
+        error:
+          "Não foi possível identificar o e-mail do usuário logado para assinar no admin.",
+      };
+    }
+    email = actor;
+    nome = opts.signatario.nome.trim() || actor.split("@")[0] || actor;
+  } else if (!email || !email.includes("@")) {
     return { ok: false as const, error: "Informe e-mail válido do signatário." };
   }
 
@@ -300,6 +317,7 @@ export async function iniciarGerarAssinarPublicar(opts: {
     signerEmail: email,
     signerName: nome,
     distribute: true,
+    modo,
   });
 
   if (sig.error || !sig.data) {
@@ -336,8 +354,13 @@ export async function iniciarGerarAssinarPublicar(opts: {
     emissaoId: emissao.id,
     gdDocumentId: gdDoc.id,
     signatureDocumentId: sig.data.id,
+    signingUrl: sig.signingUrl ?? null,
+    embedUrl: sig.embedUrl ?? null,
+    modo,
     aviso:
-      "Documento gerado e enviado para assinatura. Será publicado na página pública do edital automaticamente quando a assinatura for concluída.",
+      modo === "eu_assino"
+        ? "Documento gerado. Assine agora no painel; a publicação no edital ocorre automaticamente após a assinatura."
+        : "Documento gerado e enviado para assinatura. Será publicado na página pública do edital automaticamente quando a assinatura for concluída.",
   };
 }
 
