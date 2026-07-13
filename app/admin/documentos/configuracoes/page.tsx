@@ -83,10 +83,47 @@ export default function ConfiguracoesPage() {
           <li>GOVBR_SIGNATURE_CLIENT_ID</li>
           <li>GOVBR_SIGNATURE_CLIENT_SECRET</li>
           <li>GOVBR_SIGNATURE_REDIRECT_URI (opcional)</li>
+          <li>
+            GOVBR_SIGNATURE_SCOPE_EXTRA (opcional; ex.: <code>govbr</code>)
+          </li>
         </ul>
+        <p style={{ fontSize: 13, opacity: 0.85 }}>
+          Credenciais:{" "}
+          <a
+            href="https://www.gov.br/governodigital/integrarprodutoid"
+            target="_blank"
+            rel="noreferrer"
+          >
+            portal de integração gov.br
+          </a>
+          . Roteiro técnico:{" "}
+          <a
+            href="https://manual-integracao-assinatura-eletronica.servicos.gov.br/pt-br/7.4/iniciarintegracao.html"
+            target="_blank"
+            rel="noreferrer"
+          >
+            manual ITI v7.4
+          </a>
+          .
+        </p>
         <p style={{ fontSize: 13, opacity: 0.85, marginBottom: 0 }}>
-          O client_secret nunca deve existir no frontend. Cadastre o redirect no
-          portal de integração gov.br/ITI.
+          Homologação: conta Prata/Ouro em{" "}
+          <a
+            href="https://sso.staging.acesso.gov.br/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            sso.staging.acesso.gov.br
+          </a>
+          ; SMS pode ser <code>12345</code>. Validar .p7s em{" "}
+          <a
+            href="https://verificador.staging.iti.br"
+            target="_blank"
+            rel="noreferrer"
+          >
+            verificador.staging.iti.br
+          </a>
+          .
         </p>
       </div>
 

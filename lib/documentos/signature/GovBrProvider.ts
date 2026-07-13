@@ -59,7 +59,13 @@ export function govbrRedirectUriPadrao(): string {
 
 /**
  * Provedor Assinatura Avançada gov.br (ITI) — OAuth2 + PKCS#7.
+ * Alinhado ao roteiro oficial (ex.: manual v7.4):
+ * https://manual-integracao-assinatura-eletronica.servicos.gov.br/pt-br/7.4/iniciarintegracao.html
+ *
  * Secrets somente no servidor (GOVBR_SIGNATURE_*).
+ * Pré-requisito: credenciais via
+ * https://www.gov.br/governodigital/integrarprodutoid
+ * e integração com Login Único do órgão.
  */
 export class GovBrProvider implements SignatureProvider {
   readonly code = "govbr";
@@ -85,12 +91,33 @@ export class GovBrProvider implements SignatureProvider {
     return v;
   }
 
+  /**
+   * Escopos OAuth: sign e signature_session são mutuamente exclusivos (manual ITI).
+   * Extras opcionais via GOVBR_SIGNATURE_SCOPE_EXTRA (ex.: "govbr" ou "govbr icp_brasil").
+   */
+  static montarEscopos(
+    primario: "sign" | "signature_session" = "sign"
+  ): string[] {
+    const extra = (process.env.GOVBR_SIGNATURE_SCOPE_EXTRA || "")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .filter((s) => s !== "sign" && s !== "signature_session");
+    return [primario, ...extra];
+  }
+
   async authorize(
     input: SignatureAuthorizeInput
   ): Promise<SignatureAuthorizeResult> {
     const urls = resolveUrls();
     const state = input.state || randomBytes(24).toString("hex");
-    const scopes = (input.scopes || ["sign", "govbr"]).join(" ");
+    // Manual ITI 7.4: scope = sign OU signature_session (mutuamente exclusivos)
+    const primario: "sign" | "signature_session" =
+      input.scopes?.includes("signature_session") &&
+      !input.scopes.includes("sign")
+        ? "signature_session"
+        : "sign";
+    const scopes = GovBrProvider.montarEscopos(primario).join(" ");
     const params = new URLSearchParams({
       response_type: "code",
       client_id: this.clientId(),
@@ -117,6 +144,7 @@ export class GovBrProvider implements SignatureProvider {
       client_secret: this.clientSecret(),
       redirect_uri: opts.redirectUri,
     });
+    // Manual ITI: endpoint com "?" no final (ex.: .../token?)
     const res = await fetch(`${urls.token}?`, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -133,6 +161,7 @@ export class GovBrProvider implements SignatureProvider {
       const msg =
         (json.error_description as string) ||
         (json.error as string) ||
+        (json.message as string) ||
         text.slice(0, 200) ||
         `HTTP ${res.status}`;
       throw new Error(`Falha ao obter token gov.br: ${msg}`);
@@ -143,16 +172,43 @@ export class GovBrProvider implements SignatureProvider {
     }
     return {
       accessToken,
+      // Manual: expires_in tipicamente 360s (sign ~até 10 min)
       expiresIn:
         typeof json.expires_in === "number" ? json.expires_in : undefined,
     };
+  }
+
+  /**
+   * GET /externo/v2/certificadoPublico — PEM do certificado do usuário.
+   * Valida nível Prata/Ouro e CPF antes da assinatura.
+   */
+  async obterCertificadoPublico(accessToken: string): Promise<string> {
+    const urls = resolveUrls();
+    const res = await fetch(urls.certificado, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/x-pem-file, text/plain, */*",
+      },
+    });
+    const text = await res.text();
+    if (!res.ok) {
+      throw new Error(mapearErroGovBr(res.status, text));
+    }
+    return text;
   }
 
   /** Assina hash e devolve bytes PKCS#7. */
   async assinarPkcs7Bytes(opts: {
     accessToken: string;
     fileHashSha256Hex: string;
-  }): Promise<{ pkcs7: Buffer; signedHash: string }> {
+    verificarCertificado?: boolean;
+  }): Promise<{ pkcs7: Buffer; signedHash: string; certificadoPem?: string }> {
+    let certificadoPem: string | undefined;
+    if (opts.verificarCertificado !== false) {
+      certificadoPem = await this.obterCertificadoPublico(opts.accessToken);
+    }
+
     const urls = resolveUrls();
     const hashBase64 = Buffer.from(opts.fileHashSha256Hex, "hex").toString(
       "base64"
@@ -168,14 +224,13 @@ export class GovBrProvider implements SignatureProvider {
     });
     if (!res.ok) {
       const errText = await res.text();
-      throw new Error(
-        `Falha ao assinar PKCS#7 gov.br (HTTP ${res.status}): ${errText.slice(0, 300)}`
-      );
+      throw new Error(mapearErroGovBr(res.status, errText));
     }
     const pkcs7 = Buffer.from(await res.arrayBuffer());
     return {
       pkcs7,
       signedHash: createHash("sha256").update(pkcs7).digest("hex"),
+      certificadoPem,
     };
   }
 
@@ -195,12 +250,16 @@ export class GovBrProvider implements SignatureProvider {
     input: SignatureBatchSignInput
   ): Promise<SignatureBatchSignResult> {
     const items: SignatureBatchSignResult["items"] = [];
+    let first = true;
     for (const item of input.items) {
       try {
         await this.assinarPkcs7Bytes({
           accessToken: input.accessToken,
           fileHashSha256Hex: item.fileHashSha256,
+          // certificado só na 1ª (scope signature_session)
+          verificarCertificado: first,
         });
+        first = false;
         items.push({ documentId: item.documentId, status: "signed" });
       } catch (err) {
         items.push({
@@ -217,10 +276,13 @@ export class GovBrProvider implements SignatureProvider {
   }
 
   async verify(_input: SignatureVerifyInput): Promise<SignatureVerifyResult> {
+    const env = (process.env.GOVBR_SIGNATURE_ENV || "staging").toLowerCase();
+    const isProd = env === "production" || env === "prod";
     return {
       valid: false,
-      detail:
-        "Validação oficial em https://validar.iti.gov.br — use o arquivo .p7s gerado.",
+      detail: isProd
+        ? "Valide o .p7s em https://validar.iti.gov.br"
+        : "Valide o .p7s de homologação em https://verificador.staging.iti.br",
     };
   }
 
@@ -236,4 +298,30 @@ export class GovBrProvider implements SignatureProvider {
         : "Credenciais GOVBR_SIGNATURE_* ausentes.",
     };
   }
+}
+
+function mapearErroGovBr(status: number, body: string): string {
+  const texto = (body || "").trim();
+  const lower = texto.toLowerCase();
+  if (
+    status === 403 &&
+    (lower.includes("prata") ||
+      lower.includes("ouro") ||
+      lower.includes("identidade"))
+  ) {
+    return "É necessário conta gov.br nível Prata ou Ouro para assinatura avançada. Aumente o nível da conta no gov.br e tente de novo.";
+  }
+  if (
+    status === 403 &&
+    (lower.includes("cpf") ||
+      lower.includes("falecido") ||
+      lower.includes("cancelad") ||
+      lower.includes("nula"))
+  ) {
+    return "CPF com situação cancelada, nula ou falecido na Receita Federal não permite assinatura eletrônica digital.";
+  }
+  if (status === 401) {
+    return `Não autorizado pelo gov.br (HTTP 401). Token expirado ou inválido — autorize novamente. ${texto.slice(0, 180)}`;
+  }
+  return `Falha na API gov.br (HTTP ${status}): ${texto.slice(0, 300) || "sem detalhe"}`;
 }

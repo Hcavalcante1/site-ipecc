@@ -146,7 +146,7 @@ export async function iniciarAutorizeGovBr(opts: {
   const redirectUri = govbrRedirectUriPadrao();
   const scope =
     opts.scope || (opts.batchId ? "signature_session" : "sign");
-  const scopes = [scope, "govbr"];
+  const scopes = GovBrProvider.montarEscopos(scope);
   const auth = await provider.authorize({
     redirectUri,
     scopes,

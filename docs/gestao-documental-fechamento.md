@@ -58,6 +58,20 @@ GOVBR_SIGNATURE_REDIRECT_URI=https://www.ipecc.org.br/api/admin/documentos/assin
 GOVBR_SIGNATURE_ENV=staging
 ```
 
+Roteiro oficial (ITI):  
+https://manual-integracao-assinatura-eletronica.servicos.gov.br/pt-br/7.4/iniciarintegracao.html
+
+Credenciais / formalização:  
+https://www.gov.br/governodigital/integrarprodutoid
+
+Pontos do manual já cobertos no código:
+- OAuth authorize → code → token (`.../token?`)
+- Escopos `sign` / `signature_session` mutuamente exclusivos
+- `certificadoPublico` antes do PKCS#7 (valida Prata/Ouro e CPF)
+- `assinarPKCS7` com `hashBase64`
+- Mensagens 403 amigáveis (nível bronze / CPF inválido)
+- Homologação: verificador.staging.iti.br · Produção: validar.iti.gov.br
+
 Sem essas vars: criar/revisar documentos, fluxos, lotes, signatários e notificações funcionam; **Autorizar gov.br** retorna erro claro de configuração.
 
 ## Fluxo operacional recomendado
