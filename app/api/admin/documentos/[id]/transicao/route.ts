@@ -185,6 +185,27 @@ export async function POST(req: NextRequest, ctx: Ctx) {
     user_agent: meta.user_agent,
   });
 
+  if (toStatus === "ready_to_sign" || toStatus === "signed" || toStatus === "rejected") {
+    const { notificarEventoDocumental } = await import(
+      "@/lib/documentos/notificationsService"
+    );
+    await notificarEventoDocumental({
+      event_type: `workflow_${toStatus}`,
+      title:
+        toStatus === "ready_to_sign"
+          ? "Documento pronto para assinatura"
+          : toStatus === "signed"
+            ? "Documento assinado no fluxo"
+            : "Documento rejeitado no fluxo",
+      body: `${doc.title} · ${fromStatus} → ${toStatus}`,
+      document_id: doc.id,
+      processo_id: doc.processo_id,
+      user_id: auth.userId,
+      link_path: `/admin/documentos/documentos/${doc.id}`,
+      created_by: auth.userId,
+    });
+  }
+
   return NextResponse.json({
     ok: true,
     document: updated,

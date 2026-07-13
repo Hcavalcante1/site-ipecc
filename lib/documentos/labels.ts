@@ -69,6 +69,7 @@ export const NAV_GESTAO_DOCUMENTAL = [
   { href: "/admin/documentos/assinaturas", label: "Assinaturas" },
   { href: "/admin/documentos/lotes", label: "Lotes" },
   { href: "/admin/documentos/signatarios", label: "Signatários" },
+  { href: "/admin/documentos/notificacoes", label: "Notificações" },
   { href: "/admin/documentos/auditoria", label: "Auditoria" },
   { href: "/admin/documentos/configuracoes", label: "Configurações" },
 ] as const;

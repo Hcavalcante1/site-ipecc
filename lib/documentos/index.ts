@@ -85,3 +85,18 @@ export {
   listSignatureProviderCodes,
 } from "./signature";
 export type { SignatureProvider } from "./signature/SignatureProvider";
+export {
+  govbrConfigurado,
+  govbrRedirectUriPadrao,
+} from "./signature/GovBrProvider";
+export {
+  criarAssinaturaDocumento,
+  listarAssinaturas,
+  listarLotes,
+  listarSignatarios,
+  providerStatusResumo,
+} from "./signatureService";
+export {
+  listarNotificacoes,
+  notificarEventoDocumental,
+} from "./notificationsService";

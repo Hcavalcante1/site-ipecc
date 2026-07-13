@@ -1,0 +1,105 @@
+import { NextRequest, NextResponse } from "next/server";
+import { denyIfSemModuloDocumentos, requestAuditMeta } from "@/lib/documentos";
+import { processoIdsDoEscopo } from "@/lib/auth/adminEscopo";
+import {
+  criarAssinaturaDocumento,
+  listarAssinaturas,
+  tabelaAssinaturaAusente,
+} from "@/lib/documentos/signatureService";
+import { carregarDocumentoNoEscopo } from "@/lib/documentos/scopeHelper";
+
+export async function GET(req: NextRequest) {
+  const { denied, auth } = await denyIfSemModuloDocumentos();
+  if (denied || !auth) return denied!;
+
+  const documentId = req.nextUrl.searchParams.get("document_id") || undefined;
+  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const { data, error } = await listarAssinaturas({
+    processoIds,
+    documentId,
+  });
+
+  if (error) {
+    if (tabelaAssinaturaAusente(error.message, error.code)) {
+      return NextResponse.json({
+        ok: true,
+        signatures: [],
+        aviso:
+          "Tabelas de assinatura ausentes. Aplique docs/sql/gestao-documental-fase-1.sql no Supabase.",
+      });
+    }
+    return NextResponse.json(
+      { ok: false, error: error.message },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ ok: true, signatures: data || [] });
+}
+
+export async function POST(req: NextRequest) {
+  const { denied, auth } = await denyIfSemModuloDocumentos();
+  if (denied || !auth) return denied!;
+
+  try {
+    const body = (await req.json()) as { document_id?: string };
+    const documentId = String(body.document_id || "").trim();
+    if (!documentId) {
+      return NextResponse.json(
+        { ok: false, error: "document_id é obrigatório." },
+        { status: 400 }
+      );
+    }
+
+    const loaded = await carregarDocumentoNoEscopo(documentId, auth);
+    if (loaded.error) return loaded.error;
+    const doc = loaded.data!;
+
+    if (!doc.storage_path) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Envie um arquivo no documento antes de pedir assinatura.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const meta = requestAuditMeta(req);
+    const { data, error } = await criarAssinaturaDocumento({
+      documentId,
+      userId: auth.userId,
+      actorEmail: auth.contexto.email,
+      processoId: doc.processo_id,
+      ip: meta.ip,
+      userAgent: meta.user_agent,
+    });
+
+    if (error) {
+      if (tabelaAssinaturaAusente(error.message, error.code)) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error:
+              "Tabelas de assinatura ausentes. Aplique docs/sql/gestao-documental-fase-1.sql.",
+          },
+          { status: 503 }
+        );
+      }
+      return NextResponse.json(
+        { ok: false, error: error.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ ok: true, signature: data });
+  } catch (err) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: err instanceof Error ? err.message : "Erro ao criar assinatura.",
+      },
+      { status: 500 }
+    );
+  }
+}
