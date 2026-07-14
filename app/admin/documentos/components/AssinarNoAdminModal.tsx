@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { CONSENTIMENTO_ASSINATURA_IPECC } from "@/lib/documentos/signing/constants";
 
-/** Mesmas proporções do carimbo no PDF (pt) — ver seloBoxPts(). */
+/** Mesmas proporções do carimbo no PDF (pt) — seloBoxPts(): 281×48. */
 const STAMP_MARGIN = 18;
-const STAMP_BOX = { w: 232, h: 40 };
+const STAMP_BOX = { w: 281, h: 48 };
 const LOGO_PREVIEW = "/media/global/logos/ipecc_logo_v2.png";
 
 function formatarCpfPreview(cpf: string): string {
@@ -314,10 +314,10 @@ function StampPositionPreview({
               border: "1px solid #c5ced8",
               borderRadius: 2,
               display: "grid",
-              gridTemplateColumns: "1fr 3.4fr 1fr",
+              gridTemplateColumns: "1fr 4.7fr 1fr",
               alignItems: "center",
-              columnGap: 6,
-              padding: "5px 5px",
+              columnGap: 2,
+              padding: "4px 4px",
               boxSizing: "border-box",
               cursor: grabbing ? "grabbing" : "grab",
               boxShadow: "0 2px 8px rgba(2,132,199,0.4)",
@@ -343,29 +343,34 @@ function StampPositionPreview({
                 minWidth: 0,
                 textAlign: "center",
                 color: "#1e293b",
-                lineHeight: 1.15,
+                lineHeight: 1.2,
                 overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-evenly",
+                height: "100%",
+                padding: "1px 0",
               }}
             >
-              <div style={{ fontSize: "clamp(5px, 1.05vw, 8px)", color: "#475569" }}>
+              <div style={{ fontSize: "clamp(6px, 1.15vw, 9px)", color: "#475569" }}>
                 Documento assinado digitalmente
               </div>
               <div
                 style={{
-                  fontSize: "clamp(6px, 1.3vw, 10px)",
+                  fontSize: "clamp(8px, 1.55vw, 12px)",
                   fontWeight: 700,
                   color: "#0f172a",
                 }}
               >
                 {nomeShow.slice(0, 28)}
               </div>
-              <div style={{ fontSize: "clamp(5px, 0.95vw, 8px)", color: "#475569" }}>
+              <div style={{ fontSize: "clamp(6px, 1.1vw, 9px)", color: "#475569" }}>
                 Data: {dataShow}
               </div>
-              <div style={{ fontSize: "clamp(5px, 0.95vw, 7.5px)", color: "#475569" }}>
-                {metaLinha.slice(0, 36)}
+              <div style={{ fontSize: "clamp(5.5px, 1.05vw, 8.5px)", color: "#475569" }}>
+                {metaLinha.slice(0, 40)}
               </div>
-              <div style={{ fontSize: "clamp(4.5px, 0.9vw, 7px)", color: "#0059bf" }}>
+              <div style={{ fontSize: "clamp(5px, 1vw, 8px)", color: "#0059bf" }}>
                 Lei 14.063/2020 · (código na assinatura)
               </div>
             </div>
