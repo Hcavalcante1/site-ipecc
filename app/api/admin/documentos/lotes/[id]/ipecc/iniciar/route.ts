@@ -99,6 +99,7 @@ export async function POST(
       consentText: result.consentText,
       total: result.total,
       ...(result.devCode ? { devCode: result.devCode } : {}),
+      ...(result.emailWarning ? { emailWarning: result.emailWarning } : {}),
     });
   } catch (err) {
     return NextResponse.json(

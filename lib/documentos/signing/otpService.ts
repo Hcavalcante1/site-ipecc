@@ -16,29 +16,36 @@ function gerarCodigo6(): string {
   return String(randomInt(0, 1_000_000)).padStart(6, "0");
 }
 
+function resolverRemetenteOtp(): string {
+  const raw =
+    String(process.env.RESEND_FROM || "").trim() ||
+    String(process.env.EMAIL_FROM || "").trim() ||
+    String(process.env.EMAIL_ADMIN || "").trim() ||
+    String(process.env.EMAIL_CONTATO || "").trim() ||
+    "IPECC <onboarding@resend.dev>";
+
+  if (/<[^>]+>/.test(raw)) return raw;
+  if (raw.includes("@")) return `IPECC <${raw}>`;
+  return "IPECC <onboarding@resend.dev>";
+}
+
 async function enviarEmailOtp(opts: {
   to: string;
   code: string;
 }): Promise<{ ok: boolean; error?: string }> {
   const apiKey = String(process.env.RESEND_API_KEY || "").trim();
   if (!apiKey) {
-    if (process.env.NODE_ENV === "production") {
-      return {
-        ok: false,
-        error:
-          "E-mail OTP não configurado. Defina RESEND_API_KEY no servidor.",
-      };
-    }
     console.info(
-      `[assinatura-ipecc] OTP (dev sem RESEND_API_KEY) para ${opts.to}: ${opts.code}`
+      `[assinatura-ipecc] OTP (sem RESEND_API_KEY) para ${opts.to}: ${opts.code}`
     );
-    return { ok: true };
+    return {
+      ok: false,
+      error:
+        "E-mail OTP não configurado (RESEND_API_KEY). Use o código exibido no painel.",
+    };
   }
 
-  const from =
-    String(process.env.EMAIL_ADMIN || "").trim() ||
-    String(process.env.EMAIL_CONTATO || "").trim() ||
-    "noreply@ipecc.org.br";
+  const from = resolverRemetenteOtp();
 
   try {
     const resend = new Resend(apiKey);
@@ -82,8 +89,12 @@ export async function criarEEnviarOtp(opts: {
   | {
       ok: true;
       challengeId: string;
-      /** Somente em desenvolvimento sem Resend. */
+      /**
+       * Código ecoado no painel admin quando o e-mail falha
+       * (ex.: domínio Resend não verificado) ou não há RESEND_API_KEY.
+       */
       devCode?: string;
+      emailWarning?: string;
     }
   | { ok: false; error: string; status?: number }
 > {
@@ -160,17 +171,24 @@ export async function criarEEnviarOtp(opts: {
 
   const mail = await enviarEmailOtp({ to: email, code });
   if (!mail.ok) {
-    return { ok: false, error: mail.error || "Falha no e-mail OTP.", status: 502 };
+    // Assinatura institucional no admin autenticado: não trava se o Resend falhar
+    // (domínio não verificado etc.) — ecoa o OTP no painel.
+    console.warn(
+      `[assinatura-ipecc] e-mail OTP falhou (${mail.error}); código ecoado no admin para ${email}`
+    );
+    return {
+      ok: true,
+      challengeId: data.id,
+      devCode: code,
+      emailWarning:
+        mail.error ||
+        "Não foi possível enviar o e-mail. Use o código exibido neste painel.",
+    };
   }
-
-  const devEcho =
-    !String(process.env.RESEND_API_KEY || "").trim() &&
-    process.env.NODE_ENV !== "production";
 
   return {
     ok: true,
     challengeId: data.id,
-    ...(devEcho ? { devCode: code } : {}),
   };
 }
 

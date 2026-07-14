@@ -43,6 +43,7 @@ export async function iniciarAssinaturaIpecc(opts: {
       challengeId: string;
       consentText: string;
       devCode?: string;
+      emailWarning?: string;
     }
   | { ok: false; error: string; status?: number }
 > {
@@ -124,6 +125,7 @@ export async function iniciarAssinaturaIpecc(opts: {
     challengeId: otp.challengeId,
     consentText: CONSENTIMENTO_ASSINATURA_IPECC,
     ...(otp.devCode ? { devCode: otp.devCode } : {}),
+    ...(otp.emailWarning ? { emailWarning: otp.emailWarning } : {}),
   };
 }
 

@@ -22,6 +22,7 @@ export async function iniciarLoteIpecc(opts: {
       consentText: string;
       total: number;
       devCode?: string;
+      emailWarning?: string;
     }
   | { ok: false; error: string; status?: number }
 > {
@@ -112,6 +113,7 @@ export async function iniciarLoteIpecc(opts: {
     consentText: CONSENTIMENTO_ASSINATURA_IPECC,
     total: pending.length,
     ...(otp.devCode ? { devCode: otp.devCode } : {}),
+    ...(otp.emailWarning ? { emailWarning: otp.emailWarning } : {}),
   };
 }
 

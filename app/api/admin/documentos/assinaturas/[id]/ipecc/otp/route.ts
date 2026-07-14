@@ -57,6 +57,7 @@ export async function POST(
       ok: true,
       challengeId: otp.challengeId,
       ...(otp.devCode ? { devCode: otp.devCode } : {}),
+      ...(otp.emailWarning ? { emailWarning: otp.emailWarning } : {}),
     });
   } catch (err) {
     return NextResponse.json(

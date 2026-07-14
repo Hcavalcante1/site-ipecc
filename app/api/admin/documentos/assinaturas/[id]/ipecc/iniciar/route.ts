@@ -73,6 +73,7 @@ export async function POST(
       challengeId: result.challengeId,
       consentText: result.consentText,
       ...(result.devCode ? { devCode: result.devCode } : {}),
+      ...(result.emailWarning ? { emailWarning: result.emailWarning } : {}),
     });
   } catch (err) {
     return NextResponse.json(

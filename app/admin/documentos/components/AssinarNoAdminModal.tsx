@@ -43,6 +43,7 @@ export default function AssinarNoAdminModal({
   const [otp, setOtp] = useState("");
   const [challengeId, setChallengeId] = useState<string | null>(null);
   const [devCode, setDevCode] = useState<string | null>(null);
+  const [emailWarning, setEmailWarning] = useState<string | null>(null);
   const [cpf, setCpf] = useState("");
   const [cargo, setCargo] = useState("");
   const [busy, setBusy] = useState(false);
@@ -97,6 +98,7 @@ export default function AssinarNoAdminModal({
       }
       setChallengeId(json.challengeId);
       setDevCode(json.devCode || null);
+      setEmailWarning(json.emailWarning || null);
       if (json.total) {
         setProgressMsg(`${json.total} documento(s) no lote.`);
       }
@@ -128,6 +130,7 @@ export default function AssinarNoAdminModal({
       }
       setChallengeId(json.challengeId);
       setDevCode(json.devCode || null);
+      setEmailWarning(json.emailWarning || null);
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro de rede.");
     } finally {
@@ -309,11 +312,22 @@ export default function AssinarNoAdminModal({
             {step === "auth" ? (
               <>
                 <p style={{ fontSize: 14, color: "#94a3b8" }}>
-                  Digite sua senha do admin e o código enviado por e-mail.
+                  Digite sua senha do admin e o código OTP.
                 </p>
+                {emailWarning ? (
+                  <p style={{ fontSize: 13, color: "#fbbf24", marginBottom: 8 }}>
+                    E-mail OTP indisponível no momento
+                    {emailWarning.includes("domain") ||
+                    emailWarning.includes("domínio") ||
+                    /not verified/i.test(emailWarning)
+                      ? " (domínio Resend não verificado)"
+                      : ""}
+                    . Use o código abaixo.
+                  </p>
+                ) : null}
                 {devCode ? (
                   <p style={{ fontSize: 13, color: "#fbbf24" }}>
-                    Ambiente local sem Resend — código OTP: <strong>{devCode}</strong>
+                    Código OTP: <strong>{devCode}</strong>
                   </p>
                 ) : null}
                 <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>

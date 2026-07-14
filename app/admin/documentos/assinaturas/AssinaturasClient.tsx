@@ -297,7 +297,7 @@ export default function AssinaturasClient() {
   return (
     <GestaoDocumentalShell
       title="Assinaturas"
-      description="Assine no próprio admin ou envie o link por e-mail ao signatário. gov.br só para órgãos públicos."
+      description="Documentos institucionais: assine você mesmo no admin (IPECC). Envio externo por e-mail é opcional. gov.br só para órgãos públicos."
     >
       <AssinarNoAdminModal
         open={embedOpen}
@@ -330,6 +330,11 @@ export default function AssinaturasClient() {
           {" · "}
           gov.br: <strong>{govbrOk ? "pronto" : "ausente"}</strong>
         </p>
+        <p style={{ marginTop: 0, fontSize: 13, opacity: 0.85 }}>
+          Fluxo institucional: ID do documento + seu nome →{" "}
+          <strong>Assinar no admin</strong>. E-mail só se for enviar para outra
+          pessoa.
+        </p>
         <div
           style={{
             display: "flex",
@@ -346,25 +351,25 @@ export default function AssinaturasClient() {
           />
           <input
             style={gdInputStyle}
-            placeholder="E-mail do signatário (só envio externo)"
-            value={signerEmail}
-            onChange={(e) => setSignerEmail(e.target.value)}
+            placeholder="Seu nome (quem assina no admin)"
+            value={signerName}
+            onChange={(e) => setSignerName(e.target.value)}
           />
           <input
             style={gdInputStyle}
-            placeholder="Nome do signatário"
-            value={signerName}
-            onChange={(e) => setSignerName(e.target.value)}
+            placeholder="E-mail (só se for envio externo)"
+            value={signerEmail}
+            onChange={(e) => setSignerEmail(e.target.value)}
           />
           <button
             type="button"
             style={{ ...gdBtnStyle, background: "#0f766e" }}
             onClick={criarEAssinarAgora}
           >
-            Gerar e assinar agora
+            Assinar no admin
           </button>
           <button type="button" style={gdBtnStyle} onClick={criarEEnviarSignatario}>
-            Enviar a signatário
+            Enviar a outra pessoa
           </button>
         </div>
       </div>
