@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { CONSENTIMENTO_ASSINATURA_IPECC } from "@/lib/documentos/signing/constants";
 
-/** Mesmas proporções do carimbo no PDF (pt). */
+/** Mesmas proporções do carimbo no PDF (pt) — ver seloBoxPts(). */
 const STAMP_MARGIN = 18;
-const STAMP_BOX = { w: 216, h: 36 };
+const STAMP_BOX = { w: 232, h: 40 };
 const LOGO_PREVIEW = "/media/global/logos/ipecc_logo_v2.png";
 
 function formatarCpfPreview(cpf: string): string {
@@ -78,6 +78,7 @@ function StampPositionPreview({
   paginaNum: string;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dragging = useRef(false);
   const [grabbing, setGrabbing] = useState(false);
@@ -158,11 +159,21 @@ function StampPositionPreview({
 
   const geom = stampLeftTopPct(pageSize.w, pageSize.h, xPct, yPct);
 
+  function autoScrollSeBorda(clientY: number) {
+    const sc = scrollRef.current;
+    if (!sc) return;
+    const r = sc.getBoundingClientRect();
+    const zona = 48;
+    if (clientY > r.bottom - zona) sc.scrollTop += 18;
+    else if (clientY < r.top + zona) sc.scrollTop -= 18;
+  }
+
   function pctFromClient(clientX: number, clientY: number) {
     const el = wrapRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
     if (r.width <= 0 || r.height <= 0) return;
+    autoScrollSeBorda(clientY);
     const { w: pageW, h: pageH } = pageSize;
     const margin = STAMP_MARGIN;
     const spanX = Math.max(0, pageW - STAMP_BOX.w - 2 * margin);
@@ -223,13 +234,14 @@ function StampPositionPreview({
         }}
       >
         Posição 1:1 com o PDF
-        {pageLabel ? ` · ${pageLabel}` : ""}. Arraste o carimbo (mãozinha) —
-        o local aqui é o mesmo da assinatura.
+        {pageLabel ? ` · ${pageLabel}` : ""}. Role a página e arraste o carimbo
+        (mãozinha) — ele acompanha a rolagem e fica onde você soltar.
       </p>
       {loadErro ? (
         <p style={{ color: "#fca5a5", fontSize: 13 }}>{loadErro}</p>
       ) : null}
       <div
+        ref={scrollRef}
         style={{
           borderRadius: 8,
           overflow: "auto",
@@ -283,10 +295,11 @@ function StampPositionPreview({
               Carregando página do documento…
             </div>
           ) : null}
+          {/* Sobre a página: rola junto com o PDF */}
           <div
             role="button"
             aria-label="Arrastar carimbo de assinatura"
-            title="Arraste — posição igual à do PDF assinado"
+            title="Arraste — acompanha a rolagem; posição = PDF assinado"
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
@@ -297,20 +310,19 @@ function StampPositionPreview({
               top: `${geom.topPct}%`,
               width: `${geom.wPct}%`,
               height: `${geom.hPct}%`,
-              minHeight: 36,
               background: "rgba(245, 250, 255, 0.97)",
               border: "1px solid #c5ced8",
               borderRadius: 2,
-              display: "flex",
+              display: "grid",
+              gridTemplateColumns: "1fr 3.4fr 1fr",
               alignItems: "center",
-              gap: 4,
-              padding: "2px 4px",
+              columnGap: 6,
+              padding: "5px 5px",
               boxSizing: "border-box",
               cursor: grabbing ? "grabbing" : "grab",
               boxShadow: "0 2px 8px rgba(2,132,199,0.4)",
               zIndex: 3,
               touchAction: "none",
-              overflow: "hidden",
             }}
           >
             <img
@@ -318,17 +330,16 @@ function StampPositionPreview({
               alt="IPECC"
               draggable={false}
               style={{
-                width: "14%",
-                maxWidth: 40,
+                width: "100%",
                 aspectRatio: "1",
-                objectFit: "cover",
-                flexShrink: 0,
+                objectFit: "contain",
+                objectPosition: "center",
                 background: "#fff",
+                display: "block",
               }}
             />
             <div
               style={{
-                flex: 1,
                 minWidth: 0,
                 textAlign: "center",
                 color: "#1e293b",
@@ -336,35 +347,33 @@ function StampPositionPreview({
                 overflow: "hidden",
               }}
             >
-              <div style={{ fontSize: "clamp(5px, 1.1vw, 8px)", color: "#475569" }}>
+              <div style={{ fontSize: "clamp(5px, 1.05vw, 8px)", color: "#475569" }}>
                 Documento assinado digitalmente
               </div>
               <div
                 style={{
-                  fontSize: "clamp(6px, 1.35vw, 10px)",
+                  fontSize: "clamp(6px, 1.3vw, 10px)",
                   fontWeight: 700,
                   color: "#0f172a",
                 }}
               >
                 {nomeShow.slice(0, 28)}
               </div>
-              <div style={{ fontSize: "clamp(5px, 1vw, 8px)", color: "#475569" }}>
+              <div style={{ fontSize: "clamp(5px, 0.95vw, 8px)", color: "#475569" }}>
                 Data: {dataShow}
               </div>
-              <div style={{ fontSize: "clamp(5px, 1vw, 7.5px)", color: "#475569" }}>
+              <div style={{ fontSize: "clamp(5px, 0.95vw, 7.5px)", color: "#475569" }}>
                 {metaLinha.slice(0, 36)}
               </div>
-              <div style={{ fontSize: "clamp(4.5px, 0.95vw, 7px)", color: "#0059bf" }}>
+              <div style={{ fontSize: "clamp(4.5px, 0.9vw, 7px)", color: "#0059bf" }}>
                 Lei 14.063/2020 · (código na assinatura)
               </div>
             </div>
             <div
               aria-hidden
               style={{
-                width: "14%",
-                maxWidth: 40,
+                width: "100%",
                 aspectRatio: "1",
-                flexShrink: 0,
                 background:
                   "repeating-conic-gradient(#0059bf 0% 25%, #e8f1fb 0% 50%) 50% / 22% 22%",
               }}

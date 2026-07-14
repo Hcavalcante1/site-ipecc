@@ -47,21 +47,25 @@ const LOGO_CANDIDATES = [
 ];
 
 /**
- * Selo compacto (menor, não o carimbo grande do visualizador).
- * Logo e QR usam exatamente o mesmo lado (pt).
+ * Selo compacto — logo e QR com o mesmo lado e padding simétrico.
  */
-export const SELO_SIDE_PT = 28;
-export const SELO_PAD_PT = 4;
-/** Largura da coluna central — cabe Lei + código completo sem invadir logo/QR. */
-export const SELO_TEXT_W_PT = 148;
+export const SELO_SIDE_PT = 30;
+export const SELO_PAD_PT = 5;
+/** Espaço igual entre logo↔texto e texto↔QR. */
+export const SELO_GAP_PT = 6;
+/** Largura da coluna central. */
+export const SELO_TEXT_W_PT = 150;
+/** Recuo interno do logo/QR para não colar na borda (evita corte). */
+export const SELO_INSET_PT = 1.5;
 
-/** Proporções do selo na página A4 (para prévia no admin). */
+/** Proporções do selo (para PDF e prévia alinhada). */
 export function seloBoxPts(): { boxW: number; boxH: number } {
   const side = SELO_SIDE_PT;
   const pad = SELO_PAD_PT;
+  const gap = SELO_GAP_PT;
   const textW = SELO_TEXT_W_PT;
   return {
-    boxW: side + pad + textW + pad + side + pad,
+    boxW: pad + side + gap + textW + gap + side + pad,
     boxH: side + pad * 2,
   };
 }
@@ -157,14 +161,15 @@ async function carregarLogoPng(): Promise<Buffer | null> {
   for (const p of LOGO_CANDIDATES) {
     if (!fs.existsSync(p)) continue;
     try {
-      const px = SELO_SIDE_PT * 4;
-      // Remove margem vazia do PNG e preenche o quadrado (= QR)
+      const px = Math.round(SELO_SIDE_PT * 5);
+      // Contain (sem cortar) + fundo branco, como o QR ocupa a mesma caixa
       return await sharp(p)
         .trim()
         .resize(px, px, {
-          fit: "cover",
-          position: "centre",
+          fit: "contain",
+          background: { r: 255, g: 255, b: 255, alpha: 1 },
         })
+        .flatten({ background: "#ffffff" })
         .png()
         .toBuffer();
     } catch {
@@ -198,6 +203,8 @@ function desenharSelo(opts: {
   const side = SELO_SIDE_PT;
   const textW = SELO_TEXT_W_PT;
   const pad = SELO_PAD_PT;
+  const gap = SELO_GAP_PT;
+  const inset = SELO_INSET_PT;
   const { boxW, boxH } = seloBoxPts();
   const { x, y } = origemLivre(width, height, boxW, boxH, opts.xPct, opts.yPct);
 
@@ -209,39 +216,44 @@ function desenharSelo(opts: {
     color: COR.fundo,
     opacity: 0.97,
     borderColor: COR.borda,
-    borderWidth: 0.4,
+    borderWidth: 0.45,
   });
 
-  // Logo e QR: mesmo quadrado
+  // Caixas simétricas: logo (esq) e QR (dir), mesmo tamanho + inset
+  const logoX = x + pad;
+  const logoY = y + pad;
+  const qrX = x + boxW - pad - side;
+  const icon = side - inset * 2;
+
   if (opts.logoImage) {
     page.drawImage(opts.logoImage, {
-      x: x + pad,
-      y: y + pad,
-      width: side,
-      height: side,
+      x: logoX + inset,
+      y: logoY + inset,
+      width: icon,
+      height: icon,
     });
   } else {
     page.drawRectangle({
-      x: x + pad,
-      y: y + pad,
-      width: side,
-      height: side,
+      x: logoX + inset,
+      y: logoY + inset,
+      width: icon,
+      height: icon,
       borderColor: COR.faixa,
       borderWidth: 0.7,
       color: rgb(0.97, 0.98, 1),
     });
     page.drawText("IPECC", {
-      x: x + pad + 4,
-      y: y + pad + side / 2 - 2.5,
+      x: logoX + inset + 3,
+      y: logoY + inset + icon / 2 - 2.5,
       size: 6,
       font: fontBold,
       color: COR.faixa,
     });
   }
 
-  // Coluna de texto entre logo e QR (centralizada H e V)
-  const colLeft = x + pad + side + pad;
-  const maxTextW = textW - 1;
+  // Coluna de texto central (entre logo e QR), texto centralizado H/V
+  const colLeft = x + pad + side + gap;
+  const maxTextW = textW;
   const codigo = String(opts.validationCode || "").trim();
   const linhas: {
     text: string;
@@ -307,10 +319,10 @@ function desenharSelo(opts: {
   }
 
   page.drawImage(opts.qrImage, {
-    x: x + boxW - pad - side,
-    y: y + pad,
-    width: side,
-    height: side,
+    x: qrX + inset,
+    y: logoY + inset,
+    width: icon,
+    height: icon,
   });
 }
 
