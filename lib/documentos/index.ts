@@ -37,11 +37,15 @@ export {
 export {
   LABEL_PERMISSION,
   LABEL_STATUS,
+  LABEL_STATUS_ASSINATURA,
+  LABEL_PROVIDER_ASSINATURA,
   LABEL_SUBJECT_TYPE,
   LABEL_TEMPLATE_KIND,
   NAV_GESTAO_DOCUMENTAL,
   rotuloPermissao,
+  rotuloProviderAssinatura,
   rotuloStatus,
+  rotuloStatusAssinatura,
   rotuloTipoModelo,
   rotuloTipoSujeito,
 } from "./labels";
@@ -117,6 +121,7 @@ export {
   enviarParaAssinaturaDocumento as enviarParaAssinaturaDocumenso,
   enviarLoteParaAssinaturaDocumento,
   listarAssinaturas,
+  excluirAssinaturaDocumento,
   listarLotes,
   listarSignatarios,
   providerStatusResumo,

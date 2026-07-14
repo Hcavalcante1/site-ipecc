@@ -3,10 +3,12 @@ import { denyIfSemModuloDocumentos, requestAuditMeta } from "@/lib/documentos";
 import { processoIdsDoEscopo } from "@/lib/auth/adminEscopo";
 import {
   criarAssinaturaDocumento,
+  excluirAssinaturaDocumento,
   listarAssinaturas,
   tabelaAssinaturaAusente,
 } from "@/lib/documentos/signatureService";
 import { carregarDocumentoNoEscopo } from "@/lib/documentos/scopeHelper";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 export async function GET(req: NextRequest) {
   const { denied, auth } = await denyIfSemModuloDocumentos();
@@ -35,6 +37,63 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({ ok: true, signatures: data || [] });
+}
+
+export async function DELETE(req: NextRequest) {
+  const { denied, auth } = await denyIfSemModuloDocumentos();
+  if (denied || !auth) return denied!;
+
+  const id = String(req.nextUrl.searchParams.get("id") || "").trim();
+  if (!id) {
+    return NextResponse.json(
+      { ok: false, error: "id é obrigatório." },
+      { status: 400 }
+    );
+  }
+
+  const admin = getSupabaseAdmin();
+  const { data: sig, error: sigErr } = await admin
+    .from("gd_signature_documents")
+    .select("id, document_id")
+    .eq("id", id)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (sigErr) {
+    return NextResponse.json(
+      { ok: false, error: sigErr.message },
+      { status: 500 }
+    );
+  }
+  if (!sig) {
+    return NextResponse.json(
+      { ok: false, error: "Pedido não encontrado." },
+      { status: 404 }
+    );
+  }
+
+  const loaded = await carregarDocumentoNoEscopo(sig.document_id, auth);
+  if (loaded.error) return loaded.error;
+
+  const { data, error } = await excluirAssinaturaDocumento({
+    id,
+    userId: auth.userId,
+    actorEmail: auth.contexto.email,
+  });
+  if (error) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          typeof error === "object" && error && "message" in error
+            ? String((error as { message: string }).message)
+            : "Erro ao excluir pedido.",
+      },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ ok: true, signature: data });
 }
 
 export async function POST(req: NextRequest) {

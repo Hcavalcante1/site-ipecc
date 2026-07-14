@@ -83,12 +83,14 @@ export async function listarAssinaturas(opts?: {
   const { data, error } = await query;
   if (error) return { data: null, error };
 
+  let rows = data || [];
+
   if (opts?.processoIds && opts.processoIds !== "todos") {
-    const docIds = [...new Set((data || []).map((r) => r.document_id))];
+    const docIds = [...new Set(rows.map((r) => r.document_id))];
     if (docIds.length === 0) return { data: [], error: null };
     const docs = await admin
       .from("gd_documents")
-      .select("id, processo_id")
+      .select("id, processo_id, title")
       .in("id", docIds);
     const allowed = new Set(
       (docs.data || [])
@@ -99,13 +101,74 @@ export async function listarAssinaturas(opts?: {
         )
         .map((d) => d.id)
     );
+    const titleById = new Map(
+      (docs.data || []).map((d) => [d.id, d.title as string | null])
+    );
     return {
-      data: (data || []).filter((r) => allowed.has(r.document_id)),
+      data: rows
+        .filter((r) => allowed.has(r.document_id))
+        .map((r) => ({
+          ...r,
+          document_title: titleById.get(r.document_id) || null,
+        })),
       error: null,
     };
   }
 
-  return { data: data || [], error: null };
+  const docIds = [...new Set(rows.map((r) => r.document_id))];
+  if (docIds.length > 0) {
+    const docs = await admin
+      .from("gd_documents")
+      .select("id, title")
+      .in("id", docIds);
+    const titleById = new Map(
+      (docs.data || []).map((d) => [d.id, d.title as string | null])
+    );
+    rows = rows.map((r) => ({
+      ...r,
+      document_title: titleById.get(r.document_id) || null,
+    }));
+  }
+
+  return { data: rows, error: null };
+}
+
+export async function excluirAssinaturaDocumento(opts: {
+  id: string;
+  userId: string;
+  actorEmail?: string | null;
+}) {
+  const admin = getSupabaseAdmin();
+  const now = new Date().toISOString();
+  const { data, error } = await admin
+    .from("gd_signature_documents")
+    .update({ deleted_at: now, updated_at: now })
+    .eq("id", opts.id)
+    .is("deleted_at", null)
+    .select(SIG_DOC_SELECT)
+    .maybeSingle();
+
+  if (error) return { data: null, error };
+  if (!data) {
+    return {
+      data: null,
+      error: { message: "Pedido não encontrado.", code: "NOT_FOUND" },
+    };
+  }
+
+  await registrarLog({
+    action: "assinatura_excluida",
+    documentId: data.document_id,
+    actorId: opts.userId,
+    actorEmail: opts.actorEmail || null,
+    detail: {
+      signature_document_id: data.id,
+      status: data.status,
+      provider_code: data.provider_code,
+    },
+  });
+
+  return { data, error: null };
 }
 
 export async function criarAssinaturaDocumento(opts: {

@@ -9,10 +9,15 @@ import GestaoDocumentalShell, {
   gdInputStyle,
 } from "../components/GestaoDocumentalShell";
 import AssinarNoAdminModal from "../components/AssinarNoAdminModal";
+import {
+  rotuloProviderAssinatura,
+  rotuloStatusAssinatura,
+} from "@/lib/documentos/labels";
 
 type SignatureRow = {
   id: string;
   document_id: string;
+  document_title?: string | null;
   status: string;
   provider_code: string;
   signed_storage_path: string | null;
@@ -202,6 +207,22 @@ export default function AssinaturasClient() {
       return;
     }
     setAviso("Envelope enviado ao signatário.");
+    carregar();
+  }
+
+  async function excluirPedido(id: string) {
+    if (!confirm("Excluir este pedido de assinatura? O documento em si permanece."))
+      return;
+    const res = await fetch(`/api/admin/documentos/assinaturas?id=${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      setAviso(json.error || "Erro ao excluir pedido.");
+      return;
+    }
+    setAviso("Pedido excluído.");
     carregar();
   }
 
@@ -398,18 +419,16 @@ export default function AssinaturasClient() {
             >
               <div>
                 <div>
-                  <strong>{row.status}</strong> · {row.provider_code}
+                  <strong>
+                    {row.document_title?.trim() || "Documento sem título"}
+                  </strong>
                 </div>
-                <div style={{ fontSize: 13, opacity: 0.85 }}>
-                  Doc:{" "}
-                  <Link href={`/admin/documentos/documentos/${row.document_id}`}>
-                    {row.document_id.slice(0, 8)}…
-                  </Link>
+                <div style={{ fontSize: 13, opacity: 0.85, marginTop: 4 }}>
+                  {rotuloStatusAssinatura(row.status)}
+                  {" · "}
+                  {rotuloProviderAssinatura(row.provider_code)}
                   {" · "}
                   {new Date(row.created_at).toLocaleString("pt-BR")}
-                  {row.external_session_id
-                    ? ` · env: ${row.external_session_id.slice(0, 12)}…`
-                    : ""}
                 </div>
                 {row.error_message ? (
                   <div style={{ color: "#fca5a5", fontSize: 13 }}>
@@ -418,6 +437,16 @@ export default function AssinaturasClient() {
                 ) : null}
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <Link
+                  href={`/admin/documentos/documentos/${row.document_id}`}
+                  style={{
+                    ...gdBtnStyle,
+                    background: "#334155",
+                    textDecoration: "none",
+                  }}
+                >
+                  Abrir documento
+                </Link>
                 {row.status !== "signed" ? (
                   row.provider_code === "ipecc" ? (
                     <button
@@ -430,7 +459,7 @@ export default function AssinaturasClient() {
                         })
                       }
                     >
-                      Assinar agora (IPECC)
+                      Assinar agora
                     </button>
                   ) : row.provider_code === "documento" ||
                     row.provider_code === "documenso" ? (
@@ -450,7 +479,7 @@ export default function AssinaturasClient() {
                       >
                         {row.external_session_id
                           ? "Já enviado"
-                          : "Enviar a signatário"}
+                          : "Enviar a outra pessoa"}
                       </button>
                     </>
                   ) : (
@@ -474,11 +503,15 @@ export default function AssinaturasClient() {
                 ) : (
                   <span style={{ fontSize: 13, color: "#86efac" }}>
                     Assinado
-                    {row.signed_storage_path
-                      ? ` · ${row.signed_storage_path}`
-                      : ""}
                   </span>
                 )}
+                <button
+                  type="button"
+                  style={{ ...gdBtnStyle, background: "#7f1d1d" }}
+                  onClick={() => excluirPedido(row.id)}
+                >
+                  Excluir
+                </button>
               </div>
             </li>
           ))}

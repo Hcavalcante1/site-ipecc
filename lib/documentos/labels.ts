@@ -15,6 +15,33 @@ export function rotuloStatus(status: string): string {
   return LABEL_STATUS[status as GdDocumentStatus] || status;
 }
 
+export const LABEL_STATUS_ASSINATURA: Record<string, string> = {
+  pending: "Pendente",
+  ready: "Pronto para assinar",
+  authorizing: "Autorizando",
+  signing: "Em assinatura",
+  signed: "Assinado",
+  failed: "Falhou",
+  cancelled: "Cancelado",
+  rejected: "Recusado",
+};
+
+export function rotuloStatusAssinatura(status: string): string {
+  return LABEL_STATUS_ASSINATURA[status] || status.replace(/_/g, " ");
+}
+
+export const LABEL_PROVIDER_ASSINATURA: Record<string, string> = {
+  ipecc: "IPECC",
+  documento: "Documento (legado)",
+  documenso: "Documento (legado)",
+  govbr: "gov.br",
+  icp_brasil: "ICP-Brasil",
+};
+
+export function rotuloProviderAssinatura(code: string): string {
+  return LABEL_PROVIDER_ASSINATURA[code] || code;
+}
+
 export const LABEL_TEMPLATE_KIND: Record<string, string> = {
   contrato: "Contrato",
   oficio: "Ofício",
