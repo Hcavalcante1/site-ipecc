@@ -43,7 +43,10 @@ export default async function ValidarAssinaturaPage({ params }: Props) {
         }}
       >
         <p style={{ margin: 0, color: "#94a3b8", fontSize: 13, letterSpacing: 1 }}>
-          IPECC · Assinatura eletrônica simples
+          IPECC ·{" "}
+          {resultado.modalidade === "ADVANCED"
+            ? "Assinatura eletrônica avançada"
+            : "Assinatura eletrônica simples"}
         </p>
         <h1 style={{ marginTop: 8, marginBottom: 8, fontSize: 28 }}>
           Verificar documento
@@ -52,8 +55,9 @@ export default async function ValidarAssinaturaPage({ params }: Props) {
           Código: <strong style={{ color: "#f8fafc" }}>{params.codigo}</strong>
         </p>
         <p style={{ color: "#94a3b8", fontSize: 13, lineHeight: 1.5 }}>
-          Modalidade de assinatura eletrônica simples (Lei 14.063/2020). Não
-          equivale a assinatura qualificada nem a certificado ICP-Brasil.
+          {resultado.modalidade === "ADVANCED"
+            ? "Modalidade avançada: identidade habilitada, reautenticação, MFA, manifesto selado e certificado de evidências. Não equivale a assinatura qualificada ICP-Brasil."
+            : "Modalidade de assinatura eletrônica simples (Lei 14.063/2020). Não equivale a assinatura qualificada nem a certificado ICP-Brasil."}
         </p>
 
         {!resultado.encontrado ? (

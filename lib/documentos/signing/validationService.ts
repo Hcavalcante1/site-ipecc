@@ -6,6 +6,7 @@ import {
   sha256Bytes,
 } from "./evidenceService";
 import type { GdSignatureEvidence } from "./constants";
+import { verificarTransacaoAvancada } from "@/lib/documentos/assinaturas/advanced/advancedSignService";
 
 function mascararEmailPublico(email: string | null | undefined): string {
   const raw = String(email || "").trim().toLowerCase();
@@ -19,6 +20,7 @@ function mascararEmailPublico(email: string | null | undefined): string {
 
 export type ValidacaoPublicaResultado = {
   encontrado: boolean;
+  modalidade: "SIMPLE" | "ADVANCED" | null;
   evidencia: Pick<
     GdSignatureEvidence,
     | "validation_code"
@@ -43,6 +45,11 @@ export type ValidacaoPublicaResultado = {
   } | null;
   /** URL curta no domínio IPECC para preview/download. */
   downloadUrl: string | null;
+  avancada?: {
+    status: string;
+    identityLevel?: string | null;
+    completedAt?: string | null;
+  } | null;
 };
 
 export async function obterValidacaoPublica(opts: {
@@ -53,6 +60,68 @@ export async function obterValidacaoPublica(opts: {
   const code = String(opts.codigo || "")
     .trim()
     .toUpperCase();
+
+  // 1) Assinatura avançada (tabela própria; não mistura com simples)
+  try {
+    const adv = await verificarTransacaoAvancada({ verificationCode: code });
+    if (adv.found) {
+      await registrarConsultaValidacao({
+        validationCode: code || "vazio",
+        found: true,
+        ip: opts.ip,
+        userAgent: opts.userAgent,
+      });
+      const tx = adv.transaction || {};
+      const admin = getSupabaseAdmin();
+      const docId = String(tx.document_id || "");
+      const { data: doc } = docId
+        ? await admin
+            .from("gd_documents")
+            .select("id, title, current_version")
+            .eq("id", docId)
+            .maybeSingle()
+        : { data: null };
+
+      const ok = adv.status === "VALID";
+      return {
+        encontrado: true,
+        modalidade: "ADVANCED",
+        evidencia: {
+          validation_code: code,
+          nome: "Signatário verificado",
+          cargo: null,
+          email: "—",
+          signed_at: String(tx.completed_at || ""),
+          timezone: "UTC",
+          document_hash_sha256: String(tx.document_hash_sha256 || ""),
+          signed_hash_sha256: String(tx.final_document_hash_sha256 || ""),
+          signature_serial: 1,
+          document_id: docId,
+        },
+        documento: doc
+          ? {
+              id: doc.id,
+              title: doc.title,
+              current_version: doc.current_version,
+            }
+          : null,
+        integridade: {
+          ok,
+          detalhe: adv.detail || adv.status,
+        },
+        downloadUrl: ok ? `/api/download/assinatura/${code}` : null,
+        avancada: {
+          status: adv.status,
+          identityLevel: tx.identity_level
+            ? String(tx.identity_level)
+            : null,
+          completedAt: tx.completed_at ? String(tx.completed_at) : null,
+        },
+      };
+    }
+  } catch {
+    // Tabelas avançadas podem ainda não existir — segue para simples.
+  }
 
   const { data: evidencia } = await buscarEvidenciaPorCodigo(code);
 
@@ -66,10 +135,12 @@ export async function obterValidacaoPublica(opts: {
   if (!evidencia) {
     return {
       encontrado: false,
+      modalidade: null,
       evidencia: null,
       documento: null,
       integridade: null,
       downloadUrl: null,
+      avancada: null,
     };
   }
 
@@ -84,7 +155,6 @@ export async function obterValidacaoPublica(opts: {
     ok: false,
     detalhe: "Arquivo assinado indisponível.",
   };
-  // Link curto no domínio IPECC (mesmo padrão dos downloads públicos)
   let downloadUrl: string | null = `/api/download/assinatura/${evidencia.validation_code}`;
 
   try {
@@ -114,6 +184,7 @@ export async function obterValidacaoPublica(opts: {
 
   return {
     encontrado: true,
+    modalidade: "SIMPLE",
     evidencia: {
       validation_code: evidencia.validation_code,
       nome: evidencia.nome,
@@ -135,5 +206,6 @@ export async function obterValidacaoPublica(opts: {
       : null,
     integridade,
     downloadUrl,
+    avancada: null,
   };
 }

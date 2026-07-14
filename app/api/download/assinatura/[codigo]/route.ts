@@ -42,31 +42,51 @@ export async function GET(req: Request, { params }: Ctx) {
   if (error) {
     return new NextResponse("Erro ao buscar evidência", { status: 500 });
   }
-  if (!evidencia?.signed_storage_path) {
+
+  const admin = getSupabaseAdmin();
+  let storagePath = evidencia?.signed_storage_path || null;
+  let fileNameHint = storagePath?.split("/").pop() || `assinado-${codigo}.pdf`;
+
+  if (!storagePath) {
+    const { data: tx } = await admin
+      .from("gd_adv_transactions")
+      .select("id, status")
+      .eq("verification_code", codigo)
+      .eq("status", "COMPLETED")
+      .maybeSingle();
+    if (tx?.id) {
+      const { data: art } = await admin
+        .from("gd_adv_artifacts")
+        .select("storage_path")
+        .eq("transaction_id", tx.id)
+        .eq("artifact_type", "SIGNED_ADVANCED_DOCUMENT")
+        .maybeSingle();
+      storagePath = art?.storage_path || null;
+      fileNameHint = storagePath?.split("/").pop() || `avancado-${codigo}.pdf`;
+    }
+  }
+
+  if (!storagePath) {
     return new NextResponse("Documento assinado não encontrado", {
       status: 404,
     });
   }
 
-  const admin = getSupabaseAdmin();
   const { data: file, error: dlErr } = await admin.storage
     .from(GD_STORAGE_BUCKET)
-    .download(evidencia.signed_storage_path);
+    .download(storagePath);
 
   if (dlErr || !file) {
     return new NextResponse("Arquivo indisponível", { status: 404 });
   }
 
   const buf = Buffer.from(await file.arrayBuffer());
-  const fileName =
-    evidencia.signed_storage_path.split("/").pop() ||
-    `assinado-${codigo}.pdf`;
 
   return new NextResponse(buf, {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="${fileName}"`,
+      "Content-Disposition": `inline; filename="${fileNameHint}"`,
       "Cache-Control": "private, max-age=60",
       "X-Content-Type-Options": "nosniff",
     },

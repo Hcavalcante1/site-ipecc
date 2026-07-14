@@ -137,7 +137,7 @@ export async function POST(
     if (result.ok === false) {
       return NextResponse.json(
         { ok: false, error: result.error },
-        { status: result.status || 400 }
+        { status: typeof result.status === "number" ? result.status : 400 }
       );
     }
 

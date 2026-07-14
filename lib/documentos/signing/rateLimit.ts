@@ -36,7 +36,17 @@ export function checkRateLimit(
 }
 
 export function assinaturaRateKey(
-  kind: "iniciar" | "otp" | "confirmar" | "lote-iniciar" | "lote-confirmar",
+  kind:
+    | "iniciar"
+    | "otp"
+    | "confirmar"
+    | "lote-iniciar"
+    | "lote-confirmar"
+    | "adv-criar"
+    | "adv-consent"
+    | "adv-mfa"
+    | "adv-auth"
+    | "adv-concluir",
   userId: string,
   ip: string | null | undefined
 ): string {

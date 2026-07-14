@@ -9,6 +9,7 @@ import GestaoDocumentalShell, {
   gdInputStyle,
 } from "../components/GestaoDocumentalShell";
 import AssinarNoAdminModal from "../components/AssinarNoAdminModal";
+import AssinarAvancadaModal from "../components/AssinarAvancadaModal";
 import {
   rotuloProviderAssinatura,
   rotuloStatusAssinatura,
@@ -45,6 +46,9 @@ export default function AssinaturasClient() {
   const [signingUrl, setSigningUrl] = useState<string | null>(null);
   const [ipeccOk, setIpeccOk] = useState(true);
   const [documentTitle, setDocumentTitle] = useState<string | null>(null);
+  const [advOpen, setAdvOpen] = useState(false);
+  const [advDocumentId, setAdvDocumentId] = useState<string | null>(null);
+  const [advDocumentTitle, setAdvDocumentTitle] = useState<string | null>(null);
   const autoStarted = useRef(false);
 
   const carregar = useCallback(async () => {
@@ -447,6 +451,16 @@ export default function AssinaturasClient() {
           carregar();
         }}
       />
+      <AssinarAvancadaModal
+        open={advOpen}
+        documentId={advDocumentId}
+        documentTitle={advDocumentTitle}
+        onClose={() => {
+          setAdvOpen(false);
+          setAdvDocumentId(null);
+          setAdvDocumentTitle(null);
+        }}
+      />
 
       {aviso ? (
         <div style={{ ...gdCardStyle, borderColor: "#f59e0b" }}>{aviso}</div>
@@ -596,19 +610,34 @@ export default function AssinaturasClient() {
                 </Link>
                 {row.status !== "signed" ? (
                   row.provider_code === "ipecc" ? (
-                    <button
-                      type="button"
-                      style={{ ...gdBtnStyle, background: "#0f766e" }}
-                      onClick={() =>
-                        abrirAssinatura({
-                          signatureId: row.id,
-                          documentId: row.document_id,
-                          providerCode: "ipecc",
-                        })
-                      }
-                    >
-                      Assinar agora
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        style={{ ...gdBtnStyle, background: "#0f766e" }}
+                        onClick={() =>
+                          abrirAssinatura({
+                            signatureId: row.id,
+                            documentId: row.document_id,
+                            providerCode: "ipecc",
+                          })
+                        }
+                      >
+                        Assinar agora (simples)
+                      </button>
+                      <button
+                        type="button"
+                        style={{ ...gdBtnStyle, background: "#1d4ed8" }}
+                        onClick={() => {
+                          setAdvDocumentId(row.document_id);
+                          setAdvDocumentTitle(
+                            row.document_title || documentTitle
+                          );
+                          setAdvOpen(true);
+                        }}
+                      >
+                        Assinatura avançada
+                      </button>
+                    </>
                   ) : row.provider_code === "documento" ||
                     row.provider_code === "documenso" ? (
                     <>
