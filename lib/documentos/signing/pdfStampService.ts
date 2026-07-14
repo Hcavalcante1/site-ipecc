@@ -36,19 +36,34 @@ export type StampPlacement = {
 
 const COR = {
   faixa: rgb(0.0, 0.36, 0.75),
-  fundo: rgb(1, 1, 1),
-  borda: rgb(0.78, 0.82, 0.86),
+  fundo: rgb(0.96, 0.98, 1),
+  borda: rgb(0.72, 0.78, 0.86),
   titulo: rgb(0.12, 0.14, 0.16),
   corpo: rgb(0.28, 0.3, 0.33),
 };
 
 const LOGO_CANDIDATES = [
   path.join(process.cwd(), "public", "media", "global", "logos", "ipecc_logo_v2.png"),
-  path.join(process.cwd(), "public", "logo-apecc.svg"),
 ];
 
-/** Tamanho único logo = QR (coesão visual). */
-const SELO_SIDE = 40;
+/**
+ * Selo compacto (menor, não o carimbo grande do visualizador).
+ * Logo e QR usam exatamente o mesmo lado (pt).
+ */
+export const SELO_SIDE_PT = 28;
+export const SELO_PAD_PT = 4;
+export const SELO_TEXT_W_PT = 132;
+
+/** Proporções do selo na página A4 (para prévia no admin). */
+export function seloBoxPts(): { boxW: number; boxH: number } {
+  const side = SELO_SIDE_PT;
+  const pad = SELO_PAD_PT;
+  const textW = SELO_TEXT_W_PT;
+  return {
+    boxW: side + pad + textW + pad + side + pad,
+    boxH: side + pad * 2,
+  };
+}
 
 function soDigitos(v: string): string {
   return String(v || "").replace(/\D/g, "");
@@ -121,7 +136,7 @@ function presetsParaPct(
   else if (posicao === "rodape_direita" || posicao === "direita") h = "direita";
   if (posicao?.startsWith("rodape_")) z = "rodape";
 
-  const xPct = h === "esquerda" ? 4 : h === "centro" ? 50 : 96;
+  const xPct = h === "esquerda" ? 0 : h === "centro" ? 50 : 100;
   const yPct = z === "topo" ? 4 : z === "meio" ? 50 : 96;
   return { xPct, yPct };
 }
@@ -134,10 +149,9 @@ function origemLivre(
   xPct: number,
   yPct: number
 ): { x: number; y: number } {
-  const margin = 24;
+  const margin = 18;
   const spanX = Math.max(0, pageWidth - boxW - 2 * margin);
   const spanY = Math.max(0, pageHeight - boxH - 2 * margin);
-  // 0 = esquerda / topo; 100 = direita / rodapé
   const x = margin + (spanX * clampPct(xPct, 50)) / 100;
   const y = pageHeight - boxH - margin - (spanY * clampPct(yPct, 96)) / 100;
   return { x, y };
@@ -145,13 +159,15 @@ function origemLivre(
 
 async function carregarLogoPng(): Promise<Buffer | null> {
   for (const p of LOGO_CANDIDATES) {
-    if (!fs.existsSync(p) || !p.endsWith(".png")) continue;
+    if (!fs.existsSync(p)) continue;
     try {
-      // Reduz peso no PDF; mantém nitidez no tamanho do QR
+      const px = SELO_SIDE_PT * 4;
+      // Remove margem vazia do PNG e preenche o quadrado (= QR)
       return await sharp(p)
-        .resize(SELO_SIDE * 3, SELO_SIDE * 3, {
-          fit: "contain",
-          background: { r: 255, g: 255, b: 255, alpha: 0 },
+        .trim()
+        .resize(px, px, {
+          fit: "cover",
+          position: "centre",
         })
         .png()
         .toBuffer();
@@ -183,11 +199,10 @@ function desenharSelo(opts: {
   const cargo = String(opts.cargo || "").trim();
   const cpfFmt = formatarCpfExibicao(opts.cpf);
 
-  const side = SELO_SIDE;
-  const textW = 168;
-  const pad = 6;
-  const boxW = side + pad + textW + pad + side + pad;
-  const boxH = side + pad * 2;
+  const side = SELO_SIDE_PT;
+  const textW = SELO_TEXT_W_PT;
+  const pad = SELO_PAD_PT;
+  const { boxW, boxH } = seloBoxPts();
   const { x, y } = origemLivre(width, height, boxW, boxH, opts.xPct, opts.yPct);
 
   page.drawRectangle({
@@ -196,12 +211,12 @@ function desenharSelo(opts: {
     width: boxW,
     height: boxH,
     color: COR.fundo,
-    opacity: 0.96,
+    opacity: 0.97,
     borderColor: COR.borda,
-    borderWidth: 0.45,
+    borderWidth: 0.4,
   });
 
-  // Logo = mesmo tamanho do QR
+  // Logo e QR: mesmo quadrado
   if (opts.logoImage) {
     page.drawImage(opts.logoImage, {
       x: x + pad,
@@ -216,70 +231,70 @@ function desenharSelo(opts: {
       width: side,
       height: side,
       borderColor: COR.faixa,
-      borderWidth: 0.8,
+      borderWidth: 0.7,
       color: rgb(0.97, 0.98, 1),
     });
     page.drawText("IPECC", {
-      x: x + pad + 6,
-      y: y + pad + side / 2 - 3,
-      size: 7,
+      x: x + pad + 4,
+      y: y + pad + side / 2 - 2.5,
+      size: 6,
       font: fontBold,
       color: COR.faixa,
     });
   }
 
   const tx = x + pad + side + pad;
-  let ty = y + boxH - 12;
+  let ty = y + boxH - 9;
 
   page.drawText("Documento assinado digitalmente", {
     x: tx,
     y: ty,
-    size: 6,
+    size: 5.2,
     font,
     color: COR.corpo,
   });
-  ty -= 10;
+  ty -= 8;
 
-  page.drawText(truncar(nome.toUpperCase(), 32), {
+  page.drawText(truncar(nome.toUpperCase(), 28), {
     x: tx,
     y: ty,
-    size: 8,
+    size: 6.5,
     font: fontBold,
     color: COR.titulo,
   });
-  ty -= 9;
+  ty -= 7.5;
 
   page.drawText(
-    truncar(`Data: ${formatarDataGovBr(opts.signedAt, opts.timezone)}`, 40),
+    truncar(`Data: ${formatarDataGovBr(opts.signedAt, opts.timezone)}`, 36),
     {
       x: tx,
       y: ty,
-      size: 6,
+      size: 5,
       font,
       color: COR.corpo,
     }
   );
-  ty -= 8;
+  ty -= 6.5;
 
   const extra = cargo
-    ? `${truncar(cargo, 16)} · CPF ${cpfFmt}`
+    ? `${truncar(cargo, 14)} · CPF ${cpfFmt}`
     : `CPF ${cpfFmt}`;
-  page.drawText(truncar(extra, 40), {
+  page.drawText(truncar(extra, 36), {
     x: tx,
     y: ty,
-    size: 5.5,
+    size: 4.8,
     font,
     color: COR.corpo,
   });
-  ty -= 7.5;
+  ty -= 6;
 
   const verifyHost = validationBaseUrl().replace(/^https?:\/\//, "");
   page.drawText(
-    truncar(`Verifique em ${verifyHost}/validar/${opts.validationCode}`, 44),
+    truncar(`Verifique em ${verifyHost}/validar/${opts.validationCode}`, 40),
     {
       x: tx,
       y: ty,
-      size: 5.2,
+      size: 4.5,
       font,
       color: COR.faixa,
     }
@@ -294,7 +309,7 @@ function desenharSelo(opts: {
 }
 
 /**
- * Selo gov.br-like: logo IPECC original (= QR) + nome 1x + posição livre na página.
+ * Selo compacto: logo IPECC (= QR) + nome 1x + posição livre.
  */
 export async function carimbarPdfAssinatura(opts: {
   pdfBytes: Uint8Array | Buffer;
@@ -315,7 +330,7 @@ export async function carimbarPdfAssinatura(opts: {
   const validUrl = `${validationBaseUrl()}/validar/${opts.validationCode}`;
   const qrPng = await QRCode.toBuffer(validUrl, {
     type: "png",
-    width: SELO_SIDE * 3,
+    width: SELO_SIDE_PT * 4,
     margin: 0,
     errorCorrectionLevel: "M",
     color: { dark: "#0059bf", light: "#00000000" },

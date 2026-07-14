@@ -1,7 +1,162 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { CONSENTIMENTO_ASSINATURA_IPECC } from "@/lib/documentos/signing/constants";
+
+/** Proporções do selo compacto (iguais ao PDF). A4 595×842 pt. */
+const PREVIEW_PAGE = { w: 595, h: 842, margin: 18 };
+const PREVIEW_SELO = { w: 200, h: 36 };
+
+function StampPositionPreview({
+  xPct,
+  yPct,
+  onChange,
+  nome,
+}: {
+  xPct: number;
+  yPct: number;
+  onChange: (x: number, y: number) => void;
+  nome: string;
+}) {
+  const pageRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+
+  const spanX = PREVIEW_PAGE.w - PREVIEW_SELO.w - 2 * PREVIEW_PAGE.margin;
+  const spanY = PREVIEW_PAGE.h - PREVIEW_SELO.h - 2 * PREVIEW_PAGE.margin;
+  const leftPt = PREVIEW_PAGE.margin + (spanX * xPct) / 100;
+  const topPt = PREVIEW_PAGE.margin + (spanY * yPct) / 100;
+
+  function pctFromClient(clientX: number, clientY: number) {
+    const el = pageRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const relX = ((clientX - r.left) / r.width) * PREVIEW_PAGE.w;
+    const relY = ((clientY - r.top) / r.height) * PREVIEW_PAGE.h;
+    // âncora = canto superior esquerdo do selo; clicar no centro do selo também
+    const x = Math.min(
+      100,
+      Math.max(
+        0,
+        ((relX - PREVIEW_SELO.w / 2 - PREVIEW_PAGE.margin) / spanX) * 100
+      )
+    );
+    const y = Math.min(
+      100,
+      Math.max(
+        0,
+        ((relY - PREVIEW_SELO.h / 2 - PREVIEW_PAGE.margin) / spanY) * 100
+      )
+    );
+    onChange(Math.round(x), Math.round(y));
+  }
+
+  function onPointerDown(e: ReactPointerEvent) {
+    dragging.current = true;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    pctFromClient(e.clientX, e.clientY);
+  }
+
+  function onPointerMove(e: ReactPointerEvent) {
+    if (!dragging.current) return;
+    pctFromClient(e.clientX, e.clientY);
+  }
+
+  function onPointerUp() {
+    dragging.current = false;
+  }
+
+  const label = (nome.trim() || "NOME").toUpperCase().slice(0, 18);
+
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <p
+        style={{
+          fontSize: 12,
+          color: "#94a3b8",
+          margin: "0 0 6px",
+          lineHeight: 1.35,
+        }}
+      >
+        Prévia: clique ou arraste o carimbo na página para posicionar.
+      </p>
+      <div
+        ref={pageRef}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        style={{
+          position: "relative",
+          width: "100%",
+          maxWidth: 220,
+          aspectRatio: `${PREVIEW_PAGE.w} / ${PREVIEW_PAGE.h}`,
+          margin: "0 auto",
+          background: "#f8fafc",
+          border: "1px solid #64748b",
+          borderRadius: 4,
+          cursor: "crosshair",
+          touchAction: "none",
+          userSelect: "none",
+          boxShadow: "inset 0 0 0 1px #e2e8f0",
+        }}
+        title="Clique ou arraste para posicionar"
+      >
+        <div
+          style={{
+            position: "absolute",
+            left: `${(leftPt / PREVIEW_PAGE.w) * 100}%`,
+            top: `${(topPt / PREVIEW_PAGE.h) * 100}%`,
+            width: `${(PREVIEW_SELO.w / PREVIEW_PAGE.w) * 100}%`,
+            height: `${(PREVIEW_SELO.h / PREVIEW_PAGE.h) * 100}%`,
+            background: "rgba(224, 242, 254, 0.95)",
+            border: "1px solid #0ea5e9",
+            borderRadius: 2,
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            padding: "1px 2px",
+            boxSizing: "border-box",
+            pointerEvents: "none",
+            boxShadow: "0 1px 4px rgba(14,165,233,0.35)",
+          }}
+        >
+          <div
+            style={{
+              width: "16%",
+              aspectRatio: "1",
+              background: "#0059bf",
+              borderRadius: 1,
+              flexShrink: 0,
+            }}
+          />
+          <div
+            style={{
+              flex: 1,
+              minWidth: 0,
+              fontSize: 5,
+              lineHeight: 1.15,
+              color: "#0f172a",
+              overflow: "hidden",
+            }}
+          >
+            <div style={{ opacity: 0.7 }}>Assinado digitalmente</div>
+            <div style={{ fontWeight: 700, fontSize: 5.5 }}>{label}</div>
+          </div>
+          <div
+            style={{
+              width: "16%",
+              aspectRatio: "1",
+              background:
+                "repeating-conic-gradient(#0059bf 0% 25%, #e0f2fe 0% 50%) 50% / 40% 40%",
+              borderRadius: 1,
+              flexShrink: 0,
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 type Props = {
   open: boolean;
@@ -533,8 +688,17 @@ export default function AssinarNoAdminModal({
                     lineHeight: 1.4,
                   }}
                 >
-                  Posição livre na página (0–100%). Atalhos ajustam os controles.
+                  Posição livre na página. Arraste na prévia ou use os controles.
                 </p>
+                <StampPositionPreview
+                  xPct={xPct}
+                  yPct={yPct}
+                  nome={nome}
+                  onChange={(x, y) => {
+                    setXPct(x);
+                    setYPct(y);
+                  }}
+                />
                 <div
                   style={{
                     display: "grid",
