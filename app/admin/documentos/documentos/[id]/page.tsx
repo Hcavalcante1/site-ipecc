@@ -263,12 +263,26 @@ export default function DocumentoDetalhePage() {
     router.push(`/admin/documentos/documentos/${json.document.id}`);
   }
 
-  async function pedirAssinatura() {
+  async function assinarNoAdmin() {
+    if (!document?.storage_path) {
+      setAviso("Envie um arquivo PDF antes de assinar.");
+      return;
+    }
+    router.push(
+      `/admin/documentos/assinaturas?document_id=${encodeURIComponent(id)}&auto=1`
+    );
+  }
+
+  async function pedirAssinaturaExterna() {
     const email = window.prompt(
-      "E-mail do signatário (enviaremos o link de assinatura):",
+      "E-mail de quem vai receber o link de assinatura:",
       ""
     );
     if (email === null) return;
+    if (!email.trim()) {
+      setAviso("Informe um e-mail para envio externo.");
+      return;
+    }
     const name =
       window.prompt("Nome do signatário (opcional):", "") || undefined;
     const res = await fetch("/api/admin/documentos/assinaturas", {
@@ -277,9 +291,10 @@ export default function DocumentoDetalhePage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         document_id: id,
-        provider_code: "documento",
-        signer_email: email.trim() || undefined,
+        provider_code: "ipecc",
+        signer_email: email.trim(),
         signer_name: name?.trim() || undefined,
+        modo: "enviar_signatarios",
       }),
     });
     const json = await res.json();
@@ -288,7 +303,7 @@ export default function DocumentoDetalhePage() {
       return;
     }
     router.push(
-      `/admin/documentos/assinaturas?signature_id=${json.signature?.id || ""}&document_id=${id}`
+      `/admin/documentos/assinaturas?document_id=${encodeURIComponent(id)}`
     );
   }
 
@@ -314,13 +329,22 @@ export default function DocumentoDetalhePage() {
               Duplicar
             </button>
             {document.storage_path ? (
-              <button
-                type="button"
-                style={{ ...gdBtnStyle, background: "#0f766e" }}
-                onClick={pedirAssinatura}
-              >
-                Pedir assinatura
-              </button>
+              <>
+                <button
+                  type="button"
+                  style={{ ...gdBtnStyle, background: "#0f766e" }}
+                  onClick={assinarNoAdmin}
+                >
+                  Assinar no admin
+                </button>
+                <button
+                  type="button"
+                  style={{ ...gdBtnStyle, background: "#1e40af" }}
+                  onClick={pedirAssinaturaExterna}
+                >
+                  Enviar a outra pessoa
+                </button>
+              </>
             ) : null}
           </div>
         ) : null

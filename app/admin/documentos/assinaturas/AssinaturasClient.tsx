@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import GestaoDocumentalShell, {
@@ -43,6 +43,8 @@ export default function AssinaturasClient() {
   const [embedUrl, setEmbedUrl] = useState<string | null>(null);
   const [signingUrl, setSigningUrl] = useState<string | null>(null);
   const [ipeccOk, setIpeccOk] = useState(true);
+  const [documentTitle, setDocumentTitle] = useState<string | null>(null);
+  const autoStarted = useRef(false);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -89,6 +91,96 @@ export default function AssinaturasClient() {
     }
   }, [search]);
 
+  useEffect(() => {
+    const docId = String(search.get("document_id") || "").trim();
+    if (!docId) {
+      setDocumentTitle(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/admin/documentos/${docId}`, {
+          credentials: "include",
+        });
+        const json = await res.json();
+        if (cancelled) return;
+        if (res.ok && json.document?.title) {
+          setDocumentTitle(String(json.document.title));
+        } else {
+          setDocumentTitle(null);
+        }
+      } catch {
+        if (!cancelled) setDocumentTitle(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [search]);
+
+  useEffect(() => {
+    const docId = String(search.get("document_id") || "").trim();
+    const sigId = String(search.get("signature_id") || "").trim();
+    const auto = search.get("auto") === "1";
+    if (!docId || autoStarted.current || loading) return;
+
+    if (sigId) {
+      autoStarted.current = true;
+      setDocumentId(docId);
+      abrirAssinatura({ signatureId: sigId, providerCode: "ipecc" });
+      return;
+    }
+
+    if (auto) {
+      autoStarted.current = true;
+      setDocumentId(docId);
+      void (async () => {
+        setAviso(
+          documentTitle
+            ? `Preparando assinatura de “${documentTitle}”…`
+            : "Preparando assinatura…"
+        );
+        const res = await fetch("/api/admin/documentos/assinaturas", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            document_id: docId,
+            provider_code: ipeccOk ? "ipecc" : documentoOk ? "documento" : undefined,
+            modo: "eu_assino",
+          }),
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          setAviso(json.error || "Erro ao criar pedido.");
+          autoStarted.current = false;
+          return;
+        }
+        setAviso(
+          documentTitle
+            ? `Pronto para assinar: ${documentTitle}`
+            : "Documento pronto. Continue no painel."
+        );
+        abrirAssinatura({
+          signatureId: json.signature?.id || json.data?.id,
+          embedUrl: json.embedUrl,
+          signingUrl: json.signingUrl,
+          providerCode:
+            json.signature?.provider_code || json.data?.provider_code,
+        });
+        carregar();
+      })();
+    }
+  }, [
+    search,
+    loading,
+    ipeccOk,
+    documentoOk,
+    documentTitle,
+    carregar,
+  ]);
+
   function abrirAssinatura(opts: {
     signatureId?: string | null;
     embedUrl?: string | null;
@@ -111,7 +203,7 @@ export default function AssinaturasClient() {
     const sign = opts.signingUrl || null;
     if (!embed && !sign) {
       setAviso(
-        "Pedido criado, mas o link de assinatura não veio do motor. Use Assinar agora no IPECC ou verifique DOCUMENTO_API_URL."
+        "Pedido criado, mas o link de assinatura não veio do motor. Use Assinar agora ou verifique a configuração."
       );
       return;
     }
@@ -123,7 +215,7 @@ export default function AssinaturasClient() {
 
   async function criarEAssinarAgora() {
     if (!documentId.trim()) {
-      setAviso("Informe o ID do documento.");
+      setAviso("Selecione um documento (use Assinar no admin na ficha do documento).");
       return;
     }
     const res = await fetch("/api/admin/documentos/assinaturas", {
@@ -141,8 +233,11 @@ export default function AssinaturasClient() {
       setAviso(json.error || "Erro ao criar pedido.");
       return;
     }
-    setDocumentId("");
-    setAviso("Documento pronto. Assine no painel abaixo.");
+    setAviso(
+      documentTitle
+        ? `Pronto para assinar: ${documentTitle}`
+        : "Documento pronto. Continue no painel."
+    );
     abrirAssinatura({
       signatureId: json.signature?.id || json.data?.id,
       embedUrl: json.embedUrl,
@@ -352,10 +447,28 @@ export default function AssinaturasClient() {
           gov.br: <strong>{govbrOk ? "pronto" : "ausente"}</strong>
         </p>
         <p style={{ marginTop: 0, fontSize: 13, opacity: 0.85 }}>
-          Fluxo institucional: ID do documento + seu nome →{" "}
-          <strong>Assinar no admin</strong>. E-mail só se for enviar para outra
-          pessoa.
+          Preferência: abra o documento e clique em <strong>Assinar no admin</strong> —
+          o ID entra sozinho. Não precisa copiar da barra de endereço.
         </p>
+        {documentTitle && documentId ? (
+          <p
+            style={{
+              marginTop: 0,
+              marginBottom: 10,
+              padding: "8px 12px",
+              borderRadius: 8,
+              background: "rgba(15,118,110,0.18)",
+              border: "1px solid #0f766e",
+              fontSize: 14,
+            }}
+          >
+            Documento selecionado: <strong>{documentTitle}</strong>
+            {" · "}
+            <Link href={`/admin/documentos/documentos/${documentId}`}>
+              abrir ficha
+            </Link>
+          </p>
+        ) : null}
         <div
           style={{
             display: "flex",
@@ -364,12 +477,16 @@ export default function AssinaturasClient() {
             alignItems: "center",
           }}
         >
-          <input
-            style={gdInputStyle}
-            placeholder="ID do documento"
-            value={documentId}
-            onChange={(e) => setDocumentId(e.target.value)}
-          />
+          {!documentTitle ? (
+            <input
+              style={gdInputStyle}
+              placeholder="ID do documento (ou use Assinar na ficha)"
+              value={documentId}
+              onChange={(e) => setDocumentId(e.target.value)}
+            />
+          ) : (
+            <input type="hidden" value={documentId} readOnly />
+          )}
           <input
             style={gdInputStyle}
             placeholder="Seu nome (quem assina no admin)"
@@ -392,6 +509,18 @@ export default function AssinaturasClient() {
           <button type="button" style={gdBtnStyle} onClick={criarEEnviarSignatario}>
             Enviar a outra pessoa
           </button>
+          {documentTitle ? (
+            <button
+              type="button"
+              style={{ ...gdBtnStyle, background: "#334155" }}
+              onClick={() => {
+                setDocumentId("");
+                setDocumentTitle(null);
+              }}
+            >
+              Trocar documento
+            </button>
+          ) : null}
         </div>
       </div>
 
