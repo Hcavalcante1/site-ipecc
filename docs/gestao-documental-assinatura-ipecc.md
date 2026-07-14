@@ -40,12 +40,14 @@ O documento só fica `signed` quando todos os signatários `required` concluíre
 
 ## Carimbo (padrão visual gov.br)
 
-O PDF ganha bloco no estilo:
-`Assinado de forma digital por NOME:CPF` + data + nome/cargo + QR.
+Selo **compacto** no rodapé (~5 cm × 1,8 cm): faixa teal, texto fino estilo Adobe
+(`Assinado de forma digital por NOME:CPF`), data, nome/cargo, menção mínima
+`Lei 14.063/2020` + código, QR pequeno.
 
-No modal: **nome completo** e **CPF** são obrigatórios; escolha página (última / específica / nova folha) e posição no rodapé (esquerda / centro / direita).
+No modal: **nome completo** e **CPF** obrigatórios; página (última / específica / nova)
+e posição (esquerda / centro / direita).
 
-Isso é representação gráfica + evidências IPECC (não certificado ICP-Brasil criptográfico).
+Ilustrativo + evidências IPECC — não substitui certificado ICP-Brasil.
 
 - Rate limit por IP+usuário nas rotas `.../ipecc/*` e na validação pública `/api/public/validar/{codigo}` (além do cooldown OTP e `max_attempts` no banco).
 - Auditoria admin: `/admin/documentos/auditoria` lista evidências IPECC com download de laudo (`.txt` / CSV).
