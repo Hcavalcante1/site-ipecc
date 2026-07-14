@@ -31,7 +31,7 @@ export type ValidacaoPublicaResultado = {
     ok: boolean;
     detalhe: string;
   } | null;
-  /** URL assinada curta para preview/download (opcional). */
+  /** URL curta no domínio IPECC para preview/download. */
   downloadUrl: string | null;
 };
 
@@ -74,7 +74,8 @@ export async function obterValidacaoPublica(opts: {
     ok: false,
     detalhe: "Arquivo assinado indisponível.",
   };
-  let downloadUrl: string | null = null;
+  // Link curto no domínio IPECC (mesmo padrão dos downloads públicos)
+  let downloadUrl: string | null = `/api/download/assinatura/${evidencia.validation_code}`;
 
   try {
     const { data: file } = await admin.storage
@@ -90,12 +91,11 @@ export async function obterValidacaoPublica(opts: {
           ? "Hash SHA-256 confere com a evidência registrada."
           : "Hash do arquivo divergente da evidência.",
       };
-      const signed = await admin.storage
-        .from(GD_STORAGE_BUCKET)
-        .createSignedUrl(evidencia.signed_storage_path, 60 * 15);
-      downloadUrl = signed.data?.signedUrl || null;
+    } else {
+      downloadUrl = null;
     }
   } catch (e) {
+    downloadUrl = null;
     integridade = {
       ok: false,
       detalhe: e instanceof Error ? e.message : "Falha ao verificar integridade.",

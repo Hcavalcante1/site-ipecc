@@ -70,16 +70,16 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
   const previewKind = previewKindFromMime(doc.mime_type, doc.file_name);
 
   if (doc.storage_path) {
-    const signed = await admin.storage
-      .from(GD_STORAGE_BUCKET)
-      .createSignedUrl(doc.storage_path, 60 * 10);
-    downloadUrl = signed.data?.signedUrl || null;
+    // Proxy no domínio IPECC — evita URL longa do Supabase Storage
+    downloadUrl = `/api/admin/documentos/${doc.id}/arquivo`;
 
-    if (previewKind === "text" && downloadUrl) {
+    if (previewKind === "text") {
       try {
-        const txtRes = await fetch(downloadUrl);
-        if (txtRes.ok) {
-          previewText = (await txtRes.text()).slice(0, 200_000);
+        const { data: file } = await admin.storage
+          .from(GD_STORAGE_BUCKET)
+          .download(doc.storage_path);
+        if (file) {
+          previewText = (await file.text()).slice(0, 200_000);
         }
       } catch {
         previewText = null;
