@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { CONSENTIMENTO_ASSINATURA_IPECC } from "@/lib/documentos/signing/constants";
 
-/** Mesmas proporções do carimbo no PDF — seloBoxPts(): ~287.5×46. */
+/** Fallback de proporção do carimbo (largura real no PDF depende do texto). */
 const STAMP_MARGIN = 18;
-const STAMP_BOX = { w: 287.5, h: 46 };
+const STAMP_BOX = { w: 220, h: 41 };
 const LOGO_PREVIEW = "/media/global/logos/ipecc_logo_v2.png";
 
 function formatarCpfPreview(cpf: string): string {
