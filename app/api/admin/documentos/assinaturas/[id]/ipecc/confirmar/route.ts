@@ -43,6 +43,8 @@ export async function POST(
           | "rodape_centro"
           | "rodape_direita";
         zona?: "topo" | "meio" | "rodape";
+        xPct?: number;
+        yPct?: number;
       };
     };
 
@@ -68,12 +70,22 @@ export async function POST(
     const placement =
       body.placement?.modoPagina ||
       body.placement?.posicao ||
-      body.placement?.zona
+      body.placement?.zona ||
+      body.placement?.xPct != null ||
+      body.placement?.yPct != null
         ? {
             modoPagina: body.placement.modoPagina || "ultima",
             pagina: body.placement.pagina,
             posicao: body.placement.posicao || "direita",
             zona: body.placement.zona || "rodape",
+            xPct:
+              typeof body.placement.xPct === "number"
+                ? body.placement.xPct
+                : undefined,
+            yPct:
+              typeof body.placement.yPct === "number"
+                ? body.placement.yPct
+                : undefined,
           }
         : undefined;
 

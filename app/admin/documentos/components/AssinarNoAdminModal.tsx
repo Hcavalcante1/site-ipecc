@@ -55,6 +55,9 @@ export default function AssinarNoAdminModal({
     "direita"
   );
   const [zona, setZona] = useState<"topo" | "meio" | "rodape">("rodape");
+  /** 0–100: esquerda→direita / topo→rodapé (posição livre na página). */
+  const [xPct, setXPct] = useState(96);
+  const [yPct, setYPct] = useState(96);
   const [busy, setBusy] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [validationCode, setValidationCode] = useState<string | null>(null);
@@ -76,6 +79,8 @@ export default function AssinarNoAdminModal({
     setPaginaNum("1");
     setPosicao("direita");
     setZona("rodape");
+    setXPct(96);
+    setYPct(96);
     setErro(null);
     setValidationCode(null);
     setProgressMsg(null);
@@ -190,6 +195,8 @@ export default function AssinarNoAdminModal({
                 : undefined,
             posicao,
             zona,
+            xPct,
+            yPct,
           },
           ...clientMeta(),
         }),
@@ -518,53 +525,101 @@ export default function AssinarNoAdminModal({
                     />
                   </label>
                 ) : null}
+                <p
+                  style={{
+                    fontSize: 12,
+                    color: "#94a3b8",
+                    margin: "0 0 8px",
+                    lineHeight: 1.4,
+                  }}
+                >
+                  Posição livre na página (0–100%). Atalhos ajustam os controles.
+                </p>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 8,
+                    marginBottom: 8,
+                  }}
+                >
+                  <label style={{ display: "block", fontSize: 13 }}>
+                    Área vertical
+                    <select
+                      value={zona}
+                      onChange={(e) => {
+                        const z = e.target.value as "topo" | "meio" | "rodape";
+                        setZona(z);
+                        setYPct(z === "topo" ? 4 : z === "meio" ? 50 : 96);
+                      }}
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        marginTop: 4,
+                        padding: "8px 10px",
+                        borderRadius: 8,
+                        border: "1px solid #475569",
+                        background: "#1e293b",
+                        color: "#f8fafc",
+                      }}
+                    >
+                      <option value="topo">Topo</option>
+                      <option value="meio">Meio</option>
+                      <option value="rodape">Rodapé</option>
+                    </select>
+                  </label>
+                  <label style={{ display: "block", fontSize: 13 }}>
+                    Lado
+                    <select
+                      value={posicao}
+                      onChange={(e) => {
+                        const p = e.target.value as
+                          | "esquerda"
+                          | "centro"
+                          | "direita";
+                        setPosicao(p);
+                        setXPct(
+                          p === "esquerda" ? 0 : p === "centro" ? 50 : 100
+                        );
+                      }}
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        marginTop: 4,
+                        padding: "8px 10px",
+                        borderRadius: 8,
+                        border: "1px solid #475569",
+                        background: "#1e293b",
+                        color: "#f8fafc",
+                      }}
+                    >
+                      <option value="direita">Direita</option>
+                      <option value="centro">Centro</option>
+                      <option value="esquerda">Esquerda</option>
+                    </select>
+                  </label>
+                </div>
                 <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>
-                  Área vertical
-                  <select
-                    value={zona}
-                    onChange={(e) =>
-                      setZona(e.target.value as "topo" | "meio" | "rodape")
-                    }
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      marginTop: 4,
-                      padding: "8px 10px",
-                      borderRadius: 8,
-                      border: "1px solid #475569",
-                      background: "#1e293b",
-                      color: "#f8fafc",
-                    }}
-                  >
-                    <option value="topo">Topo</option>
-                    <option value="meio">Meio</option>
-                    <option value="rodape">Rodapé</option>
-                  </select>
+                  Horizontal: {xPct}% (0 esquerda · 100 direita)
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={xPct}
+                    onChange={(e) => setXPct(Number(e.target.value))}
+                    style={{ display: "block", width: "100%", marginTop: 6 }}
+                  />
                 </label>
                 <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>
-                  Lado
-                  <select
-                    value={posicao}
-                    onChange={(e) =>
-                      setPosicao(
-                        e.target.value as "esquerda" | "centro" | "direita"
-                      )
-                    }
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      marginTop: 4,
-                      padding: "8px 10px",
-                      borderRadius: 8,
-                      border: "1px solid #475569",
-                      background: "#1e293b",
-                      color: "#f8fafc",
-                    }}
-                  >
-                    <option value="direita">Direita</option>
-                    <option value="centro">Centro</option>
-                    <option value="esquerda">Esquerda</option>
-                  </select>
+                  Vertical: {yPct}% (0 topo · 100 rodapé)
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={yPct}
+                    onChange={(e) => setYPct(Number(e.target.value))}
+                    style={{ display: "block", width: "100%", marginTop: 6 }}
+                  />
                 </label>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
                   <button
