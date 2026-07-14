@@ -78,6 +78,7 @@
     "validar:digital": "npx --yes tsx scripts/validar-digital-fase1.ts",
     "validar:documentos": "npx --yes tsx scripts/validar-documentos-fase1.ts",
     "validar:assinaturas": "npx --yes tsx scripts/validar-assinaturas-modulo.ts",
+    "aplicar:assinatura-avancada-sql": "node scripts/aplicar-assinatura-avancada-sql.cjs",
     "digital:worker": "npm --prefix services/digital-publisher run dev",
     "aplicar:digital-automation": "node scripts/aplicar-digital-redes-automation-phase1.cjs"
   },

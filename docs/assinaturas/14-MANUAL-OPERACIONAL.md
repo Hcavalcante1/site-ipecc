@@ -6,6 +6,15 @@
 3. Env: `SIGNATURE_OTP_PEPPER`, Resend (ou `SIGNATURE_OTP_ALLOW_PANEL_FALLBACK=true`)  
 4. Env avançada: `SIGNATURE_ADV_PRIVATE_KEY_PEM` (+ version/public opcionais)
 
+### Aplicar SQL avançado (automático)
+No `.env.local`, defina `SUPABASE_DB_PASSWORD` (senha do banco no painel Supabase → Settings → Database) e rode:
+
+```bash
+npm run aplicar:assinatura-avancada-sql
+```
+
+O script também gera localmente (se faltarem) `SIGNATURE_OTP_PEPPER`, par Ed25519 e `SIGNATURE_OTP_ALLOW_PANEL_FALLBACK=true`.
+
 ## Simples
 Admin → Documentos → Assinaturas → **Assinar agora (simples)** → consentimento → OTP → senha → selo.
 
