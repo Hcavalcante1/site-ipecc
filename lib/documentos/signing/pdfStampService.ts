@@ -2,10 +2,17 @@ import { PDFDocument, StandardFonts, rgb, type PDFPage, type PDFFont } from "pdf
 import QRCode from "qrcode";
 import { validationBaseUrl } from "./constants";
 
+/** Horizontal — alinhamento do selo. */
 export type PosicaoAssinatura =
+  | "esquerda"
+  | "centro"
+  | "direita"
+  /** Legado UI (mapeado para vertical=rodape) */
   | "rodape_esquerda"
   | "rodape_centro"
   | "rodape_direita";
+
+export type ZonaVerticalAssinatura = "topo" | "meio" | "rodape";
 
 export type ModoPaginaAssinatura = "ultima" | "numero" | "nova";
 
@@ -14,16 +21,17 @@ export type StampPlacement = {
   /** 1-based quando modoPagina=numero */
   pagina?: number;
   posicao: PosicaoAssinatura;
+  /** Onde na página (padrão: rodape para compatibilidade). */
+  zona?: ZonaVerticalAssinatura;
 };
 
-/** Cores institucionais suaves (selo compacto, sem poluir o texto). */
 const COR = {
-  faixa: rgb(0.05, 0.35, 0.42), // teal institucional
-  fundo: rgb(0.965, 0.98, 0.985),
-  borda: rgb(0.72, 0.82, 0.84),
-  titulo: rgb(0.06, 0.18, 0.26),
-  corpo: rgb(0.22, 0.28, 0.32),
-  legal: rgb(0.4, 0.46, 0.5),
+  faixa: rgb(0.0, 0.36, 0.75), // azul institucional (eco gov.br)
+  accent: rgb(0.0, 0.6, 0.35),
+  fundo: rgb(1, 1, 1),
+  borda: rgb(0.78, 0.82, 0.86),
+  titulo: rgb(0.12, 0.14, 0.16),
+  corpo: rgb(0.28, 0.3, 0.33),
 };
 
 function soDigitos(v: string): string {
@@ -43,7 +51,7 @@ export function validarCpfBasico(cpf: string): boolean {
   return true;
 }
 
-function formatarDadosGovBr(iso: Date, timeZone: string): string {
+function formatarDataGovBr(iso: Date, timeZone: string): string {
   try {
     const parts = new Intl.DateTimeFormat("en-CA", {
       timeZone,
@@ -57,18 +65,19 @@ function formatarDadosGovBr(iso: Date, timeZone: string): string {
       timeZoneName: "shortOffset",
     }).formatToParts(iso);
     const get = (t: string) => parts.find((p) => p.type === t)?.value || "";
-    const y = get("year");
-    const m = get("month");
     const d = get("day");
+    const m = get("month");
+    const y = get("year");
     const h = get("hour");
     const min = get("minute");
     const s = get("second");
     const off = (get("timeZoneName") || "-03").replace("GMT", "");
-    let offset = "-03'00'";
-    if (/^[+-]\d{2}$/.test(off)) offset = `${off}'00'`;
+    let offset = "-0300";
+    if (/^[+-]\d{2}$/.test(off)) offset = `${off}00`;
     else if (/^[+-]\d{2}:\d{2}$/.test(off))
-      offset = `${off.slice(0, 3)}'${off.slice(4)}'`;
-    return `${y}.${m}.${d} ${h}:${min}:${s} ${offset}`;
+      offset = `${off.slice(0, 3)}${off.slice(4)}`;
+    // Modelo gov.br: Data: 03/03/2023 08:54:40 -0300
+    return `${d}/${m}/${y} ${h}:${min}:${s} ${offset}`;
   } catch {
     return iso.toISOString();
   }
@@ -80,29 +89,48 @@ function truncar(texto: string, max: number): string {
   return `${t.slice(0, Math.max(0, max - 1))}…`;
 }
 
+function normalizarPosicao(pos: PosicaoAssinatura): {
+  h: "esquerda" | "centro" | "direita";
+  zonaDefault: ZonaVerticalAssinatura;
+} {
+  if (pos === "rodape_esquerda") return { h: "esquerda", zonaDefault: "rodape" };
+  if (pos === "rodape_centro") return { h: "centro", zonaDefault: "rodape" };
+  if (pos === "rodape_direita") return { h: "direita", zonaDefault: "rodape" };
+  return { h: pos, zonaDefault: "rodape" };
+}
+
 function origemBloco(
   pageWidth: number,
+  pageHeight: number,
   posicao: PosicaoAssinatura,
-  boxW: number
+  zona: ZonaVerticalAssinatura,
+  boxW: number,
+  boxH: number
 ): { x: number; y: number } {
-  const marginX = 42;
-  const marginBottom = 36;
-  const y = marginBottom;
-  if (posicao === "rodape_direita") {
-    return { x: Math.max(marginX, pageWidth - marginX - boxW), y };
-  }
-  if (posicao === "rodape_centro") {
-    return { x: Math.max(marginX, (pageWidth - boxW) / 2), y };
-  }
-  return { x: marginX, y };
+  const marginX = 40;
+  const marginY = 36;
+  const { h } = normalizarPosicao(posicao);
+
+  let x = marginX;
+  if (h === "direita") x = Math.max(marginX, pageWidth - marginX - boxW);
+  else if (h === "centro") x = Math.max(marginX, (pageWidth - boxW) / 2);
+
+  let y = marginY;
+  if (zona === "topo") y = pageHeight - marginY - boxH;
+  else if (zona === "meio") y = (pageHeight - boxH) / 2;
+
+  return { x, y };
 }
 
 /**
- * Selo compacto no espírito Adobe/gov.br:
- * faixa colorida + 3–4 linhas + QR pequeno.
- * Base legal em tipografia mínima (Lei 14.063/2020), sem bloco burocrático.
+ * Layout próximo ao selo gov.br:
+ * [marca] Documento assinado digitalmente
+ *         NOME
+ *         Data: …
+ *         Verifique em …
+ * Nome aparece uma única vez. Marca IPECC (não usa logo gov.br).
  */
-function desenharBlocoCompacto(opts: {
+function desenharSeloGovBrLike(opts: {
   page: PDFPage;
   font: PDFFont;
   fontBold: PDFFont;
@@ -112,102 +140,140 @@ function desenharBlocoCompacto(opts: {
   signedAt: Date;
   timezone: string;
   validationCode: string;
+  validUrl: string;
   qrImage: Awaited<ReturnType<PDFDocument["embedPng"]>>;
   posicao: PosicaoAssinatura;
+  zona: ZonaVerticalAssinatura;
 }) {
   const { page, font, fontBold } = opts;
-  const { width } = page.getSize();
-  const cpfFmt = formatarCpfExibicao(opts.cpf);
-  const cpfDigits = soDigitos(opts.cpf);
+  const { width, height } = page.getSize();
   const nome = opts.nome.trim();
   const cargo = String(opts.cargo || "").trim();
+  const cpfFmt = formatarCpfExibicao(opts.cpf);
 
-  const qrSize = 38;
-  const faixaW = 3.2;
+  const marcaW = 42;
+  const qrSize = 34;
+  const textW = 175;
   const pad = 6;
-  const textW = 168;
-  const boxW = faixaW + pad + textW + 6 + qrSize + pad;
-  const boxH = 52;
-  const { x, y } = origemBloco(width, opts.posicao, boxW);
+  const boxW = marcaW + pad + textW + 4 + qrSize + pad;
+  const boxH = 58;
+  const { x, y } = origemBloco(
+    width,
+    height,
+    opts.posicao,
+    opts.zona,
+    boxW,
+    boxH
+  );
 
-  // Fundo + borda leve
   page.drawRectangle({
     x,
     y,
     width: boxW,
     height: boxH,
     color: COR.fundo,
+    opacity: 0.94,
     borderColor: COR.borda,
-    borderWidth: 0.5,
+    borderWidth: 0.45,
   });
 
-  // Faixa institucional (lado esquerdo)
+  // Marca IPECC (eco do bloco logo do gov.br — sem copiar a marca oficial)
   page.drawRectangle({
-    x,
-    y,
-    width: faixaW,
-    height: boxH,
+    x: x + 4,
+    y: y + 16,
+    width: marcaW - 6,
+    height: 26,
+    color: rgb(0.97, 0.98, 1),
+    borderColor: COR.faixa,
+    borderWidth: 0.6,
+  });
+  page.drawText("IPECC", {
+    x: x + 8,
+    y: y + 30,
+    size: 7,
+    font: fontBold,
     color: COR.faixa,
   });
+  page.drawRectangle({
+    x: x + 12,
+    y: y + 20,
+    width: 4,
+    height: 4,
+    color: rgb(0.95, 0.75, 0.1),
+  });
+  page.drawRectangle({
+    x: x + 18,
+    y: y + 20,
+    width: 4,
+    height: 4,
+    color: rgb(0.85, 0.15, 0.15),
+  });
+  page.drawRectangle({
+    x: x + 24,
+    y: y + 20,
+    width: 4,
+    height: 4,
+    color: COR.accent,
+  });
 
-  const tx = x + faixaW + pad;
+  const tx = x + marcaW + pad;
   let ty = y + boxH - 11;
 
-  // Linha 1 — padrão gov.br / Adobe
-  page.drawText(
-    truncar(`Assinado de forma digital por ${nome.toUpperCase()}:${cpfDigits}`, 46),
-    {
-      x: tx,
-      y: ty,
-      size: 5.8,
-      font: fontBold,
-      color: COR.titulo,
-    }
-  );
-  ty -= 8.2;
-
-  // Linha 2 — data
-  page.drawText(
-    truncar(`Dados: ${formatarDadosGovBr(opts.signedAt, opts.timezone)}`, 48),
-    {
-      x: tx,
-      y: ty,
-      size: 5.5,
-      font,
-      color: COR.corpo,
-    }
-  );
-  ty -= 8;
-
-  // Linha 3 — nome civil + cargo (identidade legível)
-  const idLinha = cargo
-    ? `${truncar(nome, 28)} · ${truncar(cargo, 16)}`
-    : truncar(nome, 42);
-  page.drawText(idLinha, {
+  page.drawText("Documento assinado digitalmente", {
     x: tx,
     y: ty,
-    size: 6.5,
+    size: 6,
+    font,
+    color: COR.corpo,
+  });
+  ty -= 10;
+
+  // Nome uma única vez (destaque), como no modelo gov.br
+  page.drawText(truncar(nome.toUpperCase(), 34), {
+    x: tx,
+    y: ty,
+    size: 8,
     font: fontBold,
     color: COR.titulo,
   });
+  ty -= 9;
+
+  const dataLinha = `Data: ${formatarDataGovBr(opts.signedAt, opts.timezone)}`;
+  page.drawText(truncar(dataLinha, 42), {
+    x: tx,
+    y: ty,
+    size: 6,
+    font,
+    color: COR.corpo,
+  });
   ty -= 8;
 
-  // Linha 4 — CPF + legal mínima + código
+  // Uma linha só: cargo/CPF miúdo + verificação (sem repetir o nome)
+  const extra = cargo
+    ? `${truncar(cargo, 18)} · CPF ${cpfFmt}`
+    : `CPF ${cpfFmt}`;
+  page.drawText(truncar(extra, 42), {
+    x: tx,
+    y: ty,
+    size: 5.5,
+    font,
+    color: COR.corpo,
+  });
+  ty -= 7.5;
+
+  // URL curta de verificação (padrão "Verifique em …")
+  const verifyHost = validationBaseUrl().replace(/^https?:\/\//, "");
   page.drawText(
-    truncar(
-      `CPF ${cpfFmt} · Lei 14.063/2020 · ${opts.validationCode}`,
-      50
-    ),
+    truncar(`Verifique em ${verifyHost}/validar/${opts.validationCode}`, 46),
     {
       x: tx,
       y: ty,
       size: 5.2,
       font,
-      color: COR.legal,
+      color: COR.faixa,
     }
   );
 
-  // QR mínimo à direita
   page.drawImage(opts.qrImage, {
     x: x + boxW - pad - qrSize,
     y: y + (boxH - qrSize) / 2,
@@ -217,8 +283,8 @@ function desenharBlocoCompacto(opts: {
 }
 
 /**
- * Carimbo visual compacto (estilo gov.br) + QR de validação IPECC.
- * Ilustrativo: a força jurídica está nas evidências / hash / OTP (Lei 14.063/2020).
+ * Selo visual compacto no modelo gov.br (nome 1x) + QR IPECC.
+ * Posicionável no topo / meio / rodapé × esquerda / centro / direita.
  */
 export async function carimbarPdfAssinatura(opts: {
   pdfBytes: Uint8Array | Buffer;
@@ -239,11 +305,11 @@ export async function carimbarPdfAssinatura(opts: {
   const validUrl = `${validationBaseUrl()}/validar/${opts.validationCode}`;
   const qrPng = await QRCode.toBuffer(validUrl, {
     type: "png",
-    width: 96,
+    width: 88,
     margin: 0,
     errorCorrectionLevel: "M",
     color: {
-      dark: "#0d3d4a",
+      dark: "#0059bf",
       light: "#00000000",
     },
   });
@@ -251,8 +317,12 @@ export async function carimbarPdfAssinatura(opts: {
 
   const placement: StampPlacement = opts.placement || {
     modoPagina: "ultima",
-    posicao: "rodape_direita",
+    posicao: "direita",
+    zona: "rodape",
   };
+
+  const { zonaDefault } = normalizarPosicao(placement.posicao);
+  const zona = placement.zona || zonaDefault;
 
   let page: PDFPage;
   if (placement.modoPagina === "nova") {
@@ -265,13 +335,13 @@ export async function carimbarPdfAssinatura(opts: {
       color: COR.titulo,
     });
     page.drawText(
-      "Assinatura eletrônica com autenticação (senha + OTP). Lei 14.063/2020.",
+      "Assinatura eletrônica (senha + OTP). Lei 14.063/2020.",
       {
         x: 48,
         y: 784,
         size: 8,
         font,
-        color: COR.legal,
+        color: COR.corpo,
       }
     );
   } else {
@@ -287,7 +357,7 @@ export async function carimbarPdfAssinatura(opts: {
     }
   }
 
-  desenharBlocoCompacto({
+  desenharSeloGovBrLike({
     page,
     font,
     fontBold,
@@ -297,8 +367,10 @@ export async function carimbarPdfAssinatura(opts: {
     signedAt: opts.signedAt,
     timezone: opts.timezone,
     validationCode: opts.validationCode,
+    validUrl,
     qrImage,
     posicao: placement.posicao,
+    zona,
   });
 
   return pdf.save();

@@ -51,9 +51,10 @@ export default function AssinarNoAdminModal({
     "ultima"
   );
   const [paginaNum, setPaginaNum] = useState("1");
-  const [posicao, setPosicao] = useState<
-    "rodape_esquerda" | "rodape_centro" | "rodape_direita"
-  >("rodape_direita");
+  const [posicao, setPosicao] = useState<"esquerda" | "centro" | "direita">(
+    "direita"
+  );
+  const [zona, setZona] = useState<"topo" | "meio" | "rodape">("rodape");
   const [busy, setBusy] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [validationCode, setValidationCode] = useState<string | null>(null);
@@ -73,7 +74,8 @@ export default function AssinarNoAdminModal({
     setCargo("");
     setModoPagina("ultima");
     setPaginaNum("1");
-    setPosicao("rodape_direita");
+    setPosicao("direita");
+    setZona("rodape");
     setErro(null);
     setValidationCode(null);
     setProgressMsg(null);
@@ -187,6 +189,7 @@ export default function AssinarNoAdminModal({
                 ? Number(paginaNum) || 1
                 : undefined,
             posicao,
+            zona,
           },
           ...clientMeta(),
         }),
@@ -465,7 +468,7 @@ export default function AssinarNoAdminModal({
                   />
                 </label>
                 <p style={{ fontSize: 13, color: "#94a3b8", margin: "12px 0 6px" }}>
-                  Onde colocar a assinatura no PDF (estilo gov.br)
+                  Posição do selo no PDF (modelo gov.br — em qualquer parte da página)
                 </p>
                 <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>
                   Página
@@ -516,15 +519,35 @@ export default function AssinarNoAdminModal({
                   </label>
                 ) : null}
                 <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>
-                  Posição no rodapé
+                  Área vertical
+                  <select
+                    value={zona}
+                    onChange={(e) =>
+                      setZona(e.target.value as "topo" | "meio" | "rodape")
+                    }
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      marginTop: 4,
+                      padding: "8px 10px",
+                      borderRadius: 8,
+                      border: "1px solid #475569",
+                      background: "#1e293b",
+                      color: "#f8fafc",
+                    }}
+                  >
+                    <option value="topo">Topo</option>
+                    <option value="meio">Meio</option>
+                    <option value="rodape">Rodapé</option>
+                  </select>
+                </label>
+                <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>
+                  Lado
                   <select
                     value={posicao}
                     onChange={(e) =>
                       setPosicao(
-                        e.target.value as
-                          | "rodape_esquerda"
-                          | "rodape_centro"
-                          | "rodape_direita"
+                        e.target.value as "esquerda" | "centro" | "direita"
                       )
                     }
                     style={{
@@ -538,9 +561,9 @@ export default function AssinarNoAdminModal({
                       color: "#f8fafc",
                     }}
                   >
-                    <option value="rodape_direita">Direita</option>
-                    <option value="rodape_centro">Centro</option>
-                    <option value="rodape_esquerda">Esquerda</option>
+                    <option value="direita">Direita</option>
+                    <option value="centro">Centro</option>
+                    <option value="esquerda">Esquerda</option>
                   </select>
                 </label>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>

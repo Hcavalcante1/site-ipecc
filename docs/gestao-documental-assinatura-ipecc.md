@@ -38,16 +38,20 @@ Sem Resend ou com falha de domínio, o OTP aparece no modal do admin (`devCode`)
 Em `gd_signature_signers`, use `mode=sequential` ou `parallel` e `cargo`.
 O documento só fica `signed` quando todos os signatários `required` concluírem.
 
-## Carimbo (padrão visual gov.br)
+## Carimbo (modelo gov.br)
 
-Selo **compacto** no rodapé (~5 cm × 1,8 cm): faixa teal, texto fino estilo Adobe
-(`Assinado de forma digital por NOME:CPF`), data, nome/cargo, menção mínima
-`Lei 14.063/2020` + código, QR pequeno.
+Selo compacto no espírito do verificador gov.br / ITI:
 
-No modal: **nome completo** e **CPF** obrigatórios; página (última / específica / nova)
-e posição (esquerda / centro / direita).
+1. Marca **IPECC** (não usa logo oficial gov.br)
+2. `Documento assinado digitalmente`
+3. **NOME** (uma vez)
+4. `Data: dd/mm/aaaa hh:mm:ss -0300`
+5. CPF / cargo miúdo + `Verifique em …/validar/CÓDIGO` + QR
 
-Ilustrativo + evidências IPECC — não substitui certificado ICP-Brasil.
+Posição: página + **topo / meio / rodapé** × **esquerda / centro / direita**
+(não fica preso ao rodapé).
+
+Ilustrativo + evidências IPECC — Lei 14.063/2020; não é ICP-Brasil.
 
 - Rate limit por IP+usuário nas rotas `.../ipecc/*` e na validação pública `/api/public/validar/{codigo}` (além do cooldown OTP e `max_attempts` no banco).
 - Auditoria admin: `/admin/documentos/auditoria` lista evidências IPECC com download de laudo (`.txt` / CSV).

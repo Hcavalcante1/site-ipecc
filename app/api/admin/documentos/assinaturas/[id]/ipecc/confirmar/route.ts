@@ -35,7 +35,14 @@ export async function POST(
       placement?: {
         modoPagina?: "ultima" | "numero" | "nova";
         pagina?: number;
-        posicao?: "rodape_esquerda" | "rodape_centro" | "rodape_direita";
+        posicao?:
+          | "esquerda"
+          | "centro"
+          | "direita"
+          | "rodape_esquerda"
+          | "rodape_centro"
+          | "rodape_direita";
+        zona?: "topo" | "meio" | "rodape";
       };
     };
 
@@ -59,11 +66,14 @@ export async function POST(
     }
 
     const placement =
-      body.placement?.modoPagina || body.placement?.posicao
+      body.placement?.modoPagina ||
+      body.placement?.posicao ||
+      body.placement?.zona
         ? {
             modoPagina: body.placement.modoPagina || "ultima",
             pagina: body.placement.pagina,
-            posicao: body.placement.posicao || "rodape_direita",
+            posicao: body.placement.posicao || "direita",
+            zona: body.placement.zona || "rodape",
           }
         : undefined;
 
