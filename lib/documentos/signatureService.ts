@@ -158,9 +158,9 @@ export async function excluirAssinaturaDocumento(opts: {
 
   await registrarLog({
     action: "assinatura_excluida",
-    documentId: data.document_id,
-    actorId: opts.userId,
-    actorEmail: opts.actorEmail || null,
+    document_id: data.document_id,
+    actor_id: opts.userId,
+    actor_email: opts.actorEmail || null,
     detail: {
       signature_document_id: data.id,
       status: data.status,
