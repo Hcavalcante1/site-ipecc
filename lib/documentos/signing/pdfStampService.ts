@@ -47,12 +47,13 @@ const LOGO_CANDIDATES = [
 ];
 
 /**
- * Selo estilo gov.br: logo = QR; miolo tipográfico preenche a altura do selo.
+ * Selo: logo = QR; texto colado às extremidades (sem invadir) — simétrico.
  */
 export const SELO_SIDE_PT = 42;
 export const SELO_PAD_PT = 2;
-export const SELO_GAP_PT = 2;
-export const SELO_TEXT_W_PT = 190;
+/** Quase zero entre logo|texto|QR — próximo sem invadir. */
+export const SELO_GAP_PT = 0.75;
+export const SELO_TEXT_W_PT = 198;
 export const SELO_INSET_PT = 0.5;
 
 /** Proporções do selo (PDF e prévia 1:1). */
@@ -248,7 +249,7 @@ function desenharSelo(opts: {
     });
   }
 
-  // Coluna central: tipografia escala para preencher a altura do logo/QR
+  // Miolo: ocupa toda a faixa entre a borda direita do logo e a esquerda do QR
   const colLeft = x + pad + side + gap;
   const maxTextW = textW;
   const codigo = String(opts.validationCode || "").trim();
@@ -260,51 +261,48 @@ function desenharSelo(opts: {
   }[] = [
     {
       text: "Documento assinado digitalmente",
-      size: 6.5,
+      size: 6.8,
       color: COR.corpo,
     },
     {
       text: nome.toUpperCase(),
-      size: 10.5,
+      size: 10.8,
       bold: true,
       color: COR.titulo,
     },
     {
       text: `Data: ${formatarDataSimples(opts.signedAt, opts.timezone)}`,
-      size: 6.4,
+      size: 6.6,
       color: COR.corpo,
     },
     {
       text: cargo ? `${cargo} · CPF ${cpfFmt}` : `CPF ${cpfFmt}`,
-      size: 6.2,
+      size: 6.4,
       color: COR.corpo,
     },
     {
       text: `Lei 14.063/2020 · ${codigo}`,
-      size: 5.6,
+      size: 5.8,
       color: COR.faixa,
     },
   ];
 
-  // Escala para preencher ~94% da altura do ícone (sem esvaziar o miolo)
   const gapSlots = baseLinhas.length + 1;
-  const minGap = 0.35;
+  const minGap = 0.3;
   const baseText = baseLinhas.reduce((a, l) => a + l.size, 0);
-  const alvo = side * 0.94;
+  const alvo = side * 0.96;
   const escala = Math.min(
-    1.35,
+    1.4,
     Math.max(1, (alvo - minGap * gapSlots) / baseText)
   );
-  const linhas = baseLinhas.map((l) => ({
-    ...l,
-    size: Math.round(l.size * escala * 10) / 10,
-    text: caberTexto(
-      l.text,
-      l.bold ? fontBold : font,
-      Math.round(l.size * escala * 10) / 10,
-      maxTextW
-    ),
-  }));
+  const linhas = baseLinhas.map((l) => {
+    const size = Math.round(l.size * escala * 10) / 10;
+    return {
+      ...l,
+      size,
+      text: caberTexto(l.text, l.bold ? fontBold : font, size, maxTextW),
+    };
+  });
 
   const totalSizes = linhas.reduce((acc, l) => acc + l.size, 0);
   const gapY = Math.max(minGap, (side - totalSizes) / gapSlots);
@@ -314,6 +312,7 @@ function desenharSelo(opts: {
     cursorY -= linha.size;
     const f = linha.bold ? fontBold : font;
     const tw = f.widthOfTextAtSize(linha.text, linha.size);
+    // Centraliza no miolo (equidistante do logo e do QR)
     const textX = colLeft + Math.max(0, (maxTextW - tw) / 2);
     page.drawText(linha.text, {
       x: textX,
