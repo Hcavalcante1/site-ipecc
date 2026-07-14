@@ -3,9 +3,11 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { CONSENTIMENTO_ASSINATURA_IPECC } from "@/lib/documentos/signing/constants";
 
-/** Fallback de proporção do carimbo (largura real no PDF depende do texto). */
+/** Mesmas constantes do pdfStampService (pt). */
 const STAMP_MARGIN = 18;
-const STAMP_BOX = { w: 220, h: 41 };
+const STAMP_SIDE = 36;
+const STAMP_PAD = 2.5;
+const STAMP_GAP = 1.25;
 const LOGO_PREVIEW = "/media/global/logos/ipecc_logo_v2.png";
 
 function formatarCpfPreview(cpf: string): string {
@@ -29,16 +31,77 @@ function formatarDataPreview(): string {
   }
 }
 
-/** Mesma matemática de `origemLivre` no pdfStampService (âncora canto SE, y 0=topo). */
+/** Largura aproximada Helvetica (pt) — espelha o miolo do PDF. */
+function estimarLarguraTexto(texto: string, size: number, bold: boolean): number {
+  return texto.length * size * (bold ? 0.56 : 0.48);
+}
+
+function medirSeloBox(opts: {
+  nome: string;
+  cpf: string;
+  cargo: string;
+}): {
+  w: number;
+  h: number;
+  linhas: { t: string; size: number; bold?: boolean; color: string }[];
+} {
+  const nomeShow = (opts.nome.trim() || "SEU NOME").toUpperCase();
+  const cpfShow = formatarCpfPreview(opts.cpf);
+  const cargoShow = opts.cargo.trim();
+  const dataShow = formatarDataPreview();
+  const meta = cargoShow ? `${cargoShow} · CPF ${cpfShow}` : `CPF ${cpfShow}`;
+
+  const linhas = [
+    {
+      t: "Documento assinado digitalmente",
+      size: 5.2,
+      bold: false,
+      color: "#474d54",
+    },
+    { t: nomeShow, size: 6.8, bold: true, color: "#1f2428" },
+    { t: `Data: ${dataShow}`, size: 5.2, bold: false, color: "#474d54" },
+    { t: meta, size: 5, bold: false, color: "#474d54" },
+    {
+      t: "Lei 14.063/2020 · (código na assinatura)",
+      size: 4.5,
+      bold: false,
+      color: "#0059bf",
+    },
+  ];
+
+  let textW = 120;
+  for (const l of linhas) {
+    textW = Math.max(
+      textW,
+      estimarLarguraTexto(l.t, l.size, Boolean(l.bold))
+    );
+  }
+  textW += 2;
+
+  return {
+    w:
+      STAMP_PAD +
+      STAMP_SIDE +
+      STAMP_GAP +
+      textW +
+      STAMP_GAP +
+      STAMP_SIDE +
+      STAMP_PAD,
+    h: STAMP_SIDE + STAMP_PAD * 2,
+    linhas,
+  };
+}
+
+/** Mesma matemática de `origemLivre` no pdfStampService. */
 function stampLeftTopPct(
   pageW: number,
   pageH: number,
+  boxW: number,
+  boxH: number,
   xPct: number,
   yPct: number
 ): { leftPct: number; topPct: number; wPct: number; hPct: number } {
   const margin = STAMP_MARGIN;
-  const boxW = STAMP_BOX.w;
-  const boxH = STAMP_BOX.h;
   const spanX = Math.max(0, pageW - boxW - 2 * margin);
   const spanY = Math.max(0, pageH - boxH - 2 * margin);
   const xp = Math.min(100, Math.max(0, xPct));
@@ -157,7 +220,15 @@ function StampPositionPreview({
     };
   }, [pdfUrl, modoPagina, paginaNum]);
 
-  const geom = stampLeftTopPct(pageSize.w, pageSize.h, xPct, yPct);
+  const geomBox = medirSeloBox({ nome, cpf, cargo });
+  const geom = stampLeftTopPct(
+    pageSize.w,
+    pageSize.h,
+    geomBox.w,
+    geomBox.h,
+    xPct,
+    yPct
+  );
 
   function autoScrollSeBorda(clientY: number) {
     const sc = scrollRef.current;
@@ -176,17 +247,19 @@ function StampPositionPreview({
     autoScrollSeBorda(clientY);
     const { w: pageW, h: pageH } = pageSize;
     const margin = STAMP_MARGIN;
-    const spanX = Math.max(0, pageW - STAMP_BOX.w - 2 * margin);
-    const spanY = Math.max(0, pageH - STAMP_BOX.h - 2 * margin);
+    const boxW = geomBox.w;
+    const boxH = geomBox.h;
+    const spanX = Math.max(0, pageW - boxW - 2 * margin);
+    const spanY = Math.max(0, pageH - boxH - 2 * margin);
     const relX = ((clientX - r.left) / r.width) * pageW;
     const relY = ((clientY - r.top) / r.height) * pageH;
     const x = Math.min(
       100,
-      Math.max(0, ((relX - STAMP_BOX.w / 2 - margin) / spanX) * 100)
+      Math.max(0, ((relX - boxW / 2 - margin) / spanX) * 100)
     );
     const y = Math.min(
       100,
-      Math.max(0, ((relY - STAMP_BOX.h / 2 - margin) / spanY) * 100)
+      Math.max(0, ((relY - boxH / 2 - margin) / spanY) * 100)
     );
     onChange(Math.round(x), Math.round(y));
   }
@@ -215,14 +288,6 @@ function StampPositionPreview({
     }
   }
 
-  const nomeShow = (nome.trim() || "SEU NOME").toUpperCase();
-  const cpfShow = formatarCpfPreview(cpf);
-  const cargoShow = cargo.trim();
-  const dataShow = formatarDataPreview();
-  const metaLinha = cargoShow
-    ? `${cargoShow} · CPF ${cpfShow}`
-    : `CPF ${cpfShow}`;
-
   return (
     <div style={{ marginBottom: 12 }}>
       <p
@@ -235,7 +300,7 @@ function StampPositionPreview({
       >
         Posição 1:1 com o PDF
         {pageLabel ? ` · ${pageLabel}` : ""}. Role a página e arraste o carimbo
-        (mãozinha) — ele acompanha a rolagem e fica onde você soltar.
+        (mãozinha) — igual ao carimbo do PDF. CPF e demais dados completos.
       </p>
       {loadErro ? (
         <p style={{ color: "#fca5a5", fontSize: 13 }}>{loadErro}</p>
@@ -295,11 +360,11 @@ function StampPositionPreview({
               Carregando página do documento…
             </div>
           ) : null}
-          {/* Sobre a página: rola junto com o PDF */}
+          {/* Carimbo igual ao PDF: logo | textos completos | QR */}
           <div
             role="button"
             aria-label="Arrastar carimbo de assinatura"
-            title="Arraste — acompanha a rolagem; posição = PDF assinado"
+            title="Arraste — igual ao carimbo do PDF assinado"
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
@@ -314,15 +379,16 @@ function StampPositionPreview({
               border: "1px solid #c5ced8",
               borderRadius: 2,
               display: "grid",
-              gridTemplateColumns: "1fr 4.71fr 1fr",
+              gridTemplateColumns: `${STAMP_SIDE}fr auto ${STAMP_SIDE}fr`,
               alignItems: "center",
-              columnGap: 1,
-              padding: "2px 2px",
+              columnGap: STAMP_GAP,
+              padding: STAMP_PAD,
               boxSizing: "border-box",
               cursor: grabbing ? "grabbing" : "grab",
               boxShadow: "0 2px 8px rgba(2,132,199,0.4)",
               zIndex: 3,
               touchAction: "none",
+              overflow: "visible",
             }}
           >
             <img
@@ -331,7 +397,6 @@ function StampPositionPreview({
               draggable={false}
               style={{
                 width: "100%",
-                height: "100%",
                 aspectRatio: "1",
                 objectFit: "contain",
                 objectPosition: "center",
@@ -344,43 +409,33 @@ function StampPositionPreview({
                 minWidth: 0,
                 textAlign: "center",
                 color: "#1e293b",
-                lineHeight: 1.12,
-                overflow: "hidden",
+                lineHeight: 1.15,
                 display: "flex",
                 flexDirection: "column",
-                justifyContent: "space-between",
-                height: "100%",
-                padding: "0",
-                boxSizing: "border-box",
+                justifyContent: "center",
+                gap: 1.1,
+                padding: "0 2px",
+                whiteSpace: "nowrap",
               }}
             >
-              <div style={{ fontSize: "clamp(7px, 1.25vw, 10px)", color: "#475569" }}>
-                Documento assinado digitalmente
-              </div>
-              <div
-                style={{
-                  fontSize: "clamp(9px, 1.7vw, 13px)",
-                  fontWeight: 700,
-                  color: "#0f172a",
-                }}
-              >
-                {nomeShow.slice(0, 28)}
-              </div>
-              <div style={{ fontSize: "clamp(7px, 1.2vw, 10px)", color: "#475569" }}>
-                Data: {dataShow}
-              </div>
-              <div style={{ fontSize: "clamp(6.5px, 1.15vw, 9.5px)", color: "#475569" }}>
-                {metaLinha.slice(0, 40)}
-              </div>
-              <div style={{ fontSize: "clamp(6px, 1.1vw, 9px)", color: "#0059bf" }}>
-                Lei 14.063/2020 · (código na assinatura)
-              </div>
+              {geomBox.linhas.map((l) => (
+                <div
+                  key={l.t}
+                  style={{
+                    fontSize: `${l.size}pt`,
+                    fontWeight: l.bold ? 700 : 400,
+                    color: l.color,
+                    letterSpacing: 0,
+                  }}
+                >
+                  {l.t}
+                </div>
+              ))}
             </div>
             <div
               aria-hidden
               style={{
                 width: "100%",
-                height: "100%",
                 aspectRatio: "1",
                 background:
                   "repeating-conic-gradient(#0059bf 0% 25%, #e8f1fb 0% 50%) 50% / 22% 22%",
