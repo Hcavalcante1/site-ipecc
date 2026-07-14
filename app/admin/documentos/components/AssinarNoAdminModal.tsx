@@ -44,8 +44,16 @@ export default function AssinarNoAdminModal({
   const [challengeId, setChallengeId] = useState<string | null>(null);
   const [devCode, setDevCode] = useState<string | null>(null);
   const [emailWarning, setEmailWarning] = useState<string | null>(null);
+  const [nome, setNome] = useState("");
   const [cpf, setCpf] = useState("");
   const [cargo, setCargo] = useState("");
+  const [modoPagina, setModoPagina] = useState<"ultima" | "numero" | "nova">(
+    "ultima"
+  );
+  const [paginaNum, setPaginaNum] = useState("1");
+  const [posicao, setPosicao] = useState<
+    "rodape_esquerda" | "rodape_centro" | "rodape_direita"
+  >("rodape_direita");
   const [busy, setBusy] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [validationCode, setValidationCode] = useState<string | null>(null);
@@ -59,6 +67,13 @@ export default function AssinarNoAdminModal({
     setOtp("");
     setChallengeId(null);
     setDevCode(null);
+    setEmailWarning(null);
+    setNome("");
+    setCpf("");
+    setCargo("");
+    setModoPagina("ultima");
+    setPaginaNum("1");
+    setPosicao("rodape_direita");
     setErro(null);
     setValidationCode(null);
     setProgressMsg(null);
@@ -140,6 +155,14 @@ export default function AssinarNoAdminModal({
 
   async function confirmar() {
     if ((!signatureDocumentId && !batchId) || !challengeId) return;
+    if (!nome.trim() || nome.trim().length < 3) {
+      setErro("Informe o nome completo de quem assina.");
+      return;
+    }
+    if (!/^\d{11}$/.test(cpf.replace(/\D/g, ""))) {
+      setErro("Informe o CPF com 11 dígitos.");
+      return;
+    }
     setBusy(true);
     setErro(null);
     try {
@@ -154,8 +177,17 @@ export default function AssinarNoAdminModal({
           otpCode: otp,
           challengeId,
           consentAccepted: true,
-          cpf: cpf || undefined,
-          cargo: cargo || undefined,
+          nome: nome.trim(),
+          cpf: cpf.replace(/\D/g, ""),
+          cargo: cargo.trim() || undefined,
+          placement: {
+            modoPagina,
+            pagina:
+              modoPagina === "numero"
+                ? Number(paginaNum) || 1
+                : undefined,
+            posicao,
+          },
           ...clientMeta(),
         }),
       });
@@ -373,11 +405,12 @@ export default function AssinarNoAdminModal({
                   />
                 </label>
                 <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>
-                  CPF (opcional)
+                  Nome completo (obrigatório)
                   <input
                     type="text"
-                    value={cpf}
-                    onChange={(e) => setCpf(e.target.value)}
+                    value={nome}
+                    onChange={(e) => setNome(e.target.value)}
+                    placeholder="Ex.: Helio Cavalcante"
                     style={{
                       display: "block",
                       width: "100%",
@@ -391,7 +424,29 @@ export default function AssinarNoAdminModal({
                   />
                 </label>
                 <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>
-                  Cargo (opcional)
+                  CPF (obrigatório — vai no carimbo)
+                  <input
+                    type="text"
+                    value={cpf}
+                    onChange={(e) =>
+                      setCpf(e.target.value.replace(/\D/g, "").slice(0, 11))
+                    }
+                    placeholder="Somente números"
+                    inputMode="numeric"
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      marginTop: 4,
+                      padding: "8px 10px",
+                      borderRadius: 8,
+                      border: "1px solid #475569",
+                      background: "#1e293b",
+                      color: "#f8fafc",
+                    }}
+                  />
+                </label>
+                <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>
+                  Cargo
                   <input
                     type="text"
                     value={cargo}
@@ -409,10 +464,95 @@ export default function AssinarNoAdminModal({
                     }}
                   />
                 </label>
+                <p style={{ fontSize: 13, color: "#94a3b8", margin: "12px 0 6px" }}>
+                  Onde colocar a assinatura no PDF (estilo gov.br)
+                </p>
+                <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>
+                  Página
+                  <select
+                    value={modoPagina}
+                    onChange={(e) =>
+                      setModoPagina(
+                        e.target.value as "ultima" | "numero" | "nova"
+                      )
+                    }
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      marginTop: 4,
+                      padding: "8px 10px",
+                      borderRadius: 8,
+                      border: "1px solid #475569",
+                      background: "#1e293b",
+                      color: "#f8fafc",
+                    }}
+                  >
+                    <option value="ultima">Última página do documento</option>
+                    <option value="numero">Página específica</option>
+                    <option value="nova">Nova folha de assinatura</option>
+                  </select>
+                </label>
+                {modoPagina === "numero" ? (
+                  <label
+                    style={{ display: "block", fontSize: 13, marginBottom: 8 }}
+                  >
+                    Número da página
+                    <input
+                      type="number"
+                      min={1}
+                      value={paginaNum}
+                      onChange={(e) => setPaginaNum(e.target.value)}
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        marginTop: 4,
+                        padding: "8px 10px",
+                        borderRadius: 8,
+                        border: "1px solid #475569",
+                        background: "#1e293b",
+                        color: "#f8fafc",
+                      }}
+                    />
+                  </label>
+                ) : null}
+                <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>
+                  Posição no rodapé
+                  <select
+                    value={posicao}
+                    onChange={(e) =>
+                      setPosicao(
+                        e.target.value as
+                          | "rodape_esquerda"
+                          | "rodape_centro"
+                          | "rodape_direita"
+                      )
+                    }
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      marginTop: 4,
+                      padding: "8px 10px",
+                      borderRadius: 8,
+                      border: "1px solid #475569",
+                      background: "#1e293b",
+                      color: "#f8fafc",
+                    }}
+                  >
+                    <option value="rodape_direita">Direita</option>
+                    <option value="rodape_centro">Centro</option>
+                    <option value="rodape_esquerda">Esquerda</option>
+                  </select>
+                </label>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
                   <button
                     type="button"
-                    disabled={busy || password.length < 4 || otp.length !== 6}
+                    disabled={
+                      busy ||
+                      password.length < 4 ||
+                      otp.length !== 6 ||
+                      nome.trim().length < 3 ||
+                      cpf.replace(/\D/g, "").length !== 11
+                    }
                     onClick={() => void confirmar()}
                     style={{
                       background: "#0f766e",

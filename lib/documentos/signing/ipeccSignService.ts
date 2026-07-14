@@ -9,7 +9,8 @@ import {
 } from "./constants";
 import { criarEEnviarOtp, consumirOtp } from "./otpService";
 import { confirmarSenhaUsuario } from "./passwordConfirm";
-import { carimbarPdfAssinatura } from "./pdfStampService";
+import { carimbarPdfAssinatura, validarCpfBasico } from "./pdfStampService";
+import type { StampPlacement } from "./pdfStampService";
 import {
   gerarCodigoValidacao,
   proximoSerialAssinatura,
@@ -143,6 +144,7 @@ export async function confirmarAssinaturaIpecc(opts: {
   client: ClienteAssinaturaMeta;
   /** Quando true (lote), senha/OTP já foram validados. */
   skipAuth?: boolean;
+  placement?: StampPlacement;
 }): Promise<
   | {
       ok: true;
@@ -278,22 +280,44 @@ export async function confirmarAssinaturaIpecc(opts: {
     String(opts.client.timezone || "").trim() || "America/Sao_Paulo";
   const validationCode = gerarCodigoValidacao();
   const serial = await proximoSerialAssinatura(doc.id);
-  const nome =
-    String(opts.actorName || "").trim() ||
-    email.split("@")[0] ||
-    email;
+  const nome = String(opts.actorName || "").trim();
+  const cpf = String(opts.cpf || "").trim();
+  if (!nome || nome.length < 3) {
+    return {
+      ok: false,
+      error: "Informe o nome completo de quem assina.",
+      status: 400,
+    };
+  }
+  if (!validarCpfBasico(cpf)) {
+    return {
+      ok: false,
+      error: "Informe um CPF válido (11 dígitos) para o carimbo.",
+      status: 400,
+    };
+  }
+  // Evita o legado “admin” vindo do local-part do e-mail
+  if (/^admin$/i.test(nome)) {
+    return {
+      ok: false,
+      error: "Use o nome civil completo, não o login.",
+      status: 400,
+    };
+  }
 
   let stamped: Uint8Array;
   try {
     stamped = await carimbarPdfAssinatura({
       pdfBytes: originalBuf,
       nome,
+      cpf,
       cargo: opts.cargo || signer?.cargo,
       email,
       signedAt,
       timezone,
       signatureSerial: serial,
       validationCode,
+      placement: opts.placement,
     });
   } catch (e) {
     return {

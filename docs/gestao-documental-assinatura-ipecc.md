@@ -38,7 +38,14 @@ Sem Resend ou com falha de domínio, o OTP aparece no modal do admin (`devCode`)
 Em `gd_signature_signers`, use `mode=sequential` ou `parallel` e `cargo`.
 O documento só fica `signed` quando todos os signatários `required` concluírem.
 
-## Robustez (Fase F)
+## Carimbo (padrão visual gov.br)
+
+O PDF ganha bloco no estilo:
+`Assinado de forma digital por NOME:CPF` + data + nome/cargo + QR.
+
+No modal: **nome completo** e **CPF** são obrigatórios; escolha página (última / específica / nova folha) e posição no rodapé (esquerda / centro / direita).
+
+Isso é representação gráfica + evidências IPECC (não certificado ICP-Brasil criptográfico).
 
 - Rate limit por IP+usuário nas rotas `.../ipecc/*` e na validação pública `/api/public/validar/{codigo}` (além do cooldown OTP e `max_attempts` no banco).
 - Auditoria admin: `/admin/documentos/auditoria` lista evidências IPECC com download de laudo (`.txt` / CSV).

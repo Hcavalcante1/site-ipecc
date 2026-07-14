@@ -129,6 +129,7 @@ export async function confirmarLoteIpecc(opts: {
   cpf?: string | null;
   cargo?: string | null;
   client: ClienteAssinaturaMeta;
+  placement?: import("./pdfStampService").StampPlacement;
 }): Promise<
   | {
       ok: true;
@@ -255,6 +256,7 @@ export async function confirmarLoteIpecc(opts: {
         cpf: opts.cpf,
         cargo: opts.cargo,
         client: opts.client,
+        placement: opts.placement,
         skipAuth: true,
       });
 

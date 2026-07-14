@@ -32,6 +32,11 @@ export async function POST(
       os?: string;
       browser?: string;
       nome?: string;
+      placement?: {
+        modoPagina?: "ultima" | "numero" | "nova";
+        pagina?: number;
+        posicao?: "rodape_esquerda" | "rodape_centro" | "rodape_direita";
+      };
     };
 
     const meta = requestAuditMeta(req);
@@ -53,6 +58,15 @@ export async function POST(
       );
     }
 
+    const placement =
+      body.placement?.modoPagina || body.placement?.posicao
+        ? {
+            modoPagina: body.placement.modoPagina || "ultima",
+            pagina: body.placement.pagina,
+            posicao: body.placement.posicao || "rodape_direita",
+          }
+        : undefined;
+
     const result = await confirmarAssinaturaIpecc({
       signatureDocumentId: id,
       userId: auth.userId,
@@ -64,6 +78,7 @@ export async function POST(
       consentAccepted: Boolean(body.consentAccepted),
       cpf: body.cpf || null,
       cargo: body.cargo || null,
+      placement,
       client: {
         ip: meta.ip,
         userAgent: meta.user_agent,

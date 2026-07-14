@@ -67,6 +67,11 @@ export async function POST(
       timezone?: string;
       screenResolution?: string;
       nome?: string;
+      placement?: {
+        modoPagina?: "ultima" | "numero" | "nova";
+        pagina?: number;
+        posicao?: "rodape_esquerda" | "rodape_centro" | "rodape_direita";
+      };
     };
     const meta = requestAuditMeta(req);
     const rate = checkRateLimit(
@@ -79,6 +84,14 @@ export async function POST(
         { status: 429 }
       );
     }
+    const placement =
+      body.placement?.modoPagina || body.placement?.posicao
+        ? {
+            modoPagina: body.placement.modoPagina || "ultima",
+            pagina: body.placement.pagina,
+            posicao: body.placement.posicao || "rodape_direita",
+          }
+        : undefined;
     const result = await confirmarLoteIpecc({
       batchId: id,
       userId: auth.userId,
@@ -90,6 +103,7 @@ export async function POST(
       consentAccepted: Boolean(body.consentAccepted),
       cpf: body.cpf || null,
       cargo: body.cargo || null,
+      placement,
       client: {
         ip: meta.ip,
         userAgent: meta.user_agent,
