@@ -5,7 +5,7 @@ import { CONSENTIMENTO_ASSINATURA_IPECC } from "@/lib/documentos/signing/constan
 
 /** Proporções do selo compacto (iguais ao PDF). A4 595×842 pt. */
 const PREVIEW_PAGE = { w: 595, h: 842, margin: 18 };
-const PREVIEW_SELO = { w: 200, h: 36 };
+const PREVIEW_SELO = { w: 216, h: 36 };
 
 function StampPositionPreview({
   xPct,

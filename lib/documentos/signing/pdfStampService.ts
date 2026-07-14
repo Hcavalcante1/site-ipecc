@@ -52,7 +52,8 @@ const LOGO_CANDIDATES = [
  */
 export const SELO_SIDE_PT = 28;
 export const SELO_PAD_PT = 4;
-export const SELO_TEXT_W_PT = 132;
+/** Largura da coluna central — cabe Lei + código completo sem invadir logo/QR. */
+export const SELO_TEXT_W_PT = 148;
 
 /** Proporções do selo na página A4 (para prévia no admin). */
 export function seloBoxPts(): { boxW: number; boxH: number } {
@@ -88,41 +89,36 @@ function clampPct(n: unknown, fallback: number): number {
   return Math.min(100, Math.max(0, v));
 }
 
-function formatarDataGovBr(iso: Date, timeZone: string): string {
+/** Data legível (sem ISO / offset). */
+function formatarDataSimples(d: Date, timeZone: string): string {
   try {
-    const parts = new Intl.DateTimeFormat("en-CA", {
+    return new Intl.DateTimeFormat("pt-BR", {
       timeZone,
-      year: "numeric",
-      month: "2-digit",
       day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-      second: "2-digit",
       hour12: false,
-      timeZoneName: "shortOffset",
-    }).formatToParts(iso);
-    const get = (t: string) => parts.find((p) => p.type === t)?.value || "";
-    const d = get("day");
-    const m = get("month");
-    const y = get("year");
-    const h = get("hour");
-    const min = get("minute");
-    const s = get("second");
-    const off = (get("timeZoneName") || "-03").replace("GMT", "");
-    let offset = "-0300";
-    if (/^[+-]\d{2}$/.test(off)) offset = `${off}00`;
-    else if (/^[+-]\d{2}:\d{2}$/.test(off))
-      offset = `${off.slice(0, 3)}${off.slice(4)}`;
-    return `${d}/${m}/${y} ${h}:${min}:${s} ${offset}`;
+    }).format(d);
   } catch {
-    return iso.toISOString();
+    return d.toLocaleString("pt-BR");
   }
 }
 
-function truncar(texto: string, max: number): string {
+function caberTexto(
+  texto: string,
+  font: PDFFont,
+  size: number,
+  maxWidth: number
+): string {
   const t = texto.trim();
-  if (t.length <= max) return t;
-  return `${t.slice(0, Math.max(0, max - 1))}…`;
+  if (font.widthOfTextAtSize(t, size) <= maxWidth) return t;
+  let out = t;
+  while (out.length > 1 && font.widthOfTextAtSize(`${out}…`, size) > maxWidth) {
+    out = out.slice(0, -1);
+  }
+  return `${out}…`;
 }
 
 function presetsParaPct(
@@ -243,62 +239,70 @@ function desenharSelo(opts: {
     });
   }
 
+  // Coluna de texto estritamente entre logo e QR (centralizada na vertical)
   const tx = x + pad + side + pad;
-  let ty = y + boxH - 9;
-
-  page.drawText("Documento assinado digitalmente", {
-    x: tx,
-    y: ty,
-    size: 5.2,
-    font,
-    color: COR.corpo,
-  });
-  ty -= 8;
-
-  page.drawText(truncar(nome.toUpperCase(), 28), {
-    x: tx,
-    y: ty,
-    size: 6.5,
-    font: fontBold,
-    color: COR.titulo,
-  });
-  ty -= 7.5;
-
-  page.drawText(
-    truncar(`Data: ${formatarDataGovBr(opts.signedAt, opts.timezone)}`, 36),
+  const maxTextW = textW - 1;
+  const codigo = String(opts.validationCode || "").trim();
+  const linhas: {
+    text: string;
+    size: number;
+    bold?: boolean;
+    color: typeof COR.corpo;
+  }[] = [
     {
-      x: tx,
-      y: ty,
+      text: caberTexto("Documento assinado digitalmente", font, 5, maxTextW),
       size: 5,
-      font,
       color: COR.corpo,
-    }
-  );
-  ty -= 6.5;
-
-  const extra = cargo
-    ? `${truncar(cargo, 14)} · CPF ${cpfFmt}`
-    : `CPF ${cpfFmt}`;
-  page.drawText(truncar(extra, 36), {
-    x: tx,
-    y: ty,
-    size: 4.8,
-    font,
-    color: COR.corpo,
-  });
-  ty -= 6;
-
-  const verifyHost = validationBaseUrl().replace(/^https?:\/\//, "");
-  page.drawText(
-    truncar(`Verifique em ${verifyHost}/validar/${opts.validationCode}`, 40),
+    },
     {
-      x: tx,
-      y: ty,
-      size: 4.5,
-      font,
+      text: caberTexto(nome.toUpperCase(), fontBold, 6.2, maxTextW),
+      size: 6.2,
+      bold: true,
+      color: COR.titulo,
+    },
+    {
+      text: caberTexto(
+        `Data: ${formatarDataSimples(opts.signedAt, opts.timezone)}`,
+        font,
+        4.8,
+        maxTextW
+      ),
+      size: 4.8,
+      color: COR.corpo,
+    },
+    {
+      text: caberTexto(
+        cargo ? `${cargo} · CPF ${cpfFmt}` : `CPF ${cpfFmt}`,
+        font,
+        4.6,
+        maxTextW
+      ),
+      size: 4.6,
+      color: COR.corpo,
+    },
+    {
+      // Completo e discreto — sem URL; QR leva à validação
+      text: caberTexto(`Lei 14.063/2020 · ${codigo}`, font, 4, maxTextW),
+      size: 4,
       color: COR.faixa,
-    }
-  );
+    },
+  ];
+
+  const lineGap = 1.35;
+  const blockH = linhas.reduce((acc, l) => acc + l.size + lineGap, 0) - lineGap;
+  let cursorY = y + (boxH + blockH) / 2;
+
+  for (const linha of linhas) {
+    cursorY -= linha.size;
+    page.drawText(linha.text, {
+      x: tx,
+      y: cursorY,
+      size: linha.size,
+      font: linha.bold ? fontBold : font,
+      color: linha.color,
+    });
+    cursorY -= lineGap;
+  }
 
   page.drawImage(opts.qrImage, {
     x: x + boxW - pad - side,
