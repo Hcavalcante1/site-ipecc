@@ -239,8 +239,8 @@ function desenharSelo(opts: {
     });
   }
 
-  // Coluna de texto estritamente entre logo e QR (centralizada na vertical)
-  const tx = x + pad + side + pad;
+  // Coluna de texto entre logo e QR (centralizada H e V)
+  const colLeft = x + pad + side + pad;
   const maxTextW = textW - 1;
   const codigo = String(opts.validationCode || "").trim();
   const linhas: {
@@ -281,7 +281,6 @@ function desenharSelo(opts: {
       color: COR.corpo,
     },
     {
-      // Completo e discreto — sem URL; QR leva à validação
       text: caberTexto(`Lei 14.063/2020 · ${codigo}`, font, 4, maxTextW),
       size: 4,
       color: COR.faixa,
@@ -294,11 +293,14 @@ function desenharSelo(opts: {
 
   for (const linha of linhas) {
     cursorY -= linha.size;
+    const f = linha.bold ? fontBold : font;
+    const tw = f.widthOfTextAtSize(linha.text, linha.size);
+    const textX = colLeft + Math.max(0, (maxTextW - tw) / 2);
     page.drawText(linha.text, {
-      x: tx,
+      x: textX,
       y: cursorY,
       size: linha.size,
-      font: linha.bold ? fontBold : font,
+      font: f,
       color: linha.color,
     });
     cursorY -= lineGap;

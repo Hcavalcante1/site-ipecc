@@ -3,13 +3,58 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { CONSENTIMENTO_ASSINATURA_IPECC } from "@/lib/documentos/signing/constants";
 
-/** Proporções do selo compacto (iguais ao PDF). A4 595×842 pt. */
-const PREVIEW_PAGE = { w: 595, h: 842, margin: 18 };
-const PREVIEW_SELO = { w: 216, h: 36 };
+/** Mesmas proporções do carimbo no PDF (pt). */
+const STAMP_MARGIN = 18;
+const STAMP_BOX = { w: 216, h: 36 };
+const LOGO_PREVIEW = "/media/global/logos/ipecc_logo_v2.png";
+
+function formatarCpfPreview(cpf: string): string {
+  const d = String(cpf || "").replace(/\D/g, "");
+  if (d.length !== 11) return d || "000.000.000-00";
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+}
+
+function formatarDataPreview(): string {
+  try {
+    return new Intl.DateTimeFormat("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(new Date());
+  } catch {
+    return new Date().toLocaleString("pt-BR");
+  }
+}
+
+/** Mesma matemática de `origemLivre` no pdfStampService (âncora canto SE, y 0=topo). */
+function stampLeftTopPct(
+  pageW: number,
+  pageH: number,
+  xPct: number,
+  yPct: number
+): { leftPct: number; topPct: number; wPct: number; hPct: number } {
+  const margin = STAMP_MARGIN;
+  const boxW = STAMP_BOX.w;
+  const boxH = STAMP_BOX.h;
+  const spanX = Math.max(0, pageW - boxW - 2 * margin);
+  const spanY = Math.max(0, pageH - boxH - 2 * margin);
+  const xp = Math.min(100, Math.max(0, xPct));
+  const yp = Math.min(100, Math.max(0, yPct));
+  const left = margin + (spanX * xp) / 100;
+  const top = margin + (spanY * yp) / 100;
+  return {
+    leftPct: (left / pageW) * 100,
+    topPct: (top / pageH) * 100,
+    wPct: (boxW / pageW) * 100,
+    hPct: (boxH / pageH) * 100,
+  };
+}
 
 /**
- * Preview do documento real (mesmo padrão da ficha: iframe do arquivo)
- * + carimbo arrastável com cursor de mãozinha.
+ * Página real via pdf.js (1:1 com o PDF) + carimbo na mesma posição da assinatura.
  */
 function StampPositionPreview({
   documentId,
@@ -17,46 +62,120 @@ function StampPositionPreview({
   yPct,
   onChange,
   nome,
+  cpf,
+  cargo,
+  modoPagina,
+  paginaNum,
 }: {
   documentId?: string | null;
   xPct: number;
   yPct: number;
   onChange: (x: number, y: number) => void;
   nome: string;
+  cpf: string;
+  cargo: string;
+  modoPagina: "ultima" | "numero" | "nova";
+  paginaNum: string;
 }) {
-  const areaRef = useRef<HTMLDivElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const dragging = useRef(false);
   const [grabbing, setGrabbing] = useState(false);
-
-  const spanX = PREVIEW_PAGE.w - PREVIEW_SELO.w - 2 * PREVIEW_PAGE.margin;
-  const spanY = PREVIEW_PAGE.h - PREVIEW_SELO.h - 2 * PREVIEW_PAGE.margin;
-  const leftPt = PREVIEW_PAGE.margin + (spanX * xPct) / 100;
-  const topPt = PREVIEW_PAGE.margin + (spanY * yPct) / 100;
+  const [pageSize, setPageSize] = useState({ w: 595.28, h: 841.89 });
+  const [pageLabel, setPageLabel] = useState("");
+  const [loadErro, setLoadErro] = useState<string | null>(null);
+  const [loadingPdf, setLoadingPdf] = useState(false);
 
   const pdfUrl = documentId
     ? `/api/admin/documentos/${encodeURIComponent(documentId)}/arquivo`
     : null;
 
+  useEffect(() => {
+    if (!pdfUrl || modoPagina === "nova") {
+      setPageSize({ w: 595.28, h: 841.89 });
+      setPageLabel(modoPagina === "nova" ? "Nova folha" : "");
+      setLoadErro(null);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      setLoadingPdf(true);
+      setLoadErro(null);
+      try {
+        const pdfjs = await import("pdfjs-dist");
+        pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
+        const res = await fetch(pdfUrl, { credentials: "include" });
+        if (!res.ok) throw new Error("Não foi possível carregar o PDF.");
+        const data = new Uint8Array(await res.arrayBuffer());
+        const doc = await pdfjs.getDocument({ data }).promise;
+        if (cancelled) return;
+
+        let pageIndex = doc.numPages;
+        if (modoPagina === "numero") {
+          const n = Math.min(
+            Math.max(Number(paginaNum) || 1, 1),
+            doc.numPages
+          );
+          pageIndex = n;
+        }
+        const page = await doc.getPage(pageIndex);
+        const base = page.getViewport({ scale: 1 });
+        const targetW = Math.min(
+          900,
+          wrapRef.current?.clientWidth || 720
+        );
+        const scale = targetW / base.width;
+        const viewport = page.getViewport({ scale });
+
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        canvas.width = Math.floor(viewport.width);
+        canvas.height = Math.floor(viewport.height);
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        if (cancelled) return;
+
+        setPageSize({ w: base.width, h: base.height });
+        setPageLabel(`Página ${pageIndex} de ${doc.numPages}`);
+      } catch (e) {
+        if (!cancelled) {
+          setLoadErro(
+            e instanceof Error ? e.message : "Falha ao renderizar o PDF."
+          );
+        }
+      } finally {
+        if (!cancelled) setLoadingPdf(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pdfUrl, modoPagina, paginaNum]);
+
+  const geom = stampLeftTopPct(pageSize.w, pageSize.h, xPct, yPct);
+
   function pctFromClient(clientX: number, clientY: number) {
-    const el = areaRef.current;
+    const el = wrapRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
     if (r.width <= 0 || r.height <= 0) return;
-    const relX = ((clientX - r.left) / r.width) * PREVIEW_PAGE.w;
-    const relY = ((clientY - r.top) / r.height) * PREVIEW_PAGE.h;
+    const { w: pageW, h: pageH } = pageSize;
+    const margin = STAMP_MARGIN;
+    const spanX = Math.max(0, pageW - STAMP_BOX.w - 2 * margin);
+    const spanY = Math.max(0, pageH - STAMP_BOX.h - 2 * margin);
+    const relX = ((clientX - r.left) / r.width) * pageW;
+    const relY = ((clientY - r.top) / r.height) * pageH;
     const x = Math.min(
       100,
-      Math.max(
-        0,
-        ((relX - PREVIEW_SELO.w / 2 - PREVIEW_PAGE.margin) / spanX) * 100
-      )
+      Math.max(0, ((relX - STAMP_BOX.w / 2 - margin) / spanX) * 100)
     );
     const y = Math.min(
       100,
-      Math.max(
-        0,
-        ((relY - PREVIEW_SELO.h / 2 - PREVIEW_PAGE.margin) / spanY) * 100
-      )
+      Math.max(0, ((relY - STAMP_BOX.h / 2 - margin) / spanY) * 100)
     );
     onChange(Math.round(x), Math.round(y));
   }
@@ -85,7 +204,13 @@ function StampPositionPreview({
     }
   }
 
-  const label = (nome.trim() || "NOME").toUpperCase().slice(0, 18);
+  const nomeShow = (nome.trim() || "SEU NOME").toUpperCase();
+  const cpfShow = formatarCpfPreview(cpf);
+  const cargoShow = cargo.trim();
+  const dataShow = formatarDataPreview();
+  const metaLinha = cargoShow
+    ? `${cargoShow} · CPF ${cpfShow}`
+    : `CPF ${cpfShow}`;
 
   return (
     <div style={{ marginBottom: 12 }}>
@@ -97,106 +222,154 @@ function StampPositionPreview({
           lineHeight: 1.35,
         }}
       >
-        {pdfUrl
-          ? "Documento real: arraste o carimbo com a mãozinha até o local da assinatura (role o PDF no preview se precisar)."
-          : "Documento não identificado — use os percentuais abaixo."}
+        Posição 1:1 com o PDF
+        {pageLabel ? ` · ${pageLabel}` : ""}. Arraste o carimbo (mãozinha) —
+        o local aqui é o mesmo da assinatura.
       </p>
+      {loadErro ? (
+        <p style={{ color: "#fca5a5", fontSize: 13 }}>{loadErro}</p>
+      ) : null}
       <div
-        ref={areaRef}
         style={{
-          position: "relative",
-          width: "100%",
           borderRadius: 8,
-          overflow: "hidden",
+          overflow: "auto",
+          maxHeight: "min(62vh, 640px)",
           border: "1px solid #334155",
-          background: "#0f172a",
-          userSelect: "none",
+          background: "#334155",
         }}
       >
-        {pdfUrl ? (
-          <iframe
-            title="Preview PDF"
-            src={pdfUrl}
-            style={{
-              width: "100%",
-              minHeight: 520,
-              height: "min(62vh, 640px)",
-              border: "none",
-              display: "block",
-              background: "#0f172a",
-            }}
-          />
-        ) : (
-          <div
-            style={{
-              minHeight: 280,
-              background: "#f8fafc",
-              position: "relative",
-            }}
-          />
-        )}
-        {/* Carimbo flutuante — pointer-events só nele para o PDF rolar no iframe */}
         <div
-          role="button"
-          aria-label="Arrastar carimbo de assinatura"
-          title="Arraste para posicionar"
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
+          ref={wrapRef}
           style={{
-            position: "absolute",
-            left: `${(leftPt / PREVIEW_PAGE.w) * 100}%`,
-            top: `${(topPt / PREVIEW_PAGE.h) * 100}%`,
-            width: `${(PREVIEW_SELO.w / PREVIEW_PAGE.w) * 100}%`,
-            height: `${(PREVIEW_SELO.h / PREVIEW_PAGE.h) * 100}%`,
-            minHeight: 28,
-            background: "rgba(224, 242, 254, 0.96)",
-            border: "2px solid #0284c7",
-            borderRadius: 3,
-            display: "flex",
-            alignItems: "center",
-            gap: 4,
-            padding: "2px 4px",
-            boxSizing: "border-box",
-            cursor: grabbing ? "grabbing" : "grab",
-            boxShadow: "0 2px 10px rgba(2,132,199,0.45)",
-            zIndex: 3,
-            touchAction: "none",
+            position: "relative",
+            width: "100%",
+            lineHeight: 0,
+            background: "#fff",
           }}
         >
+          {modoPagina === "nova" ? (
+            <div
+              style={{
+                width: "100%",
+                aspectRatio: `${pageSize.w} / ${pageSize.h}`,
+                background: "#fff",
+                minHeight: 360,
+              }}
+            />
+          ) : (
+            <canvas
+              ref={canvasRef}
+              style={{
+                width: "100%",
+                height: "auto",
+                display: "block",
+              }}
+            />
+          )}
+          {loadingPdf ? (
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "rgba(15,23,42,0.35)",
+                color: "#f8fafc",
+                fontSize: 13,
+                lineHeight: 1.4,
+              }}
+            >
+              Carregando página do documento…
+            </div>
+          ) : null}
           <div
+            role="button"
+            aria-label="Arrastar carimbo de assinatura"
+            title="Arraste — posição igual à do PDF assinado"
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
             style={{
-              width: 22,
-              height: 22,
-              flexShrink: 0,
+              position: "absolute",
+              left: `${geom.leftPct}%`,
+              top: `${geom.topPct}%`,
+              width: `${geom.wPct}%`,
+              height: `${geom.hPct}%`,
+              minHeight: 36,
+              background: "rgba(245, 250, 255, 0.97)",
+              border: "1px solid #c5ced8",
               borderRadius: 2,
-              background: "#0059bf",
-            }}
-          />
-          <div
-            style={{
-              flex: 1,
-              minWidth: 0,
-              fontSize: 9,
-              lineHeight: 1.2,
-              color: "#0f172a",
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "2px 4px",
+              boxSizing: "border-box",
+              cursor: grabbing ? "grabbing" : "grab",
+              boxShadow: "0 2px 8px rgba(2,132,199,0.4)",
+              zIndex: 3,
+              touchAction: "none",
               overflow: "hidden",
             }}
           >
-            <div style={{ opacity: 0.75 }}>Assinado digitalmente</div>
-            <div style={{ fontWeight: 700 }}>{label}</div>
+            <img
+              src={LOGO_PREVIEW}
+              alt="IPECC"
+              draggable={false}
+              style={{
+                width: "14%",
+                maxWidth: 40,
+                aspectRatio: "1",
+                objectFit: "cover",
+                flexShrink: 0,
+                background: "#fff",
+              }}
+            />
+            <div
+              style={{
+                flex: 1,
+                minWidth: 0,
+                textAlign: "center",
+                color: "#1e293b",
+                lineHeight: 1.15,
+                overflow: "hidden",
+              }}
+            >
+              <div style={{ fontSize: "clamp(5px, 1.1vw, 8px)", color: "#475569" }}>
+                Documento assinado digitalmente
+              </div>
+              <div
+                style={{
+                  fontSize: "clamp(6px, 1.35vw, 10px)",
+                  fontWeight: 700,
+                  color: "#0f172a",
+                }}
+              >
+                {nomeShow.slice(0, 28)}
+              </div>
+              <div style={{ fontSize: "clamp(5px, 1vw, 8px)", color: "#475569" }}>
+                Data: {dataShow}
+              </div>
+              <div style={{ fontSize: "clamp(5px, 1vw, 7.5px)", color: "#475569" }}>
+                {metaLinha.slice(0, 36)}
+              </div>
+              <div style={{ fontSize: "clamp(4.5px, 0.95vw, 7px)", color: "#0059bf" }}>
+                Lei 14.063/2020 · (código na assinatura)
+              </div>
+            </div>
+            <div
+              aria-hidden
+              style={{
+                width: "14%",
+                maxWidth: 40,
+                aspectRatio: "1",
+                flexShrink: 0,
+                background:
+                  "repeating-conic-gradient(#0059bf 0% 25%, #e8f1fb 0% 50%) 50% / 22% 22%",
+              }}
+            />
           </div>
-          <div
-            style={{
-              width: 22,
-              height: 22,
-              flexShrink: 0,
-              borderRadius: 2,
-              background:
-                "repeating-conic-gradient(#0059bf 0% 25%, #e0f2fe 0% 50%) 50% / 40% 40%",
-            }}
-          />
         </div>
       </div>
     </div>
@@ -744,6 +917,10 @@ export default function AssinarNoAdminModal({
                   xPct={xPct}
                   yPct={yPct}
                   nome={nome}
+                  cpf={cpf}
+                  cargo={cargo}
+                  modoPagina={modoPagina}
+                  paginaNum={paginaNum}
                   onChange={(x, y) => {
                     setXPct(x);
                     setYPct(y);
