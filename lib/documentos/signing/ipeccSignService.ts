@@ -86,6 +86,21 @@ export async function iniciarAssinaturaIpecc(opts: {
     return { ok: false, error: "Documento já assinado.", status: 400 };
   }
 
+  const { count: signersCount } = await admin
+    .from("gd_signature_signers")
+    .select("id", { count: "exact", head: true })
+    .eq("signature_document_id", sig.id)
+    .is("deleted_at", null);
+
+  if (!signersCount) {
+    return {
+      ok: false,
+      error:
+        "Pedido sem signatários. Inclua ao menos um signatário antes de assinar.",
+      status: 400,
+    };
+  }
+
   const email = String(opts.actorEmail || "")
     .trim()
     .toLowerCase();
@@ -96,7 +111,8 @@ export async function iniciarAssinaturaIpecc(opts: {
   await admin
     .from("gd_signature_documents")
     .update({ status: "ready", updated_at: new Date().toISOString() })
-    .eq("id", sig.id);
+    .eq("id", sig.id)
+    .neq("status", "signed");
 
   await admin.from("gd_signature_events").insert({
     signature_document_id: sig.id,
@@ -212,35 +228,58 @@ export async function confirmarAssinaturaIpecc(opts: {
     .order("sort_order", { ascending: true });
 
   const signers = allSigners || [];
+  if (signers.length === 0) {
+    return {
+      ok: false,
+      error:
+        "Pedido sem signatários. Inclua ao menos um signatário antes de assinar.",
+      status: 400,
+    };
+  }
+
   const pendingSigners = signers.filter((s) => s.status !== "signed");
+  if (pendingSigners.length === 0) {
+    return {
+      ok: false,
+      error: "Não há signatários pendentes neste pedido.",
+      status: 400,
+    };
+  }
+
   const signingMode =
     (sig as { signing_mode?: string }).signing_mode ||
     signers[0]?.mode ||
     "sequential";
 
-  let signer = pendingSigners[0] || null;
-  if (pendingSigners.length > 0) {
-    if (signingMode === "sequential") {
-      const next = pendingSigners[0];
-      const nextEmail = String(next.email || "")
-        .trim()
-        .toLowerCase();
-      if (nextEmail && nextEmail !== email) {
-        return {
-          ok: false,
-          error: `Assinatura sequencial: aguarde o próximo signatário (${next.cargo || nextEmail}).`,
-          status: 403,
-        };
-      }
-      signer = next;
-    } else {
-      signer =
-        pendingSigners.find(
-          (s) =>
-            String(s.email || "")
-              .trim()
-              .toLowerCase() === email
-        ) || pendingSigners[0];
+  let signer = null as (typeof pendingSigners)[number] | null;
+  if (signingMode === "sequential") {
+    const next = pendingSigners[0];
+    const nextEmail = String(next.email || "")
+      .trim()
+      .toLowerCase();
+    if (nextEmail && nextEmail !== email) {
+      return {
+        ok: false,
+        error: `Assinatura sequencial: aguarde o próximo signatário (${next.cargo || nextEmail}).`,
+        status: 403,
+      };
+    }
+    signer = next;
+  } else {
+    signer =
+      pendingSigners.find(
+        (s) =>
+          String(s.email || "")
+            .trim()
+            .toLowerCase() === email
+      ) || null;
+    if (!signer) {
+      return {
+        ok: false,
+        error:
+          "Você não está na lista de signatários pendentes deste pedido.",
+        status: 403,
+      };
     }
   }
 
@@ -331,13 +370,13 @@ export async function confirmarAssinaturaIpecc(opts: {
   }
 
   const signedHash = sha256Bytes(stamped);
-  const stampedPath = `${doc.id}/signed/${sig.id}-${serial}.pdf`;
+  const stampedPath = `${doc.id}/signed/${sig.id}-${serial}-${signedAt.getTime()}.pdf`;
 
   const { error: upErr } = await admin.storage
     .from(GD_STORAGE_BUCKET)
     .upload(stampedPath, stamped, {
       contentType: "application/pdf",
-      upsert: true,
+      upsert: false,
     });
 
   if (upErr) {
@@ -367,6 +406,36 @@ export async function confirmarAssinaturaIpecc(opts: {
     .select("id")
     .single();
 
+  if (signer?.id) {
+    const { data: claimedSigner, error: claimErr } = await admin
+      .from("gd_signature_signers")
+      .update({
+        status: "signed",
+        signed_at: signedAt.toISOString(),
+        user_id: opts.userId,
+        updated_at: signedAt.toISOString(),
+      })
+      .eq("id", signer.id)
+      .neq("status", "signed")
+      .select("id")
+      .maybeSingle();
+
+    if (claimErr) {
+      return {
+        ok: false,
+        error: claimErr.message || "Falha ao registrar signatário.",
+        status: 500,
+      };
+    }
+    if (!claimedSigner) {
+      return {
+        ok: false,
+        error: "Este signatário já concluiu a assinatura.",
+        status: 409,
+      };
+    }
+  }
+
   const evidence = await registrarEvidencia({
     signatureDocumentId: sig.id,
     signerId: signer?.id || null,
@@ -393,18 +462,6 @@ export async function confirmarAssinaturaIpecc(opts: {
     return { ok: false, error: evidence.error, status: 500 };
   }
 
-  if (signer?.id) {
-    await admin
-      .from("gd_signature_signers")
-      .update({
-        status: "signed",
-        signed_at: signedAt.toISOString(),
-        user_id: opts.userId,
-        updated_at: signedAt.toISOString(),
-      })
-      .eq("id", signer.id);
-  }
-
   const { data: signersApos } = await admin
     .from("gd_signature_signers")
     .select("id, status, required")
@@ -414,8 +471,7 @@ export async function confirmarAssinaturaIpecc(opts: {
   const requiredPending = (signersApos || []).filter(
     (s) => s.required !== false && s.status !== "signed"
   );
-  const documentoConcluido =
-    signers.length === 0 || requiredPending.length === 0;
+  const documentoConcluido = requiredPending.length === 0;
 
   await admin
     .from("gd_documents")
@@ -430,7 +486,7 @@ export async function confirmarAssinaturaIpecc(opts: {
     })
     .eq("id", doc.id);
 
-  await admin
+  const { data: claimedSig } = await admin
     .from("gd_signature_documents")
     .update({
       status: documentoConcluido ? "signed" : "signing",
@@ -443,7 +499,18 @@ export async function confirmarAssinaturaIpecc(opts: {
       updated_at: signedAt.toISOString(),
       error_message: null,
     })
-    .eq("id", sig.id);
+    .eq("id", sig.id)
+    .neq("status", "signed")
+    .select("id")
+    .maybeSingle();
+
+  if (!claimedSig && documentoConcluido) {
+    return {
+      ok: false,
+      error: "Documento já foi concluído por outra operação simultânea.",
+      status: 409,
+    };
+  }
 
   await admin.from("gd_signature_events").insert({
     signature_document_id: sig.id,

@@ -743,6 +743,13 @@ export default function AssinarNoAdminModal({
                 {documentTitle}
               </p>
             ) : null}
+            <p style={{ marginTop: 0, marginBottom: 12, color: "#cbd5e1", fontSize: 13, lineHeight: 1.45 }}>
+              <strong style={{ color: "#f8fafc" }}>Assinatura eletrônica simples</strong>
+              {" — "}
+              indicada para fluxos internos e documentos de menor risco. Não
+              substitui assinatura qualificada ou ICP-Brasil quando houver
+              exigência específica.
+            </p>
             {progressMsg ? (
               <p style={{ color: "#93c5fd", fontSize: 14 }}>{progressMsg}</p>
             ) : null}

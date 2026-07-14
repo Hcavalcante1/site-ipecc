@@ -3,6 +3,7 @@ import {
   denyIfSemModuloDocumentos,
   requestAuditMeta,
 } from "@/lib/documentos";
+import { carregarPedidoAssinaturaNoEscopo } from "@/lib/documentos/scopeHelper";
 import { confirmarAssinaturaIpecc } from "@/lib/documentos/signing/ipeccSignService";
 import {
   RATE_ASSINATURA,
@@ -19,6 +20,9 @@ export async function POST(
   if (denied || !auth) return denied!;
 
   const id = ctx.params.id;
+  const scoped = await carregarPedidoAssinaturaNoEscopo(id, auth);
+  if (scoped.error) return scoped.error;
+
   try {
     const body = (await req.json()) as {
       password?: string;

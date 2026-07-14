@@ -7,6 +7,7 @@ import {
   processoIdsDoEscopo,
   registroNoEscopoProcesso,
 } from "@/lib/auth/adminEscopo";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 export type AuthDocumentos = NonNullable<
   Awaited<ReturnType<typeof denyIfSemModuloDocumentos>>["auth"]
@@ -74,4 +75,54 @@ export async function carregarDocumentoNoEscopo(
     };
   }
   return { data };
+}
+
+/**
+ * Carrega pedido de assinatura e valida escopo via documento vinculado.
+ * Paridade com lotes (`registroNoEscopoProcesso`).
+ */
+export async function carregarPedidoAssinaturaNoEscopo(
+  signatureDocumentId: string,
+  auth: AuthDocumentos
+) {
+  const admin = getSupabaseAdmin();
+  const { data: sig, error } = await admin
+    .from("gd_signature_documents")
+    .select("id, document_id, provider_code, status")
+    .eq("id", signatureDocumentId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (error) {
+    if (tabelaAusente(error.message, error.code)) {
+      return {
+        error: NextResponse.json(
+          {
+            ok: false,
+            error:
+              "Tabelas da Gestão Documental ausentes. Aplique docs/sql/gestao-documental-fase-1.sql no Supabase.",
+          },
+          { status: 503 }
+        ),
+      };
+    }
+    return {
+      error: NextResponse.json(
+        { ok: false, error: error.message },
+        { status: 500 }
+      ),
+    };
+  }
+  if (!sig) {
+    return {
+      error: NextResponse.json(
+        { ok: false, error: "Pedido de assinatura não encontrado." },
+        { status: 404 }
+      ),
+    };
+  }
+
+  const loaded = await carregarDocumentoNoEscopo(sig.document_id, auth);
+  if (loaded.error) return { error: loaded.error };
+  return { sig, documento: loaded.data };
 }

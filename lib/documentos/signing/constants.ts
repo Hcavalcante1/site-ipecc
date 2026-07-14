@@ -62,9 +62,31 @@ export function validationBaseUrl(): string {
 }
 
 export function otpPepper(): string {
-  return (
+  const fromEnv =
     String(process.env.SIGNATURE_OTP_PEPPER || "").trim() ||
-    String(process.env.NEXTAUTH_SECRET || "").trim() ||
-    "ipecc-assinatura-dev-pepper"
+    String(process.env.NEXTAUTH_SECRET || "").trim();
+  if (fromEnv) return fromEnv;
+
+  const isProd =
+    process.env.NODE_ENV === "production" ||
+    process.env.VERCEL_ENV === "production";
+  if (isProd) {
+    throw new Error(
+      "SIGNATURE_OTP_PEPPER (ou NEXTAUTH_SECRET) é obrigatório em produção."
+    );
+  }
+  return "ipecc-assinatura-dev-pepper";
+}
+
+/** Ecoar OTP no painel quando o e-mail falha: só em não-produção ou com flag explícita. */
+export function otpPermitirCodigoNoPainel(): boolean {
+  const flag = String(process.env.SIGNATURE_OTP_ALLOW_PANEL_FALLBACK || "")
+    .trim()
+    .toLowerCase();
+  if (flag === "true" || flag === "1") return true;
+  if (flag === "false" || flag === "0") return false;
+  return (
+    process.env.NODE_ENV !== "production" &&
+    process.env.VERCEL_ENV !== "production"
   );
 }

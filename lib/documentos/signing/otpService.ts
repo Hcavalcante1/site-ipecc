@@ -1,7 +1,7 @@
 import { createHash, randomInt } from "crypto";
 import { Resend } from "resend";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { otpPepper } from "./constants";
+import { otpPepper, otpPermitirCodigoNoPainel } from "./constants";
 
 const OTP_TTL_MS = 10 * 60 * 1000;
 const RESEND_COOLDOWN_MS = 60 * 1000;
@@ -171,8 +171,18 @@ export async function criarEEnviarOtp(opts: {
 
   const mail = await enviarEmailOtp({ to: email, code });
   if (!mail.ok) {
-    // Assinatura institucional no admin autenticado: não trava se o Resend falhar
-    // (domínio não verificado etc.) — ecoa o OTP no painel.
+    if (!otpPermitirCodigoNoPainel()) {
+      console.warn(
+        `[assinatura-ipecc] e-mail OTP falhou (${mail.error}); fallback no painel desabilitado`
+      );
+      return {
+        ok: false,
+        error:
+          "Não foi possível enviar o código OTP por e-mail. Configure o Resend ou defina SIGNATURE_OTP_ALLOW_PANEL_FALLBACK=true (apenas se aceitar o risco operacional).",
+        status: 503,
+      };
+    }
+    // Contingência: ecoa o OTP no painel admin autenticado.
     console.warn(
       `[assinatura-ipecc] e-mail OTP falhou (${mail.error}); código ecoado no admin para ${email}`
     );

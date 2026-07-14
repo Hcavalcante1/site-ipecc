@@ -20,12 +20,13 @@ Cria: `gd_signature_evidences`, `gd_signature_otp_challenges`, `gd_validation_lo
 ## Env
 
 - `RESEND_API_KEY` + remetente verificado — envio OTP
-- `RESEND_FROM` ou `EMAIL_FROM` — remetente (ex.: `IPECC <noreply@seudominio.com>`); se o domínio não estiver verificado no Resend, o OTP aparece no painel admin para não travar a assinatura institucional
+- `RESEND_FROM` ou `EMAIL_FROM` — remetente (ex.: `IPECC <noreply@seudominio.com>`); se o domínio não estiver verificado no Resend, configure `SIGNATURE_OTP_ALLOW_PANEL_FALLBACK=true` para ecoar o OTP no painel (risco operacional aceito)
 - `EMAIL_ADMIN` / `EMAIL_CONTATO` — fallback de remetente (evite domínio não verificado)
-- `SIGNATURE_OTP_PEPPER` — opcional (pepper do hash OTP)
+- `SIGNATURE_OTP_PEPPER` — **obrigatório em produção** (pepper do hash OTP); em desenvolvimento aceita fallback via `NEXTAUTH_SECRET`
+- `SIGNATURE_OTP_ALLOW_PANEL_FALLBACK` — `true` para permitir código OTP no painel quando o e-mail falha (em produção o padrão é **não** ecoar)
 - `SIGNATURE_VALIDATION_BASE_URL` — opcional (default site público)
 
-Sem Resend ou com falha de domínio, o OTP aparece no modal do admin (`devCode`).
+Sem Resend em desenvolvimento, o OTP pode aparecer no modal do admin (`devCode`). Em produção, sem Resend/flag, a operação falha de forma segura.
 
 ## Lote (Fase D)
 

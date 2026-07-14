@@ -43,13 +43,17 @@ export default async function ValidarAssinaturaPage({ params }: Props) {
         }}
       >
         <p style={{ margin: 0, color: "#94a3b8", fontSize: 13, letterSpacing: 1 }}>
-          IPECC · Validação de assinatura eletrônica
+          IPECC · Assinatura eletrônica simples
         </p>
         <h1 style={{ marginTop: 8, marginBottom: 8, fontSize: 28 }}>
           Verificar documento
         </h1>
         <p style={{ color: "#94a3b8", marginTop: 0 }}>
           Código: <strong style={{ color: "#f8fafc" }}>{params.codigo}</strong>
+        </p>
+        <p style={{ color: "#94a3b8", fontSize: 13, lineHeight: 1.5 }}>
+          Modalidade de assinatura eletrônica simples (Lei 14.063/2020). Não
+          equivale a assinatura qualificada nem a certificado ICP-Brasil.
         </p>
 
         {!resultado.encontrado ? (

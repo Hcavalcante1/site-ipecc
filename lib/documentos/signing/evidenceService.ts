@@ -38,11 +38,15 @@ export async function proximoSerialAssinatura(
   documentId: string
 ): Promise<number> {
   const admin = getSupabaseAdmin();
-  const { count } = await admin
+  const { data } = await admin
     .from("gd_signature_evidences")
-    .select("id", { count: "exact", head: true })
-    .eq("document_id", documentId);
-  return (count || 0) + 1;
+    .select("signature_serial")
+    .eq("document_id", documentId)
+    .order("signature_serial", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const last = Number(data?.signature_serial || 0);
+  return (Number.isFinite(last) ? last : 0) + 1;
 }
 
 export async function registrarEvidencia(opts: {

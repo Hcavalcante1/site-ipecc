@@ -7,6 +7,16 @@ import {
 } from "./evidenceService";
 import type { GdSignatureEvidence } from "./constants";
 
+function mascararEmailPublico(email: string | null | undefined): string {
+  const raw = String(email || "").trim().toLowerCase();
+  const at = raw.indexOf("@");
+  if (at < 1) return "—";
+  const local = raw.slice(0, at);
+  const domain = raw.slice(at + 1);
+  const keep = local.slice(0, Math.min(2, local.length));
+  return `${keep}***@${domain}`;
+}
+
 export type ValidacaoPublicaResultado = {
   encontrado: boolean;
   evidencia: Pick<
@@ -108,7 +118,7 @@ export async function obterValidacaoPublica(opts: {
       validation_code: evidencia.validation_code,
       nome: evidencia.nome,
       cargo: evidencia.cargo,
-      email: evidencia.email,
+      email: mascararEmailPublico(evidencia.email),
       signed_at: evidencia.signed_at,
       timezone: evidencia.timezone,
       document_hash_sha256: evidencia.document_hash_sha256,

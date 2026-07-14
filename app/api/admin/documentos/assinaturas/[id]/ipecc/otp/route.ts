@@ -3,6 +3,7 @@ import {
   denyIfSemModuloDocumentos,
   requestAuditMeta,
 } from "@/lib/documentos";
+import { carregarPedidoAssinaturaNoEscopo } from "@/lib/documentos/scopeHelper";
 import { criarEEnviarOtp } from "@/lib/documentos/signing/otpService";
 import {
   RATE_OTP,
@@ -19,6 +20,9 @@ export async function POST(
   if (denied || !auth) return denied!;
 
   const id = ctx.params.id;
+  const scoped = await carregarPedidoAssinaturaNoEscopo(id, auth);
+  if (scoped.error) return scoped.error;
+
   try {
     const meta = requestAuditMeta(req);
     const rate = checkRateLimit(
