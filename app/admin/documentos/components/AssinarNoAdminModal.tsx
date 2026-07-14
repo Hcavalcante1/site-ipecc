@@ -7,32 +7,43 @@ import { CONSENTIMENTO_ASSINATURA_IPECC } from "@/lib/documentos/signing/constan
 const PREVIEW_PAGE = { w: 595, h: 842, margin: 18 };
 const PREVIEW_SELO = { w: 216, h: 36 };
 
+/**
+ * Preview do documento real (mesmo padrão da ficha: iframe do arquivo)
+ * + carimbo arrastável com cursor de mãozinha.
+ */
 function StampPositionPreview({
+  documentId,
   xPct,
   yPct,
   onChange,
   nome,
 }: {
+  documentId?: string | null;
   xPct: number;
   yPct: number;
   onChange: (x: number, y: number) => void;
   nome: string;
 }) {
-  const pageRef = useRef<HTMLDivElement>(null);
+  const areaRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
+  const [grabbing, setGrabbing] = useState(false);
 
   const spanX = PREVIEW_PAGE.w - PREVIEW_SELO.w - 2 * PREVIEW_PAGE.margin;
   const spanY = PREVIEW_PAGE.h - PREVIEW_SELO.h - 2 * PREVIEW_PAGE.margin;
   const leftPt = PREVIEW_PAGE.margin + (spanX * xPct) / 100;
   const topPt = PREVIEW_PAGE.margin + (spanY * yPct) / 100;
 
+  const pdfUrl = documentId
+    ? `/api/admin/documentos/${encodeURIComponent(documentId)}/arquivo`
+    : null;
+
   function pctFromClient(clientX: number, clientY: number) {
-    const el = pageRef.current;
+    const el = areaRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) return;
     const relX = ((clientX - r.left) / r.width) * PREVIEW_PAGE.w;
     const relY = ((clientY - r.top) / r.height) * PREVIEW_PAGE.h;
-    // âncora = canto superior esquerdo do selo; clicar no centro do selo também
     const x = Math.min(
       100,
       Math.max(
@@ -51,7 +62,10 @@ function StampPositionPreview({
   }
 
   function onPointerDown(e: ReactPointerEvent) {
+    e.preventDefault();
+    e.stopPropagation();
     dragging.current = true;
+    setGrabbing(true);
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     pctFromClient(e.clientX, e.clientY);
   }
@@ -61,8 +75,14 @@ function StampPositionPreview({
     pctFromClient(e.clientX, e.clientY);
   }
 
-  function onPointerUp() {
+  function onPointerUp(e: ReactPointerEvent) {
     dragging.current = false;
+    setGrabbing(false);
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
   }
 
   const label = (nome.trim() || "NOME").toUpperCase().slice(0, 18);
@@ -77,79 +97,104 @@ function StampPositionPreview({
           lineHeight: 1.35,
         }}
       >
-        Prévia: clique ou arraste o carimbo na página para posicionar.
+        {pdfUrl
+          ? "Documento real: arraste o carimbo com a mãozinha até o local da assinatura (role o PDF no preview se precisar)."
+          : "Documento não identificado — use os percentuais abaixo."}
       </p>
       <div
-        ref={pageRef}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
+        ref={areaRef}
         style={{
           position: "relative",
           width: "100%",
-          maxWidth: 220,
-          aspectRatio: `${PREVIEW_PAGE.w} / ${PREVIEW_PAGE.h}`,
-          margin: "0 auto",
-          background: "#f8fafc",
-          border: "1px solid #64748b",
-          borderRadius: 4,
-          cursor: "crosshair",
-          touchAction: "none",
+          borderRadius: 8,
+          overflow: "hidden",
+          border: "1px solid #334155",
+          background: "#0f172a",
           userSelect: "none",
-          boxShadow: "inset 0 0 0 1px #e2e8f0",
         }}
-        title="Clique ou arraste para posicionar"
       >
+        {pdfUrl ? (
+          <iframe
+            title="Preview PDF"
+            src={pdfUrl}
+            style={{
+              width: "100%",
+              minHeight: 520,
+              height: "min(62vh, 640px)",
+              border: "none",
+              display: "block",
+              background: "#0f172a",
+            }}
+          />
+        ) : (
+          <div
+            style={{
+              minHeight: 280,
+              background: "#f8fafc",
+              position: "relative",
+            }}
+          />
+        )}
+        {/* Carimbo flutuante — pointer-events só nele para o PDF rolar no iframe */}
         <div
+          role="button"
+          aria-label="Arrastar carimbo de assinatura"
+          title="Arraste para posicionar"
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
           style={{
             position: "absolute",
             left: `${(leftPt / PREVIEW_PAGE.w) * 100}%`,
             top: `${(topPt / PREVIEW_PAGE.h) * 100}%`,
             width: `${(PREVIEW_SELO.w / PREVIEW_PAGE.w) * 100}%`,
             height: `${(PREVIEW_SELO.h / PREVIEW_PAGE.h) * 100}%`,
-            background: "rgba(224, 242, 254, 0.95)",
-            border: "1px solid #0ea5e9",
-            borderRadius: 2,
+            minHeight: 28,
+            background: "rgba(224, 242, 254, 0.96)",
+            border: "2px solid #0284c7",
+            borderRadius: 3,
             display: "flex",
             alignItems: "center",
-            gap: 2,
-            padding: "1px 2px",
+            gap: 4,
+            padding: "2px 4px",
             boxSizing: "border-box",
-            pointerEvents: "none",
-            boxShadow: "0 1px 4px rgba(14,165,233,0.35)",
+            cursor: grabbing ? "grabbing" : "grab",
+            boxShadow: "0 2px 10px rgba(2,132,199,0.45)",
+            zIndex: 3,
+            touchAction: "none",
           }}
         >
           <div
             style={{
-              width: "16%",
-              aspectRatio: "1",
-              background: "#0059bf",
-              borderRadius: 1,
+              width: 22,
+              height: 22,
               flexShrink: 0,
+              borderRadius: 2,
+              background: "#0059bf",
             }}
           />
           <div
             style={{
               flex: 1,
               minWidth: 0,
-              fontSize: 5,
-              lineHeight: 1.15,
+              fontSize: 9,
+              lineHeight: 1.2,
               color: "#0f172a",
               overflow: "hidden",
             }}
           >
-            <div style={{ opacity: 0.7 }}>Assinado digitalmente</div>
-            <div style={{ fontWeight: 700, fontSize: 5.5 }}>{label}</div>
+            <div style={{ opacity: 0.75 }}>Assinado digitalmente</div>
+            <div style={{ fontWeight: 700 }}>{label}</div>
           </div>
           <div
             style={{
-              width: "16%",
-              aspectRatio: "1",
+              width: 22,
+              height: 22,
+              flexShrink: 0,
+              borderRadius: 2,
               background:
                 "repeating-conic-gradient(#0059bf 0% 25%, #e0f2fe 0% 50%) 50% / 40% 40%",
-              borderRadius: 1,
-              flexShrink: 0,
             }}
           />
         </div>
@@ -164,6 +209,8 @@ type Props = {
   signatureDocumentId?: string | null;
   /** Lote gd_signature_batches.id — motor IPECC (1 auth → N docs) */
   batchId?: string | null;
+  /** Documento gd_documents.id — preview real do PDF */
+  documentId?: string | null;
   /** Legado Documento (iframe) */
   embedUrl?: string | null;
   signingUrl?: string | null;
@@ -184,6 +231,7 @@ export default function AssinarNoAdminModal({
   open,
   signatureDocumentId,
   batchId,
+  documentId,
   embedUrl,
   signingUrl,
   title = "Assinar documento",
@@ -240,7 +288,7 @@ export default function AssinarNoAdminModal({
     setValidationCode(null);
     setProgressMsg(null);
     setBusy(false);
-  }, [open, signatureDocumentId, batchId]);
+  }, [open, signatureDocumentId, batchId, documentId]);
 
   if (!open) return null;
 
@@ -382,6 +430,7 @@ export default function AssinarNoAdminModal({
   }
 
   const src = embedUrl || signingUrl || "";
+  const modalWide = useIpecc && step === "auth";
 
   return (
     <div
@@ -404,8 +453,8 @@ export default function AssinarNoAdminModal({
     >
       <div
         style={{
-          width: "min(560px, 100%)",
-          maxHeight: "92vh",
+          width: modalWide ? "min(960px, 100%)" : "min(560px, 100%)",
+          maxHeight: "94vh",
           background: "#0f172a",
           border: "1px solid #334155",
           borderRadius: 12,
@@ -688,9 +737,10 @@ export default function AssinarNoAdminModal({
                     lineHeight: 1.4,
                   }}
                 >
-                  Posição livre na página. Arraste na prévia ou use os controles.
+                  Posicione o carimbo no documento (mãozinha). Atalhos e % ajustam fino.
                 </p>
                 <StampPositionPreview
+                  documentId={documentId}
                   xPct={xPct}
                   yPct={yPct}
                   nome={nome}

@@ -39,6 +39,7 @@ export default function AssinaturasClient() {
   const [govbrOk, setGovbrOk] = useState(false);
   const [provedorPadrao, setProvedorPadrao] = useState<string | null>(null);
   const [embedSignatureId, setEmbedSignatureId] = useState<string | null>(null);
+  const [embedDocumentId, setEmbedDocumentId] = useState<string | null>(null);
   const [embedOpen, setEmbedOpen] = useState(false);
   const [embedUrl, setEmbedUrl] = useState<string | null>(null);
   const [signingUrl, setSigningUrl] = useState<string | null>(null);
@@ -128,7 +129,7 @@ export default function AssinaturasClient() {
     if (sigId) {
       autoStarted.current = true;
       setDocumentId(docId);
-      abrirAssinatura({ signatureId: sigId, providerCode: "ipecc" });
+      abrirAssinatura({ signatureId: sigId, documentId: docId, providerCode: "ipecc" });
       return;
     }
 
@@ -164,6 +165,7 @@ export default function AssinaturasClient() {
         );
         abrirAssinatura({
           signatureId: json.signature?.id || json.data?.id,
+          documentId: docId,
           embedUrl: json.embedUrl,
           signingUrl: json.signingUrl,
           providerCode:
@@ -183,6 +185,7 @@ export default function AssinaturasClient() {
 
   function abrirAssinatura(opts: {
     signatureId?: string | null;
+    documentId?: string | null;
     embedUrl?: string | null;
     signingUrl?: string | null;
     providerCode?: string | null;
@@ -191,8 +194,17 @@ export default function AssinaturasClient() {
       opts.providerCode === "ipecc" ||
       (!opts.embedUrl && !opts.signingUrl && Boolean(opts.signatureId));
 
+    const docId =
+      opts.documentId ||
+      documentId.trim() ||
+      (opts.signatureId
+        ? rows.find((r) => r.id === opts.signatureId)?.document_id
+        : null) ||
+      null;
+
     if (isIpecc && opts.signatureId) {
       setEmbedSignatureId(opts.signatureId);
+      setEmbedDocumentId(docId);
       setEmbedUrl(null);
       setSigningUrl(null);
       setEmbedOpen(true);
@@ -208,6 +220,7 @@ export default function AssinaturasClient() {
       return;
     }
     setEmbedSignatureId(null);
+    setEmbedDocumentId(docId);
     setEmbedUrl(embed);
     setSigningUrl(sign);
     setEmbedOpen(true);
@@ -240,6 +253,7 @@ export default function AssinaturasClient() {
     );
     abrirAssinatura({
       signatureId: json.signature?.id || json.data?.id,
+      documentId: documentId.trim(),
       embedUrl: json.embedUrl,
       signingUrl: json.signingUrl,
       providerCode: json.signature?.provider_code || json.data?.provider_code,
@@ -340,6 +354,7 @@ export default function AssinaturasClient() {
       }
       abrirAssinatura({
         signatureId,
+        documentId: row.document_id,
         embedUrl: linkJson.embedUrl,
         signingUrl: linkJson.signingUrl,
         providerCode: row.provider_code,
@@ -364,6 +379,7 @@ export default function AssinaturasClient() {
     setAviso("Assine no painel.");
     abrirAssinatura({
       signatureId,
+      documentId: row?.document_id,
       embedUrl: json.embedUrl,
       signingUrl: json.signingUrl,
       providerCode: row?.provider_code || "documento",
@@ -418,11 +434,13 @@ export default function AssinaturasClient() {
       <AssinarNoAdminModal
         open={embedOpen}
         signatureDocumentId={embedSignatureId}
+        documentId={embedDocumentId}
         embedUrl={embedUrl}
         signingUrl={signingUrl}
         onClose={() => {
           setEmbedOpen(false);
           setEmbedSignatureId(null);
+          setEmbedDocumentId(null);
         }}
         onCompleted={() => {
           setAviso("Atualizando status da assinatura…");
@@ -584,6 +602,7 @@ export default function AssinaturasClient() {
                       onClick={() =>
                         abrirAssinatura({
                           signatureId: row.id,
+                          documentId: row.document_id,
                           providerCode: "ipecc",
                         })
                       }
