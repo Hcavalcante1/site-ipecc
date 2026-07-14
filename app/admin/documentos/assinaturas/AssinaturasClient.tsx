@@ -33,9 +33,11 @@ export default function AssinaturasClient() {
   const [documentoOk, setDocumentoOk] = useState(false);
   const [govbrOk, setGovbrOk] = useState(false);
   const [provedorPadrao, setProvedorPadrao] = useState<string | null>(null);
+  const [embedSignatureId, setEmbedSignatureId] = useState<string | null>(null);
   const [embedOpen, setEmbedOpen] = useState(false);
   const [embedUrl, setEmbedUrl] = useState<string | null>(null);
   const [signingUrl, setSigningUrl] = useState<string | null>(null);
+  const [ipeccOk, setIpeccOk] = useState(true);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -54,6 +56,7 @@ export default function AssinaturasClient() {
     if (cfgRes.ok) {
       setDocumentoOk(Boolean(cfg.documento?.configurado));
       setGovbrOk(Boolean(cfg.govbrConfigurado));
+      setIpeccOk(Boolean(cfg.ipecc?.configurado ?? true));
       setProvedorPadrao(cfg.provedorPadrao || null);
     }
     setLoading(false);
@@ -81,18 +84,33 @@ export default function AssinaturasClient() {
     }
   }, [search]);
 
-  function abrirAssinatura(urls: {
+  function abrirAssinatura(opts: {
+    signatureId?: string | null;
     embedUrl?: string | null;
     signingUrl?: string | null;
+    providerCode?: string | null;
   }) {
-    const embed = urls.embedUrl || null;
-    const sign = urls.signingUrl || null;
+    const isIpecc =
+      opts.providerCode === "ipecc" ||
+      (!opts.embedUrl && !opts.signingUrl && Boolean(opts.signatureId));
+
+    if (isIpecc && opts.signatureId) {
+      setEmbedSignatureId(opts.signatureId);
+      setEmbedUrl(null);
+      setSigningUrl(null);
+      setEmbedOpen(true);
+      return;
+    }
+
+    const embed = opts.embedUrl || null;
+    const sign = opts.signingUrl || null;
     if (!embed && !sign) {
       setAviso(
-        "Pedido criado, mas o link de assinatura não veio do motor. Verifique DOCUMENTO_API_URL."
+        "Pedido criado, mas o link de assinatura não veio do motor. Use Assinar agora no IPECC ou verifique DOCUMENTO_API_URL."
       );
       return;
     }
+    setEmbedSignatureId(null);
     setEmbedUrl(embed);
     setSigningUrl(sign);
     setEmbedOpen(true);
@@ -109,7 +127,7 @@ export default function AssinaturasClient() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         document_id: documentId.trim(),
-        provider_code: documentoOk ? "documento" : undefined,
+        provider_code: ipeccOk ? "ipecc" : documentoOk ? "documento" : undefined,
         modo: "eu_assino",
       }),
     });
@@ -120,7 +138,12 @@ export default function AssinaturasClient() {
     }
     setDocumentId("");
     setAviso("Documento pronto. Assine no painel abaixo.");
-    abrirAssinatura(json);
+    abrirAssinatura({
+      signatureId: json.signature?.id || json.data?.id,
+      embedUrl: json.embedUrl,
+      signingUrl: json.signingUrl,
+      providerCode: json.signature?.provider_code || json.data?.provider_code,
+    });
     carregar();
   }
 
@@ -199,7 +222,12 @@ export default function AssinaturasClient() {
         carregar();
         return;
       }
-      abrirAssinatura(linkJson);
+      abrirAssinatura({
+        signatureId,
+        embedUrl: linkJson.embedUrl,
+        signingUrl: linkJson.signingUrl,
+        providerCode: row.provider_code,
+      });
       return;
     }
 
@@ -218,7 +246,12 @@ export default function AssinaturasClient() {
       return;
     }
     setAviso("Assine no painel.");
-    abrirAssinatura(json);
+    abrirAssinatura({
+      signatureId,
+      embedUrl: json.embedUrl,
+      signingUrl: json.signingUrl,
+      providerCode: row?.provider_code || "documento",
+    });
     carregar();
   }
 
@@ -268,9 +301,13 @@ export default function AssinaturasClient() {
     >
       <AssinarNoAdminModal
         open={embedOpen}
+        signatureDocumentId={embedSignatureId}
         embedUrl={embedUrl}
         signingUrl={signingUrl}
-        onClose={() => setEmbedOpen(false)}
+        onClose={() => {
+          setEmbedOpen(false);
+          setEmbedSignatureId(null);
+        }}
         onCompleted={() => {
           setAviso("Atualizando status da assinatura…");
           carregar();
@@ -286,7 +323,9 @@ export default function AssinaturasClient() {
           Padrão:{" "}
           <strong>{provedorPadrao || "nenhum configurado"}</strong>
           {" · "}
-          Assinatura:{" "}
+          IPECC: <strong>{ipeccOk ? "pronta" : "indisponível"}</strong>
+          {" · "}
+          Legado Documento:{" "}
           <strong>{documentoOk ? "pronta" : "não configurada"}</strong>
           {" · "}
           gov.br: <strong>{govbrOk ? "pronto" : "ausente"}</strong>
@@ -375,8 +414,21 @@ export default function AssinaturasClient() {
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {row.status !== "signed" ? (
-                  row.provider_code === "documento" ||
-                  row.provider_code === "documenso" ? (
+                  row.provider_code === "ipecc" ? (
+                    <button
+                      type="button"
+                      style={{ ...gdBtnStyle, background: "#0f766e" }}
+                      onClick={() =>
+                        abrirAssinatura({
+                          signatureId: row.id,
+                          providerCode: "ipecc",
+                        })
+                      }
+                    >
+                      Assinar agora (IPECC)
+                    </button>
+                  ) : row.provider_code === "documento" ||
+                    row.provider_code === "documenso" ? (
                     <>
                       <button
                         type="button"

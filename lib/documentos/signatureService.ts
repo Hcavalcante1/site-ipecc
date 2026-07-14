@@ -12,9 +12,10 @@ import {
   govbrConfigurado,
   govbrRedirectUriPadrao,
 } from "./signature/GovBrProvider";
+import { ipeccConfigurado } from "./signature/IpeccProvider";
 import { notificarEventoDocumental } from "./notificationsService";
 
-export type SignatureProviderCode = "documento" | "govbr";
+export type SignatureProviderCode = "ipecc" | "documento" | "govbr";
 
 /** eu_assino = admin assina no painel; enviar_signatarios = e-mail externo. */
 export type ModoAssinatura = "eu_assino" | "enviar_signatarios";
@@ -26,6 +27,7 @@ export type AssinaturaLinks = {
 };
 
 export function resolverProviderPadrao(): SignatureProviderCode | null {
+  if (ipeccConfigurado()) return "ipecc";
   if (documentoConfigurado()) return "documento";
   if (govbrConfigurado()) return "govbr";
   return null;
@@ -42,7 +44,7 @@ export const BATCH_SELECT =
   "id, processo_id, title, provider_code, status, progress_done, progress_total, error_message, created_by, created_at, updated_at, deleted_at";
 
 export const SIGNER_SELECT =
-  "id, signature_document_id, batch_id, document_id, name, email, cpf, user_id, mode, required, sort_order, deadline_at, status, signed_at, rejection_reason, created_by, created_at, updated_at, deleted_at";
+  "id, signature_document_id, batch_id, document_id, name, email, cpf, user_id, mode, required, sort_order, deadline_at, status, signed_at, rejection_reason, cargo, role_code, created_by, created_at, updated_at, deleted_at";
 
 export const BATCH_ITEM_SELECT =
   "id, batch_id, document_id, signature_document_id, status, error_message, sort_order, created_by, created_at, updated_at, deleted_at";
@@ -127,7 +129,9 @@ export async function criarAssinaturaDocumento(opts: {
   const normalized =
     requested === "documenso" ? "documento" : requested;
   const code =
-    (normalized === "documento" || normalized === "govbr"
+    (normalized === "ipecc" ||
+    normalized === "documento" ||
+    normalized === "govbr"
       ? (normalized as SignatureProviderCode)
       : null) || resolverProviderPadrao();
   const modo: ModoAssinatura =
@@ -138,7 +142,7 @@ export async function criarAssinaturaDocumento(opts: {
       data: null,
       error: {
         message:
-          "Nenhum provedor de assinatura configurado. Defina DOCUMENTO_API_TOKEN (recomendado) ou credenciais GOVBR_SIGNATURE_* (só órgãos públicos).",
+          "Nenhum provedor de assinatura configurado. O padrão é Assinatura Eletrônica IPECC.",
         code: "NO_PROVIDER",
       },
       signingUrl: null as string | null,
@@ -151,7 +155,7 @@ export async function criarAssinaturaDocumento(opts: {
       data: null,
       error: {
         message:
-          "Assinatura Documento não configurada. Defina DOCUMENTO_API_URL e DOCUMENTO_API_TOKEN no servidor.",
+          "Assinatura Documento (legado) não configurada. Prefira o motor IPECC ou defina DOCUMENTO_API_URL e DOCUMENTO_API_TOKEN.",
         code: "DOCUMENTO_MISSING",
       },
       signingUrl: null as string | null,
@@ -270,6 +274,19 @@ export async function criarAssinaturaDocumento(opts: {
     code === "documento" &&
     opts.distribute !== false &&
     Boolean(signerEmail);
+
+  if (code === "ipecc") {
+    await admin
+      .from("gd_signature_documents")
+      .update({ status: "ready", updated_at: new Date().toISOString() })
+      .eq("id", data.id);
+    return {
+      data: { ...data, status: "ready" },
+      error: null,
+      signingUrl: null as string | null,
+      embedUrl: null as string | null,
+    };
+  }
 
   if (shouldDistribute) {
     const sent = await enviarParaAssinaturaDocumento({
@@ -1196,8 +1213,15 @@ export async function providerStatusResumo() {
     "https://www.ipecc.org.br";
 
   return {
-    configurado: documentoConfigurado() || govbrConfigurado(),
+    configurado:
+      ipeccConfigurado() || documentoConfigurado() || govbrConfigurado(),
     provedorPadrao: resolverProviderPadrao(),
+    ipecc: {
+      configurado: ipeccConfigurado(),
+      validacaoBase: `${
+        process.env.SIGNATURE_VALIDATION_BASE_URL?.replace(/\/+$/, "") || site
+      }/validar`,
+    },
     documento: {
       configurado: documentoConfigurado(),
       apiUrl: process.env.DOCUMENTO_API_URL || process.env.DOCUMENSO_API_URL || null,
@@ -1209,11 +1233,13 @@ export async function providerStatusResumo() {
     providers: (data || []).map((p) => ({
       ...p,
       servidor_pronto:
-        p.code === "documento" || p.code === "documenso"
-          ? documentoConfigurado()
-          : p.code === "govbr"
-            ? govbrConfigurado()
-            : false,
+        p.code === "ipecc"
+          ? ipeccConfigurado()
+          : p.code === "documento" || p.code === "documenso"
+            ? documentoConfigurado()
+            : p.code === "govbr"
+              ? govbrConfigurado()
+              : false,
     })),
   };
 }

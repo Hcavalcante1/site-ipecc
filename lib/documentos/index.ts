@@ -95,6 +95,22 @@ export {
   documentoConfigurado as documensoConfigurado,
   documentoApiBaseUrl as documensoApiBaseUrl,
 } from "./signature/DocumentoProvider";
+export { ipeccConfigurado } from "./signature/IpeccProvider";
+export {
+  CONSENTIMENTO_ASSINATURA_IPECC,
+  IPECC_PROVIDER_CODE,
+} from "./signing/constants";
+export {
+  listarEvidenciasAssinatura,
+  buscarEvidenciaPorId,
+  gerarLaudoTexto,
+  gerarLaudoCsv,
+} from "./signing/laudoService";
+export {
+  checkRateLimit,
+  assinaturaRateKey,
+  validarPublicoRateKey,
+} from "./signing/rateLimit";
 export {
   criarAssinaturaDocumento,
   enviarParaAssinaturaDocumento,
@@ -104,6 +120,7 @@ export {
   listarLotes,
   listarSignatarios,
   providerStatusResumo,
+  resolverProviderPadrao,
 } from "./signatureService";
 export {
   listarNotificacoes,

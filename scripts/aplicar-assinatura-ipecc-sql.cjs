@@ -1,25 +1,10 @@
 /**
- * Aplica SQLs da Gestão Documental no Postgres do Supabase.
- * Uso:
- *   set SUPABASE_DB_PASSWORD=...
- *   node scripts/aplicar-gestao-documental.cjs
- *
- * Requer DATABASE_URL / DIRECT_URL, ou
- * SUPABASE_DB_PASSWORD + NEXT_PUBLIC_SUPABASE_URL.
+ * Aplica docs/sql/gestao-documental-assinatura-ipecc.sql no Postgres do Supabase.
+ * Uso: node scripts/aplicar-assinatura-ipecc-sql.cjs
  */
 const fs = require("fs");
 const path = require("path");
 const { Client } = require("pg");
-
-const SQL_FILES = [
-  "docs/sql/gestao-documental-fase-1.sql",
-  "docs/sql/admin-escopos-mod-documentos.sql",
-  "docs/sql/gestao-documental-storage-bucket.sql",
-  "docs/sql/gestao-documental-fase-3.sql",
-  "docs/sql/gestao-documental-fase-4-6.sql",
-  "docs/sql/gestao-documental-documenso.sql",
-  "docs/sql/gestao-documental-assinatura-ipecc.sql",
-];
 
 function loadEnvLocal() {
   const envPath = path.join(process.cwd(), ".env.local");
@@ -35,8 +20,9 @@ function buildCandidates(ref, password) {
   const enc = encodeURIComponent(password);
   return [
     `postgresql://postgres.${ref}:${enc}@aws-0-sa-east-1.pooler.supabase.com:6543/postgres`,
+    `postgresql://postgres.${ref}:${enc}@aws-0-sa-east-1.pooler.supabase.com:5432/postgres`,
     `postgresql://postgres.${ref}:${enc}@aws-0-us-east-1.pooler.supabase.com:6543/postgres`,
-    `postgresql://postgres.${ref}:${enc}@aws-0-us-east-2.pooler.supabase.com:6543/postgres`,
+    `postgresql://postgres.${ref}:${enc}@aws-0-us-east-1.pooler.supabase.com:5432/postgres`,
     `postgresql://postgres.${ref}:${enc}@aws-0-us-west-2.pooler.supabase.com:6543/postgres`,
     `postgresql://postgres.${ref}:${enc}@aws-0-us-west-2.pooler.supabase.com:5432/postgres`,
     `postgresql://postgres:${enc}@db.${ref}.supabase.co:5432/postgres`,
@@ -45,7 +31,6 @@ function buildCandidates(ref, password) {
 
 async function main() {
   loadEnvLocal();
-
   let candidates = [];
   if (process.env.DATABASE_URL || process.env.DIRECT_URL) {
     candidates = [process.env.DATABASE_URL || process.env.DIRECT_URL];
@@ -58,7 +43,7 @@ async function main() {
       console.error(
         "Falta DATABASE_URL ou SUPABASE_DB_PASSWORD (+ NEXT_PUBLIC_SUPABASE_URL)."
       );
-      process.exit(1);
+      process.exit(2);
     }
     candidates = buildCandidates(ref, password);
   }
@@ -94,45 +79,34 @@ async function main() {
   }
 
   try {
-    for (const rel of SQL_FILES) {
-      const sqlPath = path.join(process.cwd(), rel);
-      const sql = fs.readFileSync(sqlPath, "utf8");
-      console.log("Aplicando", rel, "...");
-      await client.query(sql);
-      console.log("OK:", rel);
-    }
+    const sqlPath = path.join(
+      process.cwd(),
+      "docs/sql/gestao-documental-assinatura-ipecc.sql"
+    );
+    const sql = fs.readFileSync(sqlPath, "utf8");
+    console.log("Aplicando gestao-documental-assinatura-ipecc.sql ...");
+    await client.query(sql);
+    console.log("OK: SQL aplicado.");
+
+    const providers = await client.query(
+      "select code, name, ativo from gd_signature_providers order by code"
+    );
+    console.log("providers:", providers.rows);
 
     const tables = await client.query(`
       select table_name
       from information_schema.tables
       where table_schema = 'public'
-        and table_name like 'gd_%'
+        and table_name in (
+          'gd_signature_evidences',
+          'gd_signature_otp_challenges',
+          'gd_validation_lookups'
+        )
       order by table_name
     `);
-    const col = await client.query(`
-      select column_name
-      from information_schema.columns
-      where table_schema = 'public'
-        and table_name = 'admin_escopos'
-        and column_name = 'mod_documentos'
-    `);
-    const bucket = await client.query(`
-      select id, public, file_size_limit
-      from storage.buckets
-      where id = 'gestao-documental'
-    `);
-
     console.log(
-      "Tabelas gd_*:",
+      "tabelas ipecc:",
       tables.rows.map((r) => r.table_name).join(", ") || "(nenhuma)"
-    );
-    console.log(
-      "admin_escopos.mod_documentos:",
-      col.rows.length ? "ok" : "AUSENTE"
-    );
-    console.log(
-      "bucket gestao-documental:",
-      bucket.rows[0] || "AUSENTE"
     );
   } finally {
     await client.end();

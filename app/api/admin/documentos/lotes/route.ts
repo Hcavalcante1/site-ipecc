@@ -115,12 +115,15 @@ export async function POST(req: NextRequest) {
       ? body.document_ids.filter(Boolean)
       : [];
 
+    const providerCodeRaw = String(body.provider_code || "")
+      .trim()
+      .toLowerCase();
     const providerCode =
-      String(body.provider_code || "").trim().toLowerCase() === "documenso"
+      providerCodeRaw === "documenso"
         ? "documento"
-        : String(body.provider_code || "").trim() ||
+        : providerCodeRaw ||
           resolverProviderPadrao() ||
-          "documento";
+          "ipecc";
 
     const admin = getSupabaseAdmin();
     const { data: batch, error } = await admin

@@ -6,6 +6,7 @@ import GestaoDocumentalShell, {
   gdCardStyle,
   gdInputStyle,
 } from "../components/GestaoDocumentalShell";
+import AssinarNoAdminModal from "../components/AssinarNoAdminModal";
 
 type Batch = {
   id: string;
@@ -21,6 +22,7 @@ type BatchItem = {
   document_id: string;
   status: string;
   sort_order: number;
+  error_message?: string | null;
 };
 
 export default function LotesPage() {
@@ -33,6 +35,7 @@ export default function LotesPage() {
   const [signerName, setSignerName] = useState("");
   const [aviso, setAviso] = useState("");
   const [loading, setLoading] = useState(true);
+  const [ipeccOpen, setIpeccOpen] = useState(false);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -75,7 +78,11 @@ export default function LotesPage() {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, document_ids }),
+      body: JSON.stringify({
+        title,
+        document_ids,
+        provider_code: "ipecc",
+      }),
     });
     const json = await res.json();
     if (!res.ok) {
@@ -125,7 +132,7 @@ export default function LotesPage() {
   async function enviarLoteDocumento() {
     if (!selectedId) return;
     if (!signerEmail.trim()) {
-      setAviso("Informe o e-mail do signatário para enviar o lote.");
+      setAviso("Informe o e-mail do signatário para enviar o lote (legado).");
       return;
     }
     const res = await fetch(
@@ -153,30 +160,23 @@ export default function LotesPage() {
     await carregarDetalhe(selectedId);
   }
 
-  async function autorizarLote() {
-    if (!selectedId) return;
-    const res = await fetch("/api/admin/documentos/assinaturas/authorize", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        batch_id: selectedId,
-        scope: "signature_session",
-      }),
-    });
-    const json = await res.json();
-    if (!res.ok) {
-      setAviso(json.error || "Erro ao autorizar lote no gov.br.");
-      return;
-    }
-    window.location.href = json.authorizationUrl;
-  }
-
   return (
     <GestaoDocumentalShell
       title="Lotes"
-      description="Assinatura em lote via Documento (padrão) ou sessão gov.br (órgãos públicos)."
+      description="Assinatura em lote com motor IPECC (uma autenticação para vários documentos). Envios Documento/gov.br ficam como legado."
     >
+      <AssinarNoAdminModal
+        open={ipeccOpen}
+        batchId={selectedId}
+        title="Assinar lote (IPECC)"
+        onClose={() => setIpeccOpen(false)}
+        onCompleted={() => {
+          setAviso("Lote processado — atualizando…");
+          if (selectedId) void carregarDetalhe(selectedId);
+          void carregar();
+        }}
+      />
+
       {aviso ? (
         <div style={{ ...gdCardStyle, borderColor: "#f59e0b" }}>{aviso}</div>
       ) : null}
@@ -200,7 +200,7 @@ export default function LotesPage() {
           />
           <input
             style={gdInputStyle}
-            placeholder="E-mail do signatário (para envio em lote)"
+            placeholder="E-mail (só para envio legado Documento)"
             value={signerEmail}
             onChange={(e) => setSignerEmail(e.target.value)}
           />
@@ -265,38 +265,42 @@ export default function LotesPage() {
           <h2 className="admin-h2" style={{ marginTop: 0 }}>
             Detalhe do lote
           </h2>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-            <button type="button" style={gdBtnStyle} onClick={() => atualizarStatus("ready")}>
-              Marcar pronto
-            </button>
-            <button type="button" style={gdBtnStyle} onClick={() => atualizarStatus("running")}>
-              Em execução
-            </button>
-            <button type="button" style={gdBtnStyle} onClick={() => atualizarStatus("paused")}>
-              Pausar
-            </button>
-            <button type="button" style={gdBtnStyle} onClick={() => atualizarStatus("completed")}>
-              Concluir
-            </button>
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+              marginBottom: 12,
+            }}
+          >
             <button
               type="button"
               style={{ ...gdBtnStyle, background: "#0f766e" }}
-              onClick={enviarLoteDocumento}
+              onClick={() => setIpeccOpen(true)}
             >
-              Enviar lote (Documento)
+              Assinar lote (IPECC)
             </button>
             <button
               type="button"
-              style={{ ...gdBtnStyle, background: "#334155" }}
-              onClick={autorizarLote}
+              style={gdBtnStyle}
+              onClick={() => atualizarStatus("ready")}
             >
-              Autorizar sessão gov.br
+              Marcar pronto
+            </button>
+            <button
+              type="button"
+              style={gdBtnStyle}
+              onClick={enviarLoteDocumento}
+            >
+              Enviar lote (legado Documento)
             </button>
           </div>
           <ul>
             {items.map((item) => (
               <li key={item.id}>
-                #{item.sort_order} · {item.document_id.slice(0, 8)}… · {item.status}
+                #{item.sort_order} · {item.document_id.slice(0, 8)}… ·{" "}
+                {item.status}
+                {item.error_message ? ` — ${item.error_message}` : ""}
               </li>
             ))}
           </ul>

@@ -1,5 +1,5 @@
 /**
- * Validação Gestão Documental — Fases 1–3.
+ * Validação Gestão Documental — Fases 1–3 + Assinatura IPECC (A–F).
  * Uso: npm run validar:documentos
  */
 
@@ -104,9 +104,30 @@ async function validarSupabaseRemoto() {
   const provider = await admin
     .from("gd_signature_providers")
     .select("code")
-    .eq("code", "documento")
+    .eq("code", "ipecc")
     .maybeSingle();
-  assert("provider documento seed", provider.data?.code === "documento");
+  assert(
+    "provider ipecc seed",
+    !provider.error || provider.data?.code === "ipecc"
+  );
+
+  for (const tabela of [
+    "gd_signature_evidences",
+    "gd_signature_otp_challenges",
+    "gd_validation_lookups",
+  ]) {
+    const { error } = await admin
+      .from(tabela)
+      .select("id", { head: true, count: "exact" });
+    if (error && /does not exist|42P01/i.test(error.message || "")) {
+      console.log(
+        `AVISO: tabela ${tabela} ausente — aplique gestao-documental-assinatura-ipecc.sql`
+      );
+    } else {
+      assert(`tabela ${tabela}`, !error);
+      if (error) console.error("  ->", error.message);
+    }
+  }
 }
 
 async function main() {
@@ -153,10 +174,15 @@ async function main() {
     "provider documento",
     listSignatureProviderCodes().includes("documento")
   );
+  assert("provider ipecc", listSignatureProviderCodes().includes("ipecc"));
   assert("provider code", getSignatureProvider("govbr").code === "govbr");
   assert(
     "provider documento code",
     getSignatureProvider("documento").code === "documento"
+  );
+  assert(
+    "provider ipecc code",
+    getSignatureProvider("ipecc").code === "ipecc"
   );
   assert(
     "nav notificacoes",
@@ -167,8 +193,24 @@ async function main() {
   assert("sql fase3", existe("docs", "sql", "gestao-documental-fase-3.sql"));
   assert("sql fase4-6", existe("docs", "sql", "gestao-documental-fase-4-6.sql"));
   assert(
+    "sql assinatura ipecc",
+    existe("docs", "sql", "gestao-documental-assinatura-ipecc.sql")
+  );
+  assert(
     "sql provedor documento",
     existe("docs", "sql", "gestao-documental-documenso.sql")
+  );
+  assert(
+    "provider ipecc file",
+    existe("lib", "documentos", "signature", "IpeccProvider.ts")
+  );
+  assert(
+    "signing otp service",
+    existe("lib", "documentos", "signing", "otpService.ts")
+  );
+  assert(
+    "validar page",
+    existe("app", "validar", "[codigo]", "page.tsx")
   );
   assert(
     "provider documento file",
@@ -271,6 +313,124 @@ async function main() {
   assert(
     "api passos",
     existe("app", "api", "admin", "documentos", "fluxos", "passos", "route.ts")
+  );
+
+  // Fase F — robustez (rate limit, evidências, laudo)
+  assert(
+    "signing rateLimit",
+    existe("lib", "documentos", "signing", "rateLimit.ts")
+  );
+  assert(
+    "signing laudoService",
+    existe("lib", "documentos", "signing", "laudoService.ts")
+  );
+  assert(
+    "api evidencias",
+    existe("app", "api", "admin", "documentos", "evidencias", "route.ts")
+  );
+  assert(
+    "api laudo",
+    existe(
+      "app",
+      "api",
+      "admin",
+      "documentos",
+      "evidencias",
+      "[id]",
+      "laudo",
+      "route.ts"
+    )
+  );
+  assert(
+    "api ipecc iniciar",
+    existe(
+      "app",
+      "api",
+      "admin",
+      "documentos",
+      "assinaturas",
+      "[id]",
+      "ipecc",
+      "iniciar",
+      "route.ts"
+    )
+  );
+  assert(
+    "api ipecc confirmar",
+    existe(
+      "app",
+      "api",
+      "admin",
+      "documentos",
+      "assinaturas",
+      "[id]",
+      "ipecc",
+      "confirmar",
+      "route.ts"
+    )
+  );
+  assert(
+    "api validar publico",
+    existe("app", "api", "public", "validar", "[codigo]", "route.ts")
+  );
+  assert(
+    "auditoria page",
+    existe("app", "admin", "documentos", "auditoria", "page.tsx")
+  );
+
+  const rateSrc = fs.readFileSync(
+    path.join(process.cwd(), "lib", "documentos", "signing", "rateLimit.ts"),
+    "utf8"
+  );
+  assert("rateLimit checkRateLimit", rateSrc.includes("checkRateLimit"));
+  assert(
+    "rateLimit validar publico key",
+    rateSrc.includes("validarPublicoRateKey")
+  );
+
+  const laudoSrc = fs.readFileSync(
+    path.join(process.cwd(), "lib", "documentos", "signing", "laudoService.ts"),
+    "utf8"
+  );
+  assert("laudo gerarLaudoTexto", laudoSrc.includes("gerarLaudoTexto"));
+  assert("laudo gerarLaudoCsv", laudoSrc.includes("gerarLaudoCsv"));
+  assert(
+    "laudo listarEvidencias",
+    laudoSrc.includes("listarEvidenciasAssinatura")
+  );
+
+  const validarApi = fs.readFileSync(
+    path.join(
+      process.cwd(),
+      "app",
+      "api",
+      "public",
+      "validar",
+      "[codigo]",
+      "route.ts"
+    ),
+    "utf8"
+  );
+  assert("validar usa rate limit", validarApi.includes("checkRateLimit"));
+
+  const auditoriaPage = fs.readFileSync(
+    path.join(
+      process.cwd(),
+      "app",
+      "admin",
+      "documentos",
+      "auditoria",
+      "page.tsx"
+    ),
+    "utf8"
+  );
+  assert(
+    "auditoria lista evidencias",
+    auditoriaPage.includes("/api/admin/documentos/evidencias")
+  );
+  assert(
+    "auditoria baixar laudo",
+    auditoriaPage.includes("/laudo")
   );
 
   await validarSupabaseRemoto();

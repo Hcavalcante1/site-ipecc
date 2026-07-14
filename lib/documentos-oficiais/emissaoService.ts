@@ -9,6 +9,8 @@ import {
   criarAssinaturaDocumento,
   documentoConfigurado,
 } from "@/lib/documentos/signatureService";
+import { ipeccConfigurado } from "@/lib/documentos/signature/IpeccProvider";
+import { IPECC_PROVIDER_CODE } from "@/lib/documentos/signing/constants";
 import { espelharDocumentoGovernanca } from "@/lib/transparencia/ponteCiclo";
 import { obterTipoPublicacaoPadrao } from "@/lib/editais/documentosTipos";
 import { renderPdfOficial } from "./renderPdf";
@@ -75,11 +77,11 @@ export async function iniciarGerarAssinarPublicar(opts: {
   /** eu_assino = admin assina no painel; enviar_signatarios = e-mail externo. */
   modo?: "eu_assino" | "enviar_signatarios";
 }) {
-  if (!documentoConfigurado()) {
+  if (!ipeccConfigurado() && !documentoConfigurado()) {
     return {
       ok: false as const,
       error:
-        "Assinatura Documento não configurada. Defina DOCUMENTO_API_URL e DOCUMENTO_API_TOKEN. O fluxo exige assinar antes de publicar.",
+        "Nenhum motor de assinatura disponível. O padrão é Assinatura Eletrônica IPECC (interno).",
     };
   }
 
@@ -303,7 +305,10 @@ export async function iniciarGerarAssinarPublicar(opts: {
     processoId,
     signerEmail: email,
     signerName: nome,
-    distribute: true,
+    providerCode: ipeccConfigurado()
+      ? IPECC_PROVIDER_CODE
+      : "documento",
+    distribute: !ipeccConfigurado(),
     modo,
   });
 
@@ -322,7 +327,7 @@ export async function iniciarGerarAssinarPublicar(opts: {
       ok: false as const,
       error:
         (sig.error as { message?: string } | null)?.message ||
-        "Falha ao enviar para assinatura Documento.",
+        "Falha ao enviar para assinatura.",
     };
   }
 
