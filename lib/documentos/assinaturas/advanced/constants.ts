@@ -6,6 +6,9 @@ export const ADV_CONSENT_VERSION = "1.0";
 export const ADV_CONSENT_TEXT =
   "Declaro que li o documento, concordo com seu conteúdo e confirmo que esta assinatura eletrônica representa minha manifestação pessoal, livre, consciente e inequívoca de vontade. Estou ciente de que esta modalidade não equivale a assinatura qualificada ICP-Brasil.";
 
+export const ADV_BATCH_CONSENT_TEXT =
+  "Declaro que visualizei a lista completa dos documentos deste lote, concordo com o conteúdo de cada um e confirmo que esta autorização única de Assinatura Eletrônica Avançada IPECC representa minha manifestação pessoal, livre, consciente e inequívoca de vontade para todos os itens congelados do lote. Estou ciente de que esta modalidade não equivale a assinatura qualificada ICP-Brasil e que não é possível adicionar, remover ou substituir documentos após o congelamento.";
+
 /** Texto seguro para import em client components. */
 export const ADV_DISCLAIMER_UI =
   "Esta modalidade não equivale a uma assinatura qualificada ICP-Brasil.";

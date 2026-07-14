@@ -7,6 +7,7 @@ import GestaoDocumentalShell, {
   gdInputStyle,
 } from "../components/GestaoDocumentalShell";
 import AssinarNoAdminModal from "../components/AssinarNoAdminModal";
+import AssinarLoteAvancadoModal from "../components/AssinarLoteAvancadoModal";
 
 type Batch = {
   id: string;
@@ -36,6 +37,7 @@ export default function LotesPage() {
   const [aviso, setAviso] = useState("");
   const [loading, setLoading] = useState(true);
   const [ipeccOpen, setIpeccOpen] = useState(false);
+  const [advLoteOpen, setAdvLoteOpen] = useState(false);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -176,6 +178,18 @@ export default function LotesPage() {
           void carregar();
         }}
       />
+      <AssinarLoteAvancadoModal
+        open={advLoteOpen}
+        documentIds={docIds
+          .split(/[,\s]+/)
+          .map((s) => s.trim())
+          .filter(Boolean)}
+        onClose={() => setAdvLoteOpen(false)}
+        onCompleted={() => {
+          setAviso("Lote avançado processado.");
+          void carregar();
+        }}
+      />
 
       {aviso ? (
         <div style={{ ...gdCardStyle, borderColor: "#f59e0b" }}>{aviso}</div>
@@ -210,9 +224,23 @@ export default function LotesPage() {
             value={signerName}
             onChange={(e) => setSignerName(e.target.value)}
           />
-          <button type="button" style={gdBtnStyle} onClick={criar}>
-            Criar lote
-          </button>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button type="button" style={gdBtnStyle} onClick={criar}>
+              Criar lote (simples IPECC)
+            </button>
+            <button
+              type="button"
+              style={{ ...gdBtnStyle, background: "#1d4ed8" }}
+              onClick={() => setAdvLoteOpen(true)}
+              disabled={!docIds.trim()}
+            >
+              Assinar lote avançado
+            </button>
+          </div>
+          <p style={{ fontSize: 12, opacity: 0.8, marginBottom: 0 }}>
+            Lote avançado: use os IDs acima, congele e autorize com MFA (módulo
+            aparte do lote simples).
+          </p>
         </div>
       </div>
 

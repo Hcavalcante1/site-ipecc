@@ -15,8 +15,8 @@ lib/documentos/
     │   ├── contracts.ts
     │   ├── errors.ts
     │   └── permissions.ts
-    ├── shared/                 # (evolução futura: hash, storage paths)
-    └── advanced/               # módulo avançado (fases seguintes)
+    ├── shared/crypto.ts
+    └── advanced/               # transação, identidade, lote, auditoria
 ```
 
 Rotas públicas atuais (`/validar/{codigo}`) permanecem; avançada reutilizará o mesmo path com bifurção por `signature_level` quando existir.

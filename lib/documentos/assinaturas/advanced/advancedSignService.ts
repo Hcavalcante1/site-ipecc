@@ -145,6 +145,7 @@ export async function criarTransacaoAvancada(opts: {
   signerUserId: string;
   actorUserId: string;
   processoId?: string | null;
+  batchId?: string | null;
   idempotencyKey?: string | null;
   client?: { ip?: string | null; userAgent?: string | null };
 }): Promise<
@@ -270,6 +271,7 @@ export async function criarTransacaoAvancada(opts: {
       identity_level: gate.row.identity_level,
       original_storage_path: frozenPath,
       locked_at: now.toISOString(),
+      batch_id: opts.batchId || null,
       idempotency_key: opts.idempotencyKey || null,
       metadata: { file_name: doc.file_name || null },
     })

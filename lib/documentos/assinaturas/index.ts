@@ -4,6 +4,11 @@ export * from "./core/errors";
 export * from "./core/permissions";
 export { SimpleSignatureProvider } from "./simple/SimpleSignatureProvider";
 export { AdvancedSignatureProvider } from "./advanced/AdvancedSignatureProvider";
+export {
+  criarLoteAvancado,
+  concluirLoteAvancado,
+  listarLotesAvancados,
+} from "./advanced/batchAdvancedService";
 
 import type { SignatureLevel } from "./core/types";
 import type { SignatureProvider } from "./core/contracts";
