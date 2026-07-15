@@ -60,7 +60,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
   if (denied || !auth) return denied!;
 
   const owned = await assertBatchOwner(ctx.params.id, auth.userId);
-  if (!owned.ok) return owned.response;
+  if (owned.ok === false) return owned.response;
 
   try {
     const body = (await req.json()) as {
