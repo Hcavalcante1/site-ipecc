@@ -26,8 +26,18 @@ type BatchItem = {
   error_message?: string | null;
 };
 
+type AdvBatch = {
+  id: string;
+  status: string;
+  item_count: number;
+  batch_hash_sha256?: string | null;
+  created_at: string;
+  completed_at?: string | null;
+};
+
 export default function LotesPage() {
   const [batches, setBatches] = useState<Batch[]>([]);
+  const [advBatches, setAdvBatches] = useState<AdvBatch[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [items, setItems] = useState<BatchItem[]>([]);
   const [title, setTitle] = useState("");
@@ -41,15 +51,22 @@ export default function LotesPage() {
 
   const carregar = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/admin/documentos/lotes", {
-      credentials: "include",
-    });
+    const [res, advRes] = await Promise.all([
+      fetch("/api/admin/documentos/lotes", { credentials: "include" }),
+      fetch("/api/admin/documentos/lotes-avancados", { credentials: "include" }),
+    ]);
     const json = await res.json();
+    const advJson = await advRes.json().catch(() => ({}));
     if (res.ok) {
       setBatches(json.batches || []);
       setAviso(json.aviso || "");
     } else {
       setAviso(json.error || "Erro ao carregar lotes.");
+    }
+    if (advRes.ok && advJson?.ok) {
+      setAdvBatches(advJson.batches || []);
+    } else {
+      setAdvBatches([]);
     }
     setLoading(false);
   }, []);
@@ -246,7 +263,7 @@ export default function LotesPage() {
 
       <div style={gdCardStyle}>
         <h2 className="admin-h2" style={{ marginTop: 0 }}>
-          Lotes
+          Lotes simples (IPECC)
         </h2>
         {loading ? <p>Carregando...</p> : null}
         <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
@@ -283,6 +300,44 @@ export default function LotesPage() {
               >
                 Cancelar
               </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div style={gdCardStyle}>
+        <h2 className="admin-h2" style={{ marginTop: 0 }}>
+          Lotes avançados
+        </h2>
+        {!loading && advBatches.length === 0 ? (
+          <p style={{ opacity: 0.8, marginBottom: 0 }}>
+            Nenhum lote avançado seu ainda. Use &quot;Assinar lote avançado&quot;
+            com os IDs acima.
+          </p>
+        ) : null}
+        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+          {advBatches.map((b) => (
+            <li
+              key={b.id}
+              style={{
+                borderTop: "1px solid #334155",
+                padding: "10px 0",
+                fontSize: 14,
+              }}
+            >
+              <strong>{b.status}</strong>
+              {" · "}
+              {b.item_count} documento(s)
+              {" · "}
+              {new Date(b.created_at).toLocaleString("pt-BR")}
+              {b.batch_hash_sha256 ? (
+                <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
+                  Hash: {b.batch_hash_sha256.slice(0, 16)}…
+                </div>
+              ) : null}
+              <div style={{ fontSize: 12, opacity: 0.65, marginTop: 2 }}>
+                id {b.id}
+              </div>
             </li>
           ))}
         </ul>

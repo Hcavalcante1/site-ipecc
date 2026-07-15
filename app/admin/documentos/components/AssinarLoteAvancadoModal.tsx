@@ -10,7 +10,7 @@ type Props = {
   onCompleted?: () => void;
 };
 
-type Step = "create" | "consent" | "auth" | "done";
+type Step = "identity" | "create" | "consent" | "auth" | "done";
 
 export default function AssinarLoteAvancadoModal({
   open,
@@ -18,9 +18,10 @@ export default function AssinarLoteAvancadoModal({
   documentIds,
   onCompleted,
 }: Props) {
-  const [step, setStep] = useState<Step>("create");
+  const [step, setStep] = useState<Step>("identity");
   const [busy, setBusy] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [identityOk, setIdentityOk] = useState(false);
   const [batchId, setBatchId] = useState<string | null>(null);
   const [batchHash, setBatchHash] = useState<string | null>(null);
   const [itemCount, setItemCount] = useState(0);
@@ -41,8 +42,9 @@ export default function AssinarLoteAvancadoModal({
 
   useEffect(() => {
     if (!open) return;
-    setStep("create");
+    setStep("identity");
     setErro(null);
+    setIdentityOk(false);
     setBatchId(null);
     setBatchHash(null);
     setItems([]);
@@ -54,6 +56,24 @@ export default function AssinarLoteAvancadoModal({
     setOtp("");
     setDevCode(null);
     setResumo(null);
+    void (async () => {
+      try {
+        const res = await fetch("/api/admin/documentos/identidade-avancada");
+        const json = await res.json();
+        if (json.identity?.status === "VERIFIED") {
+          setIdentityOk(true);
+          setNome(json.identity.fullName || "");
+          setCargo(json.identity.cargo || "");
+          setStep("create");
+        } else {
+          setIdentityOk(false);
+          setStep("identity");
+        }
+      } catch {
+        setIdentityOk(false);
+        setStep("identity");
+      }
+    })();
   }, [open, documentIds]);
 
   if (!open) return null;
@@ -68,6 +88,36 @@ export default function AssinarLoteAvancadoModal({
     background: "#1e293b",
     color: "#f8fafc",
   };
+
+  async function habilitarIdentidade() {
+    setBusy(true);
+    setErro(null);
+    try {
+      const res = await fetch("/api/admin/documentos/identidade-avancada", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: nome,
+          cpf,
+          cargo,
+          status: "VERIFIED",
+          identityLevel: "BASIC",
+          emailVerified: true,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        setErro(json.error || "Falha ao habilitar identidade.");
+        return;
+      }
+      setIdentityOk(true);
+      setStep("create");
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Erro de rede.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function criar() {
     setBusy(true);
@@ -264,8 +314,63 @@ export default function AssinarLoteAvancadoModal({
             </p>
           ) : null}
 
+          {step === "identity" ? (
+            <>
+              <p style={{ fontSize: 13, color: "#cbd5e1", lineHeight: 1.45 }}>
+                Antes do lote avançado, habilite sua identidade (nível BASIC).
+                Isso é exigido pela API e evita falha 403 ao congelar.
+              </p>
+              <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>
+                Nome completo
+                <input
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
+                  style={field}
+                />
+              </label>
+              <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>
+                CPF
+                <input
+                  value={cpf}
+                  onChange={(e) => setCpf(e.target.value)}
+                  style={field}
+                />
+              </label>
+              <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>
+                Cargo
+                <input
+                  value={cargo}
+                  onChange={(e) => setCargo(e.target.value)}
+                  style={field}
+                />
+              </label>
+              <button
+                type="button"
+                disabled={busy || nome.trim().length < 3 || cpf.replace(/\D/g, "").length < 11}
+                onClick={() => void habilitarIdentidade()}
+                style={{
+                  marginTop: 12,
+                  background: "#1d4ed8",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "10px 14px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                {busy ? "Salvando…" : "Habilitar identidade e continuar"}
+              </button>
+            </>
+          ) : null}
+
           {step === "create" ? (
             <>
+              {identityOk ? (
+                <p style={{ fontSize: 13, color: "#6ee7b7" }}>
+                  Identidade habilitada{nome ? `: ${nome}` : ""}.
+                </p>
+              ) : null}
               <p style={{ fontSize: 14 }}>
                 Documentos selecionados: <strong>{documentIds.length}</strong>
               </p>

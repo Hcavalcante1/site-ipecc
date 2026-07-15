@@ -58,7 +58,8 @@ Sem SaaS, cobrança, white-label, API comercial, ICP-Brasil, GOV.BR obrigatório
 | Documentação 00–15 | Concluída |
 
 ## Prontidão para produção
-**Condicional:** aplicar SQLs + envs (`SIGNATURE_ADV_PRIVATE_KEY_PEM`, pepper, Resend) + smoke manual. Revisão jurídica recomendada antes de uso com efeitos externos.
+**Base técnica pronta (2026-07-14):** SQL `gd_adv_*` aplicado no Supabase; envs de pepper/Ed25519/OTP na Vercel; UX de identidade no lote, CTA avançada no documento selecionado, listagem de lotes avançados e `identityLevel` em `/validar`.  
+**Ainda condicional ao uso externo:** smoke manual do `07-PLANO-DE-TESTES.md` + OTP real (Resend) ou fallback de painel aceito de propósito + revisão jurídica.
 
 ## Itens futuros — IPECC Sign
 Basic → Advanced → Qualified (ICP) → Enterprise (API/multiempresa). Somente após estabilidade, auditoria e autorização formal.

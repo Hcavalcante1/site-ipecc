@@ -538,6 +538,23 @@ export default function AssinaturasClient() {
           >
             Assinar no admin
           </button>
+          <button
+            type="button"
+            style={{ ...gdBtnStyle, background: "#1d4ed8" }}
+            disabled={!documentId.trim()}
+            onClick={() => {
+              const id = documentId.trim();
+              if (!id) {
+                setAviso("Informe ou selecione um documento para a assinatura avançada.");
+                return;
+              }
+              setAdvDocumentId(id);
+              setAdvDocumentTitle(documentTitle);
+              setAdvOpen(true);
+            }}
+          >
+            Assinatura avançada
+          </button>
           <button type="button" style={gdBtnStyle} onClick={criarEEnviarSignatario}>
             Enviar a outra pessoa
           </button>

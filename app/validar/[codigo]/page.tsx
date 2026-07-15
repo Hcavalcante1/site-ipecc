@@ -95,6 +95,15 @@ export default async function ValidarAssinaturaPage({ params }: Props) {
                   ? ` · ${resultado.evidencia.cargo}`
                   : ""}
               </dd>
+              {resultado.modalidade === "ADVANCED" &&
+              resultado.avancada?.identityLevel ? (
+                <>
+                  <dt style={{ color: "#94a3b8" }}>Nível de identidade</dt>
+                  <dd style={{ margin: 0 }}>
+                    {resultado.avancada.identityLevel}
+                  </dd>
+                </>
+              ) : null}
               <dt style={{ color: "#94a3b8" }}>E-mail</dt>
               <dd style={{ margin: 0 }}>{resultado.evidencia?.email}</dd>
               <dt style={{ color: "#94a3b8" }}>Assinado em</dt>
