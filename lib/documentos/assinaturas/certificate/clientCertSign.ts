@@ -35,7 +35,7 @@ export type LoadedCertificate = {
 };
 
 /** Dimensões do carimbo visual (pt) — preview e PDF usam o mesmo. */
-export const CERT_STAMP_BOX = { w: 320, h: 96, margin: 18 };
+export const CERT_STAMP_BOX = { w: 340, h: 112, margin: 18 };
 
 export type AppearanceOptions = {
   page: number; // 1-based
@@ -137,6 +137,13 @@ function formatCnpjDigits(cnpj: string | null | undefined): string | null {
   const digits = cnpj.replace(/\D/g, "");
   if (digits.length !== 14) return cnpj.trim() || null;
   return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+}
+
+function formatCpfDigits(cpf: string | null | undefined): string | null {
+  if (!cpf) return null;
+  const digits = cpf.replace(/\D/g, "");
+  if (digits.length !== 11) return cpf.trim() || null;
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
 }
 
 function bagAttrBytes(
@@ -745,10 +752,12 @@ export async function signPdfWithLocalCertificate(opts: {
     opacity: 1,
   });
 
-  const label = opts.appearance.signerLabel || opts.cert.displayName || opts.cert.subject;
-  const org = opts.cert.icpBrasil.razaoSocial?.trim() || label;
-  const cnpj = formatCnpjDigits(opts.cert.icpBrasil.cnpj);
+  const label = opts.appearance.signerLabel || opts.cert.subject || opts.cert.displayName || "";
+  const subject = opts.cert.subject?.trim() || opts.cert.displayName || label;
+  const razaoSocial = opts.cert.icpBrasil.razaoSocial?.trim() || null;
   const responsavel = opts.cert.icpBrasil.responsavel?.trim() || null;
+  const cnpj = formatCnpjDigits(opts.cert.icpBrasil.cnpj);
+  const cpf = formatCpfDigits(opts.cert.icpBrasil.cpf);
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
   const tzMin = -now.getTimezoneOffset();
@@ -764,35 +773,57 @@ export async function signPdfWithLocalCertificate(opts: {
   const rightW = boxW * 0.46;
   const topY = y + boxH - 14;
 
-  page.drawText(String(org).toUpperCase(), {
+  page.drawText(`Titular (CN): ${subject}`.toUpperCase(), {
     x: leftX,
     y: topY,
-    size: 8.5,
+    size: 7.1,
     font: fontBold,
     color: ink,
     maxWidth: leftW,
-    lineHeight: 9.5,
+    lineHeight: 7.8,
   });
   if (cnpj) {
     page.drawText(`CNPJ: ${cnpj}`, {
       x: leftX,
-      y: y + boxH - 46,
-      size: 8,
+      y: y + boxH - 28,
+      size: 7,
       font,
       color: ink,
       maxWidth: leftW,
-      lineHeight: 8.5,
+      lineHeight: 7.5,
     });
   }
-  if (responsavel && responsavel !== org) {
-    page.drawText(`Responsável: ${responsavel}`, {
+  if (razaoSocial) {
+    page.drawText(`Razão social: ${razaoSocial}`, {
       x: leftX,
-      y: y + boxH - 60,
-      size: 6.8,
+      y: y + boxH - 40,
+      size: 6.7,
       font,
       color: ink,
       maxWidth: leftW,
       lineHeight: 7.2,
+    });
+  }
+  if (responsavel) {
+    page.drawText(`Responsável: ${responsavel}`, {
+      x: leftX,
+      y: y + boxH - 52,
+      size: 6.7,
+      font,
+      color: ink,
+      maxWidth: leftW,
+      lineHeight: 7.2,
+    });
+  }
+  if (cpf) {
+    page.drawText(`CPF: ${cpf}`, {
+      x: leftX,
+      y: y + boxH - 64,
+      size: 7,
+      font,
+      color: ink,
+      maxWidth: leftW,
+      lineHeight: 7.5,
     });
   }
 
@@ -805,7 +836,7 @@ export async function signPdfWithLocalCertificate(opts: {
     maxWidth: rightW,
     lineHeight: 7.5,
   });
-  page.drawText(String(label).toUpperCase(), {
+  page.drawText(String(subject).toUpperCase(), {
     x: rightX,
     y: y + boxH - 26,
     size: 8,
@@ -816,7 +847,7 @@ export async function signPdfWithLocalCertificate(opts: {
   });
   page.drawText(`Dados: ${when}`, {
     x: rightX,
-    y: y + boxH - 46,
+    y: y + boxH - 42,
     size: 7,
     font,
     color: ink,

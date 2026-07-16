@@ -15,28 +15,7 @@ function formatCpf(cpf: string): string {
 }
 
 export function getCertificateHolderLabel(cert: LoadedCertificate): string {
-  const cnpj = onlyDigits(cert.icpBrasil.cnpj);
-  const cpf = onlyDigits(cert.icpBrasil.cpf);
-
-  if (cnpj.length === 14) {
-    return (
-      cert.icpBrasil.razaoSocial?.trim() ||
-      formatCnpj(cnpj) ||
-      cert.displayName ||
-      cert.subject
-    );
-  }
-
-  if (cpf.length === 11) {
-    return (
-      cert.icpBrasil.responsavel?.trim() ||
-      formatCpf(cpf) ||
-      cert.displayName ||
-      cert.subject
-    );
-  }
-
-  return cert.displayName || cert.subject;
+  return cert.subject?.trim() || cert.displayName || "";
 }
 
 export function getCertificateSummary(cert: LoadedCertificate): string {
@@ -45,9 +24,15 @@ export function getCertificateSummary(cert: LoadedCertificate): string {
   const cpf = onlyDigits(cert.icpBrasil.cpf);
   const holder = getCertificateHolderLabel(cert);
 
+  if (holder) {
+    parts.push(`CN ${holder}`);
+  }
   if (cnpj.length === 14) {
     parts.push(`CNPJ ${formatCnpj(cnpj)}`);
-    if (cert.icpBrasil.responsavel?.trim() && cert.icpBrasil.responsavel.trim() !== holder) {
+    if (cert.icpBrasil.razaoSocial?.trim()) {
+      parts.push(`Razão social ${cert.icpBrasil.razaoSocial.trim()}`);
+    }
+    if (cert.icpBrasil.responsavel?.trim()) {
       parts.push(`Responsável ${cert.icpBrasil.responsavel.trim()}`);
     }
     return parts.join(" · ");
@@ -55,8 +40,11 @@ export function getCertificateSummary(cert: LoadedCertificate): string {
 
   if (cpf.length === 11) {
     parts.push(`CPF ${formatCpf(cpf)}`);
+    if (cert.icpBrasil.responsavel?.trim()) {
+      parts.push(`Responsável ${cert.icpBrasil.responsavel.trim()}`);
+    }
     return parts.join(" · ");
   }
 
-  return holder;
+  return parts.join(" · ");
 }

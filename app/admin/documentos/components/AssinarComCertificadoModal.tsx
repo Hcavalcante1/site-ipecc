@@ -155,10 +155,9 @@ function CertificateReviewCard({ cert }: { cert: LoadedCertificate }) {
           letterSpacing: 0.3,
         }}
       >
-        Certificado importado (titular real)
+        Conteúdo bruto do certificado
       </div>
       {row("Emitido para (CN)", cert.subject)}
-      {row("Nome para assinatura", cert.displayName)}
       {row("Responsável (ICP-Brasil)", cert.icpBrasil.responsavel)}
       {row("Razão social (ICP-Brasil)", cert.icpBrasil.razaoSocial)}
       {row("CPF", formatCpf(cert.icpBrasil.cpf))}
@@ -183,6 +182,8 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
   const label = getCertificateHolderLabel(cert);
   const summary = getCertificateSummary(cert);
   const when = new Date().toLocaleString("pt-BR");
+  const cnpj = formatCnpj(cert.icpBrasil.cnpj);
+  const cpf = formatCpf(cert.icpBrasil.cpf);
 
   return (
     <div
@@ -195,13 +196,13 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
         color: "#000",
         padding: 10,
         display: "grid",
-        gridTemplateColumns: "minmax(0, 0.45fr) minmax(0, 0.55fr)",
+        gridTemplateColumns: "minmax(0, 0.5fr) minmax(0, 0.5fr)",
         gap: 12,
       }}
     >
       <div style={{ minWidth: 0 }}>
         <div style={{ fontSize: 8, lineHeight: 1.2, fontWeight: 700 }}>
-          {(cert.icpBrasil.razaoSocial || label).toUpperCase()}
+          TITULAR (CN): {cert.subject || label}
         </div>
         <div
           style={{
@@ -214,6 +215,26 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
         >
           {summary || "Certificado oficial ICP-Brasil"}
         </div>
+        {cnpj ? (
+          <div style={{ fontSize: 8, lineHeight: 1.2, marginTop: 6 }}>
+            CNPJ: {cnpj}
+          </div>
+        ) : null}
+        {cert.icpBrasil.razaoSocial ? (
+          <div style={{ fontSize: 8, lineHeight: 1.2, marginTop: 6 }}>
+            Razão social: {cert.icpBrasil.razaoSocial}
+          </div>
+        ) : null}
+        {cert.icpBrasil.responsavel ? (
+          <div style={{ fontSize: 8, lineHeight: 1.2, marginTop: 6 }}>
+            Responsável: {cert.icpBrasil.responsavel}
+          </div>
+        ) : null}
+        {cpf ? (
+          <div style={{ fontSize: 8, lineHeight: 1.2, marginTop: 6 }}>
+            CPF: {cpf}
+          </div>
+        ) : null}
       </div>
       <div style={{ minWidth: 0 }}>
         <div style={{ fontSize: 8, lineHeight: 1.2, fontWeight: 400 }}>
@@ -223,12 +244,12 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
           style={{
             fontSize: 8,
             lineHeight: 1.25,
-            fontWeight: 700,
-            marginTop: 6,
-            wordBreak: "break-word",
-          }}
-        >
-          {label.toUpperCase()}
+          fontWeight: 700,
+          marginTop: 6,
+          wordBreak: "break-word",
+        }}
+      >
+          {String(cert.subject || label).toUpperCase()}
         </div>
         <div style={{ fontSize: 8, lineHeight: 1.2, marginTop: 6 }}>
           Dados: {when}
@@ -250,15 +271,21 @@ function CertStampPositionPreview({
   placement,
   onChange,
   signerLabel,
-  stampOrganization,
-  stampIdentifier,
+  stampSubject,
+  stampCnpj,
+  stampCpf,
+  stampRazaoSocial,
+  stampResponsavel,
 }: {
   documentId?: string | null;
   placement: Placement;
   onChange: (next: Placement) => void;
   signerLabel: string;
-  stampOrganization?: string | null;
-  stampIdentifier?: string | null;
+  stampSubject?: string | null;
+  stampCnpj?: string | null;
+  stampCpf?: string | null;
+  stampRazaoSocial?: string | null;
+  stampResponsavel?: string | null;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<Array<HTMLDivElement | null>>([]);
@@ -609,14 +636,21 @@ function CertStampPositionPreview({
                     }}
                   >
                     <div style={{ fontWeight: 700, wordBreak: "break-word" }}>
-                      {signerLabel.slice(0, 48).toUpperCase() ||
-                        "TITULAR DO CERTIFICADO"}
+                      {String(stampSubject || signerLabel)
+                        .slice(0, 48)
+                        .toUpperCase() || "TITULAR DO CERTIFICADO"}
                     </div>
                     <div style={{ marginTop: 6, fontWeight: 400 }}>
-                      {stampOrganization ? stampOrganization.toUpperCase() : signerLabel.toUpperCase()}
+                      {stampRazaoSocial ? `Razão social: ${stampRazaoSocial}` : ""}
                     </div>
                     <div style={{ marginTop: 6, fontWeight: 400 }}>
-                      CNPJ {stampIdentifier || ""}
+                      {stampResponsavel ? `Responsável: ${stampResponsavel}` : ""}
+                    </div>
+                    <div style={{ marginTop: 6, fontWeight: 400 }}>
+                      {stampCnpj ? `CNPJ: ${stampCnpj}` : ""}
+                    </div>
+                    <div style={{ marginTop: 6, fontWeight: 400 }}>
+                      {stampCpf ? `CPF: ${stampCpf}` : ""}
                     </div>
                   </div>
                   <div
@@ -632,8 +666,9 @@ function CertStampPositionPreview({
                       Assinado de forma digital por
                     </div>
                     <div style={{ marginTop: 4, fontWeight: 700, wordBreak: "break-word" }}>
-                      {signerLabel.slice(0, 48).toUpperCase() ||
-                        "TITULAR DO CERTIFICADO"}
+                      {String(stampSubject || signerLabel)
+                        .slice(0, 48)
+                        .toUpperCase() || "TITULAR DO CERTIFICADO"}
                     </div>
                     <div style={{ marginTop: 6, fontWeight: 400 }}>Dados: {when}</div>
                     <div style={{ marginTop: 4, fontSize: 7 }}>
@@ -1383,8 +1418,11 @@ export default function AssinarComCertificadoModal({
                 signerLabel={
                   certRef.current ? getCertificateHolderLabel(certRef.current) : ""
                 }
-                stampOrganization={certPreview?.icpBrasil.razaoSocial || null}
-                stampIdentifier={formatCnpj(certPreview?.icpBrasil.cnpj)}
+                stampSubject={certPreview?.subject || null}
+                stampCnpj={formatCnpj(certPreview?.icpBrasil.cnpj)}
+                stampCpf={formatCpf(certPreview?.icpBrasil.cpf)}
+                stampRazaoSocial={certPreview?.icpBrasil.razaoSocial || null}
+                stampResponsavel={certPreview?.icpBrasil.responsavel || null}
               />
 
               <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
@@ -1430,8 +1468,11 @@ export default function AssinarComCertificadoModal({
                 signerLabel={
                   certRef.current ? getCertificateHolderLabel(certRef.current) : ""
                 }
-                stampOrganization={certPreview.icpBrasil.razaoSocial || null}
-                stampIdentifier={formatCnpj(certPreview.icpBrasil.cnpj)}
+                stampSubject={certPreview.subject || null}
+                stampCnpj={formatCnpj(certPreview.icpBrasil.cnpj)}
+                stampCpf={formatCpf(certPreview.icpBrasil.cpf)}
+                stampRazaoSocial={certPreview.icpBrasil.razaoSocial || null}
+                stampResponsavel={certPreview.icpBrasil.responsavel || null}
               />
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button
