@@ -9,11 +9,13 @@ Permitir assinar 1 ou N PDFs com certificado `.pfx`/`.p12` do computador do sign
 3. Servidor cria sessão (congela hash dos originais).
 4. Cliente baixa cada PDF, carimba, gera PKCS#7 detached, anexa `.p7s` e envia só o PDF assinado + metadados públicos.
 5. `/validar/{codigo}` exibe modalidade CERTIFICATE.
+6. Opcionalmente, o `.pfx` pode ser salvo criptografado no cofre da plataforma para reuso posterior.
 
 ## O que sobe ao servidor
 - PDF já assinado/carimbado
 - PKCS#7 (opcional, evidência)
 - subject, issuer, serial, validade, thumbprint SHA-256
+- `.pfx` criptografado no cofre da plataforma, se o operador optar por salvar
 
 ## O que NÃO sobe
 - Arquivo `.pfx`/`.p12`

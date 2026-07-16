@@ -28,6 +28,22 @@ type SessionItem = {
   downloadPath: string;
 };
 
+type SavedCertificateProfile = {
+  id: string;
+  label: string;
+  source_filename: string | null;
+  cert_subject: string | null;
+  cert_issuer: string | null;
+  cert_serial: string | null;
+  cert_not_before: string | null;
+  cert_not_after: string | null;
+  cert_thumbprint_sha256: string | null;
+  cert_thumbprint_sha1: string | null;
+  created_at: string;
+  updated_at: string;
+  last_used_at: string | null;
+};
+
 type Step = "cert" | "review" | "pages" | "signing" | "done";
 
 type Placement = { page: number; xPct: number; yPct: number };
@@ -191,7 +207,18 @@ function CertStampPositionPreview({
         pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
         const res = await fetch(pdfUrl, { credentials: "include" });
-        if (!res.ok) throw new Error("Não foi possível carregar o PDF.");
+        if (!res.ok) {
+          let detail = "";
+          try {
+            const j = (await res.json()) as { error?: string };
+            if (j.error) detail = ` ${j.error}`;
+          } catch {
+            /* ignore */
+          }
+          throw new Error(
+            `Não foi possível carregar o PDF (HTTP ${res.status}).${detail}`
+          );
+        }
         const data = new Uint8Array(await res.arrayBuffer());
         const doc = await pdfjs.getDocument({ data }).promise;
         if (cancelled) return;
@@ -230,8 +257,35 @@ function CertStampPositionPreview({
         pageRefs.current = rendered.map(() => null);
       } catch (e) {
         if (!cancelled) {
+          // Fallback: página A4 em branco para ainda posicionar a aparência
+          const blank = document.createElement("canvas");
+          blank.width = 595;
+          blank.height = 842;
+          const ctx = blank.getContext("2d");
+          if (ctx) {
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, blank.width, blank.height);
+            ctx.fillStyle = "#999999";
+            ctx.font = "14px Helvetica, Arial, sans-serif";
+            ctx.fillText(
+              "Pré-visualização sem PDF (arquivo indisponível)",
+              40,
+              60
+            );
+            setPages([
+              {
+                index: 1,
+                w: 595.28,
+                h: 841.89,
+                dataUrl: blank.toDataURL("image/jpeg", 0.9),
+              },
+            ]);
+            pageRefs.current = [null];
+          }
           setLoadErro(
-            e instanceof Error ? e.message : "Falha ao renderizar o PDF."
+            e instanceof Error
+              ? `${e.message} — usando página em branco para posicionar.`
+              : "Falha ao renderizar o PDF."
           );
         }
       } finally {
@@ -346,7 +400,15 @@ function CertStampPositionPreview({
     }
   }
 
-  const when = new Date().toLocaleString("pt-BR");
+  const when = (() => {
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const tzMin = -now.getTimezoneOffset();
+    const tzSign = tzMin >= 0 ? "+" : "-";
+    const tzAbs = Math.abs(tzMin);
+    const tz = `${tzSign}${pad(Math.floor(tzAbs / 60))}:${pad(tzAbs % 60)}`;
+    return `${now.getFullYear()}.${pad(now.getMonth() + 1)}.${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())} ${tz}`;
+  })();
 
   return (
     <div style={{ marginBottom: 12 }}>
@@ -438,15 +500,16 @@ function CertStampPositionPreview({
                     top: `${g.topPct}%`,
                     width: `${g.wPct}%`,
                     height: `${g.hPct}%`,
-                    background: "rgba(237, 244, 252, 0.97)",
-                    border: "1.5px solid #1e3a5f",
-                    borderRadius: 2,
+                    background: "#ffffff",
+                    border: "none",
+                    borderRadius: 0,
                     boxSizing: "border-box",
                     cursor: grabbing ? "grabbing" : "grab",
-                    boxShadow: "0 2px 8px rgba(29,78,216,0.35)",
+                    boxShadow: "none",
+                    outline: grabbing ? "1px dashed #999" : "1px dashed transparent",
                     zIndex: 3,
                     touchAction: "none",
-                    padding: "4px 6px",
+                    padding: "4px 4px",
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "flex-start",
@@ -456,39 +519,38 @@ function CertStampPositionPreview({
                 >
                   <span
                     style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      color: "#1a3350",
+                      fontSize: 9,
+                      fontWeight: 400,
+                      color: "#000",
                       lineHeight: 1.2,
+                      fontFamily: "Helvetica, Arial, sans-serif",
                     }}
                   >
-                    Assinado digitalmente
+                    Assinado de forma digital por
                   </span>
                   <span
                     style={{
-                      fontSize: 9,
-                      color: "#243447",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: "#000",
                       lineHeight: 1.2,
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
+                      fontFamily: "Helvetica, Arial, sans-serif",
                     }}
                   >
-                    {signerLabel.slice(0, 42) || "Titular do certificado"}
-                  </span>
-                  <span
-                    style={{ fontSize: 8, color: "#475569", lineHeight: 1.2 }}
-                  >
-                    {when}
+                    {signerLabel.slice(0, 48) || "Titular do certificado"}
                   </span>
                   <span
                     style={{
-                      fontSize: 7,
-                      color: "#64748b",
-                      marginTop: "auto",
+                      fontSize: 9,
+                      color: "#000",
+                      lineHeight: 1.2,
+                      fontFamily: "Helvetica, Arial, sans-serif",
                     }}
                   >
-                    Certificado digital do signatário
+                    Data: {when}
                   </span>
                 </div>
               ) : null}
@@ -513,6 +575,14 @@ export default function AssinarComCertificadoModal({
   const [pfxPassword, setPfxPassword] = useState("");
   const [certLabel, setCertLabel] = useState<string | null>(null);
   const [certPreview, setCertPreview] = useState<LoadedCertificate | null>(null);
+  const [savedProfiles, setSavedProfiles] = useState<SavedCertificateProfile[]>(
+    []
+  );
+  const [loadingProfiles, setLoadingProfiles] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [loadingSavedProfile, setLoadingSavedProfile] = useState(false);
+  const [selectedProfileId, setSelectedProfileId] = useState("");
+  const [selectedProfilePassword, setSelectedProfilePassword] = useState("");
   const [previewDocId, setPreviewDocId] = useState<string | null>(null);
   const [placement, setPlacement] = useState<Placement>({
     page: 1,
@@ -541,6 +611,8 @@ export default function AssinarComCertificadoModal({
     setPfxPassword("");
     setCertLabel(null);
     setCertPreview(null);
+    setSelectedProfileId("");
+    setSelectedProfilePassword("");
     setPreviewDocId(documentIds[0] || null);
     setPlacement({ page: 1, xPct: 96, yPct: 96 });
     setSessionItems([]);
@@ -549,6 +621,37 @@ export default function AssinarComCertificadoModal({
     setResults([]);
     certRef.current = null;
   }, [open, documentIds]);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      setLoadingProfiles(true);
+      try {
+        const res = await fetch("/api/admin/documentos/certificados", {
+          credentials: "include",
+        });
+        const json = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          profiles?: SavedCertificateProfile[];
+          error?: string;
+        };
+        if (!cancelled && res.ok && json.ok) {
+          setSavedProfiles(json.profiles || []);
+          if (json.profiles?.length) {
+            setSelectedProfileId((current) => current || json.profiles![0].id);
+          }
+        }
+      } catch {
+        if (!cancelled) setSavedProfiles([]);
+      } finally {
+        if (!cancelled) setLoadingProfiles(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
 
   if (!open) return null;
 
@@ -584,6 +687,109 @@ export default function AssinarComCertificadoModal({
       setErro(e instanceof Error ? e.message : "Falha ao ler o certificado.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  function buildCertMetadata(cert: LoadedCertificate) {
+    return {
+      subject: cert.subject,
+      issuer: cert.issuer,
+      serial: cert.serial,
+      notBefore: cert.notBefore,
+      notAfter: cert.notAfter,
+      thumbprintSha256: cert.thumbprintSha256,
+      thumbprintSha1: cert.thumbprintSha1,
+      icpBrasil: cert.icpBrasil,
+    };
+  }
+
+  async function salvarCertificadoNaPlataforma() {
+    const cert = certRef.current;
+    if (!cert || !pfxFile) {
+      setErro("Carregue o certificado antes de salvar na plataforma.");
+      return;
+    }
+
+    setSavingProfile(true);
+    setErro(null);
+    try {
+      const form = new FormData();
+      form.append("pfx", pfxFile, pfxFile.name);
+      form.append("sourceFilename", pfxFile.name);
+      form.append("label", certLabel || cert.displayName || cert.subject);
+      form.append("metadata", JSON.stringify(buildCertMetadata(cert)));
+
+      const res = await fetch("/api/admin/documentos/certificados", {
+        method: "POST",
+        body: form,
+        credentials: "include",
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+        profile?: SavedCertificateProfile;
+      };
+      if (!res.ok || !json.ok || !json.profile) {
+        throw new Error(json.error || "Falha ao salvar certificado.");
+      }
+      setSavedProfiles((current) => [json.profile!, ...current.filter((p) => p.id !== json.profile!.id)]);
+      setSelectedProfileId(json.profile.id);
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Falha ao salvar certificado.");
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
+  async function carregarCertificadoSalvo(profileId: string) {
+    if (!profileId) {
+      setErro("Selecione um certificado salvo.");
+      return;
+    }
+    if (!selectedProfilePassword) {
+      setErro("Informe a senha do certificado salvo.");
+      return;
+    }
+
+    setLoadingSavedProfile(true);
+    setErro(null);
+    try {
+      const res = await fetch(
+        `/api/admin/documentos/certificados/${encodeURIComponent(profileId)}/arquivo`,
+        {
+          credentials: "include",
+        }
+      );
+      if (!res.ok) {
+        let detail = "";
+        try {
+          const j = (await res.json()) as { error?: string };
+          if (j.error) detail = ` ${j.error}`;
+        } catch {
+          /* ignore */
+        }
+        throw new Error(
+          `Falha ao carregar o certificado salvo (HTTP ${res.status}).${detail}`
+        );
+      }
+      const buf = new Uint8Array(await res.arrayBuffer());
+      const file = new File([buf], "certificado-salvo.pfx", {
+        type: "application/x-pkcs12",
+      });
+
+      const { loadPfxFromFile } = await import(
+        "@/lib/documentos/assinaturas/certificate/clientCertSign"
+      );
+      const loaded = await loadPfxFromFile(file, selectedProfilePassword);
+      certRef.current = loaded;
+      setCertPreview(loaded);
+      setCertLabel(loaded.displayName);
+      if (!previewDocId && documentIds[0]) setPreviewDocId(documentIds[0]);
+      setStep("review");
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Falha ao carregar certificado salvo.");
+    } finally {
+      setLoadingSavedProfile(false);
     }
   }
 
@@ -893,6 +1099,86 @@ export default function AssinarComCertificadoModal({
               >
                 {busy ? "Lendo certificado…" : "Importar certificado"}
               </button>
+              <div
+                style={{
+                  marginTop: 18,
+                  padding: 12,
+                  borderRadius: 10,
+                  border: "1px solid #334155",
+                  background: "#0b1220",
+                }}
+              >
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>
+                  Certificados salvos na plataforma
+                </div>
+                <div style={{ fontSize: 12, color: "#cbd5e1", lineHeight: 1.45 }}>
+                  O arquivo pode ficar guardado criptografado para reuso posterior.
+                </div>
+                <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                  <select
+                    value={selectedProfileId}
+                    onChange={(e) => setSelectedProfileId(e.target.value)}
+                    style={field}
+                  >
+                    <option value="">
+                      {loadingProfiles
+                        ? "Carregando certificados..."
+                        : savedProfiles.length
+                          ? "Escolha um certificado salvo"
+                          : "Nenhum certificado salvo"}
+                    </option>
+                    {savedProfiles.map((profile) => (
+                      <option key={profile.id} value={profile.id}>
+                        {profile.label}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="password"
+                    value={selectedProfilePassword}
+                    onChange={(e) => setSelectedProfilePassword(e.target.value)}
+                    placeholder="Senha para reabrir o certificado salvo"
+                    style={field}
+                    autoComplete="off"
+                  />
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      disabled={busy || savingProfile || !certPreview || !pfxFile}
+                      onClick={() => void salvarCertificadoNaPlataforma()}
+                      style={{
+                        background: "#7c3aed",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 8,
+                        padding: "10px 14px",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        opacity: busy || savingProfile || !certPreview || !pfxFile ? 0.6 : 1,
+                      }}
+                    >
+                      {savingProfile ? "Salvando…" : "Salvar na plataforma"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy || loadingSavedProfile || !selectedProfileId}
+                      onClick={() => void carregarCertificadoSalvo(selectedProfileId)}
+                      style={{
+                        background: "#0f766e",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 8,
+                        padding: "10px 14px",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        opacity: busy || loadingSavedProfile || !selectedProfileId ? 0.6 : 1,
+                      }}
+                    >
+                      {loadingSavedProfile ? "Abrindo…" : "Usar certificado salvo"}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </>
           ) : null}
 

@@ -55,6 +55,7 @@ const docs = [
   "docs/sql/gestao-documental-assinatura-ipecc.sql",
   "docs/sql/gestao-documental-assinatura-avancada.sql",
   "docs/sql/gestao-documental-assinatura-certificado.sql",
+  "docs/sql/gestao-documental-certificados-vault.sql",
   "docs/assinaturas/16-ASSINATURA-CERTIFICADO-LOCAL.md",
 ];
 docs.forEach(mustExist);
@@ -70,11 +71,14 @@ const code = [
   "lib/documentos/assinaturas/advanced/identityService.ts",
   "lib/documentos/assinaturas/certificate/CertificateSignatureProvider.ts",
   "lib/documentos/assinaturas/certificate/certificateSignService.ts",
+  "lib/documentos/assinaturas/certificate/certificateVaultService.ts",
   "lib/documentos/assinaturas/certificate/clientCertSign.ts",
   "lib/documentos/assinaturas/shared/crypto.ts",
   "app/api/admin/documentos/assinaturas-avancadas/route.ts",
   "app/api/admin/documentos/lotes-avancados/route.ts",
   "app/api/admin/documentos/assinaturas-certificado/route.ts",
+  "app/api/admin/documentos/certificados/route.ts",
+  "app/api/admin/documentos/certificados/[id]/arquivo/route.ts",
   "app/admin/documentos/components/AssinarAvancadaModal.tsx",
   "app/admin/documentos/components/AssinarLoteAvancadoModal.tsx",
   "app/admin/documentos/components/AssinarComCertificadoModal.tsx",
@@ -89,9 +93,10 @@ mustContain("lib/documentos/assinaturas/advanced/batchAdvancedService.ts", "batc
 mustContain("docs/sql/gestao-documental-assinatura-avancada.sql", "gd_adv_transactions");
 mustContain("docs/sql/gestao-documental-assinatura-avancada.sql", "gd_adv_forbid_mutate");
 mustContain("docs/sql/gestao-documental-assinatura-certificado.sql", "gd_cert_transactions");
+mustContain("docs/sql/gestao-documental-certificados-vault.sql", "gd_cert_profiles");
 mustContain(
   "lib/documentos/assinaturas/certificate/constants.ts",
-  "chave privada não é enviada"
+  "salvo criptografado na plataforma"
 );
 mustContain("app/validar/[codigo]/page.tsx", "modalidade");
 
