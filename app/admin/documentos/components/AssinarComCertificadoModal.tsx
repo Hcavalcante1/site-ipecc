@@ -402,7 +402,7 @@ function CertStampPositionPreview({
                       marginTop: "auto",
                     }}
                   >
-                    Certificado local · chave não enviada
+                    Certificado digital do signatário
                   </span>
                 </div>
               ) : null}
@@ -489,7 +489,13 @@ export default function AssinarComCertificadoModal({
       const loaded = await loadPfxFromFile(pfxFile, pfxPassword);
       certRef.current = loaded;
       setCertLabel(
-        `${loaded.subject} · válido até ${new Date(loaded.notAfter).toLocaleDateString("pt-BR")}`
+        [
+          loaded.subject,
+          loaded.issuer ? `Emissor: ${loaded.issuer}` : null,
+          `válido até ${new Date(loaded.notAfter).toLocaleDateString("pt-BR")}`,
+        ]
+          .filter(Boolean)
+          .join(" · ")
       );
       if (!previewDocId && documentIds[0]) setPreviewDocId(documentIds[0]);
       setStep("pages");
