@@ -36,21 +36,42 @@ export async function obterIdentidadeAvancada(opts: {
   processoId?: string | null;
 }): Promise<AdvIdentityRow | null> {
   const admin = getSupabaseAdmin();
-  let q = admin
+
+  // 1) Identidade do processo (se informado)
+  if (opts.processoId) {
+    const { data: scoped } = await admin
+      .from("gd_adv_identity_verifications")
+      .select(ID_SELECT)
+      .eq("user_id", opts.userId)
+      .eq("processo_id", opts.processoId)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (scoped) return scoped as AdvIdentityRow;
+  }
+
+  // 2) Identidade global (processo_id nulo) — usada pelo modal ao habilitar
+  const { data: global } = await admin
+    .from("gd_adv_identity_verifications")
+    .select(ID_SELECT)
+    .eq("user_id", opts.userId)
+    .is("processo_id", null)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (global) return global as AdvIdentityRow;
+
+  // 3) Qualquer habilitação recente do usuário (evita falso "não habilitada"
+  //    quando a UI salvou global e a TX busca por processo)
+  const { data: anyRow } = await admin
     .from("gd_adv_identity_verifications")
     .select(ID_SELECT)
     .eq("user_id", opts.userId)
     .order("updated_at", { ascending: false })
-    .limit(1);
+    .limit(1)
+    .maybeSingle();
 
-  if (opts.processoId) {
-    q = q.eq("processo_id", opts.processoId);
-  } else {
-    q = q.is("processo_id", null);
-  }
-
-  const { data } = await q.maybeSingle();
-  return (data as AdvIdentityRow | null) || null;
+  return (anyRow as AdvIdentityRow | null) || null;
 }
 
 export function identidadePodeAssinarAvancado(

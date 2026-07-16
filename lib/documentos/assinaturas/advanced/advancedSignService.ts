@@ -207,12 +207,24 @@ export async function criarTransacaoAvancada(opts: {
     return { ok: false, error: "Documento sem arquivo.", status: 400 };
   }
 
-  const { data: version } = await admin
+  const { data: versionExact } = await admin
     .from("gd_document_versions")
     .select("id, version_number, storage_path, file_hash")
     .eq("document_id", doc.id)
     .eq("version_number", doc.current_version || 1)
     .maybeSingle();
+
+  let version = versionExact;
+  if (!version?.id) {
+    const { data: versionLatest } = await admin
+      .from("gd_document_versions")
+      .select("id, version_number, storage_path, file_hash")
+      .eq("document_id", doc.id)
+      .order("version_number", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    version = versionLatest;
+  }
 
   if (!version?.id) {
     return {
@@ -222,7 +234,8 @@ export async function criarTransacaoAvancada(opts: {
     };
   }
 
-  const pathToRead = version.storage_path || doc.storage_path;
+  // Mesmo arquivo “atual” do documento (evita path de versão desatualizada)
+  const pathToRead = doc.storage_path || version.storage_path;
   const { data: blob, error: dlErr } = await admin.storage
     .from(GD_STORAGE_BUCKET)
     .download(pathToRead);
@@ -530,6 +543,7 @@ export async function iniciarAutenticacaoAvancada(opts: {
     String(process.env.SIGNATURE_OTP_ALLOW_PANEL_FALLBACK || "")
       .trim()
       .toLowerCase() === "true" ||
+    !String(process.env.RESEND_API_KEY || "").trim() ||
     (process.env.NODE_ENV !== "production" &&
       process.env.VERCEL_ENV !== "production");
 
@@ -554,7 +568,9 @@ export async function iniciarAutenticacaoAvancada(opts: {
       ? {}
       : {
           devCode: code,
-          emailWarning: mail.error || "OTP exibido no painel (contingência).",
+          emailWarning:
+            mail.error ||
+            "OTP exibido no painel (Resend ausente ou contingência).",
         }),
   };
 }

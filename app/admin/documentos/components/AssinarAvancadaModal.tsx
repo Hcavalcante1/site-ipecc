@@ -158,6 +158,9 @@ export default function AssinarAvancadaModal({
       }
       setChallengeId(mJson.challengeId);
       setDevCode(mJson.devCode || null);
+      if (mJson.emailWarning && !mJson.devCode) {
+        setErro(String(mJson.emailWarning));
+      }
       setStep("auth");
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro de rede.");
