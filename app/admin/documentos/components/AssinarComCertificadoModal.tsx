@@ -12,6 +12,10 @@ import {
   CERT_STAMP_BOX,
   type LoadedCertificate,
 } from "@/lib/documentos/assinaturas/certificate/clientCertSign";
+import {
+  getCertificateHolderLabel,
+  getCertificateSummary,
+} from "@/lib/documentos/assinaturas/certificate/certificateIdentity";
 
 type Props = {
   open: boolean;
@@ -692,7 +696,7 @@ export default function AssinarComCertificadoModal({
       const loaded = await loadPfxFromFile(pfxFile, pfxPassword);
       certRef.current = loaded;
       setCertPreview(loaded);
-      setCertLabel(loaded.displayName);
+      setCertLabel(getCertificateHolderLabel(loaded));
       if (!previewDocId && documentIds[0]) setPreviewDocId(documentIds[0]);
       setStep("review");
     } catch (e) {
@@ -728,7 +732,7 @@ export default function AssinarComCertificadoModal({
       const form = new FormData();
       form.append("pfx", pfxFile, pfxFile.name);
       form.append("sourceFilename", pfxFile.name);
-      form.append("label", certLabel || cert.displayName || cert.subject);
+      form.append("label", getCertificateHolderLabel(cert));
       form.append("metadata", JSON.stringify(buildCertMetadata(cert)));
 
       const res = await fetch("/api/admin/documentos/certificados", {
@@ -795,7 +799,7 @@ export default function AssinarComCertificadoModal({
       const loaded = await loadPfxFromFile(file, selectedProfilePassword);
       certRef.current = loaded;
       setCertPreview(loaded);
-      setCertLabel(loaded.displayName);
+      setCertLabel(getCertificateHolderLabel(loaded));
       if (!previewDocId && documentIds[0]) setPreviewDocId(documentIds[0]);
       setStep("review");
     } catch (e) {
@@ -900,7 +904,7 @@ export default function AssinarComCertificadoModal({
               yPct: placement.yPct,
               width: CERT_STAMP_BOX.w,
               height: CERT_STAMP_BOX.h,
-              signerLabel: cert.displayName || cert.subject,
+              signerLabel: getCertificateHolderLabel(cert),
             },
           });
 
@@ -925,7 +929,7 @@ export default function AssinarComCertificadoModal({
           form.append(
             "cert",
             JSON.stringify({
-              subject: cert.displayName || cert.subject,
+              subject: getCertificateHolderLabel(cert),
               subjectCn: cert.subject,
               issuer: cert.issuer,
               serial: cert.serial,
@@ -1257,11 +1261,7 @@ export default function AssinarComCertificadoModal({
               {certLabel ? (
                 <p style={{ color: "#6ee7b7", fontSize: 13, marginBottom: 8 }}>
                   Assinando como: <strong>{certLabel}</strong>
-                  {certPreview?.icpBrasil.cnpj
-                    ? ` · CNPJ ${formatCnpj(certPreview.icpBrasil.cnpj)}`
-                    : certPreview?.icpBrasil.cpf
-                      ? ` · CPF ${formatCpf(certPreview.icpBrasil.cpf)}`
-                      : ""}
+                  {certPreview ? ` · ${getCertificateSummary(certPreview)}` : ""}
                   {" · "}
                   <button
                     type="button"
@@ -1305,9 +1305,7 @@ export default function AssinarComCertificadoModal({
                 placement={placement}
                 onChange={setPlacement}
                 signerLabel={
-                  certRef.current?.displayName ||
-                  certRef.current?.subject ||
-                  ""
+                  certRef.current ? getCertificateHolderLabel(certRef.current) : ""
                 }
               />
 

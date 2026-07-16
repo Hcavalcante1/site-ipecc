@@ -58,20 +58,63 @@ export async function GET(req: NextRequest, ctx: Ctx) {
     fileName = `assinado-${evid.validation_code}.pdf`;
   }
 
+  // Fallback: caminho da versão atual (mesmo padrão da assinatura avançada)
+  if (!storagePath) {
+    const currentVersion = Number(doc.current_version) || 1;
+    const { data: versionExact } = await admin
+      .from("gd_document_versions")
+      .select("storage_path, version_number")
+      .eq("document_id", id)
+      .eq("version_number", currentVersion)
+      .maybeSingle();
+    let version = versionExact;
+    if (!version?.storage_path) {
+      const { data: versionLatest } = await admin
+        .from("gd_document_versions")
+        .select("storage_path, version_number")
+        .eq("document_id", id)
+        .order("version_number", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      version = versionLatest;
+    }
+    storagePath = version?.storage_path || null;
+  }
+
   if (!storagePath) {
     return NextResponse.json(
-      { ok: false, error: "Documento sem arquivo." },
+      { ok: false, error: "Documento sem arquivo no storage." },
       { status: 404 }
     );
   }
 
-  const { data: file, error } = await admin.storage
-    .from(GD_STORAGE_BUCKET)
-    .download(storagePath);
+  const candidates = [
+    storagePath,
+    storagePath.replace(/^\//, ""),
+    storagePath.startsWith("/") ? storagePath : `/${storagePath}`,
+  ].filter((p, i, arr) => p && arr.indexOf(p) === i);
 
-  if (error || !file) {
+  let file: Blob | null = null;
+  let lastErr: string | null = null;
+  for (const path of candidates) {
+    const { data, error } = await admin.storage
+      .from(GD_STORAGE_BUCKET)
+      .download(path);
+    if (data && !error) {
+      file = data;
+      storagePath = path;
+      break;
+    }
+    lastErr = error?.message || "Arquivo indisponível.";
+  }
+
+  if (!file) {
     return NextResponse.json(
-      { ok: false, error: error?.message || "Arquivo indisponível." },
+      {
+        ok: false,
+        error: lastErr || "Arquivo indisponível no storage.",
+        storagePath,
+      },
       { status: 404 }
     );
   }

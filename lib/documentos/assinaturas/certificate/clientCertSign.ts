@@ -6,6 +6,7 @@
 
 import forge from "node-forge";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import { getCertificateHolderLabel } from "./certificateIdentity";
 
 export type LoadedCertificate = {
   privateKeyPem: string;
@@ -129,6 +130,13 @@ function formatCn(cert: forge.pki.Certificate, which: "subject" | "issuer"): str
   const cn = attrValue(attrs, "CN");
   if (cn) return cn;
   return formatDn(cert, which);
+}
+
+function formatCnpjDigits(cnpj: string | null | undefined): string | null {
+  if (!cnpj) return null;
+  const digits = cnpj.replace(/\D/g, "");
+  if (digits.length !== 14) return cnpj.trim() || null;
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
 }
 
 function bagAttrBytes(
@@ -558,11 +566,22 @@ export async function loadPfxFromFile(
 
   const subjectCn = formatCn(chosenCert, "subject");
   const icp = extractIcpBrasil(chosenCert);
-  // Adobe: para e-CNPJ destaca o responsável; para e-CPF o próprio CN
-  const displayName =
-    icp.responsavel?.trim() ||
-    icp.razaoSocial?.trim() ||
-    subjectCn;
+  const displayName = getCertificateHolderLabel({
+    privateKeyPem: "",
+    certificatePem: "",
+    chainPem: [],
+    subject: subjectCn,
+    displayName: subjectCn,
+    issuer: formatCn(chosenCert, "issuer"),
+    serial: chosenCert.serialNumber,
+    notBefore: chosenCert.validity.notBefore.toISOString(),
+    notAfter: chosenCert.validity.notAfter.toISOString(),
+    thumbprintSha256: thumbSha256,
+    thumbprintSha1: thumbSha1,
+    icpBrasil: icp,
+    subjectDn: formatDn(chosenCert, "subject"),
+    issuerDn: formatDn(chosenCert, "issuer"),
+  });
 
   return {
     privateKeyPem,
@@ -714,46 +733,48 @@ export async function signPdfWithLocalCertificate(opts: {
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
+  // Aparência padrão profissional (iText Description / ETSI TS 102 778-6):
+  // texto preto, fundo branco, sem moldura colorida inventada.
   page.drawRectangle({
     x,
     y,
     width: boxW,
     height: boxH,
-    borderColor: rgb(0.12, 0.25, 0.45),
-    borderWidth: 1.2,
-    color: rgb(0.93, 0.96, 0.99),
-    opacity: 0.95,
+    color: rgb(1, 1, 1),
+    borderWidth: 0,
+    opacity: 1,
   });
 
   const label = opts.appearance.signerLabel || opts.cert.displayName || opts.cert.subject;
-  const when = new Date().toLocaleString("pt-BR");
-  page.drawText("Assinado digitalmente", {
-    x: x + 8,
-    y: y + boxH - 16,
-    size: 9,
-    font: fontBold,
-    color: rgb(0.1, 0.2, 0.35),
-  });
-  page.drawText(String(label).slice(0, 42), {
-    x: x + 8,
-    y: y + boxH - 30,
-    size: 8,
-    font,
-    color: rgb(0.15, 0.2, 0.3),
-  });
-  page.drawText(when, {
-    x: x + 8,
-    y: y + boxH - 44,
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const tzMin = -now.getTimezoneOffset();
+  const tzSign = tzMin >= 0 ? "+" : "-";
+  const tzAbs = Math.abs(tzMin);
+  const tz = `${tzSign}${pad(Math.floor(tzAbs / 60))}:${pad(tzAbs % 60)}`;
+  const when = `${now.getFullYear()}.${pad(now.getMonth() + 1)}.${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())} ${tz}`;
+  const ink = rgb(0, 0, 0);
+
+  page.drawText("Assinado de forma digital por", {
+    x: x + 4,
+    y: y + boxH - 14,
     size: 7,
     font,
-    color: rgb(0.25, 0.3, 0.4),
+    color: ink,
   });
-  page.drawText("Assinado com certificado digital", {
-    x: x + 8,
-    y: y + 10,
-    size: 6,
+  page.drawText(String(label).slice(0, 48), {
+    x: x + 4,
+    y: y + boxH - 28,
+    size: 8,
+    font: fontBold,
+    color: ink,
+  });
+  page.drawText(`Data: ${when}`, {
+    x: x + 4,
+    y: y + boxH - 42,
+    size: 7,
     font,
-    color: rgb(0.35, 0.4, 0.5),
+    color: ink,
   });
 
   const stamped = await pdfDoc.save({ useObjectStreams: false });
