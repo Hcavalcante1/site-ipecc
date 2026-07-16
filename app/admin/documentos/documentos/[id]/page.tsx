@@ -273,6 +273,16 @@ export default function DocumentoDetalhePage() {
     );
   }
 
+  async function assinarComCertificado() {
+    if (!document?.storage_path) {
+      setAviso("Envie um arquivo PDF antes de assinar.");
+      return;
+    }
+    router.push(
+      `/admin/documentos/assinaturas?document_id=${encodeURIComponent(id)}&cert=1`
+    );
+  }
+
   async function pedirAssinaturaExterna() {
     const email = window.prompt(
       "E-mail de quem vai receber o link de assinatura:",
@@ -336,6 +346,13 @@ export default function DocumentoDetalhePage() {
                   onClick={assinarNoAdmin}
                 >
                   Assinar no admin
+                </button>
+                <button
+                  type="button"
+                  style={{ ...gdBtnStyle, background: "#7c3aed" }}
+                  onClick={assinarComCertificado}
+                >
+                  Assinar com certificado
                 </button>
                 <button
                   type="button"

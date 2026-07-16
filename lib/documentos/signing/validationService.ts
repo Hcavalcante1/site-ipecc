@@ -7,6 +7,7 @@ import {
 } from "./evidenceService";
 import type { GdSignatureEvidence } from "./constants";
 import { verificarTransacaoAvancada } from "@/lib/documentos/assinaturas/advanced/advancedSignService";
+import { verificarTransacaoCertificado } from "@/lib/documentos/assinaturas/certificate/certificateSignService";
 
 function mascararEmailPublico(email: string | null | undefined): string {
   const raw = String(email || "").trim().toLowerCase();
@@ -20,7 +21,7 @@ function mascararEmailPublico(email: string | null | undefined): string {
 
 export type ValidacaoPublicaResultado = {
   encontrado: boolean;
-  modalidade: "SIMPLE" | "ADVANCED" | null;
+  modalidade: "SIMPLE" | "ADVANCED" | "CERTIFICATE" | null;
   evidencia: Pick<
     GdSignatureEvidence,
     | "validation_code"
@@ -49,6 +50,12 @@ export type ValidacaoPublicaResultado = {
     status: string;
     identityLevel?: string | null;
     completedAt?: string | null;
+  } | null;
+  certificado?: {
+    subject?: string | null;
+    issuer?: string | null;
+    thumbprint?: string | null;
+    appearancePage?: number | null;
   } | null;
 };
 
@@ -117,10 +124,77 @@ export async function obterValidacaoPublica(opts: {
             : null,
           completedAt: tx.completed_at ? String(tx.completed_at) : null,
         },
+        certificado: null,
       };
     }
   } catch {
-    // Tabelas avançadas podem ainda não existir — segue para simples.
+    // Tabelas avançadas podem ainda não existir — segue.
+  }
+
+  // 1b) Assinatura com certificado digital (PFX no cliente)
+  try {
+    const cert = await verificarTransacaoCertificado({ verificationCode: code });
+    if (cert.found) {
+      await registrarConsultaValidacao({
+        validationCode: code || "vazio",
+        found: true,
+        ip: opts.ip,
+        userAgent: opts.userAgent,
+      });
+      const tx = cert.transaction || {};
+      const admin = getSupabaseAdmin();
+      const docId = String(tx.document_id || "");
+      const { data: doc } = docId
+        ? await admin
+            .from("gd_documents")
+            .select("id, title, current_version")
+            .eq("id", docId)
+            .maybeSingle()
+        : { data: null };
+
+      return {
+        encontrado: true,
+        modalidade: "CERTIFICATE",
+        evidencia: {
+          validation_code: code,
+          nome: String(tx.cert_subject || "Signatário com certificado"),
+          cargo: null,
+          email: "—",
+          signed_at: String(tx.completed_at || ""),
+          timezone: "UTC",
+          document_hash_sha256: String(tx.document_hash_sha256 || ""),
+          signed_hash_sha256: String(tx.final_document_hash_sha256 || ""),
+          signature_serial: 1,
+          document_id: docId,
+        },
+        documento: doc
+          ? {
+              id: doc.id,
+              title: doc.title,
+              current_version: doc.current_version,
+            }
+          : null,
+        integridade: {
+          ok: cert.integridadeOk,
+          detalhe: cert.detalhe,
+        },
+        downloadUrl: cert.integridadeOk
+          ? `/api/download/assinatura/${code}`
+          : null,
+        avancada: null,
+        certificado: {
+          subject: tx.cert_subject ? String(tx.cert_subject) : null,
+          issuer: tx.cert_issuer ? String(tx.cert_issuer) : null,
+          thumbprint: tx.cert_thumbprint_sha256
+            ? String(tx.cert_thumbprint_sha256)
+            : null,
+          appearancePage:
+            typeof tx.appearance_page === "number" ? tx.appearance_page : null,
+        },
+      };
+    }
+  } catch {
+    // Tabelas certificado podem ainda não existir — segue para simples.
   }
 
   const { data: evidencia } = await buscarEvidenciaPorCodigo(code);
@@ -141,6 +215,7 @@ export async function obterValidacaoPublica(opts: {
       integridade: null,
       downloadUrl: null,
       avancada: null,
+      certificado: null,
     };
   }
 
@@ -207,5 +282,6 @@ export async function obterValidacaoPublica(opts: {
     integridade,
     downloadUrl,
     avancada: null,
+    certificado: null,
   };
 }

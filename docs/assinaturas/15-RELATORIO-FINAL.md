@@ -55,11 +55,12 @@ Sem SaaS, cobrança, white-label, API comercial, ICP-Brasil, GOV.BR obrigatório
 | Simples | Operacional / preservado |
 | Avançada 1 doc | Implementada |
 | Lote avançado | Implementada |
-| Documentação 00–15 | Concluída |
+| Certificado digital (PFX local) | Implementada (1 doc + lote + multipágina) |
+| Documentação 00–16 | Concluída |
 
 ## Prontidão para produção
-**Base técnica pronta (2026-07-14):** SQL `gd_adv_*` aplicado no Supabase; envs de pepper/Ed25519/OTP na Vercel; UX de identidade no lote, CTA avançada no documento selecionado, listagem de lotes avançados e `identityLevel` em `/validar`.  
-**Ainda condicional ao uso externo:** smoke manual do `07-PLANO-DE-TESTES.md` + OTP real (Resend) ou fallback de painel aceito de propósito + revisão jurídica.
+**Base técnica pronta (2026-07-16):** SQL `gd_adv_*` e `gd_cert_*` (aplicar `gestao-documental-assinatura-certificado.sql`); envs de pepper/Ed25519/OTP na Vercel; certificado local no browser (chave nunca sobe).  
+**Ainda condicional ao uso externo:** smoke manual + OTP real + revisão jurídica.
 
 ## Itens futuros — IPECC Sign
 Basic → Advanced → Qualified (ICP) → Enterprise (API/multiempresa). Somente após estabilidade, auditoria e autorização formal.

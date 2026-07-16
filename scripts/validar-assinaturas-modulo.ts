@@ -54,6 +54,8 @@ const docs = [
   "docs/assinaturas/15-RELATORIO-FINAL.md",
   "docs/sql/gestao-documental-assinatura-ipecc.sql",
   "docs/sql/gestao-documental-assinatura-avancada.sql",
+  "docs/sql/gestao-documental-assinatura-certificado.sql",
+  "docs/assinaturas/16-ASSINATURA-CERTIFICADO-LOCAL.md",
 ];
 docs.forEach(mustExist);
 
@@ -66,23 +68,30 @@ const code = [
   "lib/documentos/assinaturas/advanced/advancedSignService.ts",
   "lib/documentos/assinaturas/advanced/batchAdvancedService.ts",
   "lib/documentos/assinaturas/advanced/identityService.ts",
+  "lib/documentos/assinaturas/certificate/CertificateSignatureProvider.ts",
+  "lib/documentos/assinaturas/certificate/certificateSignService.ts",
+  "lib/documentos/assinaturas/certificate/clientCertSign.ts",
   "lib/documentos/assinaturas/shared/crypto.ts",
   "app/api/admin/documentos/assinaturas-avancadas/route.ts",
   "app/api/admin/documentos/lotes-avancados/route.ts",
+  "app/api/admin/documentos/assinaturas-certificado/route.ts",
   "app/admin/documentos/components/AssinarAvancadaModal.tsx",
   "app/admin/documentos/components/AssinarLoteAvancadoModal.tsx",
+  "app/admin/documentos/components/AssinarComCertificadoModal.tsx",
   "app/validar/[codigo]/page.tsx",
 ];
 code.forEach(mustExist);
 
 mustContain("lib/documentos/assinaturas/core/types.ts", 'SignatureLevel');
+mustContain("lib/documentos/assinaturas/core/types.ts", "CERTIFICATE");
 mustContain("lib/documentos/assinaturas/shared/crypto.ts", "ed25519");
 mustContain("lib/documentos/assinaturas/advanced/batchAdvancedService.ts", "batch_hash_sha256");
 mustContain("docs/sql/gestao-documental-assinatura-avancada.sql", "gd_adv_transactions");
 mustContain("docs/sql/gestao-documental-assinatura-avancada.sql", "gd_adv_forbid_mutate");
+mustContain("docs/sql/gestao-documental-assinatura-certificado.sql", "gd_cert_transactions");
 mustContain(
-  "lib/documentos/assinaturas/advanced/constants.ts",
-  "não equivale a assinatura qualificada ICP-Brasil"
+  "lib/documentos/assinaturas/certificate/constants.ts",
+  "chave privada não é enviada"
 );
 mustContain("app/validar/[codigo]/page.tsx", "modalidade");
 

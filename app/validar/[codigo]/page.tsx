@@ -46,7 +46,9 @@ export default async function ValidarAssinaturaPage({ params }: Props) {
           IPECC ·{" "}
           {resultado.modalidade === "ADVANCED"
             ? "Assinatura eletrônica avançada"
-            : "Assinatura eletrônica simples"}
+            : resultado.modalidade === "CERTIFICATE"
+              ? "Assinatura com certificado digital"
+              : "Assinatura eletrônica simples"}
         </p>
         <h1 style={{ marginTop: 8, marginBottom: 8, fontSize: 28 }}>
           Verificar documento
@@ -57,7 +59,9 @@ export default async function ValidarAssinaturaPage({ params }: Props) {
         <p style={{ color: "#94a3b8", fontSize: 13, lineHeight: 1.5 }}>
           {resultado.modalidade === "ADVANCED"
             ? "Modalidade avançada: identidade habilitada, reautenticação, MFA, manifesto selado e certificado de evidências. Não equivale a assinatura qualificada ICP-Brasil."
-            : "Modalidade de assinatura eletrônica simples (Lei 14.063/2020). Não equivale a assinatura qualificada nem a certificado ICP-Brasil."}
+            : resultado.modalidade === "CERTIFICATE"
+              ? "Assinatura com certificado digital do signatário (.pfx no computador). A chave privada não foi enviada ao IPECC. Validação plena no Adobe depende do certificado e da cadeia da AC."
+              : "Modalidade de assinatura eletrônica simples (Lei 14.063/2020). Não equivale a assinatura qualificada nem a certificado ICP-Brasil."}
         </p>
 
         {!resultado.encontrado ? (
@@ -102,6 +106,29 @@ export default async function ValidarAssinaturaPage({ params }: Props) {
                   <dd style={{ margin: 0 }}>
                     {resultado.avancada.identityLevel}
                   </dd>
+                </>
+              ) : null}
+              {resultado.modalidade === "CERTIFICATE" &&
+              resultado.certificado?.subject ? (
+                <>
+                  <dt style={{ color: "#94a3b8" }}>Certificado (CN)</dt>
+                  <dd style={{ margin: 0 }}>{resultado.certificado.subject}</dd>
+                  {resultado.certificado.issuer ? (
+                    <>
+                      <dt style={{ color: "#94a3b8" }}>Emissor</dt>
+                      <dd style={{ margin: 0 }}>
+                        {resultado.certificado.issuer}
+                      </dd>
+                    </>
+                  ) : null}
+                  {resultado.certificado.appearancePage ? (
+                    <>
+                      <dt style={{ color: "#94a3b8" }}>Página da aparência</dt>
+                      <dd style={{ margin: 0 }}>
+                        {resultado.certificado.appearancePage}
+                      </dd>
+                    </>
+                  ) : null}
                 </>
               ) : null}
               <dt style={{ color: "#94a3b8" }}>E-mail</dt>

@@ -67,6 +67,25 @@ export async function GET(req: Request, { params }: Ctx) {
   }
 
   if (!storagePath) {
+    const { data: ctx } = await admin
+      .from("gd_cert_transactions")
+      .select("id, status")
+      .eq("verification_code", codigo)
+      .eq("status", "COMPLETED")
+      .maybeSingle();
+    if (ctx?.id) {
+      const { data: art } = await admin
+        .from("gd_cert_artifacts")
+        .select("storage_path")
+        .eq("transaction_id", ctx.id)
+        .eq("artifact_type", "SIGNED_CERTIFICATE_DOCUMENT")
+        .maybeSingle();
+      storagePath = art?.storage_path || null;
+      fileNameHint = storagePath?.split("/").pop() || `certificado-${codigo}.pdf`;
+    }
+  }
+
+  if (!storagePath) {
     return new NextResponse("Documento assinado não encontrado", {
       status: 404,
     });

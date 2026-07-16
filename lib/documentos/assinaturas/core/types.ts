@@ -1,6 +1,10 @@
-/** Tipos compartilhados — Assinatura Simples e Avançada IPECC. */
+/** Tipos compartilhados — Assinatura Simples, Avançada e Certificado IPECC. */
 
-export type SignatureLevel = "SIMPLE" | "ADVANCED" | "LEGACY_SIMPLE";
+export type SignatureLevel =
+  | "SIMPLE"
+  | "ADVANCED"
+  | "LEGACY_SIMPLE"
+  | "CERTIFICATE";
 
 export type SignatureStatus =
   | "DRAFT"
@@ -30,6 +34,8 @@ export type SignatureArtifactType =
   | "ORIGINAL_DOCUMENT"
   | "SIGNED_SIMPLE_DOCUMENT"
   | "SIGNED_ADVANCED_DOCUMENT"
+  | "SIGNED_CERTIFICATE_DOCUMENT"
+  | "PKCS7_SIGNATURE"
   | "EVIDENCE_CERTIFICATE"
   | "EVIDENCE_JSON"
   | "SIGNED_MANIFEST";
@@ -43,6 +49,8 @@ export function rotuloNivelAssinatura(level: SignatureLevel): string {
   switch (level) {
     case "ADVANCED":
       return "Assinatura eletrônica avançada";
+    case "CERTIFICATE":
+      return "Assinatura com certificado digital";
     case "SIMPLE":
       return "Assinatura eletrônica simples";
     case "LEGACY_SIMPLE":

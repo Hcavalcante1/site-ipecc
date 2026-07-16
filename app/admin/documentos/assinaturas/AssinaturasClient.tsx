@@ -10,6 +10,7 @@ import GestaoDocumentalShell, {
 } from "../components/GestaoDocumentalShell";
 import AssinarNoAdminModal from "../components/AssinarNoAdminModal";
 import AssinarAvancadaModal from "../components/AssinarAvancadaModal";
+import AssinarComCertificadoModal from "../components/AssinarComCertificadoModal";
 import {
   rotuloProviderAssinatura,
   rotuloStatusAssinatura,
@@ -49,6 +50,7 @@ export default function AssinaturasClient() {
   const [advOpen, setAdvOpen] = useState(false);
   const [advDocumentId, setAdvDocumentId] = useState<string | null>(null);
   const [advDocumentTitle, setAdvDocumentTitle] = useState<string | null>(null);
+  const [certOpen, setCertOpen] = useState(false);
   const autoStarted = useRef(false);
 
   const carregar = useCallback(async () => {
@@ -128,7 +130,15 @@ export default function AssinaturasClient() {
     const docId = String(search.get("document_id") || "").trim();
     const sigId = String(search.get("signature_id") || "").trim();
     const auto = search.get("auto") === "1";
+    const cert = search.get("cert") === "1";
     if (!docId || autoStarted.current || loading) return;
+
+    if (cert) {
+      autoStarted.current = true;
+      setDocumentId(docId);
+      setCertOpen(true);
+      return;
+    }
 
     if (sigId) {
       autoStarted.current = true;
@@ -461,6 +471,15 @@ export default function AssinaturasClient() {
           setAdvDocumentTitle(null);
         }}
       />
+      <AssinarComCertificadoModal
+        open={certOpen}
+        documentIds={documentId.trim() ? [documentId.trim()] : []}
+        onClose={() => setCertOpen(false)}
+        onCompleted={() => {
+          setAviso("Assinatura com certificado registrada.");
+          carregar();
+        }}
+      />
 
       {aviso ? (
         <div style={{ ...gdCardStyle, borderColor: "#f59e0b" }}>{aviso}</div>
@@ -554,6 +573,22 @@ export default function AssinaturasClient() {
             }}
           >
             Assinatura avançada
+          </button>
+          <button
+            type="button"
+            style={{ ...gdBtnStyle, background: "#7c3aed" }}
+            disabled={!documentId.trim()}
+            onClick={() => {
+              if (!documentId.trim()) {
+                setAviso(
+                  "Informe ou selecione um documento para assinar com certificado."
+                );
+                return;
+              }
+              setCertOpen(true);
+            }}
+          >
+            Assinar com certificado
           </button>
           <button type="button" style={gdBtnStyle} onClick={criarEEnviarSignatario}>
             Enviar a outra pessoa

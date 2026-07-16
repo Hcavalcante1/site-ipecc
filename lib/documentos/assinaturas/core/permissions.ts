@@ -15,20 +15,20 @@ export function podeUsarNivelAssinatura(opts: {
   return { ok: true };
 }
 
-/** Administrador não conclui assinatura avançada em nome de terceiro. */
+/** Administrador não conclui assinatura avançada/certificado em nome de terceiro. */
 export function proibirAssinaturaPorTerceiro(opts: {
   level: SignatureLevel;
   actorUserId: string;
   signerUserId: string;
 }): { ok: true } | { ok: false; reason: string } {
   if (
-    opts.level === "ADVANCED" &&
+    (opts.level === "ADVANCED" || opts.level === "CERTIFICATE") &&
     opts.actorUserId !== opts.signerUserId
   ) {
     return {
       ok: false,
       reason:
-        "Na assinatura avançada, apenas o próprio signatário pode autorizar a operação.",
+        "Nesta modalidade, apenas o próprio signatário pode concluir a operação.",
     };
   }
   return { ok: true };

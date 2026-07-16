@@ -8,6 +8,7 @@ import GestaoDocumentalShell, {
 } from "../components/GestaoDocumentalShell";
 import AssinarNoAdminModal from "../components/AssinarNoAdminModal";
 import AssinarLoteAvancadoModal from "../components/AssinarLoteAvancadoModal";
+import AssinarComCertificadoModal from "../components/AssinarComCertificadoModal";
 
 type Batch = {
   id: string;
@@ -48,6 +49,7 @@ export default function LotesPage() {
   const [loading, setLoading] = useState(true);
   const [ipeccOpen, setIpeccOpen] = useState(false);
   const [advLoteOpen, setAdvLoteOpen] = useState(false);
+  const [certLoteOpen, setCertLoteOpen] = useState(false);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -207,6 +209,18 @@ export default function LotesPage() {
           void carregar();
         }}
       />
+      <AssinarComCertificadoModal
+        open={certLoteOpen}
+        documentIds={docIds
+          .split(/[,\s]+/)
+          .map((s) => s.trim())
+          .filter(Boolean)}
+        onClose={() => setCertLoteOpen(false)}
+        onCompleted={() => {
+          setAviso("Lote com certificado processado.");
+          void carregar();
+        }}
+      />
 
       {aviso ? (
         <div style={{ ...gdCardStyle, borderColor: "#f59e0b" }}>{aviso}</div>
@@ -253,10 +267,18 @@ export default function LotesPage() {
             >
               Assinar lote avançado
             </button>
+            <button
+              type="button"
+              style={{ ...gdBtnStyle, background: "#7c3aed" }}
+              onClick={() => setCertLoteOpen(true)}
+              disabled={!docIds.trim()}
+            >
+              Assinar lote com certificado
+            </button>
           </div>
           <p style={{ fontSize: 12, opacity: 0.8, marginBottom: 0 }}>
-            Lote avançado: use os IDs acima, congele e autorize com MFA (módulo
-            aparte do lote simples).
+            Lote avançado ou certificado: use os IDs acima. O certificado .pfx
+            fica só no seu computador.
           </p>
         </div>
       </div>

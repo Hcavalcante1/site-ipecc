@@ -46,7 +46,9 @@ export function assinaturaRateKey(
     | "adv-consent"
     | "adv-mfa"
     | "adv-auth"
-    | "adv-concluir",
+    | "adv-concluir"
+    | "cert-criar"
+    | "cert-concluir",
   userId: string,
   ip: string | null | undefined
 ): string {
