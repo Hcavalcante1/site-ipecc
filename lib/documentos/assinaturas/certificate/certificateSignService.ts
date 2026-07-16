@@ -619,6 +619,84 @@ export async function listarLotesCertificado(opts: { signerUserId: string }) {
   return { ok: true as const, batches: data || [] };
 }
 
+/**
+ * Histórico de assinaturas com certificado para a lista do admin.
+ */
+export async function listarHistoricoCertificado(opts: {
+  processoIds?: string[] | "todos";
+  documentId?: string;
+  limit?: number;
+}) {
+  const admin = getSupabaseAdmin();
+  let q = admin
+    .from("gd_cert_transactions")
+    .select(
+      "id, document_id, processo_id, status, cert_subject, verification_code, completed_at, created_at, signer_user_id"
+    )
+    .eq("status", "COMPLETED")
+    .order("completed_at", { ascending: false })
+    .limit(opts.limit ?? 80);
+
+  if (opts.documentId) {
+    q = q.eq("document_id", opts.documentId);
+  }
+
+  const { data: txs, error } = await q;
+  if (error) {
+    if (/relation .* does not exist|42P01/i.test(error.message || "")) {
+      return { ok: true as const, rows: [] as never[] };
+    }
+    return { ok: false as const, error: error.message, rows: [] as never[] };
+  }
+
+  let list = txs || [];
+  if (opts.processoIds && opts.processoIds !== "todos") {
+    const allowed = new Set(opts.processoIds as string[]);
+    list = list.filter(
+      (t) => !t.processo_id || allowed.has(String(t.processo_id))
+    );
+  }
+
+  if (list.length === 0) {
+    return { ok: true as const, rows: [] as never[] };
+  }
+
+  const docIds = [...new Set(list.map((t) => t.document_id))];
+  const txIds = list.map((t) => t.id);
+
+  const [{ data: docs }, { data: arts }] = await Promise.all([
+    admin.from("gd_documents").select("id, title").in("id", docIds),
+    admin
+      .from("gd_cert_artifacts")
+      .select("transaction_id, storage_path")
+      .in("transaction_id", txIds)
+      .eq("artifact_type", "SIGNED_CERTIFICATE_DOCUMENT"),
+  ]);
+
+  const titleById = new Map(
+    (docs || []).map((d) => [d.id, d.title as string | null])
+  );
+  const pathByTx = new Map(
+    (arts || []).map((a) => [a.transaction_id, a.storage_path as string])
+  );
+
+  const rows = list.map((t) => ({
+    id: t.id,
+    document_id: t.document_id,
+    document_title: titleById.get(t.document_id) || null,
+    status: "signed",
+    provider_code: "certificado",
+    signed_storage_path: pathByTx.get(t.id) || null,
+    signer_name: t.cert_subject || null,
+    verification_code: t.verification_code || null,
+    error_message: null as string | null,
+    created_at: t.completed_at || t.created_at,
+    kind: "certificate" as const,
+  }));
+
+  return { ok: true as const, rows };
+}
+
 export async function verificarTransacaoCertificado(opts: {
   verificationCode: string;
 }) {
@@ -644,8 +722,10 @@ export async function verificarTransacaoCertificado(opts: {
     .eq("artifact_type", "SIGNED_CERTIFICATE_DOCUMENT")
     .maybeSingle();
 
-  let integridadeOk = true;
-  let detalhe = "Evidência de assinatura com certificado registrada.";
+  let integridadeOk = Boolean(signedArt?.storage_path);
+  let detalhe = signedArt?.storage_path
+    ? "Evidência de assinatura com certificado registrada."
+    : "PDF assinado não encontrado no armazenamento.";
   if (signedArt?.storage_path && signedArt.sha256) {
     const { data: file } = await admin.storage
       .from(GD_STORAGE_BUCKET)
@@ -657,6 +737,9 @@ export async function verificarTransacaoCertificado(opts: {
         integridadeOk = false;
         detalhe = "Hash do PDF assinado diverge do registrado.";
       }
+    } else {
+      integridadeOk = false;
+      detalhe = "Não foi possível ler o PDF assinado para verificar o hash.";
     }
   }
 
@@ -665,5 +748,6 @@ export async function verificarTransacaoCertificado(opts: {
     transaction: tx,
     integridadeOk,
     detalhe,
+    signedStoragePath: signedArt?.storage_path || null,
   };
 }

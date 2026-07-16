@@ -31,6 +31,8 @@ export function rotuloStatusAssinatura(status: string): string {
 }
 
 export const LABEL_PROVIDER_ASSINATURA: Record<string, string> = {
+  certificado: "Certificado digital",
+  advanced: "Avançada IPECC",
   ipecc: "IPECC",
   documento: "Documento (legado)",
   documenso: "Documento (legado)",

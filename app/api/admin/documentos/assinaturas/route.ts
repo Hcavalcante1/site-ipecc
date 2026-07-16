@@ -7,6 +7,7 @@ import {
   listarAssinaturas,
   tabelaAssinaturaAusente,
 } from "@/lib/documentos/signatureService";
+import { listarHistoricoCertificado } from "@/lib/documentos/assinaturas/certificate/certificateSignService";
 import { carregarDocumentoNoEscopo } from "@/lib/documentos/scopeHelper";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -36,7 +37,19 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  return NextResponse.json({ ok: true, signatures: data || [] });
+  const certHist = await listarHistoricoCertificado({
+    processoIds,
+    documentId,
+  });
+  const certRows = certHist.ok ? certHist.rows : [];
+
+  const merged = [...(data || []), ...certRows].sort((a, b) => {
+    const ta = new Date(String(a.created_at || 0)).getTime();
+    const tb = new Date(String(b.created_at || 0)).getTime();
+    return tb - ta;
+  });
+
+  return NextResponse.json({ ok: true, signatures: merged });
 }
 
 export async function DELETE(req: NextRequest) {

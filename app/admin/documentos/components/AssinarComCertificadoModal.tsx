@@ -30,6 +30,8 @@ type SessionItem = {
 
 type Step = "cert" | "pages" | "signing" | "done";
 
+type Placement = { page: number; xPct: number; yPct: number };
+
 function stampLeftTopPct(
   pageW: number,
   pageH: number,
@@ -53,31 +55,34 @@ function stampLeftTopPct(
   };
 }
 
-/** Preview 1:1 do PDF + carimbo arrastável (posição = carimbo no PDF assinado). */
+function u8ToBlob(u8: Uint8Array, mime: string): Blob {
+  const copy = new Uint8Array(u8.byteLength);
+  copy.set(u8);
+  return new Blob([copy], { type: mime });
+}
+
+/**
+ * Todas as páginas empilhadas; arraste o carimbo para qualquer lugar
+ * (a página é detectada automaticamente).
+ */
 function CertStampPositionPreview({
   documentId,
-  pageNum,
-  xPct,
-  yPct,
+  placement,
   onChange,
-  onPageCount,
   signerLabel,
 }: {
   documentId?: string | null;
-  pageNum: number;
-  xPct: number;
-  yPct: number;
-  onChange: (x: number, y: number) => void;
-  onPageCount?: (n: number) => void;
+  placement: Placement;
+  onChange: (next: Placement) => void;
   signerLabel: string;
 }) {
-  const wrapRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const pageRefs = useRef<Array<HTMLDivElement | null>>([]);
   const dragging = useRef(false);
   const [grabbing, setGrabbing] = useState(false);
-  const [pageSize, setPageSize] = useState({ w: 595.28, h: 841.89 });
-  const [pageLabel, setPageLabel] = useState("");
+  const [pages, setPages] = useState<
+    Array<{ index: number; w: number; h: number; dataUrl: string }>
+  >([]);
   const [loadErro, setLoadErro] = useState<string | null>(null);
   const [loadingPdf, setLoadingPdf] = useState(false);
 
@@ -105,28 +110,38 @@ function CertStampPositionPreview({
         const doc = await pdfjs.getDocument({ data }).promise;
         if (cancelled) return;
 
-        onPageCount?.(doc.numPages);
-        const pageIndex = Math.min(
-          Math.max(Number(pageNum) || 1, 1),
-          doc.numPages
+        const targetW = Math.min(
+          860,
+          scrollRef.current?.clientWidth || 720
         );
-        const page = await doc.getPage(pageIndex);
-        const base = page.getViewport({ scale: 1 });
-        const targetW = Math.min(900, wrapRef.current?.clientWidth || 720);
-        const scale = targetW / base.width;
-        const viewport = page.getViewport({ scale });
+        const rendered: Array<{
+          index: number;
+          w: number;
+          h: number;
+          dataUrl: string;
+        }> = [];
 
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        canvas.width = Math.floor(viewport.width);
-        canvas.height = Math.floor(viewport.height);
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-        await page.render({ canvasContext: ctx, viewport }).promise;
+        for (let i = 1; i <= doc.numPages; i++) {
+          const page = await doc.getPage(i);
+          const base = page.getViewport({ scale: 1 });
+          const scale = targetW / base.width;
+          const viewport = page.getViewport({ scale });
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.floor(viewport.width);
+          canvas.height = Math.floor(viewport.height);
+          const ctx = canvas.getContext("2d");
+          if (!ctx) continue;
+          await page.render({ canvasContext: ctx, viewport }).promise;
+          rendered.push({
+            index: i,
+            w: base.width,
+            h: base.height,
+            dataUrl: canvas.toDataURL("image/jpeg", 0.82),
+          });
+        }
         if (cancelled) return;
-
-        setPageSize({ w: base.width, h: base.height });
-        setPageLabel(`Página ${pageIndex} de ${doc.numPages}`);
+        setPages(rendered);
+        pageRefs.current = rendered.map(() => null);
       } catch (e) {
         if (!cancelled) {
           setLoadErro(
@@ -141,19 +156,19 @@ function CertStampPositionPreview({
     return () => {
       cancelled = true;
     };
-    // onPageCount é setState estável do pai
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pdfUrl, pageNum]);
+  }, [pdfUrl]);
 
-  const boxW = CERT_STAMP_BOX.w;
-  const boxH = CERT_STAMP_BOX.h;
+  const activePage =
+    pages.find((p) => p.index === placement.page) || pages[pages.length - 1];
+  const pageW = activePage?.w || 595.28;
+  const pageH = activePage?.h || 841.89;
   const geom = stampLeftTopPct(
-    pageSize.w,
-    pageSize.h,
-    boxW,
-    boxH,
-    xPct,
-    yPct
+    pageW,
+    pageH,
+    CERT_STAMP_BOX.w,
+    CERT_STAMP_BOX.h,
+    placement.xPct,
+    placement.yPct
   );
 
   function autoScrollSeBorda(clientY: number) {
@@ -161,31 +176,64 @@ function CertStampPositionPreview({
     if (!sc) return;
     const r = sc.getBoundingClientRect();
     const zona = 48;
-    if (clientY > r.bottom - zona) sc.scrollTop += 18;
-    else if (clientY < r.top + zona) sc.scrollTop -= 18;
+    if (clientY > r.bottom - zona) sc.scrollTop += 22;
+    else if (clientY < r.top + zona) sc.scrollTop -= 22;
   }
 
-  function pctFromClient(clientX: number, clientY: number) {
-    const el = wrapRef.current;
-    if (!el) return;
+  function placementFromClient(clientX: number, clientY: number) {
+    autoScrollSeBorda(clientY);
+    let hitIdx = -1;
+    for (let i = 0; i < pageRefs.current.length; i++) {
+      const el = pageRefs.current[i];
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      if (clientY >= r.top && clientY <= r.bottom) {
+        hitIdx = i;
+        break;
+      }
+    }
+    if (hitIdx < 0) {
+      // Fora das páginas: escolhe a mais próxima pelo centro
+      let best = 0;
+      let bestDist = Infinity;
+      for (let i = 0; i < pageRefs.current.length; i++) {
+        const el = pageRefs.current[i];
+        if (!el) continue;
+        const r = el.getBoundingClientRect();
+        const mid = (r.top + r.bottom) / 2;
+        const d = Math.abs(clientY - mid);
+        if (d < bestDist) {
+          bestDist = d;
+          best = i;
+        }
+      }
+      hitIdx = best;
+    }
+    const el = pageRefs.current[hitIdx];
+    const meta = pages[hitIdx];
+    if (!el || !meta) return;
     const r = el.getBoundingClientRect();
     if (r.width <= 0 || r.height <= 0) return;
-    autoScrollSeBorda(clientY);
-    const { w: pageW, h: pageH } = pageSize;
     const margin = CERT_STAMP_BOX.margin;
-    const spanX = Math.max(0, pageW - boxW - 2 * margin);
-    const spanY = Math.max(0, pageH - boxH - 2 * margin);
-    const relX = ((clientX - r.left) / r.width) * pageW;
-    const relY = ((clientY - r.top) / r.height) * pageH;
+    const boxW = CERT_STAMP_BOX.w;
+    const boxH = CERT_STAMP_BOX.h;
+    const spanX = Math.max(0, meta.w - boxW - 2 * margin);
+    const spanY = Math.max(0, meta.h - boxH - 2 * margin);
+    const relX = ((clientX - r.left) / r.width) * meta.w;
+    const relY = ((clientY - r.top) / r.height) * meta.h;
     const x = Math.min(
       100,
-      Math.max(0, ((relX - boxW / 2 - margin) / spanX) * 100)
+      Math.max(0, ((relX - boxW / 2 - margin) / Math.max(spanX, 1)) * 100)
     );
     const y = Math.min(
       100,
-      Math.max(0, ((relY - boxH / 2 - margin) / spanY) * 100)
+      Math.max(0, ((relY - boxH / 2 - margin) / Math.max(spanY, 1)) * 100)
     );
-    onChange(Math.round(x), Math.round(y));
+    onChange({
+      page: meta.index,
+      xPct: Math.round(x),
+      yPct: Math.round(y),
+    });
   }
 
   function onPointerDown(e: ReactPointerEvent) {
@@ -194,12 +242,12 @@ function CertStampPositionPreview({
     dragging.current = true;
     setGrabbing(true);
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    pctFromClient(e.clientX, e.clientY);
+    placementFromClient(e.clientX, e.clientY);
   }
 
   function onPointerMove(e: ReactPointerEvent) {
     if (!dragging.current) return;
-    pctFromClient(e.clientX, e.clientY);
+    placementFromClient(e.clientX, e.clientY);
   }
 
   function onPointerUp(e: ReactPointerEvent) {
@@ -224,9 +272,11 @@ function CertStampPositionPreview({
           lineHeight: 1.35,
         }}
       >
-        Visualize a página e arraste o carimbo (mãozinha) para o local da
-        assinatura
-        {pageLabel ? ` · ${pageLabel}` : ""}.
+        Role o documento e arraste o carimbo para qualquer lugar (posição
+        livre).
+        {pages.length
+          ? ` · Página atual do carimbo: ${placement.page} de ${pages.length}`
+          : ""}
       </p>
       {loadErro ? (
         <p style={{ color: "#fca5a5", fontSize: 13 }}>{loadErro}</p>
@@ -236,105 +286,129 @@ function CertStampPositionPreview({
         style={{
           borderRadius: 8,
           overflow: "auto",
-          maxHeight: "min(58vh, 620px)",
+          maxHeight: "min(62vh, 680px)",
           border: "1px solid #334155",
           background: "#334155",
+          padding: 8,
         }}
       >
-        <div
-          ref={wrapRef}
-          style={{
-            position: "relative",
-            width: "100%",
-            lineHeight: 0,
-            background: "#fff",
-          }}
-        >
-          <canvas
-            ref={canvasRef}
-            style={{
-              width: "100%",
-              height: "auto",
-              display: "block",
-            }}
-          />
-          {loadingPdf ? (
+        {loadingPdf ? (
+          <p style={{ color: "#f8fafc", fontSize: 13, padding: 16 }}>
+            Carregando documento…
+          </p>
+        ) : null}
+        {pages.map((p, idx) => {
+          const isActive = p.index === placement.page;
+          const g = isActive
+            ? geom
+            : stampLeftTopPct(
+                p.w,
+                p.h,
+                CERT_STAMP_BOX.w,
+                CERT_STAMP_BOX.h,
+                placement.xPct,
+                placement.yPct
+              );
+          return (
             <div
+              key={p.index}
+              ref={(el) => {
+                pageRefs.current[idx] = el;
+              }}
               style={{
-                position: "absolute",
-                inset: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "rgba(15,23,42,0.35)",
-                color: "#f8fafc",
-                fontSize: 13,
-                lineHeight: 1.4,
+                position: "relative",
+                width: "100%",
+                lineHeight: 0,
+                background: "#fff",
+                marginBottom: 10,
+                boxShadow: "0 1px 4px rgba(0,0,0,0.25)",
+              }}
+              onPointerDown={(e) => {
+                // Clique na página também posiciona o carimbo
+                if ((e.target as HTMLElement).closest("[data-stamp]")) return;
+                placementFromClient(e.clientX, e.clientY);
               }}
             >
-              Carregando página do documento…
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={p.dataUrl}
+                alt={`Página ${p.index}`}
+                draggable={false}
+                style={{ width: "100%", height: "auto", display: "block" }}
+              />
+              {isActive ? (
+                <div
+                  data-stamp="1"
+                  role="button"
+                  aria-label="Arrastar carimbo de assinatura"
+                  title="Arraste livremente pelo documento"
+                  onPointerDown={onPointerDown}
+                  onPointerMove={onPointerMove}
+                  onPointerUp={onPointerUp}
+                  onPointerCancel={onPointerUp}
+                  style={{
+                    position: "absolute",
+                    left: `${g.leftPct}%`,
+                    top: `${g.topPct}%`,
+                    width: `${g.wPct}%`,
+                    height: `${g.hPct}%`,
+                    background: "rgba(237, 244, 252, 0.97)",
+                    border: "1.5px solid #1e3a5f",
+                    borderRadius: 2,
+                    boxSizing: "border-box",
+                    cursor: grabbing ? "grabbing" : "grab",
+                    boxShadow: "0 2px 8px rgba(29,78,216,0.35)",
+                    zIndex: 3,
+                    touchAction: "none",
+                    padding: "4px 6px",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "flex-start",
+                    gap: 2,
+                    overflow: "hidden",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: "#1a3350",
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    Assinado digitalmente
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 9,
+                      color: "#243447",
+                      lineHeight: 1.2,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {signerLabel.slice(0, 42) || "Titular do certificado"}
+                  </span>
+                  <span
+                    style={{ fontSize: 8, color: "#475569", lineHeight: 1.2 }}
+                  >
+                    {when}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 7,
+                      color: "#64748b",
+                      marginTop: "auto",
+                    }}
+                  >
+                    Certificado local · chave não enviada
+                  </span>
+                </div>
+              ) : null}
             </div>
-          ) : null}
-          <div
-            role="button"
-            aria-label="Arrastar carimbo de assinatura"
-            title="Arraste para escolher o local da assinatura"
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onPointerCancel={onPointerUp}
-            style={{
-              position: "absolute",
-              left: `${geom.leftPct}%`,
-              top: `${geom.topPct}%`,
-              width: `${geom.wPct}%`,
-              height: `${geom.hPct}%`,
-              background: "rgba(237, 244, 252, 0.97)",
-              border: "1.5px solid #1e3a5f",
-              borderRadius: 2,
-              boxSizing: "border-box",
-              cursor: grabbing ? "grabbing" : "grab",
-              boxShadow: "0 2px 8px rgba(29,78,216,0.35)",
-              zIndex: 3,
-              touchAction: "none",
-              padding: "4px 6px",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "flex-start",
-              gap: 2,
-              overflow: "hidden",
-            }}
-          >
-            <span
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: "#1a3350",
-                lineHeight: 1.2,
-              }}
-            >
-              Assinado digitalmente
-            </span>
-            <span
-              style={{
-                fontSize: 9,
-                color: "#243447",
-                lineHeight: 1.2,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {signerLabel.slice(0, 42) || "Titular do certificado"}
-            </span>
-            <span style={{ fontSize: 8, color: "#475569", lineHeight: 1.2 }}>
-              {when}
-            </span>
-            <span style={{ fontSize: 7, color: "#64748b", marginTop: "auto" }}>
-              Certificado local · chave não enviada
-            </span>
-          </div>
-        </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -352,17 +426,23 @@ export default function AssinarComCertificadoModal({
   const [pfxFile, setPfxFile] = useState<File | null>(null);
   const [pfxPassword, setPfxPassword] = useState("");
   const [certLabel, setCertLabel] = useState<string | null>(null);
-  const [pageByDoc, setPageByDoc] = useState<Record<string, number>>({});
-  const [defaultPage, setDefaultPage] = useState(1);
   const [previewDocId, setPreviewDocId] = useState<string | null>(null);
-  const [xPct, setXPct] = useState(96);
-  const [yPct, setYPct] = useState(96);
-  const [pageCountHint, setPageCountHint] = useState<number | null>(null);
+  const [placement, setPlacement] = useState<Placement>({
+    page: 1,
+    xPct: 96,
+    yPct: 96,
+  });
   const [sessionItems, setSessionItems] = useState<SessionItem[]>([]);
   const [batchId, setBatchId] = useState<string | null>(null);
   const [progress, setProgress] = useState("");
   const [results, setResults] = useState<
-    Array<{ documentId: string; ok: boolean; code?: string; error?: string }>
+    Array<{
+      documentId: string;
+      transactionId?: string;
+      ok: boolean;
+      code?: string;
+      error?: string;
+    }>
   >([]);
   const certRef = useRef<LoadedCertificate | null>(null);
 
@@ -373,12 +453,8 @@ export default function AssinarComCertificadoModal({
     setPfxFile(null);
     setPfxPassword("");
     setCertLabel(null);
-    setPageByDoc({});
-    setDefaultPage(1);
     setPreviewDocId(documentIds[0] || null);
-    setXPct(96);
-    setYPct(96);
-    setPageCountHint(null);
+    setPlacement({ page: 1, xPct: 96, yPct: 96 });
     setSessionItems([]);
     setBatchId(null);
     setProgress("");
@@ -398,9 +474,6 @@ export default function AssinarComCertificadoModal({
     background: "#1e293b",
     color: "#f8fafc",
   };
-
-  const previewPage =
-    (previewDocId && pageByDoc[previewDocId]) || defaultPage || 1;
 
   async function carregarCertificado() {
     if (!pfxFile) {
@@ -485,6 +558,7 @@ export default function AssinarComCertificadoModal({
 
       const out: Array<{
         documentId: string;
+        transactionId?: string;
         ok: boolean;
         code?: string;
         error?: string;
@@ -510,16 +584,15 @@ export default function AssinarComCertificadoModal({
             );
           }
           const pdfBytes = new Uint8Array(await dl.arrayBuffer());
-          const page = pageByDoc[item.documentId] || defaultPage || 1;
 
           const signed = await signPdfWithLocalCertificate({
             pdfBytes,
             expectedHashSha256: item.documentHashSha256,
             cert,
             appearance: {
-              page,
-              xPct,
-              yPct,
+              page: placement.page,
+              xPct: placement.xPct,
+              yPct: placement.yPct,
               width: CERT_STAMP_BOX.w,
               height: CERT_STAMP_BOX.h,
               signerLabel: cert.subject,
@@ -531,14 +604,12 @@ export default function AssinarComCertificadoModal({
           form.append("transactionId", item.transactionId);
           form.append(
             "signedPdf",
-            new Blob([signed.signedPdfBytes], { type: "application/pdf" }),
+            u8ToBlob(signed.signedPdfBytes, "application/pdf"),
             "assinado.pdf"
           );
           form.append(
             "pkcs7",
-            new Blob([signed.pkcs7Bytes], {
-              type: "application/pkcs7-signature",
-            }),
+            u8ToBlob(signed.pkcs7Bytes, "application/pkcs7-signature"),
             "assinatura.p7s"
           );
           form.append(
@@ -555,9 +626,9 @@ export default function AssinarComCertificadoModal({
           form.append(
             "appearance",
             JSON.stringify({
-              page,
-              x: xPct,
-              y: yPct,
+              page: placement.page,
+              x: placement.xPct,
+              y: placement.yPct,
               width: CERT_STAMP_BOX.w,
               height: CERT_STAMP_BOX.h,
             })
@@ -587,12 +658,14 @@ export default function AssinarComCertificadoModal({
           }
           out.push({
             documentId: item.documentId,
+            transactionId: item.transactionId,
             ok: true,
             code: conclJson.validationCode,
           });
         } catch (e) {
           out.push({
             documentId: item.documentId,
+            transactionId: item.transactionId,
             ok: false,
             error: e instanceof Error ? e.message : "Erro ao assinar.",
           });
@@ -758,104 +831,15 @@ export default function AssinarComCertificadoModal({
                 </label>
               ) : null}
 
-              <label style={{ display: "block", fontSize: 13, marginBottom: 10 }}>
-                Página da aparência
-                {pageCountHint ? ` (1–${pageCountHint})` : ""}
-                <input
-                  type="number"
-                  min={1}
-                  max={pageCountHint || undefined}
-                  value={
-                    previewDocId && pageByDoc[previewDocId] != null
-                      ? pageByDoc[previewDocId]
-                      : defaultPage
-                  }
-                  onChange={(e) => {
-                    const n = Math.max(1, Number(e.target.value) || 1);
-                    setDefaultPage(n);
-                    if (previewDocId) {
-                      setPageByDoc((prev) => ({ ...prev, [previewDocId]: n }));
-                    }
-                  }}
-                  style={field}
-                />
-              </label>
-
               <CertStampPositionPreview
                 documentId={previewDocId}
-                pageNum={previewPage}
-                xPct={xPct}
-                yPct={yPct}
-                onChange={(x, y) => {
-                  setXPct(x);
-                  setYPct(y);
-                }}
-                onPageCount={setPageCountHint}
+                placement={placement}
+                onChange={setPlacement}
                 signerLabel={certRef.current?.subject || ""}
               />
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 12,
-                  marginBottom: 8,
-                }}
-              >
-                <label style={{ fontSize: 12, color: "#94a3b8" }}>
-                  Horizontal: {xPct}% (0 esquerda · 100 direita)
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    value={xPct}
-                    onChange={(e) => setXPct(Number(e.target.value))}
-                    style={{ width: "100%", marginTop: 4 }}
-                  />
-                </label>
-                <label style={{ fontSize: 12, color: "#94a3b8" }}>
-                  Vertical: {yPct}% (0 topo · 100 rodapé)
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    value={yPct}
-                    onChange={(e) => setYPct(Number(e.target.value))}
-                    style={{ width: "100%", marginTop: 4 }}
-                  />
-                </label>
-              </div>
-
-              {documentIds.length > 1 && documentIds.length <= 8 ? (
-                <ul style={{ fontSize: 12, color: "#94a3b8", paddingLeft: 18 }}>
-                  {documentIds.map((id) => (
-                    <li key={id} style={{ marginBottom: 8 }}>
-                      Página de {id.slice(0, 8)}…
-                      <input
-                        type="number"
-                        min={1}
-                        placeholder="página"
-                        value={pageByDoc[id] ?? ""}
-                        onChange={(e) =>
-                          setPageByDoc((prev) => ({
-                            ...prev,
-                            [id]: Math.max(1, Number(e.target.value) || 1),
-                          }))
-                        }
-                        style={{
-                          ...field,
-                          width: 80,
-                          display: "inline-block",
-                          marginLeft: 8,
-                        }}
-                      />
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-
               <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
-                A posição do carimbo (arraste acima) será aplicada
+                A posição do carimbo será aplicada
                 {documentIds.length > 1
                   ? " a todos os documentos do lote"
                   : " neste documento"}
@@ -891,19 +875,45 @@ export default function AssinarComCertificadoModal({
               <p style={{ color: "#6ee7b7", fontWeight: 600 }}>Concluído</p>
               <ul style={{ fontSize: 13, lineHeight: 1.5 }}>
                 {results.map((r) => (
-                  <li key={r.documentId}>
+                  <li key={r.documentId} style={{ marginBottom: 10 }}>
                     {r.documentId.slice(0, 8)}…{" "}
                     {r.ok ? (
                       <>
-                        OK —{" "}
-                        <a
-                          href={`/validar/${r.code}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={{ color: "#7dd3fc" }}
-                        >
-                          /validar/{r.code}
-                        </a>
+                        OK
+                        {r.code ? (
+                          <>
+                            {" — "}
+                            <a
+                              href={`/api/download/assinatura/${r.code}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{ color: "#6ee7b7" }}
+                            >
+                              Baixar PDF assinado
+                            </a>
+                            {" · "}
+                            <a
+                              href={`/validar/${r.code}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{ color: "#7dd3fc" }}
+                            >
+                              /validar/{r.code}
+                            </a>
+                          </>
+                        ) : r.transactionId ? (
+                          <>
+                            {" — "}
+                            <a
+                              href={`/api/admin/documentos/assinaturas-certificado/${r.transactionId}/arquivo?tipo=assinado`}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{ color: "#6ee7b7" }}
+                            >
+                              Baixar PDF assinado
+                            </a>
+                          </>
+                        ) : null}
                       </>
                     ) : (
                       <span style={{ color: "#fca5a5" }}>{r.error}</span>

@@ -178,7 +178,7 @@ export async function obterValidacaoPublica(opts: {
           ok: cert.integridadeOk,
           detalhe: cert.detalhe,
         },
-        downloadUrl: cert.integridadeOk
+        downloadUrl: cert.signedStoragePath
           ? `/api/download/assinatura/${code}`
           : null,
         avancada: null,

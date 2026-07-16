@@ -23,6 +23,9 @@ type SignatureRow = {
   status: string;
   provider_code: string;
   signed_storage_path: string | null;
+  signer_name?: string | null;
+  verification_code?: string | null;
+  kind?: "certificate" | string | null;
   error_message: string | null;
   external_session_id?: string | null;
   created_at: string;
@@ -643,6 +646,11 @@ export default function AssinaturasClient() {
                   {" · "}
                   {new Date(row.created_at).toLocaleString("pt-BR")}
                 </div>
+                {row.signer_name ? (
+                  <div style={{ fontSize: 13, opacity: 0.9, marginTop: 2 }}>
+                    Assinado por: <strong>{row.signer_name}</strong>
+                  </div>
+                ) : null}
                 {row.error_message ? (
                   <div style={{ color: "#fca5a5", fontSize: 13 }}>
                     {row.error_message}
@@ -660,7 +668,57 @@ export default function AssinaturasClient() {
                 >
                   Abrir documento
                 </Link>
-                {row.status !== "signed" ? (
+                {row.status === "signed" &&
+                (row.verification_code ||
+                  row.provider_code === "certificado" ||
+                  row.signed_storage_path) ? (
+                  <>
+                    {row.verification_code ? (
+                      <a
+                        href={`/api/download/assinatura/${row.verification_code}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          ...gdBtnStyle,
+                          background: "#0f766e",
+                          textDecoration: "none",
+                        }}
+                      >
+                        Baixar PDF assinado
+                      </a>
+                    ) : row.provider_code === "certificado" ? (
+                      <a
+                        href={`/api/admin/documentos/assinaturas-certificado/${row.id}/arquivo?tipo=assinado`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          ...gdBtnStyle,
+                          background: "#0f766e",
+                          textDecoration: "none",
+                        }}
+                      >
+                        Baixar PDF assinado
+                      </a>
+                    ) : null}
+                    {row.verification_code ? (
+                      <a
+                        href={`/validar/${row.verification_code}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          ...gdBtnStyle,
+                          background: "#1e3a5f",
+                          textDecoration: "none",
+                        }}
+                      >
+                        Validar
+                      </a>
+                    ) : null}
+                    <span style={{ fontSize: 13, color: "#86efac" }}>
+                      Assinado
+                    </span>
+                  </>
+                ) : row.status !== "signed" ? (
                   row.provider_code === "ipecc" ? (
                     <>
                       <button
@@ -734,13 +792,15 @@ export default function AssinaturasClient() {
                     Assinado
                   </span>
                 )}
-                <button
-                  type="button"
-                  style={{ ...gdBtnStyle, background: "#7f1d1d" }}
-                  onClick={() => excluirPedido(row.id)}
-                >
-                  Excluir
-                </button>
+                {row.provider_code !== "certificado" ? (
+                  <button
+                    type="button"
+                    style={{ ...gdBtnStyle, background: "#7f1d1d" }}
+                    onClick={() => excluirPedido(row.id)}
+                  >
+                    Excluir
+                  </button>
+                ) : null}
               </div>
             </li>
           ))}
