@@ -14,7 +14,6 @@ import {
 } from "@/lib/documentos/assinaturas/certificate/clientCertSign";
 import {
   getCertificateHolderLabel,
-  getCertificateSummary,
 } from "@/lib/documentos/assinaturas/certificate/certificateIdentity";
 
 type Props = {
@@ -180,7 +179,6 @@ function CertificateReviewCard({ cert }: { cert: LoadedCertificate }) {
 
 function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
   const label = getCertificateHolderLabel(cert);
-  const summary = getCertificateSummary(cert);
   const when = new Date().toLocaleString("pt-BR");
   const cnpj = formatCnpj(cert.icpBrasil.cnpj);
   const cpf = formatCpf(cert.icpBrasil.cpf);
@@ -203,17 +201,6 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
       <div style={{ minWidth: 0 }}>
         <div style={{ fontSize: 8, lineHeight: 1.2, fontWeight: 700 }}>
           TITULAR (CN): {cert.subject || label}
-        </div>
-        <div
-          style={{
-            fontSize: 8,
-            lineHeight: 1.25,
-            fontWeight: 400,
-            marginTop: 8,
-            wordBreak: "break-word",
-          }}
-        >
-          {summary || "Certificado oficial ICP-Brasil"}
         </div>
         {cnpj ? (
           <div style={{ fontSize: 8, lineHeight: 1.2, marginTop: 6 }}>
@@ -1372,7 +1359,6 @@ export default function AssinarComCertificadoModal({
               {certLabel ? (
                 <p style={{ color: "#6ee7b7", fontSize: 13, marginBottom: 8 }}>
                   Assinando como: <strong>{certLabel}</strong>
-                  {certPreview ? ` · ${getCertificateSummary(certPreview)}` : ""}
                   {" · "}
                   <button
                     type="button"
@@ -1418,7 +1404,7 @@ export default function AssinarComCertificadoModal({
                 signerLabel={
                   certRef.current ? getCertificateHolderLabel(certRef.current) : ""
                 }
-                stampSubject={certPreview?.subject || null}
+                stampSubject={certLabel || certPreview?.subject || null}
                 stampCnpj={formatCnpj(certPreview?.icpBrasil.cnpj)}
                 stampCpf={formatCpf(certPreview?.icpBrasil.cpf)}
                 stampRazaoSocial={certPreview?.icpBrasil.razaoSocial || null}
@@ -1468,7 +1454,7 @@ export default function AssinarComCertificadoModal({
                 signerLabel={
                   certRef.current ? getCertificateHolderLabel(certRef.current) : ""
                 }
-                stampSubject={certPreview.subject || null}
+                stampSubject={certLabel || certPreview.subject || null}
                 stampCnpj={formatCnpj(certPreview.icpBrasil.cnpj)}
                 stampCpf={formatCpf(certPreview.icpBrasil.cpf)}
                 stampRazaoSocial={certPreview.icpBrasil.razaoSocial || null}

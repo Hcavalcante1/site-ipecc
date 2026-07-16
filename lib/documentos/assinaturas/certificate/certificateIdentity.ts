@@ -15,36 +15,22 @@ function formatCpf(cpf: string): string {
 }
 
 export function getCertificateHolderLabel(cert: LoadedCertificate): string {
-  return cert.subject?.trim() || cert.displayName || "";
+  const parts: string[] = [];
+  const subject = cert.subject?.trim();
+  const razaoSocial = cert.icpBrasil.razaoSocial?.trim();
+  const responsavel = cert.icpBrasil.responsavel?.trim();
+  const cnpj = formatCnpj(onlyDigits(cert.icpBrasil.cnpj));
+  const cpf = formatCpf(onlyDigits(cert.icpBrasil.cpf));
+
+  if (subject) parts.push(`CN ${subject}`);
+  if (razaoSocial) parts.push(`Razão social ${razaoSocial}`);
+  if (cnpj) parts.push(`CNPJ ${cnpj}`);
+  if (responsavel) parts.push(`Responsável ${responsavel}`);
+  if (cpf) parts.push(`CPF ${cpf}`);
+
+  return parts.join(" · ") || cert.displayName || "";
 }
 
 export function getCertificateSummary(cert: LoadedCertificate): string {
-  const parts: string[] = [];
-  const cnpj = onlyDigits(cert.icpBrasil.cnpj);
-  const cpf = onlyDigits(cert.icpBrasil.cpf);
-  const holder = getCertificateHolderLabel(cert);
-
-  if (holder) {
-    parts.push(`CN ${holder}`);
-  }
-  if (cnpj.length === 14) {
-    parts.push(`CNPJ ${formatCnpj(cnpj)}`);
-    if (cert.icpBrasil.razaoSocial?.trim()) {
-      parts.push(`Razão social ${cert.icpBrasil.razaoSocial.trim()}`);
-    }
-    if (cert.icpBrasil.responsavel?.trim()) {
-      parts.push(`Responsável ${cert.icpBrasil.responsavel.trim()}`);
-    }
-    return parts.join(" · ");
-  }
-
-  if (cpf.length === 11) {
-    parts.push(`CPF ${formatCpf(cpf)}`);
-    if (cert.icpBrasil.responsavel?.trim()) {
-      parts.push(`Responsável ${cert.icpBrasil.responsavel.trim()}`);
-    }
-    return parts.join(" · ");
-  }
-
-  return parts.join(" · ");
+  return getCertificateHolderLabel(cert);
 }
