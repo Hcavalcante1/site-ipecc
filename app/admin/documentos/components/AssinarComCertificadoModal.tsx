@@ -195,20 +195,20 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
         color: "#000",
         padding: 10,
         display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-        gap: 10,
+        gridTemplateColumns: "minmax(0, 0.45fr) minmax(0, 0.55fr)",
+        gap: 12,
       }}
     >
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 8, lineHeight: 1.2, fontWeight: 400 }}>
-          {cert.icpBrasil.razaoSocial || label}
+        <div style={{ fontSize: 8, lineHeight: 1.2, fontWeight: 700 }}>
+          {(cert.icpBrasil.razaoSocial || label).toUpperCase()}
         </div>
         <div
           style={{
             fontSize: 8,
             lineHeight: 1.25,
-            fontWeight: 700,
-            marginTop: 6,
+            fontWeight: 400,
+            marginTop: 8,
             wordBreak: "break-word",
           }}
         >
@@ -228,10 +228,13 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
             wordBreak: "break-word",
           }}
         >
-          {label}
+          {label.toUpperCase()}
         </div>
         <div style={{ fontSize: 8, lineHeight: 1.2, marginTop: 6 }}>
           Dados: {when}
+        </div>
+        <div style={{ fontSize: 7, lineHeight: 1.2, marginTop: 6 }}>
+          Verifique em validar.iti.gov.br
         </div>
       </div>
     </div>
@@ -247,11 +250,15 @@ function CertStampPositionPreview({
   placement,
   onChange,
   signerLabel,
+  stampOrganization,
+  stampIdentifier,
 }: {
   documentId?: string | null;
   placement: Placement;
   onChange: (next: Placement) => void;
   signerLabel: string;
+  stampOrganization?: string | null;
+  stampIdentifier?: string | null;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<Array<HTMLDivElement | null>>([]);
@@ -585,48 +592,54 @@ function CertStampPositionPreview({
                     zIndex: 3,
                     touchAction: "none",
                     padding: "4px 4px",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "flex-start",
-                    gap: 2,
+                    display: "grid",
+                    gridTemplateColumns: "minmax(0, 0.45fr) minmax(0, 0.55fr)",
+                    gap: 8,
                     overflow: "hidden",
+                    alignItems: "start",
                   }}
                 >
-                  <span
+                  <div
                     style={{
-                      fontSize: 9,
-                      fontWeight: 400,
-                      color: "#000",
-                      lineHeight: 1.2,
+                      minWidth: 0,
+                      fontSize: 8,
+                      lineHeight: 1.15,
                       fontFamily: "Helvetica, Arial, sans-serif",
+                      color: "#000",
                     }}
                   >
-                    Assinado de forma digital por
-                  </span>
-                  <span
+                    <div style={{ fontWeight: 700, wordBreak: "break-word" }}>
+                      {signerLabel.slice(0, 48).toUpperCase() ||
+                        "TITULAR DO CERTIFICADO"}
+                    </div>
+                    <div style={{ marginTop: 6, fontWeight: 400 }}>
+                      {stampOrganization ? stampOrganization.toUpperCase() : signerLabel.toUpperCase()}
+                    </div>
+                    <div style={{ marginTop: 6, fontWeight: 400 }}>
+                      CNPJ {stampIdentifier || ""}
+                    </div>
+                  </div>
+                  <div
                     style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      color: "#000",
-                      lineHeight: 1.2,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
+                      minWidth: 0,
+                      fontSize: 8,
+                      lineHeight: 1.15,
                       fontFamily: "Helvetica, Arial, sans-serif",
+                      color: "#000",
                     }}
                   >
-                    {signerLabel.slice(0, 48) || "Titular do certificado"}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 9,
-                      color: "#000",
-                      lineHeight: 1.2,
-                      fontFamily: "Helvetica, Arial, sans-serif",
-                    }}
-                  >
-                    Data: {when}
-                  </span>
+                    <div style={{ fontWeight: 400 }}>
+                      Assinado de forma digital por
+                    </div>
+                    <div style={{ marginTop: 4, fontWeight: 700, wordBreak: "break-word" }}>
+                      {signerLabel.slice(0, 48).toUpperCase() ||
+                        "TITULAR DO CERTIFICADO"}
+                    </div>
+                    <div style={{ marginTop: 6, fontWeight: 400 }}>Dados: {when}</div>
+                    <div style={{ marginTop: 4, fontSize: 7 }}>
+                      Verifique em validar.iti.gov.br
+                    </div>
+                  </div>
                 </div>
               ) : null}
             </div>
@@ -1370,6 +1383,8 @@ export default function AssinarComCertificadoModal({
                 signerLabel={
                   certRef.current ? getCertificateHolderLabel(certRef.current) : ""
                 }
+                stampOrganization={certPreview?.icpBrasil.razaoSocial || null}
+                stampIdentifier={formatCnpj(certPreview?.icpBrasil.cnpj)}
               />
 
               <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
@@ -1415,6 +1430,8 @@ export default function AssinarComCertificadoModal({
                 signerLabel={
                   certRef.current ? getCertificateHolderLabel(certRef.current) : ""
                 }
+                stampOrganization={certPreview.icpBrasil.razaoSocial || null}
+                stampIdentifier={formatCnpj(certPreview.icpBrasil.cnpj)}
               />
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button

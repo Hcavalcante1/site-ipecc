@@ -823,6 +823,15 @@ export async function signPdfWithLocalCertificate(opts: {
     maxWidth: rightW,
     lineHeight: 7.5,
   });
+  page.drawText("Verifique em validar.iti.gov.br", {
+    x: rightX,
+    y: y + 8,
+    size: 6.3,
+    font,
+    color: ink,
+    maxWidth: rightW,
+    lineHeight: 6.8,
+  });
 
   const stamped = await pdfDoc.save({ useObjectStreams: false });
   const stampedU8 =
