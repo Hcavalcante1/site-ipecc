@@ -697,6 +697,85 @@ export async function listarHistoricoCertificado(opts: {
   return { ok: true as const, rows };
 }
 
+/**
+ * Remove do histórico/banco uma assinatura com certificado (teste/limpeza).
+ * O documento original em gd_documents permanece.
+ */
+export async function excluirTransacaoCertificado(opts: {
+  transactionId: string;
+  actorUserId: string;
+}): Promise<
+  | { ok: true }
+  | { ok: false; error: string; status?: number }
+> {
+  const admin = getSupabaseAdmin();
+  const { data: tx } = await admin
+    .from("gd_cert_transactions")
+    .select("id, document_id, signer_user_id, status")
+    .eq("id", opts.transactionId)
+    .maybeSingle();
+
+  if (!tx) {
+    return { ok: false, error: "Assinatura com certificado não encontrada.", status: 404 };
+  }
+
+  const { data: arts } = await admin
+    .from("gd_cert_artifacts")
+    .select("id, storage_path, storage_bucket")
+    .eq("transaction_id", tx.id);
+
+  for (const art of arts || []) {
+    if (art.storage_path) {
+      try {
+        await admin.storage
+          .from(art.storage_bucket || GD_STORAGE_BUCKET)
+          .remove([art.storage_path]);
+      } catch {
+        /* melhor esforço */
+      }
+    }
+  }
+
+  await admin.from("gd_cert_artifacts").delete().eq("transaction_id", tx.id);
+  await admin.from("gd_cert_events").delete().eq("transaction_id", tx.id);
+  await admin
+    .from("gd_cert_batch_items")
+    .update({ transaction_id: null, status: "CANCELLED" })
+    .eq("transaction_id", tx.id);
+
+  const { error } = await admin
+    .from("gd_cert_transactions")
+    .delete()
+    .eq("id", tx.id);
+
+  if (error) {
+    // Fallback: cancela se FK impedir delete físico
+    const now = new Date().toISOString();
+    const { error: upErr } = await admin
+      .from("gd_cert_transactions")
+      .update({
+        status: "CANCELLED",
+        cancelled_at: now,
+        updated_at: now,
+        verification_code: null,
+        metadata: {
+          deleted_by: opts.actorUserId,
+          deleted_at: now,
+        },
+      })
+      .eq("id", tx.id);
+    if (upErr) {
+      return {
+        ok: false,
+        error: upErr.message || error.message || "Falha ao excluir.",
+        status: 500,
+      };
+    }
+  }
+
+  return { ok: true };
+}
+
 export async function verificarTransacaoCertificado(opts: {
   verificationCode: string;
 }) {

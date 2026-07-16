@@ -12,12 +12,25 @@ export type LoadedCertificate = {
   certificatePem: string;
   /** Cadeia completa (titular + intermediários), como o Adobe embute. */
   chainPem: string[];
+  /** CN do Subject (titular do certificado). */
   subject: string;
+  /** Nome para exibir/carimbar (responsável ICP-Brasil ou CN). */
+  displayName: string;
   issuer: string;
   serial: string;
   notBefore: string;
   notAfter: string;
   thumbprintSha256: string;
+  thumbprintSha1: string;
+  /** Dados ICP-Brasil extraídos do Subject Alternative Name. */
+  icpBrasil: {
+    cnpj: string | null;
+    cpf: string | null;
+    responsavel: string | null;
+    razaoSocial: string | null;
+  };
+  subjectDn: string;
+  issuerDn: string;
 };
 
 /** Dimensões do carimbo visual (pt) — preview e PDF usam o mesmo. */
@@ -85,6 +98,12 @@ function abToBinary(buf: ArrayBuffer): string {
   return uint8ToBinary(new Uint8Array(buf));
 }
 
+function sha1HexOfBinary(bytes: string): string {
+  const md = forge.md.sha1.create();
+  md.update(bytes);
+  return md.digest().toHex();
+}
+
 function sha256HexOfBinary(bytes: string): string {
   const md = forge.md.sha256.create();
   md.update(bytes);
@@ -96,13 +115,20 @@ function attrValue(attrs: forge.pki.CertificateField[], shortName: string): stri
   return hit ? String(hit.value || "") : "";
 }
 
-/** Nome legível no estilo Adobe (CN completo; se ICP-Brasil, mantém NOME:CPF). */
 function formatDn(cert: forge.pki.Certificate, which: "subject" | "issuer"): string {
+  const attrs =
+    which === "subject" ? cert.subject.attributes : cert.issuer.attributes;
+  return attrs
+    .map((a) => `${a.shortName || a.name}=${a.value}`)
+    .join(", ");
+}
+
+function formatCn(cert: forge.pki.Certificate, which: "subject" | "issuer"): string {
   const attrs =
     which === "subject" ? cert.subject.attributes : cert.issuer.attributes;
   const cn = attrValue(attrs, "CN");
   if (cn) return cn;
-  return attrs.map((a) => `${a.shortName || a.name}=${a.value}`).join(", ");
+  return formatDn(cert, which);
 }
 
 function bagAttrBytes(
@@ -128,13 +154,6 @@ function bagAttrHex(
   }
 }
 
-function bagFriendlyName(bag: forge.pkcs12.Bag | undefined): string | null {
-  const raw = bagAttrBytes(bag, "friendlyName");
-  if (!raw) return null;
-  const cleaned = raw.replace(/\0/g, "").trim();
-  return cleaned || null;
-}
-
 function certIsCa(cert: forge.pki.Certificate): boolean {
   const bc = cert.getExtension("basicConstraints") as
     | { cA?: boolean }
@@ -143,21 +162,20 @@ function certIsCa(cert: forge.pki.Certificate): boolean {
 }
 
 /**
- * Critério do Adobe/OpenSSL: o certificado do titular é o que casa com a
- * chave privada (mesmo módulo RSA / mesma chave pública).
+ * Critério Adobe/OpenSSL: certificado cuja chave pública casa com a privada.
  */
 function privateKeyMatchesCertificate(
   privateKey: forge.pki.PrivateKey,
   cert: forge.pki.Certificate
 ): boolean {
   try {
-    const pub = cert.publicKey as {
-      n?: { compareTo: (o: unknown) => number; toString: (r?: number) => string };
-      e?: { compareTo: (o: unknown) => number; toString: (r?: number) => string };
-    };
     const priv = privateKey as {
-      n?: { compareTo: (o: unknown) => number; toString: (r?: number) => string };
-      e?: { compareTo: (o: unknown) => number; toString: (r?: number) => string };
+      n?: { compareTo: (o: unknown) => number };
+      e?: { compareTo: (o: unknown) => number };
+    };
+    const pub = cert.publicKey as {
+      n?: { compareTo: (o: unknown) => number };
+      e?: { compareTo: (o: unknown) => number };
     };
     if (priv.n && pub.n && priv.e && pub.e) {
       return priv.n.compareTo(pub.n) === 0 && priv.e.compareTo(pub.e) === 0;
@@ -168,59 +186,42 @@ function privateKeyMatchesCertificate(
   }
 }
 
-function pickSignerCertificate(
-  privateKey: forge.pki.PrivateKey,
-  keyBag: forge.pkcs12.Bag | undefined,
-  certBags: forge.pkcs12.Bag[]
-): { cert: forge.pki.Certificate; bag: forge.pkcs12.Bag } | null {
-  const withCert = certBags.filter((b) => b?.cert);
-  if (!withCert.length) return null;
-
+/**
+ * Documentação node-forge: após achar a chave, buscar o certificado
+ * pelo mesmo localKeyId — é assim que o Adobe/OpenSSL ligam os dois.
+ */
+function findCertByLocalKeyId(
+  p12: forge.pkcs12.Pkcs12Pfx,
+  keyBag: forge.pkcs12.Bag
+): forge.pkcs12.Bag | null {
+  const keyIdBytes = bagAttrBytes(keyBag, "localKeyId");
   const keyIdHex = bagAttrHex(keyBag, "localKeyId");
 
-  // 1) Adobe/OpenSSL: casa pela chave pública
-  const byPubKey = withCert.filter((b) =>
-    privateKeyMatchesCertificate(privateKey, b.cert!)
-  );
-  if (byPubKey.length === 1) {
-    return { cert: byPubKey[0].cert!, bag: byPubKey[0] };
-  }
-  if (byPubKey.length > 1) {
-    const nonCa = byPubKey.find((b) => !certIsCa(b.cert!));
-    const chosen = nonCa || byPubKey[0];
-    return { cert: chosen.cert!, bag: chosen };
-  }
+  const candidates: forge.pkcs12.Bag[] = [];
 
-  // 2) localKeyId idêntico ao da chave privada
+  if (keyIdBytes) {
+    try {
+      const byId = p12.getBags({ localKeyId: keyIdBytes as never });
+      const list = (byId.localKeyId || []) as forge.pkcs12.Bag[];
+      candidates.push(...list);
+    } catch {
+      /* ignore */
+    }
+  }
   if (keyIdHex) {
-    const byId = withCert.find((b) => bagAttrHex(b, "localKeyId") === keyIdHex);
-    if (byId?.cert) return { cert: byId.cert, bag: byId };
+    try {
+      const byHex = p12.getBags({ localKeyIdHex: keyIdHex });
+      const list = (byHex.localKeyId || []) as forge.pkcs12.Bag[];
+      candidates.push(...list);
+    } catch {
+      /* ignore */
+    }
   }
 
-  // 3) Certificado de usuário (-clcerts): tem localKeyId e não é CA
-  const clientLike = withCert.filter(
-    (b) => bagAttrHex(b, "localKeyId") && !certIsCa(b.cert!)
-  );
-  if (clientLike.length === 1) {
-    return { cert: clientLike[0].cert!, bag: clientLike[0] };
-  }
-
-  // 4) Último recurso: não-CA válido agora
-  const now = Date.now();
-  const endEntity = withCert
-    .filter((b) => !certIsCa(b.cert!))
-    .filter(
-      (b) =>
-        b.cert!.validity.notBefore.getTime() <= now &&
-        b.cert!.validity.notAfter.getTime() > now
-    );
-  if (endEntity.length >= 1) {
-    return { cert: endEntity[0].cert!, bag: endEntity[0] };
-  }
-
-  return withCert[0]?.cert
-    ? { cert: withCert[0].cert, bag: withCert[0] }
-    : null;
+  const certBag = candidates.find((b) => b?.cert && !certIsCa(b.cert));
+  if (certBag?.cert) return certBag;
+  const any = candidates.find((b) => b?.cert);
+  return any || null;
 }
 
 function buildCertificateChain(
@@ -231,16 +232,174 @@ function buildCertificateChain(
   const pool = all.filter((c) => c !== leaf);
   let current = leaf;
   for (let i = 0; i < 8; i++) {
-    const issuerCn = formatDn(current, "issuer");
-    const subjectCn = formatDn(current, "subject");
-    if (issuerCn === subjectCn) break; // autoassinado
-    const next = pool.find((c) => formatDn(c, "subject") === issuerCn);
-    if (!next) break;
-    if (chain.includes(next)) break;
+    const issuerDn = formatDn(current, "issuer");
+    const subjectDn = formatDn(current, "subject");
+    if (issuerDn === subjectDn) break;
+    const next =
+      pool.find((c) => formatDn(c, "subject") === issuerDn) ||
+      pool.find((c) => formatCn(c, "subject") === formatCn(current, "issuer"));
+    if (!next || chain.includes(next)) break;
     chain.push(next);
     current = next;
   }
   return chain;
+}
+
+/** OIDs ICP-Brasil em Subject Alternative Name (DOC-ICP-04 / DOC-ICP-04.01). */
+const ICP_OID = {
+  cpfPf: "2.16.76.1.3.1",
+  responsavel: "2.16.76.1.3.2",
+  cnpj: "2.16.76.1.3.3",
+  dadosResponsavel: "2.16.76.1.3.4",
+  razaoSocial: "2.16.76.1.3.8",
+} as const;
+
+type Asn1Node = {
+  type?: number;
+  constructed?: boolean;
+  value?: string | Asn1Node[];
+};
+
+function asn1FirstString(node: Asn1Node | string | undefined | null): string | null {
+  if (node == null) return null;
+  if (typeof node === "string") {
+    const t = node.replace(/[^\x20-\x7E\u00C0-\u024F]/g, "").trim();
+    return t || null;
+  }
+  if (typeof node.value === "string") {
+    const t = node.value.replace(/[^\x20-\x7E\u00C0-\u024F]/g, "").trim();
+    return t || null;
+  }
+  if (Array.isArray(node.value)) {
+    for (const child of node.value) {
+      const hit = asn1FirstString(child);
+      if (hit) return hit;
+    }
+  }
+  return null;
+}
+
+/**
+ * Lê otherName do SAN (type=0) conforme DOC-ICP-04:
+ * OtherName ::= SEQUENCE { type-id OBJECT IDENTIFIER, value [0] EXPLICIT ANY }
+ * Referência prática: node-forge + parsing ASN.1 do value.
+ */
+function collectIcpOtherNames(cert: forge.pki.Certificate): Record<string, string> {
+  const out: Record<string, string> = {};
+  const ext = cert.getExtension("subjectAltName") as
+    | { altNames?: Array<{ type?: number; value?: unknown }> }
+    | undefined;
+  const altNames = ext?.altNames || [];
+
+  for (const alt of altNames) {
+    if (alt?.type !== 0) continue;
+    const seq = alt.value as Asn1Node | Asn1Node[] | undefined;
+    const parts = Array.isArray(seq) ? seq : Array.isArray(seq?.value) ? seq.value : null;
+    if (!parts || parts.length < 2) continue;
+
+    const oidNode = parts[0];
+    let oid = "";
+    try {
+      if (oidNode?.type === forge.asn1.Type.OID && typeof oidNode.value === "string") {
+        oid = forge.asn1.derToOid(oidNode.value);
+      }
+    } catch {
+      continue;
+    }
+    if (!oid.startsWith("2.16.76.1.3.")) continue;
+
+    const valueNode = parts[1] as Asn1Node;
+    const text = asn1FirstString(valueNode);
+    if (text) out[oid] = text;
+  }
+
+  return out;
+}
+
+function oidToDerBytes(oid: string): string {
+  return forge.asn1.oidToDer(oid).getBytes();
+}
+
+/** Fallback: varre o DER do certificado atrás do OID (quando forge não expõe altNames). */
+function extractPrintableAfterOid(der: string, oid: string): string | null {
+  const needle = oidToDerBytes(oid);
+  const idx = der.indexOf(needle);
+  if (idx < 0) return null;
+  let i = idx + needle.length;
+  for (let guard = 0; guard < 16 && i < der.length; guard++) {
+    const tag = der.charCodeAt(i) & 0xff;
+    i += 1;
+    if (i >= der.length) break;
+    let len = der.charCodeAt(i) & 0xff;
+    i += 1;
+    if (len & 0x80) {
+      const n = len & 0x7f;
+      len = 0;
+      for (let k = 0; k < n && i < der.length; k++) {
+        len = (len << 8) | (der.charCodeAt(i) & 0xff);
+        i += 1;
+      }
+    }
+    if (
+      tag === 0x0c ||
+      tag === 0x13 ||
+      tag === 0x04 ||
+      tag === 0x16 ||
+      tag === 0x1a
+    ) {
+      const raw = der.substring(i, i + len);
+      const text = raw.replace(/[^\x20-\x7E\u00C0-\u024F]/g, "").trim();
+      return text || null;
+    }
+    if (tag & 0x20) continue;
+    i += len;
+  }
+  return null;
+}
+
+function cpfFromIcpPacked(dados: string | null | undefined): string | null {
+  if (!dados || dados.length < 19) return null;
+  const maybe = dados.slice(8, 19).replace(/\D/g, "");
+  return maybe.length === 11 ? maybe : null;
+}
+
+function extractIcpBrasil(cert: forge.pki.Certificate): {
+  cnpj: string | null;
+  cpf: string | null;
+  responsavel: string | null;
+  razaoSocial: string | null;
+} {
+  const fromSan = collectIcpOtherNames(cert);
+  const der = forge.asn1.toDer(forge.pki.certificateToAsn1(cert)).getBytes();
+
+  const pick = (oid: string): string | null =>
+    fromSan[oid] || extractPrintableAfterOid(der, oid);
+
+  const responsavel = pick(ICP_OID.responsavel);
+  const razaoSocial = pick(ICP_OID.razaoSocial);
+  let cnpj = pick(ICP_OID.cnpj);
+  let cpf =
+    cpfFromIcpPacked(pick(ICP_OID.dadosResponsavel)) ||
+    cpfFromIcpPacked(pick(ICP_OID.cpfPf));
+
+  if (cnpj) {
+    const digits = cnpj.replace(/\D/g, "");
+    cnpj = digits.length === 14 ? digits : cnpj.trim() || null;
+  }
+
+  // Fallback clássico do CN ICP-Brasil: RAZAO:CNPJ ou NOME:CPF
+  const cn = formatCn(cert, "subject");
+  const mCnpj = cn.match(/:(\d{14})$/);
+  const mCpf = cn.match(/:(\d{11})$/);
+  if (!cnpj && mCnpj) cnpj = mCnpj[1];
+  if (!cpf && mCpf) cpf = mCpf[1];
+
+  return {
+    cnpj: cnpj || null,
+    cpf: cpf || null,
+    responsavel: responsavel?.trim() || null,
+    razaoSocial: razaoSocial?.trim() || null,
+  };
 }
 
 export async function loadPfxFromFile(
@@ -258,6 +417,7 @@ export async function loadPfxFromFile(
 
   let p12: forge.pkcs12.Pkcs12Pfx;
   try {
+    // strict=false: aceita PFX de ACs brasileiras (como o Adobe)
     p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, false, password);
   } catch {
     try {
@@ -278,26 +438,89 @@ export async function loadPfxFromFile(
     p12.getBags({ bagType: forge.pki.oids.certBag })[forge.pki.oids.certBag] ||
     [];
 
-  // Tenta cada chave privada até achar um certificado que case (como o Adobe).
-  const keyEntries = [...bagsKey, ...bagsKeyPlain].filter((b) => b?.key);
+  const keyEntries = [...bagsKey, ...bagsKeyPlain].filter((b) => {
+    if (b?.key) return true;
+    // Alguns PFX deixam a chave só em asn1 (documentação node-forge)
+    if (b?.asn1) {
+      try {
+        b.key = forge.pki.privateKeyFromAsn1(b.asn1);
+        return Boolean(b.key);
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  });
+  if (!keyEntries.length) {
+    throw new Error(
+      "Nenhuma chave privada encontrada no .pfx. Use um certificado A1 completo."
+    );
+  }
+
   let chosenKey: forge.pki.PrivateKey | null = null;
   let chosenCert: forge.pki.Certificate | null = null;
-  let chosenBag: forge.pkcs12.Bag | undefined;
 
   for (const keyEntry of keyEntries) {
     const key = keyEntry.key!;
-    const matched = pickSignerCertificate(key, keyEntry, bagsCert);
-    if (matched) {
+
+    // 1) Padrão Adobe/forge: certificado com o mesmo localKeyId da chave
+    const byLocalId = findCertByLocalKeyId(p12, keyEntry);
+    if (byLocalId?.cert && privateKeyMatchesCertificate(key, byLocalId.cert)) {
       chosenKey = key;
-      chosenCert = matched.cert;
-      chosenBag = matched.bag;
+      chosenCert = byLocalId.cert;
+      break;
+    }
+    if (byLocalId?.cert && !certIsCa(byLocalId.cert)) {
+      chosenKey = key;
+      chosenCert = byLocalId.cert;
+      break;
+    }
+
+    // 2) Mesmo friendlyName da chave (comum em exportadores Windows/AC)
+    const friendly = bagAttrBytes(keyEntry, "friendlyName");
+    if (friendly) {
+      try {
+        const byName = p12.getBags({
+          friendlyName: friendly,
+          bagType: forge.pki.oids.certBag,
+        });
+        const list = (byName.friendlyName || []) as forge.pkcs12.Bag[];
+        const hit = list.find(
+          (b) =>
+            b.cert &&
+            !certIsCa(b.cert) &&
+            privateKeyMatchesCertificate(key, b.cert)
+        );
+        if (hit?.cert) {
+          chosenKey = key;
+          chosenCert = hit.cert;
+          break;
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+
+    // 3) Casa pela chave pública RSA (OpenSSL pkcs12_read)
+    const matchPub = bagsCert.find(
+      (b) => b.cert && privateKeyMatchesCertificate(key, b.cert)
+    );
+    if (matchPub?.cert) {
+      chosenKey = key;
+      chosenCert = matchPub.cert;
       break;
     }
   }
 
   if (!chosenKey || !chosenCert) {
     throw new Error(
-      "Não foi possível casar a chave privada com o certificado do titular no .pfx (critério Adobe). Use um certificado A1 (.pfx) com chave RSA."
+      "Não foi possível identificar o certificado do titular no .pfx (sem casamento chave↔certificado). Verifique se o arquivo é um A1 completo."
+    );
+  }
+
+  if (certIsCa(chosenCert)) {
+    throw new Error(
+      "O .pfx apontou para um certificado de Autoridade Certificadora. É preciso o certificado do titular (pessoa/empresa)."
     );
   }
 
@@ -310,25 +533,20 @@ export async function loadPfxFromFile(
     const allCerts = bagsCert
       .map((b) => b.cert)
       .filter((c): c is forge.pki.Certificate => Boolean(c));
-    const chain = buildCertificateChain(chosenCert, allCerts);
-    chainPem = chain.map((c) => forge.pki.certificateToPem(c));
+    chainPem = buildCertificateChain(chosenCert, allCerts).map((c) =>
+      forge.pki.certificateToPem(c)
+    );
   } catch {
     throw new Error(
       "Este certificado usa um tipo de chave não suportado no navegador. Use um .pfx A1 com RSA."
     );
   }
 
-  // Confirma o casamento chave↔certificado (igual validação do Adobe)
-  if (!privateKeyMatchesCertificate(chosenKey, chosenCert)) {
-    throw new Error(
-      "O certificado selecionado não corresponde à chave privada do .pfx."
-    );
-  }
-
   const certDer = forge.asn1
     .toDer(forge.pki.certificateToAsn1(chosenCert))
     .getBytes();
-  const thumb = sha256HexOfBinary(certDer);
+  const thumbSha256 = sha256HexOfBinary(certDer);
+  const thumbSha1 = sha1HexOfBinary(certDer);
 
   const now = new Date();
   if (chosenCert.validity.notAfter < now) {
@@ -338,19 +556,29 @@ export async function loadPfxFromFile(
     throw new Error("Este certificado ainda não é válido.");
   }
 
-  const friendly = bagFriendlyName(chosenBag);
-  const subject = formatDn(chosenCert, "subject");
+  const subjectCn = formatCn(chosenCert, "subject");
+  const icp = extractIcpBrasil(chosenCert);
+  // Adobe: para e-CNPJ destaca o responsável; para e-CPF o próprio CN
+  const displayName =
+    icp.responsavel?.trim() ||
+    icp.razaoSocial?.trim() ||
+    subjectCn;
 
   return {
     privateKeyPem,
     certificatePem,
     chainPem,
-    subject: friendly && !friendly.includes("CA") ? friendly : subject,
-    issuer: formatDn(chosenCert, "issuer"),
+    subject: subjectCn,
+    displayName,
+    issuer: formatCn(chosenCert, "issuer"),
     serial: chosenCert.serialNumber,
     notBefore: chosenCert.validity.notBefore.toISOString(),
     notAfter: chosenCert.validity.notAfter.toISOString(),
-    thumbprintSha256: thumb,
+    thumbprintSha256: thumbSha256,
+    thumbprintSha1: thumbSha1,
+    icpBrasil: icp,
+    subjectDn: formatDn(chosenCert, "subject"),
+    issuerDn: formatDn(chosenCert, "issuer"),
   };
 }
 
@@ -497,7 +725,7 @@ export async function signPdfWithLocalCertificate(opts: {
     opacity: 0.95,
   });
 
-  const label = opts.appearance.signerLabel || opts.cert.subject;
+  const label = opts.appearance.signerLabel || opts.cert.displayName || opts.cert.subject;
   const when = new Date().toLocaleString("pt-BR");
   page.drawText("Assinado digitalmente", {
     x: x + 8,

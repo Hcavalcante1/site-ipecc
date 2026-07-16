@@ -336,10 +336,18 @@ export default function AssinaturasClient() {
     carregar();
   }
 
-  async function excluirPedido(id: string) {
-    if (!confirm("Excluir este pedido de assinatura? O documento em si permanece."))
+  async function excluirPedido(id: string, kind?: string | null) {
+    if (
+      !confirm(
+        "Excluir este registro de assinatura do histórico? O documento original permanece."
+      )
+    )
       return;
-    const res = await fetch(`/api/admin/documentos/assinaturas?id=${id}`, {
+    const qs = new URLSearchParams({ id });
+    if (kind === "certificate" || kind === "certificado") {
+      qs.set("kind", "certificate");
+    }
+    const res = await fetch(`/api/admin/documentos/assinaturas?${qs}`, {
       method: "DELETE",
       credentials: "include",
     });
@@ -348,7 +356,7 @@ export default function AssinaturasClient() {
       setAviso(json.error || "Erro ao excluir pedido.");
       return;
     }
-    setAviso("Pedido excluído.");
+    setAviso("Registro excluído do histórico.");
     carregar();
   }
 
@@ -792,15 +800,21 @@ export default function AssinaturasClient() {
                     Assinado
                   </span>
                 )}
-                {row.provider_code !== "certificado" ? (
-                  <button
-                    type="button"
-                    style={{ ...gdBtnStyle, background: "#7f1d1d" }}
-                    onClick={() => excluirPedido(row.id)}
-                  >
-                    Excluir
-                  </button>
-                ) : null}
+                <button
+                  type="button"
+                  style={{ ...gdBtnStyle, background: "#7f1d1d" }}
+                  onClick={() =>
+                    excluirPedido(
+                      row.id,
+                      row.provider_code === "certificado" ||
+                        row.kind === "certificate"
+                        ? "certificate"
+                        : null
+                    )
+                  }
+                >
+                  Excluir
+                </button>
               </div>
             </li>
           ))}

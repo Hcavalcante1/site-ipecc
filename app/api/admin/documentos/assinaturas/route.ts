@@ -7,7 +7,7 @@ import {
   listarAssinaturas,
   tabelaAssinaturaAusente,
 } from "@/lib/documentos/signatureService";
-import { listarHistoricoCertificado } from "@/lib/documentos/assinaturas/certificate/certificateSignService";
+import { listarHistoricoCertificado, excluirTransacaoCertificado } from "@/lib/documentos/assinaturas/certificate/certificateSignService";
 import { carregarDocumentoNoEscopo } from "@/lib/documentos/scopeHelper";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -57,6 +57,9 @@ export async function DELETE(req: NextRequest) {
   if (denied || !auth) return denied!;
 
   const id = String(req.nextUrl.searchParams.get("id") || "").trim();
+  const kind = String(req.nextUrl.searchParams.get("kind") || "")
+    .trim()
+    .toLowerCase();
   if (!id) {
     return NextResponse.json(
       { ok: false, error: "id é obrigatório." },
@@ -65,6 +68,35 @@ export async function DELETE(req: NextRequest) {
   }
 
   const admin = getSupabaseAdmin();
+
+  // Assinatura com certificado (histórico gd_cert_*)
+  if (kind === "certificate" || kind === "certificado") {
+    const { data: ctx } = await admin
+      .from("gd_cert_transactions")
+      .select("id, document_id")
+      .eq("id", id)
+      .maybeSingle();
+    if (!ctx) {
+      return NextResponse.json(
+        { ok: false, error: "Assinatura com certificado não encontrada." },
+        { status: 404 }
+      );
+    }
+    const loaded = await carregarDocumentoNoEscopo(ctx.document_id, auth);
+    if (loaded.error) return loaded.error;
+    const result = await excluirTransacaoCertificado({
+      transactionId: id,
+      actorUserId: auth.userId,
+    });
+    if (result.ok === false) {
+      return NextResponse.json(
+        { ok: false, error: result.error },
+        { status: result.status || 400 }
+      );
+    }
+    return NextResponse.json({ ok: true, kind: "certificate" });
+  }
+
   const { data: sig, error: sigErr } = await admin
     .from("gd_signature_documents")
     .select("id, document_id")
@@ -78,7 +110,29 @@ export async function DELETE(req: NextRequest) {
       { status: 500 }
     );
   }
+
+  // Se não achou pedido simples, tenta certificado pelo mesmo id
   if (!sig) {
+    const { data: ctx } = await admin
+      .from("gd_cert_transactions")
+      .select("id, document_id")
+      .eq("id", id)
+      .maybeSingle();
+    if (ctx) {
+      const loaded = await carregarDocumentoNoEscopo(ctx.document_id, auth);
+      if (loaded.error) return loaded.error;
+      const result = await excluirTransacaoCertificado({
+        transactionId: id,
+        actorUserId: auth.userId,
+      });
+      if (result.ok === false) {
+        return NextResponse.json(
+          { ok: false, error: result.error },
+          { status: result.status || 400 }
+        );
+      }
+      return NextResponse.json({ ok: true, kind: "certificate" });
+    }
     return NextResponse.json(
       { ok: false, error: "Pedido não encontrado." },
       { status: 404 }

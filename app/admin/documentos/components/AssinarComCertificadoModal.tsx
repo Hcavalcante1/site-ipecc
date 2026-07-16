@@ -28,7 +28,7 @@ type SessionItem = {
   downloadPath: string;
 };
 
-type Step = "cert" | "pages" | "signing" | "done";
+type Step = "cert" | "review" | "pages" | "signing" | "done";
 
 type Placement = { page: number; xPct: number; yPct: number };
 
@@ -59,6 +59,92 @@ function u8ToBlob(u8: Uint8Array, mime: string): Blob {
   const copy = new Uint8Array(u8.byteLength);
   copy.set(u8);
   return new Blob([copy], { type: mime });
+}
+
+function formatCpf(cpf: string | null | undefined): string | null {
+  if (!cpf) return null;
+  const d = cpf.replace(/\D/g, "");
+  if (d.length !== 11) return cpf;
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+}
+
+function formatCnpj(cnpj: string | null | undefined): string | null {
+  if (!cnpj) return null;
+  const d = cnpj.replace(/\D/g, "");
+  if (d.length !== 14) return cnpj;
+  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
+}
+
+function formatThumb(hex: string): string {
+  return hex
+    .replace(/[^0-9a-fA-F]/g, "")
+    .toUpperCase()
+    .replace(/(.{2})(?=.)/g, "$1 ");
+}
+
+/** Cartão do certificado real — equivalente ao “Detalhes do certificado” do Adobe. */
+function CertificateReviewCard({ cert }: { cert: LoadedCertificate }) {
+  const row = (label: string, value: string | null | undefined) =>
+    value ? (
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 2 }}>
+          {label}
+        </div>
+        <div
+          style={{
+            fontSize: 13,
+            color: "#f1f5f9",
+            wordBreak: "break-word",
+            lineHeight: 1.35,
+          }}
+        >
+          {value}
+        </div>
+      </div>
+    ) : null;
+
+  return (
+    <div
+      style={{
+        marginTop: 12,
+        marginBottom: 12,
+        padding: 14,
+        borderRadius: 10,
+        border: "1px solid #334155",
+        background: "linear-gradient(180deg, #0f172a 0%, #1e293b 100%)",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 700,
+          color: "#6ee7b7",
+          marginBottom: 10,
+          letterSpacing: 0.3,
+        }}
+      >
+        Certificado importado (titular real)
+      </div>
+      {row("Emitido para (CN)", cert.subject)}
+      {row("Nome para assinatura", cert.displayName)}
+      {row("Responsável (ICP-Brasil)", cert.icpBrasil.responsavel)}
+      {row("Razão social (ICP-Brasil)", cert.icpBrasil.razaoSocial)}
+      {row("CPF", formatCpf(cert.icpBrasil.cpf))}
+      {row("CNPJ", formatCnpj(cert.icpBrasil.cnpj))}
+      {row("Emissor", cert.issuer)}
+      {row(
+        "Validade",
+        `${new Date(cert.notBefore).toLocaleDateString("pt-BR")} até ${new Date(
+          cert.notAfter
+        ).toLocaleDateString("pt-BR")}`
+      )}
+      {row("Número de série", cert.serial)}
+      {row("Impressão digital SHA-1", formatThumb(cert.thumbprintSha1))}
+      {row("Impressão digital SHA-256", formatThumb(cert.thumbprintSha256))}
+      {row("DN do titular", cert.subjectDn)}
+      {row("DN do emissor", cert.issuerDn)}
+    </div>
+  );
 }
 
 /**
@@ -426,6 +512,7 @@ export default function AssinarComCertificadoModal({
   const [pfxFile, setPfxFile] = useState<File | null>(null);
   const [pfxPassword, setPfxPassword] = useState("");
   const [certLabel, setCertLabel] = useState<string | null>(null);
+  const [certPreview, setCertPreview] = useState<LoadedCertificate | null>(null);
   const [previewDocId, setPreviewDocId] = useState<string | null>(null);
   const [placement, setPlacement] = useState<Placement>({
     page: 1,
@@ -453,6 +540,7 @@ export default function AssinarComCertificadoModal({
     setPfxFile(null);
     setPfxPassword("");
     setCertLabel(null);
+    setCertPreview(null);
     setPreviewDocId(documentIds[0] || null);
     setPlacement({ page: 1, xPct: 96, yPct: 96 });
     setSessionItems([]);
@@ -488,17 +576,10 @@ export default function AssinarComCertificadoModal({
       );
       const loaded = await loadPfxFromFile(pfxFile, pfxPassword);
       certRef.current = loaded;
-      setCertLabel(
-        [
-          loaded.subject,
-          loaded.issuer ? `Emissor: ${loaded.issuer}` : null,
-          `válido até ${new Date(loaded.notAfter).toLocaleDateString("pt-BR")}`,
-        ]
-          .filter(Boolean)
-          .join(" · ")
-      );
+      setCertPreview(loaded);
+      setCertLabel(loaded.displayName);
       if (!previewDocId && documentIds[0]) setPreviewDocId(documentIds[0]);
-      setStep("pages");
+      setStep("review");
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Falha ao ler o certificado.");
     } finally {
@@ -601,7 +682,7 @@ export default function AssinarComCertificadoModal({
               yPct: placement.yPct,
               width: CERT_STAMP_BOX.w,
               height: CERT_STAMP_BOX.h,
-              signerLabel: cert.subject,
+              signerLabel: cert.displayName || cert.subject,
             },
           });
 
@@ -621,12 +702,15 @@ export default function AssinarComCertificadoModal({
           form.append(
             "cert",
             JSON.stringify({
-              subject: cert.subject,
+              subject: cert.displayName || cert.subject,
+              subjectCn: cert.subject,
               issuer: cert.issuer,
               serial: cert.serial,
               notBefore: cert.notBefore,
               notAfter: cert.notAfter,
               thumbprintSha256: cert.thumbprintSha256,
+              thumbprintSha1: cert.thumbprintSha1,
+              icpBrasil: cert.icpBrasil,
             })
           );
           form.append(
@@ -812,10 +896,83 @@ export default function AssinarComCertificadoModal({
             </>
           ) : null}
 
+          {step === "review" && certPreview ? (
+            <>
+              <p style={{ fontSize: 13, color: "#cbd5e1", lineHeight: 1.45 }}>
+                Confira se este é o certificado correto (mesmo titular que o Adobe
+                mostra ao abrir o .pfx). A chave privada permanece só no seu
+                computador.
+              </p>
+              <CertificateReviewCard cert={certPreview} />
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => {
+                    certRef.current = null;
+                    setCertPreview(null);
+                    setCertLabel(null);
+                    setStep("cert");
+                  }}
+                  style={{
+                    background: "transparent",
+                    color: "#cbd5e1",
+                    border: "1px solid #475569",
+                    borderRadius: 8,
+                    padding: "10px 14px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Trocar certificado
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setStep("pages")}
+                  style={{
+                    background: "#1d4ed8",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 8,
+                    padding: "10px 14px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Continuar para posicionar o carimbo
+                </button>
+              </div>
+            </>
+          ) : null}
+
           {step === "pages" ? (
             <>
               {certLabel ? (
-                <p style={{ color: "#6ee7b7", fontSize: 13 }}>{certLabel}</p>
+                <p style={{ color: "#6ee7b7", fontSize: 13, marginBottom: 8 }}>
+                  Assinando como: <strong>{certLabel}</strong>
+                  {certPreview?.icpBrasil.cnpj
+                    ? ` · CNPJ ${formatCnpj(certPreview.icpBrasil.cnpj)}`
+                    : certPreview?.icpBrasil.cpf
+                      ? ` · CPF ${formatCpf(certPreview.icpBrasil.cpf)}`
+                      : ""}
+                  {" · "}
+                  <button
+                    type="button"
+                    onClick={() => setStep("review")}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#7dd3fc",
+                      cursor: "pointer",
+                      padding: 0,
+                      fontSize: 13,
+                      textDecoration: "underline",
+                    }}
+                  >
+                    ver certificado
+                  </button>
+                </p>
               ) : null}
 
               {documentIds.length > 1 ? (
@@ -841,7 +998,11 @@ export default function AssinarComCertificadoModal({
                 documentId={previewDocId}
                 placement={placement}
                 onChange={setPlacement}
-                signerLabel={certRef.current?.subject || ""}
+                signerLabel={
+                  certRef.current?.displayName ||
+                  certRef.current?.subject ||
+                  ""
+                }
               />
 
               <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
