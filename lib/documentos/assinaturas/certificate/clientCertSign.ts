@@ -35,7 +35,7 @@ export type LoadedCertificate = {
 };
 
 /** Dimensões do carimbo visual (pt) — preview e PDF usam o mesmo. */
-export const CERT_STAMP_BOX = { w: 220, h: 70, margin: 18 };
+export const CERT_STAMP_BOX = { w: 320, h: 96, margin: 18 };
 
 export type AppearanceOptions = {
   page: number; // 1-based
@@ -746,6 +746,9 @@ export async function signPdfWithLocalCertificate(opts: {
   });
 
   const label = opts.appearance.signerLabel || opts.cert.displayName || opts.cert.subject;
+  const org = opts.cert.icpBrasil.razaoSocial?.trim() || label;
+  const cnpj = formatCnpjDigits(opts.cert.icpBrasil.cnpj);
+  const responsavel = opts.cert.icpBrasil.responsavel?.trim() || null;
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
   const tzMin = -now.getTimezoneOffset();
@@ -755,26 +758,70 @@ export async function signPdfWithLocalCertificate(opts: {
   const when = `${now.getFullYear()}.${pad(now.getMonth() + 1)}.${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())} ${tz}`;
   const ink = rgb(0, 0, 0);
 
+  const leftX = x + 6;
+  const rightX = x + boxW * 0.5 + 4;
+  const leftW = boxW * 0.44;
+  const rightW = boxW * 0.46;
+  const topY = y + boxH - 14;
+
+  page.drawText(String(org).toUpperCase(), {
+    x: leftX,
+    y: topY,
+    size: 8.5,
+    font: fontBold,
+    color: ink,
+    maxWidth: leftW,
+    lineHeight: 9.5,
+  });
+  if (cnpj) {
+    page.drawText(`CNPJ: ${cnpj}`, {
+      x: leftX,
+      y: y + boxH - 46,
+      size: 8,
+      font,
+      color: ink,
+      maxWidth: leftW,
+      lineHeight: 8.5,
+    });
+  }
+  if (responsavel && responsavel !== org) {
+    page.drawText(`Responsável: ${responsavel}`, {
+      x: leftX,
+      y: y + boxH - 60,
+      size: 6.8,
+      font,
+      color: ink,
+      maxWidth: leftW,
+      lineHeight: 7.2,
+    });
+  }
+
   page.drawText("Assinado de forma digital por", {
-    x: x + 4,
-    y: y + boxH - 14,
+    x: rightX,
+    y: topY,
     size: 7,
     font,
     color: ink,
+    maxWidth: rightW,
+    lineHeight: 7.5,
   });
-  page.drawText(String(label).slice(0, 48), {
-    x: x + 4,
-    y: y + boxH - 28,
+  page.drawText(String(label).toUpperCase(), {
+    x: rightX,
+    y: y + boxH - 26,
     size: 8,
     font: fontBold,
     color: ink,
+    maxWidth: rightW,
+    lineHeight: 8.5,
   });
-  page.drawText(`Data: ${when}`, {
-    x: x + 4,
-    y: y + boxH - 42,
+  page.drawText(`Dados: ${when}`, {
+    x: rightX,
+    y: y + boxH - 46,
     size: 7,
     font,
     color: ink,
+    maxWidth: rightW,
+    lineHeight: 7.5,
   });
 
   const stamped = await pdfDoc.save({ useObjectStreams: false });

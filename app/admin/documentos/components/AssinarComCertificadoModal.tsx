@@ -48,7 +48,7 @@ type SavedCertificateProfile = {
   last_used_at: string | null;
 };
 
-type Step = "cert" | "review" | "pages" | "signing" | "done";
+type Step = "cert" | "review" | "pages" | "preview" | "signing" | "done";
 
 type Placement = { page: number; xPct: number; yPct: number };
 
@@ -175,6 +175,65 @@ function CertificateReviewCard({ cert }: { cert: LoadedCertificate }) {
       {row("Impressão digital SHA-256", formatThumb(cert.thumbprintSha256))}
       {row("DN do titular", cert.subjectDn)}
       {row("DN do emissor", cert.issuerDn)}
+    </div>
+  );
+}
+
+function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
+  const label = getCertificateHolderLabel(cert);
+  const summary = getCertificateSummary(cert);
+  const when = new Date().toLocaleString("pt-BR");
+
+  return (
+    <div
+      style={{
+        marginTop: 12,
+        marginBottom: 12,
+        borderRadius: 10,
+        border: "1px solid #334155",
+        background: "#ffffff",
+        color: "#000",
+        padding: 10,
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: 10,
+      }}
+    >
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 8, lineHeight: 1.2, fontWeight: 400 }}>
+          {cert.icpBrasil.razaoSocial || label}
+        </div>
+        <div
+          style={{
+            fontSize: 8,
+            lineHeight: 1.25,
+            fontWeight: 700,
+            marginTop: 6,
+            wordBreak: "break-word",
+          }}
+        >
+          {summary || "Certificado oficial ICP-Brasil"}
+        </div>
+      </div>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 8, lineHeight: 1.2, fontWeight: 400 }}>
+          Assinado de forma digital por
+        </div>
+        <div
+          style={{
+            fontSize: 8,
+            lineHeight: 1.25,
+            fontWeight: 700,
+            marginTop: 6,
+            wordBreak: "break-word",
+          }}
+        >
+          {label}
+        </div>
+        <div style={{ fontSize: 8, lineHeight: 1.2, marginTop: 6 }}>
+          Dados: {when}
+        </div>
+      </div>
     </div>
   );
 }
@@ -1214,6 +1273,10 @@ export default function AssinarComCertificadoModal({
                 computador.
               </p>
               <CertificateReviewCard cert={certPreview} />
+              <p style={{ fontSize: 13, color: "#cbd5e1", lineHeight: 1.45 }}>
+                Prévia da aparência oficial da assinatura:
+              </p>
+              <SignatureAppearancePreview cert={certPreview} />
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button
                   type="button"
@@ -1310,7 +1373,7 @@ export default function AssinarComCertificadoModal({
               />
 
               <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
-                A posição do carimbo será aplicada
+                Ajuste a posição antes da prévia final. A posição do carimbo será aplicada
                 {documentIds.length > 1
                   ? " a todos os documentos do lote"
                   : " neste documento"}
@@ -1320,10 +1383,10 @@ export default function AssinarComCertificadoModal({
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => void iniciarEAssinar()}
+                onClick={() => setStep("preview")}
                 style={{
                   marginTop: 6,
-                  background: "#0f766e",
+                  background: "#1d4ed8",
                   color: "#fff",
                   border: "none",
                   borderRadius: 8,
@@ -1332,8 +1395,61 @@ export default function AssinarComCertificadoModal({
                   cursor: "pointer",
                 }}
               >
-                Assinar {documentIds.length > 1 ? "lote" : "documento"}
+                Ver prévia final
               </button>
+            </>
+          ) : null}
+
+          {step === "preview" && certPreview ? (
+            <>
+              <p style={{ fontSize: 13, color: "#cbd5e1", lineHeight: 1.45 }}>
+                Esta é a prévia final. Se estiver tudo certo, clique em assinar.
+                A gravação só acontece depois desta confirmação.
+              </p>
+              <CertificateReviewCard cert={certPreview} />
+              <SignatureAppearancePreview cert={certPreview} />
+              <CertStampPositionPreview
+                documentId={previewDocId}
+                placement={placement}
+                onChange={setPlacement}
+                signerLabel={
+                  certRef.current ? getCertificateHolderLabel(certRef.current) : ""
+                }
+              />
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setStep("pages")}
+                  style={{
+                    background: "transparent",
+                    color: "#cbd5e1",
+                    border: "1px solid #475569",
+                    borderRadius: 8,
+                    padding: "10px 14px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Voltar para posicionar
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void iniciarEAssinar()}
+                  style={{
+                    background: "#0f766e",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 8,
+                    padding: "10px 14px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Assinar {documentIds.length > 1 ? "lote" : "documento"}
+                </button>
+              </div>
             </>
           ) : null}
 
