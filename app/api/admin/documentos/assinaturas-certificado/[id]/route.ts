@@ -21,6 +21,7 @@ type Ctx = { params: { id: string } };
 /**
  * GET — metadados da sessão/lote (sem chave).
  * POST action=concluir | finalizar
+ * concluir aceita JSON (legado) ou multipart/form-data (preferencial).
  */
 export async function GET(_req: NextRequest, ctx: Ctx) {
   const { denied, auth } = await denyIfSemModuloDocumentos();
@@ -83,9 +84,107 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
     ok: true,
     mode: "single",
     transaction: tx,
-    downloadPath: `/api/admin/documentos/${tx.document_id}/arquivo`,
+    downloadPath: `/api/admin/documentos/assinaturas-certificado/${tx.id}/arquivo`,
     disclaimer: CERT_DISCLAIMER,
   });
+}
+
+async function parseConcluirBody(req: NextRequest): Promise<{
+  action: string;
+  transactionId?: string;
+  signedPdfBytes?: Buffer | null;
+  signedPdfBase64?: string | null;
+  pkcs7Bytes?: Buffer | null;
+  pkcs7Base64?: string | null;
+  cert?: {
+    subject?: string;
+    issuer?: string;
+    serial?: string;
+    notBefore?: string;
+    notAfter?: string;
+    thumbprintSha256?: string;
+  };
+  appearance?: {
+    page?: number;
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+  };
+}> {
+  const ct = req.headers.get("content-type") || "";
+  if (ct.includes("multipart/form-data")) {
+    const form = await req.formData();
+    const signedFile = form.get("signedPdf");
+    const pkcs7File = form.get("pkcs7");
+    let signedPdfBytes: Buffer | null = null;
+    let pkcs7Bytes: Buffer | null = null;
+    if (signedFile && typeof signedFile !== "string") {
+      signedPdfBytes = Buffer.from(await signedFile.arrayBuffer());
+    }
+    if (pkcs7File && typeof pkcs7File !== "string") {
+      pkcs7Bytes = Buffer.from(await pkcs7File.arrayBuffer());
+    }
+    let cert: Record<string, string> | undefined;
+    const certRaw = form.get("cert");
+    if (typeof certRaw === "string" && certRaw.trim()) {
+      try {
+        cert = JSON.parse(certRaw) as Record<string, string>;
+      } catch {
+        cert = undefined;
+      }
+    }
+    let appearance: { page?: number } | undefined;
+    const appRaw = form.get("appearance");
+    if (typeof appRaw === "string" && appRaw.trim()) {
+      try {
+        appearance = JSON.parse(appRaw) as { page?: number };
+      } catch {
+        appearance = undefined;
+      }
+    }
+    return {
+      action: String(form.get("action") || "concluir"),
+      transactionId:
+        typeof form.get("transactionId") === "string"
+          ? String(form.get("transactionId"))
+          : undefined,
+      signedPdfBytes,
+      pkcs7Bytes,
+      cert,
+      appearance,
+    };
+  }
+
+  const body = (await req.json()) as {
+    action?: string;
+    transactionId?: string;
+    signedPdfBase64?: string;
+    pkcs7Base64?: string;
+    cert?: {
+      subject?: string;
+      issuer?: string;
+      serial?: string;
+      notBefore?: string;
+      notAfter?: string;
+      thumbprintSha256?: string;
+    };
+    appearance?: {
+      page?: number;
+      x?: number;
+      y?: number;
+      width?: number;
+      height?: number;
+    };
+  };
+  return {
+    action: String(body.action || "").trim(),
+    transactionId: body.transactionId,
+    signedPdfBase64: body.signedPdfBase64 || null,
+    pkcs7Base64: body.pkcs7Base64 || null,
+    cert: body.cert,
+    appearance: body.appearance,
+  };
 }
 
 export async function POST(req: NextRequest, ctx: Ctx) {
@@ -93,28 +192,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
   if (denied || !auth) return denied!;
 
   try {
-    const body = (await req.json()) as {
-      action?: string;
-      transactionId?: string;
-      signedPdfBase64?: string;
-      pkcs7Base64?: string;
-      cert?: {
-        subject?: string;
-        issuer?: string;
-        serial?: string;
-        notBefore?: string;
-        notAfter?: string;
-        thumbprintSha256?: string;
-      };
-      appearance?: {
-        page?: number;
-        x?: number;
-        y?: number;
-        width?: number;
-        height?: number;
-      };
-    };
-
+    const body = await parseConcluirBody(req);
     const action = String(body.action || "").trim();
     const meta = requestAuditMeta(req);
     const rate = checkRateLimit(
@@ -144,12 +222,15 @@ export async function POST(req: NextRequest, ctx: Ctx) {
 
     if (action === "concluir") {
       const txId = String(body.transactionId || ctx.params.id).trim();
-      if (!body.signedPdfBase64 || !body.cert?.thumbprintSha256) {
+      const hasPdf =
+        (body.signedPdfBytes && body.signedPdfBytes.length > 0) ||
+        Boolean(body.signedPdfBase64);
+      if (!hasPdf || !body.cert?.thumbprintSha256) {
         return NextResponse.json(
           {
             ok: false,
             error:
-              "Envie signedPdfBase64 e metadados públicos do certificado (thumbprint).",
+              "Envie o PDF assinado e metadados públicos do certificado (thumbprint).",
           },
           { status: 400 }
         );
@@ -158,7 +239,9 @@ export async function POST(req: NextRequest, ctx: Ctx) {
         transactionId: txId,
         signerUserId: auth.userId,
         actorUserId: auth.userId,
-        signedPdfBase64: body.signedPdfBase64,
+        signedPdfBytes: body.signedPdfBytes || null,
+        signedPdfBase64: body.signedPdfBase64 || null,
+        pkcs7Bytes: body.pkcs7Bytes || null,
         pkcs7Base64: body.pkcs7Base64 || null,
         cert: {
           subject: String(body.cert.subject || ""),

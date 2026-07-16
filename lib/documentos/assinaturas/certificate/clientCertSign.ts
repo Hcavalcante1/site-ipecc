@@ -18,8 +18,16 @@ export type LoadedCertificate = {
   thumbprintSha256: string;
 };
 
+/** Dimensões do carimbo visual (pt) — preview e PDF usam o mesmo. */
+export const CERT_STAMP_BOX = { w: 220, h: 70, margin: 18 };
+
 export type AppearanceOptions = {
   page: number; // 1-based
+  /** 0–100: esquerda→direita (preferencial, igual à assinatura simples). */
+  xPct?: number;
+  /** 0–100: topo→rodapé. */
+  yPct?: number;
+  /** Coordenadas PDF absolutas (fallback se xPct/yPct ausentes). */
   x?: number;
   y?: number;
   width?: number;
@@ -27,17 +35,71 @@ export type AppearanceOptions = {
   signerLabel?: string;
 };
 
-function abToBinary(buf: ArrayBuffer): string {
-  const bytes = new Uint8Array(buf);
-  let s = "";
-  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
-  return s;
+function clampPct(n: number, fallback: number): number {
+  const v = Number.isFinite(n) ? n : fallback;
+  return Math.min(100, Math.max(0, v));
 }
 
-function bytesToHex(bytes: forge.util.ByteStringBuffer | string): string {
+/** Mesma matemática de `origemLivre` (pdfStampService). */
+export function certStampOrigin(
+  pageWidth: number,
+  pageHeight: number,
+  boxW: number,
+  boxH: number,
+  xPct: number,
+  yPct: number
+): { x: number; y: number } {
+  const margin = CERT_STAMP_BOX.margin;
+  const spanX = Math.max(0, pageWidth - boxW - 2 * margin);
+  const spanY = Math.max(0, pageHeight - boxH - 2 * margin);
+  const x = margin + (spanX * clampPct(xPct, 96)) / 100;
+  const y =
+    pageHeight - boxH - margin - (spanY * clampPct(yPct, 96)) / 100;
+  return { x, y };
+}
+
+/** Converte bytes → string binária sem spread (evita Maximum call stack). */
+function uint8ToBinary(u8: Uint8Array): string {
+  const chunkSize = 0x2000;
+  let out = "";
+  for (let i = 0; i < u8.length; i += chunkSize) {
+    const end = Math.min(i + chunkSize, u8.length);
+    let part = "";
+    for (let j = i; j < end; j++) {
+      part += String.fromCharCode(u8[j]);
+    }
+    out += part;
+  }
+  return out;
+}
+
+function binaryToUint8(binary: string): Uint8Array {
+  const out = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i) & 0xff;
+  return out;
+}
+
+function abToBinary(buf: ArrayBuffer): string {
+  return uint8ToBinary(new Uint8Array(buf));
+}
+
+function bytesToHex(bytes: string): string {
   const md = forge.md.sha256.create();
-  md.update(typeof bytes === "string" ? bytes : bytes.getBytes());
+  md.update(bytes);
   return md.digest().toHex();
+}
+
+function attrValue(attrs: forge.pki.CertificateField[], shortName: string): string {
+  const hit = attrs.find((a) => a.shortName === shortName || a.name === shortName);
+  return hit ? String(hit.value || "") : "";
+}
+
+function formatDn(cert: forge.pki.Certificate, which: "subject" | "issuer"): string {
+  const attrs =
+    which === "subject" ? cert.subject.attributes : cert.issuer.attributes;
+  const cn = attrValue(attrs, "CN");
+  if (cn) return cn;
+  return attrs.map((a) => `${a.shortName || a.name}=${a.value}`).join(", ");
 }
 
 export async function loadPfxFromFile(
@@ -55,37 +117,62 @@ export async function loadPfxFromFile(
 
   let p12: forge.pkcs12.Pkcs12Pfx;
   try {
-    p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, password);
+    p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, false, password);
   } catch {
-    throw new Error("Senha do certificado incorreta ou arquivo corrompido.");
+    try {
+      p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, password);
+    } catch {
+      throw new Error("Senha do certificado incorreta ou arquivo corrompido.");
+    }
   }
 
-  const bagsKey = p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag });
-  const bagsCert = p12.getBags({ bagType: forge.pki.oids.certBag });
-  const keyBag =
-    bagsKey[forge.pki.oids.pkcs8ShroudedKeyBag]?.[0]?.key ||
-    p12.getBags({ bagType: forge.pki.oids.keyBag })[forge.pki.oids.keyBag]?.[0]
-      ?.key;
-  const certBag = bagsCert[forge.pki.oids.certBag]?.[0]?.cert;
+  const bagsKey =
+    p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag })[
+      forge.pki.oids.pkcs8ShroudedKeyBag
+    ] || [];
+  const bagsKeyPlain =
+    p12.getBags({ bagType: forge.pki.oids.keyBag })[forge.pki.oids.keyBag] ||
+    [];
+  const bagsCert =
+    p12.getBags({ bagType: forge.pki.oids.certBag })[forge.pki.oids.certBag] ||
+    [];
+
+  const keyBag = bagsKey[0]?.key || bagsKeyPlain[0]?.key || null;
+  const certBag = bagsCert[0]?.cert || null;
 
   if (!keyBag || !certBag) {
     throw new Error(
-      "Não foi possível extrair chave/certificado do arquivo .pfx."
+      "Não foi possível extrair chave/certificado do arquivo .pfx. Use um certificado A1 (.pfx) com chave RSA."
+    );
+  }
+
+  let privateKeyPem: string;
+  let certificatePem: string;
+  try {
+    privateKeyPem = forge.pki.privateKeyToPem(keyBag);
+    certificatePem = forge.pki.certificateToPem(certBag);
+  } catch {
+    throw new Error(
+      "Este certificado usa um tipo de chave não suportado no navegador. Use um .pfx A1 com RSA."
     );
   }
 
   const certDer = forge.asn1.toDer(forge.pki.certificateToAsn1(certBag)).getBytes();
   const thumb = bytesToHex(certDer);
 
+  const now = new Date();
+  if (certBag.validity.notAfter < now) {
+    throw new Error("Este certificado está vencido.");
+  }
+  if (certBag.validity.notBefore > now) {
+    throw new Error("Este certificado ainda não é válido.");
+  }
+
   return {
-    privateKeyPem: forge.pki.privateKeyToPem(keyBag),
-    certificatePem: forge.pki.certificateToPem(certBag),
-    subject: certBag.subject.getField("CN")?.value || certBag.subject.attributes
-      .map((a) => `${a.shortName}=${a.value}`)
-      .join(", "),
-    issuer: certBag.issuer.getField("CN")?.value || certBag.issuer.attributes
-      .map((a) => `${a.shortName}=${a.value}`)
-      .join(", "),
+    privateKeyPem,
+    certificatePem,
+    subject: formatDn(certBag, "subject"),
+    issuer: formatDn(certBag, "issuer"),
     serial: certBag.serialNumber,
     notBefore: certBag.validity.notBefore.toISOString(),
     notAfter: certBag.validity.notAfter.toISOString(),
@@ -93,28 +180,42 @@ export async function loadPfxFromFile(
   };
 }
 
-function uint8ToBinary(u8: Uint8Array): string {
-  let s = "";
-  const chunk = 0x8000;
-  for (let i = 0; i < u8.length; i += chunk) {
-    s += String.fromCharCode(...u8.subarray(i, i + chunk));
-  }
-  return s;
-}
-
-function binaryToBase64(binary: string): string {
-  return forge.util.encode64(binary);
-}
-
-function uint8ToBase64(u8: Uint8Array): string {
-  return binaryToBase64(uint8ToBinary(u8));
-}
-
 async function sha256Hex(u8: Uint8Array): Promise<string> {
   const hash = await crypto.subtle.digest("SHA-256", u8);
   return Array.from(new Uint8Array(hash))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
+}
+
+function createDetachedPkcs7(
+  contentBytes: Uint8Array,
+  privateKeyPem: string,
+  certificatePem: string
+): Uint8Array {
+  const privateKey = forge.pki.privateKeyFromPem(privateKeyPem);
+  const certificate = forge.pki.certificateFromPem(certificatePem);
+
+  // Assina o digest SHA-256 do PDF (conteúdo pequeno e estável no browser).
+  const md = forge.md.sha256.create();
+  md.update(uint8ToBinary(contentBytes));
+  const digestBinary = md.digest().getBytes();
+
+  const p7 = forge.pkcs7.createSignedData();
+  p7.content = forge.util.createBuffer(digestBinary);
+  p7.addCertificate(certificate);
+  p7.addSigner({
+    key: privateKey,
+    certificate,
+    digestAlgorithm: forge.pki.oids.sha256,
+    authenticatedAttributes: [
+      { type: forge.pki.oids.contentType, value: forge.pki.oids.data },
+      { type: forge.pki.oids.messageDigest },
+      { type: forge.pki.oids.signingTime, value: new Date() as unknown as string },
+    ],
+  });
+  p7.sign({ detached: true });
+  const p7Der = forge.asn1.toDer(p7.toAsn1()).getBytes();
+  return binaryToUint8(p7Der);
 }
 
 /**
@@ -126,33 +227,79 @@ export async function signPdfWithLocalCertificate(opts: {
   cert: LoadedCertificate;
   appearance: AppearanceOptions;
 }): Promise<{
-  signedPdfBase64: string;
-  pkcs7Base64: string;
+  signedPdfBytes: Uint8Array;
+  pkcs7Bytes: Uint8Array;
   finalHashSha256: string;
   pageCount: number;
 }> {
+  if (opts.pdfBytes.length < 5) {
+    throw new Error("PDF baixado está vazio ou inválido.");
+  }
+  const head = String.fromCharCode(
+    opts.pdfBytes[0],
+    opts.pdfBytes[1],
+    opts.pdfBytes[2],
+    opts.pdfBytes[3]
+  );
+  if (head !== "%PDF") {
+    throw new Error(
+      "O download não retornou um PDF. Verifique permissões e tente novamente."
+    );
+  }
+
   const incomingHash = await sha256Hex(opts.pdfBytes);
   if (
     incomingHash.toLowerCase() !==
     String(opts.expectedHashSha256 || "").toLowerCase()
   ) {
     throw new Error(
-      "O PDF baixado diverge do hash congelado. Recrie a sessão."
+      "O PDF baixado diverge do hash congelado. Recrie a sessão e tente de novo."
     );
   }
 
-  const pdfDoc = await PDFDocument.load(opts.pdfBytes);
+  let pdfDoc: PDFDocument;
+  try {
+    pdfDoc = await PDFDocument.load(opts.pdfBytes, { ignoreEncryption: true });
+  } catch {
+    throw new Error(
+      "Não foi possível abrir o PDF (pode estar criptografado ou corrompido)."
+    );
+  }
+
   const pageCount = pdfDoc.getPageCount();
+  if (pageCount < 1) {
+    throw new Error("PDF sem páginas.");
+  }
   const pageIndex = Math.min(
     Math.max((opts.appearance.page || pageCount) - 1, 0),
     pageCount - 1
   );
   const page = pdfDoc.getPage(pageIndex);
   const { width: pw, height: ph } = page.getSize();
-  const boxW = opts.appearance.width ?? 220;
-  const boxH = opts.appearance.height ?? 70;
-  const x = opts.appearance.x ?? Math.max(36, pw - boxW - 36);
-  const y = opts.appearance.y ?? 36;
+  const boxW = opts.appearance.width ?? CERT_STAMP_BOX.w;
+  const boxH = opts.appearance.height ?? CERT_STAMP_BOX.h;
+  let x: number;
+  let y: number;
+  if (
+    opts.appearance.xPct != null &&
+    opts.appearance.yPct != null &&
+    Number.isFinite(opts.appearance.xPct) &&
+    Number.isFinite(opts.appearance.yPct)
+  ) {
+    const o = certStampOrigin(
+      pw,
+      ph,
+      boxW,
+      boxH,
+      opts.appearance.xPct,
+      opts.appearance.yPct
+    );
+    x = o.x;
+    y = o.y;
+  } else {
+    x = opts.appearance.x ?? Math.max(36, pw - boxW - 36);
+    y = opts.appearance.y ?? 36;
+  }
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
@@ -199,42 +346,42 @@ export async function signPdfWithLocalCertificate(opts: {
   });
 
   const stamped = await pdfDoc.save({ useObjectStreams: false });
-  const stampedU8 = stamped instanceof Uint8Array ? stamped : new Uint8Array(stamped);
-  const finalHash = await sha256Hex(stampedU8);
+  const stampedU8 =
+    stamped instanceof Uint8Array ? stamped : new Uint8Array(stamped);
 
-  const privateKey = forge.pki.privateKeyFromPem(opts.cert.privateKeyPem);
-  const certificate = forge.pki.certificateFromPem(opts.cert.certificatePem);
+  let pkcs7Bytes: Uint8Array;
+  try {
+    pkcs7Bytes = createDetachedPkcs7(
+      stampedU8,
+      opts.cert.privateKeyPem,
+      opts.cert.certificatePem
+    );
+  } catch (e) {
+    throw new Error(
+      e instanceof Error
+        ? `Falha ao gerar PKCS#7: ${e.message}`
+        : "Falha ao gerar a assinatura criptográfica."
+    );
+  }
 
-  const p7 = forge.pkcs7.createSignedData();
-  p7.content = forge.util.createBuffer(uint8ToBinary(stampedU8));
-  p7.addCertificate(certificate);
-  p7.addSigner({
-    key: privateKey,
-    certificate,
-    digestAlgorithm: forge.pki.oids.sha256,
-    authenticatedAttributes: [
-      { type: forge.pki.oids.contentType, value: forge.pki.oids.data },
-      { type: forge.pki.oids.messageDigest },
-      { type: forge.pki.oids.signingTime, value: new Date() as unknown as string },
-    ],
-  });
-  p7.sign({ detached: true });
-  const p7Der = forge.asn1.toDer(p7.toAsn1()).getBytes();
-  const p7U8 = new Uint8Array(p7Der.length);
-  for (let i = 0; i < p7Der.length; i++) p7U8[i] = p7Der.charCodeAt(i);
-
-  // Anexa o .p7s como arquivo embutido no PDF (evidência portátil)
-  const withAttach = await PDFDocument.load(stampedU8);
-  await withAttach.attach(p7U8, "assinatura.p7s", {
-    mimeType: "application/pkcs7-signature",
-    description: "Assinatura PKCS#7 (detached) do PDF carimbado",
-  });
-  const finalPdf = await withAttach.save({ useObjectStreams: false });
-  const finalU8 = finalPdf instanceof Uint8Array ? finalPdf : new Uint8Array(finalPdf);
+  // Anexar .p7s é opcional — se falhar, mantém o PDF carimbado.
+  let finalU8 = stampedU8;
+  try {
+    const withAttach = await PDFDocument.load(stampedU8);
+    await withAttach.attach(pkcs7Bytes, "assinatura.p7s", {
+      mimeType: "application/pkcs7-signature",
+      description: "Assinatura PKCS#7 (detached) do PDF carimbado",
+    });
+    const finalPdf = await withAttach.save({ useObjectStreams: false });
+    finalU8 =
+      finalPdf instanceof Uint8Array ? finalPdf : new Uint8Array(finalPdf);
+  } catch {
+    finalU8 = stampedU8;
+  }
 
   return {
-    signedPdfBase64: uint8ToBase64(finalU8),
-    pkcs7Base64: binaryToBase64(p7Der),
+    signedPdfBytes: finalU8,
+    pkcs7Bytes,
     finalHashSha256: await sha256Hex(finalU8),
     pageCount,
   };

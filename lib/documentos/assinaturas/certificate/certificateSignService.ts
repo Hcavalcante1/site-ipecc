@@ -79,7 +79,9 @@ async function carregarDocEHash(documentId: string): Promise<
     .limit(1)
     .maybeSingle();
 
-  const pathToRead = version?.storage_path || doc.storage_path;
+  // Sempre o mesmo path que o download da sessão usa (gd_documents.storage_path).
+  // Não confiar em file_hash antigo — recalcular dos bytes reais.
+  const pathToRead = String(doc.storage_path);
   const { data: file, error: dlErr } = await admin.storage
     .from(GD_STORAGE_BUCKET)
     .download(pathToRead);
@@ -93,10 +95,14 @@ async function carregarDocEHash(documentId: string): Promise<
   }
 
   const buf = Buffer.from(await file.arrayBuffer());
-  const hash =
-    (version?.file_hash && String(version.file_hash).length === 64
-      ? String(version.file_hash).toLowerCase()
-      : null) || sha256Bytes(buf);
+  if (buf.length < 5 || buf.subarray(0, 4).toString("utf8") !== "%PDF") {
+    return {
+      ok: false,
+      error: "O arquivo do documento não é um PDF válido.",
+      status: 400,
+    };
+  }
+  const hash = sha256Bytes(buf);
 
   return {
     ok: true,
@@ -284,7 +290,7 @@ export async function criarSessaoCertificado(opts: {
       transactionId: tx.id,
       documentId: doc.documentId,
       documentHashSha256: doc.hash,
-      downloadPath: `/api/admin/documentos/${doc.documentId}/arquivo`,
+      downloadPath: `/api/admin/documentos/assinaturas-certificado/${tx.id}/arquivo`,
     });
   }
 
@@ -306,7 +312,10 @@ export async function concluirItemCertificado(opts: {
   transactionId: string;
   signerUserId: string;
   actorUserId: string;
-  signedPdfBase64: string;
+  /** PDF já em bytes (preferencial) ou base64 legado. */
+  signedPdfBytes?: Buffer | Uint8Array | null;
+  signedPdfBase64?: string | null;
+  pkcs7Bytes?: Buffer | Uint8Array | null;
   pkcs7Base64?: string | null;
   cert: CertPublicMeta;
   appearance?: CertAppearance | null;
@@ -358,7 +367,13 @@ export async function concluirItemCertificado(opts: {
 
   let signedBuf: Buffer;
   try {
-    signedBuf = Buffer.from(opts.signedPdfBase64, "base64");
+    if (opts.signedPdfBytes && opts.signedPdfBytes.byteLength > 0) {
+      signedBuf = Buffer.from(opts.signedPdfBytes);
+    } else if (opts.signedPdfBase64) {
+      signedBuf = Buffer.from(opts.signedPdfBase64, "base64");
+    } else {
+      return { ok: false, error: "PDF assinado ausente.", status: 400 };
+    }
   } catch {
     return { ok: false, error: "PDF assinado inválido.", status: 400 };
   }
@@ -367,6 +382,9 @@ export async function concluirItemCertificado(opts: {
   }
   if (signedBuf.length > 40 * 1024 * 1024) {
     return { ok: false, error: "PDF assinado excede 40 MB.", status: 400 };
+  }
+  if (signedBuf.subarray(0, 4).toString("utf8") !== "%PDF") {
+    return { ok: false, error: "Arquivo enviado não é um PDF.", status: 400 };
   }
 
   const finalHash = sha256Bytes(signedBuf);
@@ -410,20 +428,23 @@ export async function concluirItemCertificado(opts: {
 
   let pkcs7Path: string | null = null;
   let pkcs7Hash: string | null = null;
-  if (opts.pkcs7Base64) {
-    try {
-      const p7 = Buffer.from(opts.pkcs7Base64, "base64");
-      if (p7.length > 32) {
-        pkcs7Hash = sha256Bytes(p7);
-        pkcs7Path = `assinaturas-certificado/${tx.document_id}/${tx.id}/assinatura-${validationCode}.p7s`;
-        await admin.storage.from(GD_STORAGE_BUCKET).upload(pkcs7Path, p7, {
-          contentType: "application/pkcs7-signature",
-          upsert: false,
-        });
-      }
-    } catch {
-      /* PKCS#7 opcional */
+  try {
+    let p7: Buffer | null = null;
+    if (opts.pkcs7Bytes && opts.pkcs7Bytes.byteLength > 32) {
+      p7 = Buffer.from(opts.pkcs7Bytes);
+    } else if (opts.pkcs7Base64) {
+      p7 = Buffer.from(opts.pkcs7Base64, "base64");
     }
+    if (p7 && p7.length > 32) {
+      pkcs7Hash = sha256Bytes(p7);
+      pkcs7Path = `assinaturas-certificado/${tx.document_id}/${tx.id}/assinatura-${validationCode}.p7s`;
+      await admin.storage.from(GD_STORAGE_BUCKET).upload(pkcs7Path, p7, {
+        contentType: "application/pkcs7-signature",
+        upsert: false,
+      });
+    }
+  } catch {
+    /* PKCS#7 opcional */
   }
 
   const appearance = opts.appearance || null;
