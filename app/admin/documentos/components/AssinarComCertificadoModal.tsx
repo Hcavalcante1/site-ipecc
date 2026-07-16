@@ -77,6 +77,18 @@ function u8ToBlob(u8: Uint8Array, mime: string): Blob {
   return new Blob([copy], { type: mime });
 }
 
+function triggerDownload(blob: Blob, fileName: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  a.rel = "noreferrer";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
 function formatCpf(cpf: string | null | undefined): string | null {
   if (!cpf) return null;
   const d = cpf.replace(/\D/g, "");
@@ -892,6 +904,11 @@ export default function AssinarComCertificadoModal({
             },
           });
 
+          triggerDownload(
+            u8ToBlob(signed.signedPdfBytes, "application/pdf"),
+            `assinado-${item.documentId.slice(0, 8)}.pdf`
+          );
+
           const form = new FormData();
           form.append("action", "concluir");
           form.append("transactionId", item.transactionId);
@@ -946,11 +963,14 @@ export default function AssinarComCertificadoModal({
             conclJson = await concl.json();
           } catch {
             throw new Error(
-              `Falha ao gravar assinatura (HTTP ${concl.status}). O PDF pode ser grande demais para o envio.`
+              `Falha ao concluir a assinatura (HTTP ${concl.status}). O PDF já foi gerado e baixado no seu computador, mas a gravação na plataforma falhou.`
             );
           }
           if (!concl.ok || !conclJson.ok) {
-            throw new Error(conclJson.error || "Falha ao gravar assinatura.");
+            throw new Error(
+              conclJson.error ||
+                "Falha ao concluir a assinatura. O PDF já foi gerado e baixado no seu computador."
+            );
           }
           out.push({
             documentId: item.documentId,
