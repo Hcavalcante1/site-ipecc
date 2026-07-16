@@ -102,6 +102,65 @@ function formatDn(cert: forge.pki.Certificate, which: "subject" | "issuer"): str
   return attrs.map((a) => `${a.shortName || a.name}=${a.value}`).join(", ");
 }
 
+function bagAttrHex(
+  bag: forge.pkcs12.Bag | undefined,
+  name: string
+): string | null {
+  const raw = bag?.attributes?.[name]?.[0];
+  if (!raw) return null;
+  if (typeof raw === "string") {
+    return bytesToHex(raw);
+  }
+  if (raw && typeof raw === "object" && "charCodeAt" in raw) {
+    return bytesToHex(String(raw));
+  }
+  return null;
+}
+
+function certIsCa(cert: forge.pki.Certificate): boolean {
+  const bc = cert.getExtension("basicConstraints") as
+    | { cA?: boolean }
+    | undefined;
+  return Boolean(bc?.cA);
+}
+
+function certScoreForSigning(
+  cert: forge.pki.Certificate,
+  keyIdHex: string | null,
+  certBag?: forge.pkcs12.Bag
+): number {
+  let score = 0;
+  const certKeyIdHex = bagAttrHex(certBag, "localKeyId");
+  if (keyIdHex && certKeyIdHex && keyIdHex === certKeyIdHex) score += 1000;
+  if (!certIsCa(cert)) score += 100;
+
+  const ku = cert.getExtension("keyUsage") as
+    | {
+        digitalSignature?: boolean;
+        nonRepudiation?: boolean;
+        keyEncipherment?: boolean;
+      }
+    | undefined;
+  if (ku?.digitalSignature) score += 40;
+  if (ku?.nonRepudiation) score += 30;
+  if (ku?.keyEncipherment) score += 10;
+
+  const eku = cert.getExtension("extKeyUsage") as
+    | Record<string, boolean>
+    | undefined;
+  if (eku?.emailProtection) score += 10;
+  if (eku?.clientAuth) score += 10;
+
+  const subjectCn = attrValue(cert.subject.attributes, "CN");
+  const issuerCn = attrValue(cert.issuer.attributes, "CN");
+  if (subjectCn && subjectCn !== issuerCn) score += 5;
+
+  const now = Date.now();
+  if (cert.validity.notBefore.getTime() <= now) score += 3;
+  if (cert.validity.notAfter.getTime() > now) score += 3;
+  return score;
+}
+
 export async function loadPfxFromFile(
   file: File,
   password: string
@@ -137,8 +196,19 @@ export async function loadPfxFromFile(
     p12.getBags({ bagType: forge.pki.oids.certBag })[forge.pki.oids.certBag] ||
     [];
 
-  const keyBag = bagsKey[0]?.key || bagsKeyPlain[0]?.key || null;
-  const certBag = bagsCert[0]?.cert || null;
+  const keyBagEntry = bagsKey[0] || bagsKeyPlain[0] || null;
+  const keyBag = keyBagEntry?.key || null;
+  const keyIdHex = bagAttrHex(keyBagEntry || undefined, "localKeyId");
+
+  let certBagEntry =
+    bagsCert
+      .filter((b) => b?.cert)
+      .sort(
+        (a, b) =>
+          certScoreForSigning(b.cert, keyIdHex, b) -
+          certScoreForSigning(a.cert, keyIdHex, a)
+      )[0] || null;
+  const certBag = certBagEntry?.cert || null;
 
   if (!keyBag || !certBag) {
     throw new Error(
