@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { buildGdTemplateBody } from "@/lib/documentos/templatePresets";
 
 export type DocumentoTipoRow = {
   codigo: string;
@@ -290,19 +291,24 @@ export async function criarDocumentoTipo(opts: {
       tipo_publicacao: tipoPubPadrao || codigo,
       modalidade: "qualquer",
       fase_minima: "rascunho",
-      corpo_texto: `O INSTITUTO PAULISTA DE ESTUDOS, CULTURA E CIDADANIA – IPECC publica o presente documento (${label}).
-
-1. IDENTIFICAÇÃO
-Título: {{titulo}}
-Tipo: {{tipo}}
-Fase: {{fase}}
-Data: {{data}}
-
-2. CONTEÚDO
-{{objeto}}
-
-3. DISPOSIÇÕES FINAIS
-Documento gerado digitalmente e publicado somente após assinatura institucional.`,
+      corpo_texto: buildGdTemplateBody(codigo, label, {
+        titulo: "",
+        objeto:
+          "Conte?do institucional m?nimo do documento. Ajuste apenas os campos vari?veis espec?ficos deste tipo.",
+        prazo: "Conforme cronograma institucional",
+        partes: "",
+        destinatario: "",
+        assunto: "",
+        fundamento:
+          "Conforme legisla??o aplic?vel, regulamentos internos e diretrizes institucionais.",
+        observacoes:
+          "Documento gerado no padr?o institucional do IPECC e publicado somente ap?s assinatura.",
+        periodo: "",
+        metas: "",
+        resultados: "",
+        responsavel: "",
+        declaracao: "",
+      }),
       ativo: true,
     });
   }
