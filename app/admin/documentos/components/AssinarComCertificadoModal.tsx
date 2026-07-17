@@ -720,7 +720,7 @@ function CertStampPositionPreview({
                           }}
                         />
                       )}
-                      <div style={{ minWidth: 0, textAlign: "center", fontSize: 4.8, lineHeight: 1.0, marginTop: 0 }}>
+                      <div style={{ minWidth: 0, textAlign: "center", fontSize: 4.8, lineHeight: 1.0, marginTop: 1 }}>
                         <div style={{ fontWeight: 700 }}>VALIDAR ITI</div>
                         <div>verifique em validar.iti.gov.br</div>
                       </div>
