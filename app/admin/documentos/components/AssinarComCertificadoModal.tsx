@@ -209,67 +209,60 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
         marginTop: 12,
         marginBottom: 12,
         borderRadius: 8,
-        border: "1px solid #334155",
         background: "#ffffff",
         color: "#000",
-        padding: 8,
+        padding: 6,
         display: "flex",
         gap: 6,
         alignItems: "stretch",
+        minHeight: 88,
       }}
     >
       <div
         style={{
           minWidth: 0,
-          width: "38%",
+          flex: 1,
           paddingRight: 8,
-          fontSize: 7.2,
-          lineHeight: 1.12,
+          fontSize: 7.1,
+          lineHeight: 1.08,
           fontFamily: "Helvetica, Arial, sans-serif",
           color: "#000",
         }}
       >
-        <div style={{ fontWeight: 700, wordBreak: "break-word" }}>
+        <div style={{ fontSize: 6.7, fontWeight: 700, lineHeight: 1.05 }}>Assinado digitalmente por</div>
+        <div style={{ marginTop: 2, fontWeight: 700, fontSize: 7.4, lineHeight: 1.06, wordBreak: "break-word" }}>
           {(cert.subject || label).toUpperCase()}
         </div>
-        <div style={{ marginTop: 6, fontWeight: 400 }}>
-          CNPJ: {cnpj || ""}
+        <div style={{ marginTop: 2, fontWeight: 400 }}>CNPJ: {cnpj || ""}</div>
+        <div style={{ marginTop: 2, fontWeight: 400, wordBreak: "break-word" }}>
+          {[cert.icpBrasil.razaoSocial ? `Raz?o social: ${cert.icpBrasil.razaoSocial}` : null, cert.icpBrasil.responsavel ? `Respons?vel: ${cert.icpBrasil.responsavel}` : null]
+            .filter(Boolean)
+            .join(" ? ")}
         </div>
+        <div style={{ marginTop: 2, fontWeight: 400 }}>CPF: {cpf || ""}</div>
+        <div style={{ marginTop: 2, fontWeight: 400 }}>Dados: {when}</div>
       </div>
       <div
         style={{
-          width: "62%",
-          minWidth: 0,
-          borderLeft: "1px solid #cbd5e1",
-          paddingLeft: 8,
+          width: 66,
+          minWidth: 66,
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          gap: 2,
-          position: "relative",
+          alignItems: "center",
+          fontSize: 6,
+          lineHeight: 1.05,
+          fontFamily: "Helvetica, Arial, sans-serif",
+          color: "#000",
         }}
       >
-        <div style={{ fontSize: 6.8, fontWeight: 700, lineHeight: 1.1 }}>
-          Assinado digitalmente por
-        </div>
-        <div style={{ fontSize: 7.2, fontWeight: 700, lineHeight: 1.1, wordBreak: "break-word" }}>
-          {(cert.subject || label).toUpperCase()}
-        </div>
-        <div style={{ fontSize: 7.1, lineHeight: 1.12, wordBreak: "break-word" }}>
-          {[cert.icpBrasil.razaoSocial ? `Razão social: ${cert.icpBrasil.razaoSocial}` : null, cert.icpBrasil.responsavel ? `Responsável: ${cert.icpBrasil.responsavel}` : null]
-            .filter(Boolean)
-            .join(" · ")}
-        </div>
-        <div style={{ fontSize: 6.5, lineHeight: 1.1 }}>
-          {cpf ? `CPF: ${cpf}` : ""}
-        </div>
-        <div style={{ fontSize: 6.5, lineHeight: 1.1 }}>Dados: {when}</div>
+        <div style={{ fontWeight: 700, textAlign: "center" }}>VALIDAR ITI</div>
         {qrDataUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={qrDataUrl}
-            alt="QR Code de validação"
-            style={{ width: 34, height: 34, display: "block", position: "absolute", right: 6, bottom: 6 }}
+            alt="QR Code de valida??o"
+            style={{ width: 34, height: 34, display: "block" }}
           />
         ) : (
           <div
@@ -278,14 +271,10 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
               height: 34,
               border: "1px solid #94a3b8",
               background: "#f8fafc",
-              position: "absolute",
-              right: 8,
-              bottom: 8,
             }}
           />
         )}
-        <div style={{ fontSize: 6.8, lineHeight: 1.12, marginTop: 2 }}>VALIDAR ITI</div>
-        <div style={{ fontSize: 6, lineHeight: 1.08 }}>verificar em validar.iti.gov.br</div>
+        <div style={{ textAlign: "center" }}>verifique em validar.iti.gov.br</div>
       </div>
     </div>
   );
