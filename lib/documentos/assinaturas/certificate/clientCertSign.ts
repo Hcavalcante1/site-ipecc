@@ -856,13 +856,13 @@ export async function signPdfWithLocalCertificate(opts: {
   });
   page.drawImage(qr, {
     x: qrX,
-    y: y + 17,
+    y: y + 16,
     width: qrSize,
     height: qrSize,
   });
   page.drawText("VALIDAR ITI", {
     x: validationX,
-    y: y + 6,
+    y: y + 5,
     size: 5.1,
     font: fontBold,
     color: ink,
@@ -871,7 +871,7 @@ export async function signPdfWithLocalCertificate(opts: {
   });
   page.drawText("verifique em validar.iti.gov.br", {
     x: validationX,
-    y: y - 2,
+    y: y - 3,
     size: 4.7,
     font,
     color: ink,
