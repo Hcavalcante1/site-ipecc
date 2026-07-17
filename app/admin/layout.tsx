@@ -384,7 +384,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="admin-sidebar-footer">
-            <div className="admin-sidebar-footer-brand">
+            <LogoutButton />
+
+            <div className="admin-sidebar-footer-brand admin-sidebar-footer-brand--below">
               <span className="admin-sidebar-footer-brand-name">IPECC</span>
               <span
                 className="admin-sidebar-footer-mini"
@@ -393,8 +395,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 {userEmail || "Conta administrativa"}
               </span>
             </div>
-
-            <LogoutButton />
           </div>
         </aside>
 
