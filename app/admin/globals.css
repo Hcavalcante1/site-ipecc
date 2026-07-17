@@ -38,9 +38,9 @@
   background: linear-gradient(150deg, #020617 0%, #020617 45%, #041a3b 100%);
   padding: 26px 20px 22px;
   box-shadow: 10px 0 40px rgba(0, 0, 0, 0.7);
-  position: fixed;
-  inset: 0 auto 0 0;
-  width: 272px;
+  position: sticky;
+  top: 0;
+  align-self: start;
   z-index: 10;
   height: 100vh;
   display: flex;
