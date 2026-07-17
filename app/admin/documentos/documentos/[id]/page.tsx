@@ -263,6 +263,21 @@ export default function DocumentoDetalhePage() {
     router.push(`/admin/documentos/documentos/${json.document.id}`);
   }
 
+  async function excluirDocumento() {
+    if (!confirm("Mover este documento para a lixeira?")) return;
+    const res = await fetch(`/api/admin/documentos/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      setAviso(json.error || "Erro ao excluir documento.");
+      return;
+    }
+    setAviso("Documento movido para a lixeira.");
+    router.push("/admin/documentos/documentos");
+  }
+
   async function assinarNoAdmin() {
     if (!document?.storage_path) {
       setAviso("Envie um arquivo PDF antes de assinar.");
@@ -337,6 +352,13 @@ export default function DocumentoDetalhePage() {
             </button>
             <button type="button" style={{ ...gdBtnStyle, background: "#475569" }} onClick={duplicar}>
               Duplicar
+            </button>
+            <button
+              type="button"
+              style={{ ...gdBtnStyle, background: "#ef4444" }}
+              onClick={excluirDocumento}
+            >
+              Lixeira
             </button>
             {document.storage_path ? (
               <>

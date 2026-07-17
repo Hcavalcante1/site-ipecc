@@ -16,6 +16,7 @@ import {
   carregarDocumentoNoEscopo,
   GD_STORAGE_BUCKET,
 } from "@/lib/documentos";
+import { excluirTransacaoCertificado } from "@/lib/documentos/assinaturas/certificate/certificateSignService";
 
 type Ctx = { params: { id: string } };
 
@@ -229,6 +230,67 @@ export async function DELETE(req: NextRequest, ctx: Ctx) {
 
   const admin = getSupabaseAdmin();
   const now = new Date().toISOString();
+
+  const { data: signatureDocs, error: signatureDocsError } = await admin
+    .from("gd_signature_documents")
+    .select("id")
+    .eq("document_id", ctx.params.id)
+    .is("deleted_at", null);
+  if (signatureDocsError) {
+    return NextResponse.json(
+      { ok: false, error: signatureDocsError.message },
+      { status: 500 }
+    );
+  }
+
+  const signatureDocIds = (signatureDocs || [])
+    .map((row) => row.id)
+    .filter((value): value is string => Boolean(value));
+
+  if (signatureDocIds.length > 0) {
+    await admin
+      .from("gd_signature_signers")
+      .update({ deleted_at: now, updated_at: now })
+      .in("signature_document_id", signatureDocIds)
+      .is("deleted_at", null);
+
+    await admin
+      .from("gd_signature_batch_items")
+      .update({ deleted_at: now, updated_at: now })
+      .in("signature_document_id", signatureDocIds)
+      .is("deleted_at", null);
+
+    await admin
+      .from("gd_signature_documents")
+      .update({ deleted_at: now, updated_at: now })
+      .in("id", signatureDocIds)
+      .is("deleted_at", null);
+  }
+
+  const { data: certTransactions, error: certTransactionsError } = await admin
+    .from("gd_cert_transactions")
+    .select("id")
+    .eq("document_id", ctx.params.id);
+  if (certTransactionsError) {
+    return NextResponse.json(
+      { ok: false, error: certTransactionsError.message },
+      { status: 500 }
+    );
+  }
+
+  for (const tx of certTransactions || []) {
+    const result = await excluirTransacaoCertificado({
+      transactionId: tx.id,
+      actorUserId: auth.userId,
+    });
+    if (result.ok === false) {
+      return NextResponse.json(
+        { ok: false, error: result.error },
+        { status: result.status || 500 }
+      );
+    }
+  }
+
   const { error } = await admin
     .from("gd_documents")
     .update({ deleted_at: now, updated_at: now })

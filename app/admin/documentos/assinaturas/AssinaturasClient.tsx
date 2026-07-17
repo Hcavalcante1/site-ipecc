@@ -211,6 +211,28 @@ export default function AssinaturasClient() {
     carregar();
   }
 
+  async function moverDocumentoParaLixeira() {
+    const docId = documentId.trim();
+    if (!docId) {
+      setAviso("Selecione um documento antes de mover para a lixeira.");
+      return;
+    }
+    if (!confirm("Mover este documento para a lixeira?")) return;
+    const res = await fetch(`/api/admin/documentos/${docId}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      setAviso(json.error || "Erro ao mover documento para a lixeira.");
+      return;
+    }
+    setAviso("Documento movido para a lixeira.");
+    setDocumentId("");
+    setDocumentTitle(null);
+    carregar();
+  }
+
   async function criarEEnviarSignatario() {
     if (!documentId.trim()) {
       setAviso("Informe o ID do documento.");
@@ -533,6 +555,14 @@ export default function AssinaturasClient() {
             }}
           >
             Assinar com certificado
+          </button>
+          <button
+            type="button"
+            style={{ ...gdBtnStyle, background: "#ef4444" }}
+            disabled={!documentId.trim()}
+            onClick={moverDocumentoParaLixeira}
+          >
+            Lixeira
           </button>
           <button type="button" style={gdBtnStyle} onClick={criarEEnviarSignatario}>
             Enviar a outra pessoa
