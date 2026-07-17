@@ -6,7 +6,6 @@ import type {
   GdTemplateFormat,
   GdTemplateKind,
 } from "@/lib/documentos/types";
-import { GD_TEMPLATE_KINDS } from "@/lib/documentos/types";
 import { rotuloTipoModelo } from "@/lib/documentos/labels";
 import {
   buildGdTemplateBody,
@@ -15,7 +14,6 @@ import {
   type GdTemplateFieldKey,
   type GdTemplateFieldValues,
 } from "@/lib/documentos/templatePresets";
-import TipoDocumentoField from "@/components/admin/TipoDocumentoField";
 import GestaoDocumentalShell, {
   gdBtnStyle,
   gdCardStyle,
@@ -47,6 +45,20 @@ const wizardChipStyle = (active: boolean) => ({
   fontWeight: 700,
 });
 
+const stepCardStyle = (active: boolean) => ({
+  padding: 14,
+  borderRadius: 14,
+  border: `1px solid ${active ? "rgba(37,99,235,0.45)" : "rgba(148,163,184,0.25)"}`,
+  background: active ? "rgba(37,99,235,0.08)" : "rgba(255,255,255,0.03)",
+  boxShadow: active ? "0 8px 22px rgba(37,99,235,0.10)" : "none",
+});
+
+const kindCardGridStyle = {
+  display: "grid",
+  gap: 10,
+  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+};
+
 const sectionStyle = {
   display: "grid",
   gap: 10,
@@ -72,6 +84,68 @@ const fieldWrapStyle = {
   display: "grid",
   gap: 6,
 };
+
+const notesStyle = {
+  marginTop: 16,
+  padding: 16,
+  borderRadius: 14,
+  border: "1px solid rgba(148,163,184,0.28)",
+  background: "rgba(248,250,252,0.9)",
+  color: "#0f172a",
+};
+
+const kindOptions: Array<{ value: GdTemplateKind; label: string; help: string }> = [
+  {
+    value: "oficio",
+    label: "Ofício",
+    help: "Comunicação formal com destinatário, assunto e fecho.",
+  },
+  {
+    value: "declaracao",
+    label: "Declaração",
+    help: "Texto declaratório com finalidade e validade.",
+  },
+  {
+    value: "contrato",
+    label: "Contrato",
+    help: "Instrumento jurídico com partes, objeto e vigência.",
+  },
+  {
+    value: "convenio",
+    label: "Convênio",
+    help: "Instrumento de cooperação institucional.",
+  },
+  {
+    value: "termo",
+    label: "Termo",
+    help: "Termo institucional ou de ajuste.",
+  },
+  {
+    value: "ata",
+    label: "Ata",
+    help: "Registro formal de reunião ou deliberação.",
+  },
+  {
+    value: "relatorio",
+    label: "Relatório",
+    help: "Resumo técnico com achados e conclusão.",
+  },
+  {
+    value: "plano_trabalho",
+    label: "Plano de trabalho",
+    help: "Objetivos, metas, prazo e resultados esperados.",
+  },
+  {
+    value: "prestacao_contas",
+    label: "Prestação de contas",
+    help: "Execução, conformidade e encerramento.",
+  },
+  {
+    value: "outro",
+    label: "Outro",
+    help: "Modelo genérico institucional.",
+  },
+];
 
 export default function ModelosPage() {
   const [templates, setTemplates] = useState<GdDocumentTemplate[]>([]);
@@ -227,67 +301,74 @@ export default function ModelosPage() {
             style={wizardChipStyle(etapa === 1)}
             onClick={() => setEtapa(1)}
           >
-            1. Identificação
+            1. Capa
           </button>
           <button
             type="button"
             style={wizardChipStyle(etapa === 2)}
             onClick={() => setEtapa(2)}
           >
-            2. Campos específicos
+            2. Dados específicos
           </button>
           <button
             type="button"
             style={wizardChipStyle(etapa === 3)}
             onClick={() => setEtapa(3)}
           >
-            3. Prévia final
+            3. Minuta
           </button>
         </div>
 
         {etapa === 1 ? (
-          <div style={sectionStyle}>
-            <div style={fieldWrapStyle}>
-              <label>Nome do modelo</label>
-              <input
-                style={{ ...gdInputStyle, marginTop: 0, maxWidth: 640 }}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ex.: Contrato padrão de parceria"
-              />
-            </div>
+          <div style={stepCardStyle(true)}>
+            <strong style={{ display: "block", marginBottom: 6 }}>
+              Capa do modelo
+            </strong>
+            <p style={{ marginTop: 0, opacity: 0.85 }}>
+              Escolha o tipo da peça e informe o nome do modelo. O sistema já
+              assume o formato institucional padrão.
+            </p>
 
-            <div style={fieldWrapStyle}>
-              <label>Tipo do documento</label>
-              <div style={{ marginTop: 0 }}>
-                <TipoDocumentoField
-                  value={kind}
-                  onChange={(v) => alterarKind(v)}
-                  para="emissao"
-                  valueMode="codigo"
-                  selectStyle={{
-                    ...gdInputStyle,
-                    display: "block",
-                    width: "100%",
-                    maxWidth: 640,
-                  }}
-                  extraOptions={GD_TEMPLATE_KINDS.map((k) => ({
-                    codigo: k,
-                    label: rotuloTipoModelo(k),
-                  }))}
-                  createDefaults={{
-                    para_publicacao: false,
-                    para_emissao: true,
-                    para_prestacao: false,
-                    criar_modelo: false,
-                  }}
+            <div style={sectionStyle}>
+              <div style={fieldWrapStyle}>
+                <label>Nome do modelo</label>
+                <input
+                  style={{ ...gdInputStyle, marginTop: 0, maxWidth: 640 }}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Ex.: Contrato padrão de parceria"
                 />
               </div>
+              <div style={fieldWrapStyle}>
+                <label>Tipo do documento</label>
+                <div style={kindCardGridStyle}>
+                  {kindOptions.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => alterarKind(opt.value)}
+                      style={{
+                        textAlign: "left",
+                        padding: 12,
+                        borderRadius: 14,
+                        border: `1px solid ${kind === opt.value ? "#2563eb" : "#334155"}`,
+                        background:
+                          kind === opt.value
+                            ? "rgba(37,99,235,0.14)"
+                            : "rgba(255,255,255,0.04)",
+                        color: "#e5e7eb",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <strong style={{ display: "block", marginBottom: 4 }}>
+                        {opt.label}
+                      </strong>
+                      <span style={{ fontSize: 12, opacity: 0.8 }}>{opt.help}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
-
-            <p style={{ margin: 0, opacity: 0.72, fontSize: 13 }}>
-              Formato institucional padrão: {format.toUpperCase()}.
-            </p>
           </div>
         ) : null}
       </div>
@@ -302,7 +383,17 @@ export default function ModelosPage() {
         </p>
 
         {etapa === 2 ? (
-          <div style={sectionStyle}>
+          <div style={{ ...stepCardStyle(true), display: "grid", gap: 12 }}>
+            <div>
+              <strong style={{ display: "block", marginBottom: 6 }}>
+                Dados específicos da peça
+              </strong>
+              <p style={{ margin: 0, opacity: 0.82 }}>
+                Esta etapa concentra apenas as informações variáveis do caso.
+                O texto-base institucional fica embutido na minuta final.
+              </p>
+            </div>
+
             {fieldConfigs.map((field) => {
               const value = fieldValues[field.key] || "";
               return (
@@ -339,8 +430,24 @@ export default function ModelosPage() {
 
         {etapa === 3 ? (
           <div style={{ marginTop: 14 }}>
-            <strong>Prévia final</strong>
+            <strong style={{ display: "block", marginBottom: 8 }}>
+              Minuta final
+            </strong>
             <div style={previewStyle}>{generatedBody}</div>
+            <div style={notesStyle}>
+              <strong style={{ display: "block", marginBottom: 6 }}>
+                Notas explicativas - leitura obrigatória
+              </strong>
+              <p style={{ marginTop: 0, marginBottom: 8 }}>
+                O documento deve manter a redação institucional e apenas
+                adaptar o que for específico do caso concreto, seguindo o
+                mesmo espírito do formulário guiado da CGU.
+              </p>
+              <p style={{ margin: 0 }}>
+                Depois de aprovado internamente, a minuta segue para assinatura
+                e publicação/arquivo conforme o fluxo do módulo.
+              </p>
+            </div>
           </div>
         ) : null}
 
