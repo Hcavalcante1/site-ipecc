@@ -18,7 +18,6 @@ export function getCertificateHolderLabel(cert: LoadedCertificate): string {
   const subject = cert.subject?.trim();
   const cnpj = formatCnpj(onlyDigits(cert.icpBrasil.cnpj));
 
-  if (subject && cnpj) return `${subject} ? CNPJ ${cnpj}`;
   if (subject) return subject;
   if (cnpj) return `CNPJ ${cnpj}`;
   return cert.displayName || "";

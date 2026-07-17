@@ -774,9 +774,11 @@ export async function signPdfWithLocalCertificate(opts: {
   const ink = rgb(0, 0, 0);
 
   const contentX = x + 6;
-  const qrSize = 28;
+  const qrSize = 26;
   const qrX = x + boxW - qrSize - 5;
-  const textW = Math.max(0, qrX - contentX - 6);
+  const validationW = 50;
+  const validationX = Math.max(contentX, qrX - validationW - 4);
+  const textW = Math.max(0, validationX - contentX - 6);
   const qr = await pdfDoc.embedPng(validationQr);
 
   page.drawText("Assinado digitalmente por", {
@@ -846,28 +848,28 @@ export async function signPdfWithLocalCertificate(opts: {
     lineHeight: 6.2,
   });
   page.drawText("VALIDAR ITI", {
-    x: qrX,
-    y: y + boxH - 18,
-    size: 6.4,
+    x: validationX,
+    y: y + boxH - 16,
+    size: 5.9,
     font: fontBold,
     color: ink,
-    maxWidth: qrSize,
-    lineHeight: 6.5,
+    maxWidth: validationW,
+    lineHeight: 6.1,
+  });
+  page.drawText("verifique em validar.iti.gov.br", {
+    x: validationX,
+    y: y + boxH - 24,
+    size: 5.2,
+    font,
+    color: ink,
+    maxWidth: validationW,
+    lineHeight: 5.4,
   });
   page.drawImage(qr, {
     x: qrX,
-    y: y + 22,
+    y: y + 20,
     width: qrSize,
     height: qrSize,
-  });
-  page.drawText("verifique em validar.iti.gov.br", {
-    x: qrX - 1,
-    y: y + 7,
-    size: 5.7,
-    font,
-    color: ink,
-    maxWidth: qrSize + 2,
-    lineHeight: 5.9,
   });
 
   const stamped = await pdfDoc.save({ useObjectStreams: false });

@@ -214,7 +214,7 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
           padding: 4,
           display: "inline-flex",
           flexDirection: "row",
-          gap: 4,
+          gap: 3,
           alignItems: "center",
           width: "fit-content",
           maxWidth: "100%",
@@ -246,24 +246,28 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
       </div>
       <div
         style={{
-          width: 50,
-          minWidth: 50,
+          width: 72,
+          minWidth: 72,
           display: "flex",
-          flexDirection: "column",
+          flexDirection: "row",
           alignItems: "center",
-          gap: 0,
+          gap: 3,
           fontSize: 5.6,
           lineHeight: 1.02,
           fontFamily: "Helvetica, Arial, sans-serif",
           color: "#000",
         }}
       >
+        <div style={{ minWidth: 0, textAlign: "right" }}>
+          <div style={{ fontWeight: 700, lineHeight: 1.02 }}>VALIDAR ITI</div>
+          <div style={{ lineHeight: 1.02 }}>verifique em validar.iti.gov.br</div>
+        </div>
         {qrDataUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={qrDataUrl}
             alt="QR Code de validação"
-            style={{ width: 24, height: 24, display: "block" }}
+            style={{ width: 24, height: 24, display: "block", flex: "0 0 auto" }}
           />
         ) : (
           <div
@@ -272,11 +276,10 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
               height: 24,
               border: "1px solid #94a3b8",
               background: "#f8fafc",
+              flex: "0 0 auto",
             }}
           />
         )}
-        <div style={{ fontWeight: 700, textAlign: "center", lineHeight: 1.02 }}>VALIDAR ITI</div>
-        <div style={{ textAlign: "center", lineHeight: 1.02 }}>verifique em validar.iti.gov.br</div>
       </div>
     </div>
   );
