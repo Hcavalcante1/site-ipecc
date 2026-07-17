@@ -42,6 +42,7 @@
   box-shadow: 10px 0 40px rgba(0, 0, 0, 0.7);
   position: sticky;
   top: 0;
+  align-self: start;
   z-index: 10;
   height: 100vh;
   display: flex;
@@ -97,6 +98,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 2px;
+  scrollbar-gutter: stable;
 }
 
 .admin-nav-section-title {
@@ -267,6 +269,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .admin-main-footer {
@@ -311,6 +314,7 @@
   min-width: 0;
   flex: 1 1 auto;
   min-height: 0;
+  overflow: hidden;
 }
 
 /* ===== Tipografia / títulos ===== */
