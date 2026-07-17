@@ -61,6 +61,31 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const html = document.documentElement;
+      const body = document.body;
+      const prevHtmlOverflow = html.style.overflow;
+      const prevHtmlHeight = html.style.height;
+      const prevBodyOverflow = body.style.overflow;
+      const prevBodyHeight = body.style.height;
+
+      html.style.height = "100%";
+      html.style.overflow = "hidden";
+      body.style.height = "100%";
+      body.style.overflow = "hidden";
+
+      return () => {
+        html.style.overflow = prevHtmlOverflow;
+        html.style.height = prevHtmlHeight;
+        body.style.overflow = prevBodyOverflow;
+        body.style.height = prevBodyHeight;
+      };
+    }
+
+    return undefined;
+  }, []);
+
+  useEffect(() => {
     let mounted = true;
 
     async function encerrarSessaoAdmin() {
