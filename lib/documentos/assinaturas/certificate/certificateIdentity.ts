@@ -18,6 +18,12 @@ function stripSubjectCnpj(subject: string): string {
   return subject.replace(/[:\s-]*\d{14}\s*$/, "").trim();
 }
 
+function extractSubjectCnpj(subject: string): string | null {
+  const m = subject.match(/(\d{14})\s*$/);
+  if (!m) return null;
+  return formatCnpj(m[1]);
+}
+
 export function getCertificateHolderLabel(cert: LoadedCertificate): string {
   const subject = cert.subject?.trim();
   const cnpj = formatCnpj(onlyDigits(cert.icpBrasil.cnpj));
@@ -28,8 +34,9 @@ export function getCertificateHolderLabel(cert: LoadedCertificate): string {
 }
 
 export function getCertificateHolderCnpj(cert: LoadedCertificate): string | null {
+  const subject = cert.subject?.trim() || cert.displayName?.trim() || "";
   const cnpj = formatCnpj(onlyDigits(cert.icpBrasil.cnpj));
-  return cnpj || null;
+  return cnpj || extractSubjectCnpj(subject) || null;
 }
 
 export function getCertificateSummary(cert: LoadedCertificate): string {

@@ -681,12 +681,15 @@ function CertStampPositionPreview({
                       position: "relative",
                     }}
                   >
-                    <div style={{ minWidth: 0, flex: "1 1 auto" }}>
+                    <div style={{ minWidth: 0, flex: "0 1 auto", maxWidth: 170 }}>
                       <div style={{ fontSize: 6.6, fontWeight: 700, lineHeight: 1.04 }}>
                         Assinado digitalmente por
                       </div>
                       <div style={{ marginTop: 2, fontSize: 7, fontWeight: 700, wordBreak: "break-word", lineHeight: 1.04 }}>
                         {String(stampSubject || signerLabel).toUpperCase() || "TITULAR DO CERTIFICADO"}
+                      </div>
+                      <div style={{ marginTop: 0, fontWeight: 400 }}>
+                        CNPJ: {stampCnpj || ""}
                       </div>
                       <div style={{ marginTop: 1, wordBreak: "break-word" }}>
                         {[stampRazaoSocial ? `Razão social: ${stampRazaoSocial}` : null, stampResponsavel ? `Responsável: ${stampResponsavel}` : null]
@@ -698,7 +701,7 @@ function CertStampPositionPreview({
                       </div>
                       <div style={{ marginTop: 1 }}>Dados: {when}</div>
                     </div>
-                    <div style={{ display: "flex", gap: 4, alignItems: "flex-end", justifyContent: "flex-start" }}>
+                    <div style={{ display: "flex", gap: 2, alignItems: "center", justifyContent: "flex-start", flex: "0 0 auto" }}>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontWeight: 700, lineHeight: 1.02 }}>VALIDAR ITI</div>
                         <div style={{ lineHeight: 1.02 }}>verificar em validar.iti.gov.br</div>
@@ -708,13 +711,13 @@ function CertStampPositionPreview({
                         <img
                           src={qrDataUrl}
                           alt="QR Code de validação"
-                          style={{ width: 28, height: 28, display: "block", flex: "0 0 auto" }}
+                          style={{ width: 24, height: 24, display: "block", flex: "0 0 auto" }}
                         />
                       ) : (
                         <div
                           style={{
-                            width: 28,
-                            height: 28,
+                            width: 24,
+                            height: 24,
                             border: "1px solid #94a3b8",
                             background: "#f8fafc",
                             flex: "0 0 auto",

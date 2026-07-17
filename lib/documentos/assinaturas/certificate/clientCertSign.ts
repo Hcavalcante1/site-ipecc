@@ -782,10 +782,10 @@ export async function signPdfWithLocalCertificate(opts: {
 
   const contentX = x + 6;
   const qrSize = 22;
-  const qrX = x + boxW - qrSize - 4;
   const validationW = 44;
-  const validationX = Math.max(contentX, qrX - validationW - 3);
-  const textW = Math.max(0, validationX - contentX - 6);
+  const textW = 170;
+  const validationX = contentX + textW + 4;
+  const qrX = validationX + validationW + 2;
   const qr = await pdfDoc.embedPng(validationQr);
 
   page.drawText("Assinado digitalmente por", {
