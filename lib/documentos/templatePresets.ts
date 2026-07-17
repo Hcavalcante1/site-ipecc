@@ -586,14 +586,26 @@ export function buildGdTemplateBody(
           ].join("\n")
         ),
         "",
-        section("OBJETO", clean(values.objeto)),
-        "",
-        section("PRAZO / VIGÊNCIA", clean(values.prazo)),
-        "",
-        section("CLÁUSULAS / FUNDAMENTO", clean(values.fundamento)),
+        section(
+          "CLÁUSULA PRIMEIRA - DO OBJETO",
+          clean(values.objeto)
+        ),
         "",
         section(
-          "DISPOSIÇÕES FINAIS",
+          "CLÁUSULA SEGUNDA - DA VIGÊNCIA",
+          clean(values.prazo, "Vigência a ser definida no caso concreto.")
+        ),
+        "",
+        section(
+          "CLÁUSULA TERCEIRA - DO FUNDAMENTO E DAS OBRIGAÇÕES",
+          clean(
+            values.fundamento,
+            "Base normativa, obrigações das partes e demais condições essenciais do instrumento."
+          )
+        ),
+        "",
+        section(
+          "CLÁUSULA QUARTA - DAS DISPOSIÇÕES FINAIS",
           clean(
             values.observacoes,
             "Permanecem válidas as disposições padronizadas do instrumento, na forma da legislação e da regulamentação aplicáveis."
