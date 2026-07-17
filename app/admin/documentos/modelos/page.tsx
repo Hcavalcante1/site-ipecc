@@ -6,10 +6,7 @@ import type {
   GdTemplateFormat,
   GdTemplateKind,
 } from "@/lib/documentos/types";
-import {
-  GD_TEMPLATE_FORMATS,
-  GD_TEMPLATE_KINDS,
-} from "@/lib/documentos/types";
+import { GD_TEMPLATE_KINDS } from "@/lib/documentos/types";
 import { rotuloTipoModelo } from "@/lib/documentos/labels";
 import {
   buildGdTemplateBody,
@@ -33,6 +30,23 @@ const gdDangerBtnStyle = {
   boxShadow: "none",
 };
 
+const wizardStyle = {
+  display: "flex",
+  gap: 8,
+  flexWrap: "wrap" as const,
+  marginBottom: 14,
+};
+
+const wizardChipStyle = (active: boolean) => ({
+  padding: "8px 12px",
+  borderRadius: 999,
+  border: `1px solid ${active ? "#2563eb" : "#334155"}`,
+  background: active ? "rgba(37,99,235,0.16)" : "rgba(255,255,255,0.04)",
+  color: active ? "#dbeafe" : "#cbd5e1",
+  fontSize: 12,
+  fontWeight: 700,
+});
+
 const sectionStyle = {
   display: "grid",
   gap: 10,
@@ -41,15 +55,15 @@ const sectionStyle = {
 
 const previewStyle = {
   marginTop: 12,
-  padding: 16,
+  padding: 18,
   borderRadius: 14,
   border: "1px solid rgba(148,163,184,0.35)",
   background: "#ffffff",
   color: "#0f172a",
   whiteSpace: "pre-wrap" as const,
-  lineHeight: 1.55,
+  lineHeight: 1.6,
   fontSize: 13,
-  maxHeight: 340,
+  maxHeight: 380,
   overflow: "auto",
   boxShadow: "0 10px 30px rgba(15,23,42,0.12)",
 };
@@ -70,6 +84,7 @@ export default function ModelosPage() {
   const [aviso, setAviso] = useState("");
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [etapa, setEtapa] = useState<1 | 2 | 3>(1);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -103,6 +118,7 @@ export default function ModelosPage() {
     setFormat("pdf");
     setFieldValues(getDefaultGdTemplateFieldValues());
     setEditingId(null);
+    setEtapa(1);
   }
 
   function atualizarCampo(key: GdTemplateFieldKey, value: string) {
@@ -112,6 +128,7 @@ export default function ModelosPage() {
   function alterarKind(v: GdTemplateKind) {
     setKind(v);
     setFieldValues(getDefaultGdTemplateFieldValues());
+    setEtapa(2);
   }
 
   async function salvar() {
@@ -172,6 +189,7 @@ export default function ModelosPage() {
     setKind(t.kind);
     setFormat(t.format);
     setFieldValues(getDefaultGdTemplateFieldValues());
+    setEtapa(2);
   }
 
   async function remover(id: string) {
@@ -203,26 +221,44 @@ export default function ModelosPage() {
           sai no padrão institucional.
         </p>
 
-        <div style={sectionStyle}>
-          <div style={fieldWrapStyle}>
-            <label>Nome do modelo</label>
-            <input
-              style={{ ...gdInputStyle, marginTop: 0, maxWidth: 640 }}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ex.: Contrato padrão de parceria"
-            />
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "minmax(260px, 1fr) minmax(180px, 220px)",
-              gap: 12,
-            }}
+        <div style={wizardStyle} aria-label="Etapas do formulário">
+          <button
+            type="button"
+            style={wizardChipStyle(etapa === 1)}
+            onClick={() => setEtapa(1)}
           >
+            1. Identificação
+          </button>
+          <button
+            type="button"
+            style={wizardChipStyle(etapa === 2)}
+            onClick={() => setEtapa(2)}
+          >
+            2. Campos específicos
+          </button>
+          <button
+            type="button"
+            style={wizardChipStyle(etapa === 3)}
+            onClick={() => setEtapa(3)}
+          >
+            3. Prévia final
+          </button>
+        </div>
+
+        {etapa === 1 ? (
+          <div style={sectionStyle}>
             <div style={fieldWrapStyle}>
-              <label>Tipo</label>
+              <label>Nome do modelo</label>
+              <input
+                style={{ ...gdInputStyle, marginTop: 0, maxWidth: 640 }}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Ex.: Contrato padrão de parceria"
+              />
+            </div>
+
+            <div style={fieldWrapStyle}>
+              <label>Tipo do documento</label>
               <div style={{ marginTop: 0 }}>
                 <TipoDocumentoField
                   value={kind}
@@ -248,22 +284,12 @@ export default function ModelosPage() {
                 />
               </div>
             </div>
-            <div style={fieldWrapStyle}>
-              <label>Formato</label>
-              <select
-                style={{ ...gdInputStyle, marginTop: 0, display: "block" }}
-                value={format}
-                onChange={(e) => setFormat(e.target.value as GdTemplateFormat)}
-              >
-                {GD_TEMPLATE_FORMATS.map((f) => (
-                  <option key={f} value={f}>
-                    {f.toUpperCase()}
-                  </option>
-                ))}
-              </select>
-            </div>
+
+            <p style={{ margin: 0, opacity: 0.72, fontSize: 13 }}>
+              Formato institucional padrão: {format.toUpperCase()}.
+            </p>
           </div>
-        </div>
+        ) : null}
       </div>
 
       <div style={gdCardStyle}>
@@ -275,49 +301,80 @@ export default function ModelosPage() {
           Altere só os campos mínimos deste tipo de peça.
         </p>
 
-        <div style={sectionStyle}>
-          {fieldConfigs.map((field) => {
-            const value = fieldValues[field.key] || "";
-            return (
-              <div key={field.key} style={fieldWrapStyle}>
-                <label>{field.label}</label>
-                {field.multiline ? (
-                  <textarea
-                    style={{
-                      ...gdInputStyle,
-                      marginTop: 0,
-                      minHeight: field.rows ? field.rows * 20 : 72,
-                      maxWidth: "100%",
-                    }}
-                    value={value}
-                    onChange={(e) => atualizarCampo(field.key, e.target.value)}
-                    placeholder={field.placeholder}
-                  />
-                ) : (
-                  <input
-                    style={{ ...gdInputStyle, marginTop: 0, maxWidth: 640 }}
-                    value={value}
-                    onChange={(e) => atualizarCampo(field.key, e.target.value)}
-                    placeholder={field.placeholder}
-                  />
-                )}
-                {field.help ? (
-                  <small style={{ opacity: 0.72 }}>{field.help}</small>
-                ) : null}
-              </div>
-            );
-          })}
-        </div>
+        {etapa === 2 ? (
+          <div style={sectionStyle}>
+            {fieldConfigs.map((field) => {
+              const value = fieldValues[field.key] || "";
+              return (
+                <div key={field.key} style={fieldWrapStyle}>
+                  <label>{field.label}</label>
+                  {field.multiline ? (
+                    <textarea
+                      style={{
+                        ...gdInputStyle,
+                        marginTop: 0,
+                        minHeight: field.rows ? field.rows * 16 : 64,
+                        maxWidth: "100%",
+                      }}
+                      value={value}
+                      onChange={(e) => atualizarCampo(field.key, e.target.value)}
+                      placeholder={field.placeholder}
+                    />
+                  ) : (
+                    <input
+                      style={{ ...gdInputStyle, marginTop: 0, maxWidth: 640 }}
+                      value={value}
+                      onChange={(e) => atualizarCampo(field.key, e.target.value)}
+                      placeholder={field.placeholder}
+                    />
+                  )}
+                  {field.help ? (
+                    <small style={{ opacity: 0.72 }}>{field.help}</small>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
 
-        <div style={{ marginTop: 14 }}>
-          <strong>Prévia gerada</strong>
-          <div style={previewStyle}>{generatedBody}</div>
-        </div>
+        {etapa === 3 ? (
+          <div style={{ marginTop: 14 }}>
+            <strong>Prévia final</strong>
+            <div style={previewStyle}>{generatedBody}</div>
+          </div>
+        ) : null}
 
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
-          <button type="button" style={gdBtnStyle} onClick={salvar}>
-            {editingId ? "Salvar alterações" : "Criar modelo"}
-          </button>
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            flexWrap: "wrap",
+            marginTop: 14,
+          }}
+        >
+          {etapa > 1 ? (
+            <button
+              type="button"
+              style={gdBtnStyle}
+              onClick={() => setEtapa((p) => (p - 1) as 1 | 2 | 3)}
+            >
+              Voltar
+            </button>
+          ) : null}
+          {etapa < 3 ? (
+            <button
+              type="button"
+              style={gdBtnStyle}
+              onClick={() => setEtapa((p) => (p + 1) as 1 | 2 | 3)}
+            >
+              Continuar
+            </button>
+          ) : null}
+          {etapa === 3 ? (
+            <button type="button" style={gdBtnStyle} onClick={salvar}>
+              {editingId ? "Salvar alterações" : "Criar modelo"}
+            </button>
+          ) : null}
           {editingId ? (
             <button type="button" style={gdDangerBtnStyle} onClick={limparForm}>
               Cancelar
