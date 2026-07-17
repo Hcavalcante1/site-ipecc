@@ -1,0 +1,21 @@
+.cursor/
+.next/
+.vercel/
+node_modules/
+reports/
+design-lab/
+_dash_head.txt
+arquivos.txt
+build-debug.log
+diagnostico.txt
+node_debug.txt
+node_procs.txt
+*.tsbuildinfo
+*.log
+*.webp1
+h site-ipecc*
+hboard operacional*
+services/documenso/.api-token-raw.txt
+services/documenso/.next-dev.err.log
+services/documenso/.next-dev.log
+services/documenso/_check_pw.js

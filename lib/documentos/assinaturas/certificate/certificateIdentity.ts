@@ -15,20 +15,13 @@ function formatCpf(cpf: string): string {
 }
 
 export function getCertificateHolderLabel(cert: LoadedCertificate): string {
-  const parts: string[] = [];
   const subject = cert.subject?.trim();
-  const razaoSocial = cert.icpBrasil.razaoSocial?.trim();
-  const responsavel = cert.icpBrasil.responsavel?.trim();
   const cnpj = formatCnpj(onlyDigits(cert.icpBrasil.cnpj));
-  const cpf = formatCpf(onlyDigits(cert.icpBrasil.cpf));
 
-  if (subject) parts.push(`CN ${subject}`);
-  if (razaoSocial) parts.push(`Razão social ${razaoSocial}`);
-  if (cnpj) parts.push(`CNPJ ${cnpj}`);
-  if (responsavel) parts.push(`Responsável ${responsavel}`);
-  if (cpf) parts.push(`CPF ${cpf}`);
-
-  return parts.join(" · ") || cert.displayName || "";
+  if (subject && cnpj) return `${subject} ? CNPJ ${cnpj}`;
+  if (subject) return subject;
+  if (cnpj) return `CNPJ ${cnpj}`;
+  return cert.displayName || "";
 }
 
 export function getCertificateSummary(cert: LoadedCertificate): string {

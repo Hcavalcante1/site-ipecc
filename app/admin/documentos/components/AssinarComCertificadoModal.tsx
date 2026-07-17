@@ -15,6 +15,7 @@ import {
 import {
   getCertificateHolderLabel,
 } from "@/lib/documentos/assinaturas/certificate/certificateIdentity";
+import QRCode from "qrcode";
 
 type Props = {
   open: boolean;
@@ -140,7 +141,7 @@ function CertificateReviewCard({ cert }: { cert: LoadedCertificate }) {
         marginTop: 12,
         marginBottom: 12,
         padding: 14,
-        borderRadius: 10,
+        borderRadius: 8,
         border: "1px solid #334155",
         background: "linear-gradient(180deg, #0f172a 0%, #1e293b 100%)",
       }}
@@ -182,68 +183,109 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
   const when = new Date().toLocaleString("pt-BR");
   const cnpj = formatCnpj(cert.icpBrasil.cnpj);
   const cpf = formatCpf(cert.icpBrasil.cpf);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void QRCode.toDataURL("https://validar.iti.gov.br", {
+      margin: 0,
+      width: 96,
+      errorCorrectionLevel: "M",
+    })
+      .then((url) => {
+        if (active) setQrDataUrl(url);
+      })
+      .catch(() => {
+        if (active) setQrDataUrl(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <div
       style={{
         marginTop: 12,
         marginBottom: 12,
-        borderRadius: 10,
+        borderRadius: 8,
         border: "1px solid #334155",
         background: "#ffffff",
         color: "#000",
-        padding: 10,
-        display: "grid",
-        gridTemplateColumns: "minmax(0, 0.5fr) minmax(0, 0.5fr)",
-        gap: 12,
+        padding: 8,
+        display: "flex",
+        gap: 6,
+        alignItems: "stretch",
       }}
     >
-      <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 8, lineHeight: 1.2, fontWeight: 700 }}>
-          TITULAR (CN): {cert.subject || label}
-        </div>
-        {cnpj ? (
-          <div style={{ fontSize: 8, lineHeight: 1.2, marginTop: 6 }}>
-            CNPJ: {cnpj}
-          </div>
-        ) : null}
-        {cert.icpBrasil.razaoSocial ? (
-          <div style={{ fontSize: 8, lineHeight: 1.2, marginTop: 6 }}>
-            Razão social: {cert.icpBrasil.razaoSocial}
-          </div>
-        ) : null}
-        {cert.icpBrasil.responsavel ? (
-          <div style={{ fontSize: 8, lineHeight: 1.2, marginTop: 6 }}>
-            Responsável: {cert.icpBrasil.responsavel}
-          </div>
-        ) : null}
-        {cpf ? (
-          <div style={{ fontSize: 8, lineHeight: 1.2, marginTop: 6 }}>
-            CPF: {cpf}
-          </div>
-        ) : null}
-      </div>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 8, lineHeight: 1.2, fontWeight: 400 }}>
-          Assinado de forma digital por
-        </div>
-        <div
-          style={{
-            fontSize: 8,
-            lineHeight: 1.25,
-          fontWeight: 700,
-          marginTop: 6,
-          wordBreak: "break-word",
+      <div
+        style={{
+          minWidth: 0,
+          width: "38%",
+          paddingRight: 8,
+          fontSize: 7.2,
+          lineHeight: 1.12,
+          fontFamily: "Helvetica, Arial, sans-serif",
+          color: "#000",
         }}
       >
-          {String(cert.subject || label).toUpperCase()}
+        <div style={{ fontWeight: 700, wordBreak: "break-word" }}>
+          {(cert.subject || label).toUpperCase()}
         </div>
-        <div style={{ fontSize: 8, lineHeight: 1.2, marginTop: 6 }}>
-          Dados: {when}
+        <div style={{ marginTop: 6, fontWeight: 400 }}>
+          CNPJ: {cnpj || ""}
         </div>
-        <div style={{ fontSize: 7, lineHeight: 1.2, marginTop: 6 }}>
-          Verifique em validar.iti.gov.br
+      </div>
+      <div
+        style={{
+          width: "62%",
+          minWidth: 0,
+          borderLeft: "1px solid #cbd5e1",
+          paddingLeft: 8,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          gap: 2,
+          position: "relative",
+        }}
+      >
+        <div style={{ fontSize: 6.8, fontWeight: 700, lineHeight: 1.1 }}>
+          Assinado digitalmente por
         </div>
+        <div style={{ fontSize: 7.2, fontWeight: 700, lineHeight: 1.1, wordBreak: "break-word" }}>
+          {(cert.subject || label).toUpperCase()}
+        </div>
+        <div style={{ fontSize: 7.1, lineHeight: 1.12, wordBreak: "break-word" }}>
+          {[cert.icpBrasil.razaoSocial ? `Razão social: ${cert.icpBrasil.razaoSocial}` : null, cert.icpBrasil.responsavel ? `Responsável: ${cert.icpBrasil.responsavel}` : null]
+            .filter(Boolean)
+            .join(" · ")}
+        </div>
+        <div style={{ fontSize: 6.5, lineHeight: 1.1 }}>
+          {cpf ? `CPF: ${cpf}` : ""}
+        </div>
+        <div style={{ fontSize: 6.5, lineHeight: 1.1 }}>Dados: {when}</div>
+        {qrDataUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={qrDataUrl}
+            alt="QR Code de validação"
+            style={{ width: 34, height: 34, display: "block", position: "absolute", right: 6, bottom: 6 }}
+          />
+        ) : (
+          <div
+            style={{
+              width: 34,
+              height: 34,
+              border: "1px solid #94a3b8",
+              background: "#f8fafc",
+              position: "absolute",
+              right: 8,
+              bottom: 8,
+            }}
+          />
+        )}
+        <div style={{ fontSize: 6.8, lineHeight: 1.12, marginTop: 2 }}>VALIDAR ITI</div>
+        <div style={{ fontSize: 6, lineHeight: 1.08 }}>verificar em validar.iti.gov.br</div>
       </div>
     </div>
   );
@@ -278,6 +320,7 @@ function CertStampPositionPreview({
   const pageRefs = useRef<Array<HTMLDivElement | null>>([]);
   const dragging = useRef(false);
   const [grabbing, setGrabbing] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [pages, setPages] = useState<
     Array<{ index: number; w: number; h: number; dataUrl: string }>
   >([]);
@@ -287,6 +330,24 @@ function CertStampPositionPreview({
   const pdfUrl = documentId
     ? `/api/admin/documentos/${encodeURIComponent(documentId)}/arquivo`
     : null;
+
+  useEffect(() => {
+    let active = true;
+    void QRCode.toDataURL("https://validar.iti.gov.br", {
+      margin: 0,
+      width: 96,
+      errorCorrectionLevel: "M",
+    })
+      .then((url) => {
+        if (active) setQrDataUrl(url);
+      })
+      .catch(() => {
+        if (active) setQrDataUrl(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!pdfUrl) {
@@ -605,61 +666,87 @@ function CertStampPositionPreview({
                     outline: grabbing ? "1px dashed #999" : "1px dashed transparent",
                     zIndex: 3,
                     touchAction: "none",
-                    padding: "4px 4px",
-                    display: "grid",
-                    gridTemplateColumns: "minmax(0, 0.45fr) minmax(0, 0.55fr)",
-                    gap: 8,
+                    padding: "6px 8px",
+                    display: "flex",
+                    gap: 6,
                     overflow: "hidden",
-                    alignItems: "start",
+                    alignItems: "stretch",
+                    minHeight: 84,
                   }}
                 >
                   <div
                     style={{
                       minWidth: 0,
-                      fontSize: 8,
-                      lineHeight: 1.15,
+                      width: "38%",
+                      paddingRight: 8,
+                      fontSize: 7.2,
+                      lineHeight: 1.12,
                       fontFamily: "Helvetica, Arial, sans-serif",
                       color: "#000",
                     }}
                   >
                     <div style={{ fontWeight: 700, wordBreak: "break-word" }}>
-                      {String(stampSubject || signerLabel)
-                        .slice(0, 48)
-                        .toUpperCase() || "TITULAR DO CERTIFICADO"}
+                      {String(stampSubject || signerLabel).toUpperCase() || "TITULAR DO CERTIFICADO"}
                     </div>
-                    <div style={{ marginTop: 6, fontWeight: 400 }}>
-                      {stampRazaoSocial ? `Razão social: ${stampRazaoSocial}` : ""}
-                    </div>
-                    <div style={{ marginTop: 6, fontWeight: 400 }}>
-                      {stampResponsavel ? `Responsável: ${stampResponsavel}` : ""}
-                    </div>
-                    <div style={{ marginTop: 6, fontWeight: 400 }}>
-                      {stampCnpj ? `CNPJ: ${stampCnpj}` : ""}
-                    </div>
-                    <div style={{ marginTop: 6, fontWeight: 400 }}>
-                      {stampCpf ? `CPF: ${stampCpf}` : ""}
-                    </div>
+                    <div style={{ marginTop: 5, fontWeight: 400 }}>CNPJ: {stampCnpj || ""}</div>
                   </div>
                   <div
                     style={{
+                      width: "62%",
                       minWidth: 0,
-                      fontSize: 8,
-                      lineHeight: 1.15,
+                      borderLeft: "1px solid #cbd5e1",
+                      paddingLeft: 8,
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      gap: 2,
+                      fontSize: 6.8,
+                      lineHeight: 1.12,
                       fontFamily: "Helvetica, Arial, sans-serif",
                       color: "#000",
+                      position: "relative",
                     }}
                   >
-                    <div style={{ fontWeight: 400 }}>
-                      Assinado de forma digital por
+                    <div>
+                      <div style={{ fontSize: 6.8, fontWeight: 700, lineHeight: 1.08 }}>
+                        Assinado digitalmente por
+                      </div>
+                      <div style={{ marginTop: 2, fontSize: 7.2, fontWeight: 700, wordBreak: "break-word", lineHeight: 1.08 }}>
+                        {String(stampSubject || signerLabel).toUpperCase() || "TITULAR DO CERTIFICADO"}
+                      </div>
+                      <div style={{ marginTop: 2, wordBreak: "break-word" }}>
+                        {[stampRazaoSocial ? `Razão social: ${stampRazaoSocial}` : null, stampResponsavel ? `Responsável: ${stampResponsavel}` : null]
+                          .filter(Boolean)
+                          .join(" • ")}
+                      </div>
+                      <div style={{ marginTop: 2, wordBreak: "break-word" }}>
+                        {stampCpf ? `CPF: ${stampCpf}` : ""}
+                      </div>
+                      <div style={{ marginTop: 2 }}>Dados: {when}</div>
                     </div>
-                    <div style={{ marginTop: 4, fontWeight: 700, wordBreak: "break-word" }}>
-                      {String(stampSubject || signerLabel)
-                        .slice(0, 48)
-                        .toUpperCase() || "TITULAR DO CERTIFICADO"}
-                    </div>
-                    <div style={{ marginTop: 6, fontWeight: 400 }}>Dados: {when}</div>
-                    <div style={{ marginTop: 4, fontSize: 7 }}>
-                      Verifique em validar.iti.gov.br
+                    <div style={{ display: "flex", gap: 6, alignItems: "flex-end", justifyContent: "space-between" }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 700 }}>VALIDAR ITI</div>
+                        <div>verificar em validar.iti.gov.br</div>
+                      </div>
+                      {qrDataUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={qrDataUrl}
+                          alt="QR Code de validação"
+                          style={{ width: 34, height: 34, display: "block", flex: "0 0 auto" }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: 34,
+                            height: 34,
+                            border: "1px solid #94a3b8",
+                            background: "#f8fafc",
+                            flex: "0 0 auto",
+                          }}
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1120,7 +1207,7 @@ export default function AssinarComCertificadoModal({
         zIndex: 90,
         display: "flex",
         alignItems: "center",
-        justifyContent: "center",
+        justifyContent: "space-between",
         padding: 16,
       }}
     >
@@ -1171,7 +1258,7 @@ export default function AssinarComCertificadoModal({
               style={{
                 background: "#7f1d1d",
                 color: "#fecaca",
-                padding: 10,
+                padding: 8,
                 borderRadius: 8,
               }}
             >
@@ -1221,7 +1308,7 @@ export default function AssinarComCertificadoModal({
                 style={{
                   marginTop: 18,
                   padding: 12,
-                  borderRadius: 10,
+                  borderRadius: 8,
                   border: "1px solid #334155",
                   background: "#0b1220",
                 }}
@@ -1232,7 +1319,7 @@ export default function AssinarComCertificadoModal({
                 <div style={{ fontSize: 12, color: "#cbd5e1", lineHeight: 1.45 }}>
                   O arquivo pode ficar guardado criptografado para reuso posterior.
                 </div>
-                <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                <div style={{ display: "grid", gap: 6, marginTop: 10 }}>
                   <select
                     value={selectedProfileId}
                     onChange={(e) => setSelectedProfileId(e.target.value)}
@@ -1259,7 +1346,7 @@ export default function AssinarComCertificadoModal({
                     style={field}
                     autoComplete="off"
                   />
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     <button
                       type="button"
                       disabled={busy || savingProfile || !certPreview || !pfxFile}
@@ -1312,7 +1399,7 @@ export default function AssinarComCertificadoModal({
                 Prévia da aparência oficial da assinatura:
               </p>
               <SignatureAppearancePreview cert={certPreview} />
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 <button
                   type="button"
                   disabled={busy}
@@ -1460,7 +1547,7 @@ export default function AssinarComCertificadoModal({
                 stampRazaoSocial={certPreview.icpBrasil.razaoSocial || null}
                 stampResponsavel={certPreview.icpBrasil.responsavel || null}
               />
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 <button
                   type="button"
                   disabled={busy}
