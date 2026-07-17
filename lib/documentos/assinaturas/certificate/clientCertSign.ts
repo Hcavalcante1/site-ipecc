@@ -36,7 +36,7 @@ export type LoadedCertificate = {
 };
 
 /** Dimensões do carimbo visual (pt) — preview e PDF usam o mesmo. */
-export const CERT_STAMP_BOX = { w: 300, h: 72, margin: 14 };
+export const CERT_STAMP_BOX = { w: 292, h: 64, margin: 14 };
 
 export type AppearanceOptions = {
   page: number; // 1-based
@@ -773,39 +773,38 @@ export async function signPdfWithLocalCertificate(opts: {
   const when = `${now.getFullYear()}.${pad(now.getMonth() + 1)}.${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())} ${tz}`;
   const ink = rgb(0, 0, 0);
 
-  const contentX = x + 6;
-  const qrSize = 26;
-  const qrGap = 0;
-  const qrX = x + boxW - qrSize - 2;
-  const textW = Math.max(0, qrX - contentX - qrGap);
+  const contentX = x + 5;
+  const qrSize = 24;
+  const qrX = x + boxW - qrSize - 4;
+  const textW = Math.max(0, qrX - contentX - 4);
   const qr = await pdfDoc.embedPng(validationQr);
 
   page.drawText("Assinado digitalmente por", {
     x: contentX,
-    y: y + boxH - 11,
-    size: 6.7,
-    font,
-    color: ink,
-    maxWidth: textW,
-    lineHeight: 7.0,
-  });
-  page.drawText((subject || "").toUpperCase(), {
-    x: contentX,
-    y: y + boxH - 21,
-    size: 7.2,
-    font: fontBold,
-    color: ink,
-    maxWidth: textW,
-    lineHeight: 7.4,
-  });
-  page.drawText(cnpj ? `CNPJ: ${cnpj}` : "CNPJ:", {
-    x: contentX,
-    y: y + boxH - 31,
+    y: y + boxH - 10,
     size: 6.4,
     font,
     color: ink,
     maxWidth: textW,
-    lineHeight: 6.8,
+    lineHeight: 6.7,
+  });
+  page.drawText((subject || "").toUpperCase(), {
+    x: contentX,
+    y: y + boxH - 19,
+    size: 7,
+    font: fontBold,
+    color: ink,
+    maxWidth: textW,
+    lineHeight: 7.1,
+  });
+  page.drawText(cnpj ? `CNPJ: ${cnpj}` : "CNPJ:", {
+    x: contentX,
+    y: y + boxH - 28,
+    size: 6.1,
+    font,
+    color: ink,
+    maxWidth: textW,
+    lineHeight: 6.4,
   });
   if (razaoSocial || responsavel) {
     page.drawText(
@@ -817,58 +816,58 @@ export async function signPdfWithLocalCertificate(opts: {
         .join(" • "),
       {
         x: contentX,
-        y: y + boxH - 41,
-        size: 6,
+        y: y + boxH - 36,
+        size: 5.8,
         font,
         color: ink,
         maxWidth: textW,
-        lineHeight: 6.2,
+        lineHeight: 6,
       }
     );
   }
   if (cpf) {
     page.drawText(`CPF: ${cpf}`, {
       x: contentX,
-      y: y + boxH - 50,
-      size: 6,
+      y: y + boxH - 44,
+      size: 5.8,
       font,
       color: ink,
       maxWidth: textW,
-      lineHeight: 6.2,
+      lineHeight: 6,
     });
   }
   page.drawText(`Dados: ${when}`, {
     x: contentX,
-    y: y + 7,
-    size: 5.9,
+    y: y + 6,
+    size: 5.6,
     font,
     color: ink,
     maxWidth: textW,
-    lineHeight: 6.0,
+    lineHeight: 5.8,
   });
   page.drawText("VALIDAR ITI", {
     x: qrX,
-    y: y + boxH - 19,
-    size: 6.1,
+    y: y + boxH - 17,
+    size: 5.9,
     font: fontBold,
     color: ink,
     maxWidth: qrSize,
-    lineHeight: 6.4,
+    lineHeight: 6.1,
   });
   page.drawImage(qr, {
     x: qrX,
-    y: y + 18,
+    y: y + 17,
     width: qrSize,
     height: qrSize,
   });
   page.drawText("verifique em validar.iti.gov.br", {
     x: qrX - 1,
-    y: y + 8,
-    size: 5.5,
+    y: y + 7,
+    size: 5.2,
     font,
     color: ink,
     maxWidth: qrSize + 2,
-    lineHeight: 6.0,
+    lineHeight: 5.6,
   });
 
   const stamped = await pdfDoc.save({ useObjectStreams: false });

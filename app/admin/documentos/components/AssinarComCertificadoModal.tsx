@@ -211,26 +211,28 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
           borderRadius: 8,
           background: "#ffffff",
           color: "#000",
-          padding: 6,
-          display: "flex",
+          padding: 4,
+          display: "inline-flex",
           flexDirection: "row",
-        gap: 2,
+          gap: 4,
           alignItems: "center",
-          minHeight: 66,
+          width: "fit-content",
+          maxWidth: "100%",
         }}
       >
       <div
         style={{
           minWidth: 0,
-          flex: 1,
-          fontSize: 6.8,
-          lineHeight: 1.04,
+          flex: "1 1 auto",
+          maxWidth: 220,
+          fontSize: 6.6,
+          lineHeight: 1.02,
           fontFamily: "Helvetica, Arial, sans-serif",
           color: "#000",
         }}
       >
-        <div style={{ fontSize: 6.3, fontWeight: 700, lineHeight: 1.01 }}>Assinado digitalmente por</div>
-        <div style={{ marginTop: 1, fontWeight: 700, fontSize: 7, lineHeight: 1.01, wordBreak: "break-word" }}>
+        <div style={{ fontSize: 6.2, fontWeight: 700, lineHeight: 1.01 }}>Assinado digitalmente por</div>
+        <div style={{ marginTop: 1, fontWeight: 700, fontSize: 6.9, lineHeight: 1.01, wordBreak: "break-word" }}>
           {(cert.subject || label).toUpperCase()}
         </div>
         <div style={{ marginTop: 0, fontWeight: 400 }}>CNPJ: {cnpj || ""}</div>
@@ -244,8 +246,8 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
       </div>
       <div
         style={{
-          width: 56,
-          minWidth: 56,
+          width: 50,
+          minWidth: 50,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -261,20 +263,20 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
           <img
             src={qrDataUrl}
             alt="QR Code de validação"
-            style={{ width: 26, height: 26, display: "block" }}
+            style={{ width: 24, height: 24, display: "block" }}
           />
         ) : (
           <div
             style={{
-              width: 26,
-              height: 26,
+              width: 24,
+              height: 24,
               border: "1px solid #94a3b8",
               background: "#f8fafc",
             }}
           />
         )}
-        <div style={{ fontWeight: 700, textAlign: "center" }}>VALIDAR ITI</div>
-        <div style={{ textAlign: "center" }}>verifique em validar.iti.gov.br</div>
+        <div style={{ fontWeight: 700, textAlign: "center", lineHeight: 1.02 }}>VALIDAR ITI</div>
+        <div style={{ textAlign: "center", lineHeight: 1.02 }}>verifique em validar.iti.gov.br</div>
       </div>
     </div>
   );
@@ -653,7 +655,7 @@ function CertStampPositionPreview({
                     touchAction: "none",
                     padding: "6px 8px",
                     display: "flex",
-                    gap: 6,
+                    gap: 4,
                     overflow: "hidden",
                     alignItems: "stretch",
                     minHeight: 84,
@@ -661,71 +663,53 @@ function CertStampPositionPreview({
                 >
                   <div
                     style={{
+                      width: "100%",
                       minWidth: 0,
-                      width: "38%",
-                      paddingRight: 8,
-                      fontSize: 7.2,
-                      lineHeight: 1.12,
-                      fontFamily: "Helvetica, Arial, sans-serif",
-                      color: "#000",
-                    }}
-                  >
-                    <div style={{ fontWeight: 700, wordBreak: "break-word" }}>
-                      {String(stampSubject || signerLabel).toUpperCase() || "TITULAR DO CERTIFICADO"}
-                    </div>
-                    <div style={{ marginTop: 5, fontWeight: 400 }}>CNPJ: {stampCnpj || ""}</div>
-                  </div>
-                  <div
-                    style={{
-                      width: "62%",
-                      minWidth: 0,
-                      borderLeft: "1px solid #cbd5e1",
-                      paddingLeft: 8,
                       display: "flex",
                       flexDirection: "column",
-                      justifyContent: "space-between",
-                      gap: 2,
-                      fontSize: 6.8,
-                      lineHeight: 1.12,
+                      justifyContent: "flex-start",
+                      gap: 3,
+                      fontSize: 6.6,
+                      lineHeight: 1.08,
                       fontFamily: "Helvetica, Arial, sans-serif",
                       color: "#000",
                       position: "relative",
                     }}
                   >
                     <div>
-                      <div style={{ fontSize: 6.8, fontWeight: 700, lineHeight: 1.08 }}>
+                      <div style={{ fontSize: 6.6, fontWeight: 700, lineHeight: 1.04 }}>
                         Assinado digitalmente por
                       </div>
-                      <div style={{ marginTop: 2, fontSize: 7.2, fontWeight: 700, wordBreak: "break-word", lineHeight: 1.08 }}>
+                      <div style={{ marginTop: 2, fontSize: 7, fontWeight: 700, wordBreak: "break-word", lineHeight: 1.04 }}>
                         {String(stampSubject || signerLabel).toUpperCase() || "TITULAR DO CERTIFICADO"}
                       </div>
-                      <div style={{ marginTop: 2, wordBreak: "break-word" }}>
+                      <div style={{ marginTop: 1, wordBreak: "break-word" }}>
                         {[stampRazaoSocial ? `Razão social: ${stampRazaoSocial}` : null, stampResponsavel ? `Responsável: ${stampResponsavel}` : null]
                           .filter(Boolean)
                           .join(" • ")}
                       </div>
-                      <div style={{ marginTop: 2, wordBreak: "break-word" }}>
+                      <div style={{ marginTop: 1, wordBreak: "break-word" }}>
                         {stampCpf ? `CPF: ${stampCpf}` : ""}
                       </div>
-                      <div style={{ marginTop: 2 }}>Dados: {when}</div>
+                      <div style={{ marginTop: 1 }}>Dados: {when}</div>
                     </div>
-                    <div style={{ display: "flex", gap: 6, alignItems: "flex-end", justifyContent: "space-between" }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 700 }}>VALIDAR ITI</div>
-                        <div>verificar em validar.iti.gov.br</div>
+                    <div style={{ display: "flex", gap: 4, alignItems: "flex-end", justifyContent: "flex-start" }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, lineHeight: 1.02 }}>VALIDAR ITI</div>
+                        <div style={{ lineHeight: 1.02 }}>verificar em validar.iti.gov.br</div>
                       </div>
                       {qrDataUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={qrDataUrl}
                           alt="QR Code de validação"
-                          style={{ width: 34, height: 34, display: "block", flex: "0 0 auto" }}
+                          style={{ width: 28, height: 28, display: "block", flex: "0 0 auto" }}
                         />
                       ) : (
                         <div
                           style={{
-                            width: 34,
-                            height: 34,
+                            width: 28,
+                            height: 28,
                             border: "1px solid #94a3b8",
                             background: "#f8fafc",
                             flex: "0 0 auto",
