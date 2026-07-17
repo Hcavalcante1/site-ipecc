@@ -41,16 +41,17 @@ const sectionStyle = {
 
 const previewStyle = {
   marginTop: 12,
-  padding: 12,
-  borderRadius: 12,
-  border: "1px solid #334155",
-  background: "rgba(15,23,42,0.78)",
-  color: "#e5e7eb",
+  padding: 16,
+  borderRadius: 14,
+  border: "1px solid rgba(148,163,184,0.35)",
+  background: "#ffffff",
+  color: "#0f172a",
   whiteSpace: "pre-wrap" as const,
   lineHeight: 1.55,
   fontSize: 13,
-  maxHeight: 300,
+  maxHeight: 340,
   overflow: "auto",
+  boxShadow: "0 10px 30px rgba(15,23,42,0.12)",
 };
 
 const fieldWrapStyle = {
@@ -66,8 +67,6 @@ export default function ModelosPage() {
   const [fieldValues, setFieldValues] = useState<GdTemplateFieldValues>(
     getDefaultGdTemplateFieldValues()
   );
-  const [rawBody, setRawBody] = useState("");
-  const [advancedMode, setAdvancedMode] = useState(false);
   const [aviso, setAviso] = useState("");
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -96,15 +95,13 @@ export default function ModelosPage() {
     () => buildGdTemplateBody(kind, name, fieldValues),
     [kind, name, fieldValues]
   );
-  const bodyToSave = advancedMode ? rawBody.trim() : generatedBody.trim();
+  const bodyToSave = generatedBody.trim();
 
   function limparForm() {
     setName("");
     setKind("contrato");
     setFormat("pdf");
     setFieldValues(getDefaultGdTemplateFieldValues());
-    setRawBody("");
-    setAdvancedMode(false);
     setEditingId(null);
   }
 
@@ -115,8 +112,6 @@ export default function ModelosPage() {
   function alterarKind(v: GdTemplateKind) {
     setKind(v);
     setFieldValues(getDefaultGdTemplateFieldValues());
-    setAdvancedMode(false);
-    setRawBody("");
   }
 
   async function salvar() {
@@ -177,8 +172,6 @@ export default function ModelosPage() {
     setKind(t.kind);
     setFormat(t.format);
     setFieldValues(getDefaultGdTemplateFieldValues());
-    setRawBody(t.body || "");
-    setAdvancedMode(true);
   }
 
   async function remover(id: string) {
@@ -199,15 +192,15 @@ export default function ModelosPage() {
   return (
     <GestaoDocumentalShell
       title="Modelos"
-      description="Modelos pré-formatados com campos mínimos. O restante segue o padrão institucional IPECC."
+      description="Formulário guiado no molde CGU: o texto institucional vem pronto e você altera só os campos específicos."
     >
       <div style={gdCardStyle}>
         <h2 className="admin-h2" style={{ marginTop: 0 }}>
           {editingId ? "Editar modelo" : "Novo modelo"}
         </h2>
         <p style={{ marginTop: 0, opacity: 0.85 }}>
-          Preencha só o essencial. O sistema monta o corpo com o padrão
-          institucional e deixa o restante pronto para uso.
+          Preencha apenas o que muda de um documento para outro. O restante já
+          sai no padrão institucional.
         </p>
 
         <div style={sectionStyle}>
@@ -275,11 +268,11 @@ export default function ModelosPage() {
 
       <div style={gdCardStyle}>
         <h2 className="admin-h2" style={{ marginTop: 0 }}>
-          Campos variáveis do modelo
+          Campos específicos do modelo
         </h2>
         <p style={{ marginTop: 0, opacity: 0.85 }}>
-          O padrão institucional já vem embutido. Você altera apenas os campos
-          mínimos deste tipo de documento.
+          O corpo jurídico, administrativo e institucional já vem montado.
+          Altere só os campos mínimos deste tipo de peça.
         </p>
 
         <div style={sectionStyle}>
@@ -293,7 +286,7 @@ export default function ModelosPage() {
                     style={{
                       ...gdInputStyle,
                       marginTop: 0,
-                      minHeight: field.rows ? field.rows * 26 : 100,
+                      minHeight: field.rows ? field.rows * 20 : 72,
                       maxWidth: "100%",
                     }}
                     value={value}
@@ -315,41 +308,6 @@ export default function ModelosPage() {
             );
           })}
         </div>
-
-        <label
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            marginTop: 14,
-            fontSize: 14,
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={advancedMode}
-            onChange={(e) => setAdvancedMode(e.target.checked)}
-          />
-          Editar corpo manualmente
-        </label>
-
-        {advancedMode ? (
-          <div style={{ marginTop: 12 }}>
-            <label>Corpo completo do modelo</label>
-            <textarea
-              style={{
-                ...gdInputStyle,
-                marginTop: 6,
-                marginBottom: 12,
-                minHeight: 240,
-                maxWidth: "100%",
-              }}
-              value={rawBody}
-              onChange={(e) => setRawBody(e.target.value)}
-              placeholder="Edite o corpo institucional completo do documento."
-            />
-          </div>
-        ) : null}
 
         <div style={{ marginTop: 14 }}>
           <strong>Prévia gerada</strong>
