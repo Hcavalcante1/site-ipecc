@@ -386,13 +386,16 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           <div className="admin-sidebar-footer">
             <LogoutButton />
 
-            <div className="admin-sidebar-footer-brand admin-sidebar-footer-brand--below">
+            <div className="admin-sidebar-footer-brand">
               <span className="admin-sidebar-footer-brand-name">IPECC</span>
               <span
                 className="admin-sidebar-footer-mini"
                 title={userEmail || undefined}
               >
                 {userEmail || "Conta administrativa"}
+              </span>
+              <span className="admin-sidebar-footer-session">
+                Sessão administrativa ativa
               </span>
             </div>
           </div>

@@ -186,7 +186,7 @@
   border-top: 1px solid rgba(148, 163, 184, 0.22);
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
   flex-shrink: 0;
   align-items: center;
 }
@@ -194,14 +194,10 @@
 .admin-sidebar-footer-brand {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 2px;
   padding: 0;
-  width: min(100%, 164px);
+  width: min(100%, 174px);
   text-align: center;
-}
-
-.admin-sidebar-footer-brand--below {
-  margin-top: 2px;
 }
 
 .admin-sidebar-footer-brand-name {
@@ -220,6 +216,14 @@
   text-overflow: clip;
   width: 100%;
   margin-top: 1px;
+}
+
+.admin-sidebar-footer-session {
+  font-size: 0.58rem;
+  line-height: 1.05;
+  color: rgba(148, 163, 184, 0.86);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .admin-logout-btn {
