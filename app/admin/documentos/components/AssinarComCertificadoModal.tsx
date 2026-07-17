@@ -182,7 +182,7 @@ function CertificateReviewCard({ cert }: { cert: LoadedCertificate }) {
 function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
   const label = getCertificateHolderLabel(cert);
   const when = new Date().toLocaleString("pt-BR");
-  const cnpj = formatCnpj(cert.icpBrasil.cnpj);
+  const cnpj = getCertificateHolderCnpj(cert);
   const cpf = formatCpf(cert.icpBrasil.cpf);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
@@ -215,7 +215,7 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
           padding: 4,
           display: "inline-flex",
           flexDirection: "row",
-          gap: 2,
+          gap: 1,
           alignItems: "center",
           width: "fit-content",
           maxWidth: "100%",
@@ -225,7 +225,7 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
         style={{
           minWidth: 0,
           flex: "0 1 auto",
-          maxWidth: 185,
+          maxWidth: 150,
           fontSize: 6.6,
           lineHeight: 1.02,
           fontFamily: "Helvetica, Arial, sans-serif",
@@ -247,13 +247,13 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
       </div>
       <div
         style={{
-          width: 58,
-          minWidth: 58,
+          width: 52,
+          minWidth: 52,
           display: "flex",
           flexDirection: "row",
           alignItems: "center",
-          gap: 2,
-          fontSize: 5.2,
+          gap: 1,
+          fontSize: 5.0,
           lineHeight: 1.02,
           fontFamily: "Helvetica, Arial, sans-serif",
           color: "#000",
@@ -711,13 +711,13 @@ function CertStampPositionPreview({
                         <img
                           src={qrDataUrl}
                           alt="QR Code de validação"
-                          style={{ width: 24, height: 24, display: "block", flex: "0 0 auto" }}
+                          style={{ width: 20, height: 20, display: "block", flex: "0 0 auto" }}
                         />
                       ) : (
                         <div
                           style={{
-                            width: 24,
-                            height: 24,
+                            width: 20,
+                            height: 20,
                             border: "1px solid #94a3b8",
                             background: "#f8fafc",
                             flex: "0 0 auto",
@@ -1473,7 +1473,7 @@ export default function AssinarComCertificadoModal({
                   certRef.current ? getCertificateHolderLabel(certRef.current) : ""
                 }
                 stampSubject={certLabel || certPreview?.subject || null}
-                stampCnpj={formatCnpj(certPreview?.icpBrasil.cnpj)}
+                stampCnpj={certPreview ? getCertificateHolderCnpj(certPreview) : null}
                 stampCpf={formatCpf(certPreview?.icpBrasil.cpf)}
                 stampRazaoSocial={certPreview?.icpBrasil.razaoSocial || null}
                 stampResponsavel={certPreview?.icpBrasil.responsavel || null}
@@ -1523,7 +1523,7 @@ export default function AssinarComCertificadoModal({
                   certRef.current ? getCertificateHolderLabel(certRef.current) : ""
                 }
                 stampSubject={certLabel || certPreview.subject || null}
-                stampCnpj={formatCnpj(certPreview.icpBrasil.cnpj)}
+                stampCnpj={getCertificateHolderCnpj(certPreview)}
                 stampCpf={formatCpf(certPreview.icpBrasil.cpf)}
                 stampRazaoSocial={certPreview.icpBrasil.razaoSocial || null}
                 stampResponsavel={certPreview.icpBrasil.responsavel || null}
