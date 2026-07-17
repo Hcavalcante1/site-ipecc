@@ -666,17 +666,18 @@ function CertStampPositionPreview({
                       width: "100%",
                       minWidth: 0,
                       display: "flex",
-                      flexDirection: "column",
+                      flexDirection: "row",
                       justifyContent: "flex-start",
-                      gap: 3,
+                      alignItems: "center",
+                      gap: 6,
                       fontSize: 6.6,
-                      lineHeight: 1.08,
+                      lineHeight: 1.05,
                       fontFamily: "Helvetica, Arial, sans-serif",
                       color: "#000",
                       position: "relative",
                     }}
                   >
-                    <div>
+                    <div style={{ minWidth: 0, flex: "1 1 auto" }}>
                       <div style={{ fontSize: 6.6, fontWeight: 700, lineHeight: 1.04 }}>
                         Assinado digitalmente por
                       </div>
