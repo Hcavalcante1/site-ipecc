@@ -701,19 +701,19 @@ function CertStampPositionPreview({
                       </div>
                       <div style={{ marginTop: 1 }}>Dados: {when}</div>
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 0, alignItems: "center", justifyContent: "center", flex: "0 0 auto" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 0, alignItems: "center", justifyContent: "flex-end", flex: "0 0 auto", paddingBottom: 2 }}>
                       {qrDataUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={qrDataUrl}
                           alt="QR Code de validação"
-                          style={{ width: 28, height: 28, display: "block", flex: "0 0 auto" }}
+                          style={{ width: 30, height: 30, display: "block", flex: "0 0 auto" }}
                         />
                       ) : (
                         <div
                           style={{
-                            width: 28,
-                            height: 28,
+                            width: 30,
+                            height: 30,
                             border: "1px solid #94a3b8",
                             background: "#f8fafc",
                             flex: "0 0 auto",

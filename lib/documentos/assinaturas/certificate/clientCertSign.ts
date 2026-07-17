@@ -781,11 +781,11 @@ export async function signPdfWithLocalCertificate(opts: {
   const ink = rgb(0, 0, 0);
 
   const contentX = x + 6;
-  const qrSize = 28;
+  const qrSize = 30;
   const validationW = 38;
   const textW = 150;
   const validationX = contentX + textW + 3;
-  const qrX = validationX + 5;
+  const qrX = validationX + 3;
   const qr = await pdfDoc.embedPng(validationQr);
 
   page.drawText("Assinado digitalmente por", {
@@ -856,13 +856,13 @@ export async function signPdfWithLocalCertificate(opts: {
   });
   page.drawImage(qr, {
     x: qrX,
-    y: y + 24,
+    y: y + 22,
     width: qrSize,
     height: qrSize,
   });
   page.drawText("VALIDAR ITI", {
     x: validationX,
-    y: y + 14,
+    y: y + 12,
     size: 5.1,
     font: fontBold,
     color: ink,
@@ -871,7 +871,7 @@ export async function signPdfWithLocalCertificate(opts: {
   });
   page.drawText("verifique em validar.iti.gov.br", {
     x: validationX,
-    y: y + 6,
+    y: y + 4,
     size: 4.7,
     font,
     color: ink,
