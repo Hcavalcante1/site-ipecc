@@ -170,7 +170,7 @@ export default function AssinarAvancadaModal({
   }
 
   async function autorizarEConcluir() {
-    if (!transactionId || !challengeId) return;
+    if (!transactionId || !challengeId || !otp.trim()) return;
     setBusy(true);
     setErro(null);
     try {
@@ -180,7 +180,7 @@ export default function AssinarAvancadaModal({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            password,
+            password: password || "",
             otpCode: otp,
             challengeId,
           }),
@@ -440,8 +440,8 @@ export default function AssinarAvancadaModal({
 
           {step === "auth" ? (
             <>
-              <p style={{ fontSize: 14, color: "#94a3b8" }}>
-                Reautenticação (senha) + MFA (OTP). Desafio válido por 5 minutos.
+            <p style={{ fontSize: 14, color: "#94a3b8" }}>
+                Reautenticação pela sessão ativa ou senha + MFA (OTP). Desafio válido por 5 minutos.
               </p>
               {devCode ? (
                 <p style={{ fontSize: 13, color: "#fbbf24" }}>
@@ -449,7 +449,7 @@ export default function AssinarAvancadaModal({
                 </p>
               ) : null}
               <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>
-                Senha
+                Senha do login
                 <input
                   type="password"
                   value={password}
@@ -458,6 +458,9 @@ export default function AssinarAvancadaModal({
                   style={fieldStyle}
                 />
               </label>
+              <p style={{ fontSize: 12, color: "#94a3b8", marginTop: -2, marginBottom: 10 }}>
+                Opcional se a sua sessão já estiver ativa no admin.
+              </p>
               <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>
                 CPF (carimbo)
                 <input
@@ -476,17 +479,17 @@ export default function AssinarAvancadaModal({
               </label>
               <button
                 type="button"
-                disabled={busy || !password || !otp}
+                disabled={busy || !otp}
                 onClick={() => void autorizarEConcluir()}
                 style={{
                   marginTop: 12,
-                  background: "#0f766e",
+                  background: otp ? "#0f766e" : "#475569",
                   color: "#fff",
                   border: "none",
                   borderRadius: 8,
                   padding: "10px 14px",
                   fontWeight: 600,
-                  cursor: "pointer",
+                  cursor: busy || !otp ? "not-allowed" : "pointer",
                 }}
               >
                 {busy ? "Concluindo…" : "Autorizar e assinar"}
