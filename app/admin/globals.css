@@ -217,24 +217,25 @@
 }
 
 .admin-logout-btn {
-  width: 100%;
+  width: min(100%, 176px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 6px 10px;
-  border-radius: 10px;
-  border: 1px solid rgba(239, 68, 68, 0.55);
-  background: rgba(153, 27, 27, 0.92);
+  border-radius: 999px;
+  border: 1px solid rgba(127, 29, 29, 0.85);
+  background: linear-gradient(180deg, #dc2626 0%, #b91c1c 100%);
   color: #fff;
   font-size: 0.75rem;
   font-weight: 700;
   cursor: pointer;
   box-shadow: none;
+  align-self: center;
 }
 
 .admin-logout-btn:hover {
-  background: rgba(185, 28, 28, 0.98);
-  border-color: rgba(248, 113, 113, 0.9);
+  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+  border-color: rgba(239, 68, 68, 0.95);
   opacity: 1;
 }
 
