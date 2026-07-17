@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import GestaoDocumentalShell, {
@@ -54,8 +54,6 @@ export default function AssinaturasClient() {
   const [advDocumentId, setAdvDocumentId] = useState<string | null>(null);
   const [advDocumentTitle, setAdvDocumentTitle] = useState<string | null>(null);
   const [certOpen, setCertOpen] = useState(false);
-  const autoStarted = useRef(false);
-
   const carregar = useCallback(async () => {
     setLoading(true);
     const [sigRes, cfgRes] = await Promise.all([
@@ -131,74 +129,9 @@ export default function AssinaturasClient() {
 
   useEffect(() => {
     const docId = String(search.get("document_id") || "").trim();
-    const sigId = String(search.get("signature_id") || "").trim();
-    const auto = search.get("auto") === "1";
-    const cert = search.get("cert") === "1";
-    if (!docId || autoStarted.current || loading) return;
-
-    if (cert) {
-      autoStarted.current = true;
-      setDocumentId(docId);
-      setCertOpen(true);
-      return;
-    }
-
-    if (sigId) {
-      autoStarted.current = true;
-      setDocumentId(docId);
-      abrirAssinatura({ signatureId: sigId, documentId: docId, providerCode: "ipecc" });
-      return;
-    }
-
-    if (auto) {
-      autoStarted.current = true;
-      setDocumentId(docId);
-      void (async () => {
-        setAviso(
-          documentTitle
-            ? `Preparando assinatura de “${documentTitle}”…`
-            : "Preparando assinatura…"
-        );
-        const res = await fetch("/api/admin/documentos/assinaturas", {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            document_id: docId,
-            provider_code: ipeccOk ? "ipecc" : documentoOk ? "documento" : undefined,
-            modo: "eu_assino",
-          }),
-        });
-        const json = await res.json();
-        if (!res.ok) {
-          setAviso(json.error || "Erro ao criar pedido.");
-          autoStarted.current = false;
-          return;
-        }
-        setAviso(
-          documentTitle
-            ? `Pronto para assinar: ${documentTitle}`
-            : "Documento pronto. Continue no painel."
-        );
-        abrirAssinatura({
-          signatureId: json.signature?.id || json.data?.id,
-          documentId: docId,
-          embedUrl: json.embedUrl,
-          signingUrl: json.signingUrl,
-          providerCode:
-            json.signature?.provider_code || json.data?.provider_code,
-        });
-        carregar();
-      })();
-    }
-  }, [
-    search,
-    loading,
-    ipeccOk,
-    documentoOk,
-    documentTitle,
-    carregar,
-  ]);
+    if (!docId) return;
+    setDocumentId(docId);
+  }, [search]);
 
   function abrirAssinatura(opts: {
     signatureId?: string | null;

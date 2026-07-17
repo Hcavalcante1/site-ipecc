@@ -250,10 +250,10 @@ export default function DocumentosListaPage() {
                 </Link>
                 {doc.storage_path || doc.current_version ? (
                   <Link
-                    href={`/admin/documentos/assinaturas?document_id=${encodeURIComponent(doc.id)}&auto=1`}
+                    href={`/admin/documentos/assinaturas?document_id=${encodeURIComponent(doc.id)}`}
                     style={{ ...gdBtnStyle, background: "#0f766e" }}
                   >
-                    Assinar
+                    Escolher assinatura
                   </Link>
                 ) : null}
                 <button

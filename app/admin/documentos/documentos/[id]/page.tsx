@@ -269,7 +269,7 @@ export default function DocumentoDetalhePage() {
       return;
     }
     router.push(
-      `/admin/documentos/assinaturas?document_id=${encodeURIComponent(id)}&auto=1`
+      `/admin/documentos/assinaturas?document_id=${encodeURIComponent(id)}`
     );
   }
 
@@ -345,7 +345,7 @@ export default function DocumentoDetalhePage() {
                   style={{ ...gdBtnStyle, background: "#0f766e" }}
                   onClick={assinarNoAdmin}
                 >
-                  Assinar no admin
+                  Escolher assinatura
                 </button>
                 <button
                   type="button"
