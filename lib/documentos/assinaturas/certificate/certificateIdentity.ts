@@ -14,13 +14,22 @@ function formatCpf(cpf: string): string {
   return `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-${cpf.slice(9)}`;
 }
 
+function stripSubjectCnpj(subject: string): string {
+  return subject.replace(/[:\s-]*\d{14}\s*$/, "").trim();
+}
+
 export function getCertificateHolderLabel(cert: LoadedCertificate): string {
   const subject = cert.subject?.trim();
   const cnpj = formatCnpj(onlyDigits(cert.icpBrasil.cnpj));
 
-  if (subject) return subject;
+  if (subject) return stripSubjectCnpj(subject) || subject;
   if (cnpj) return `CNPJ ${cnpj}`;
   return cert.displayName || "";
+}
+
+export function getCertificateHolderCnpj(cert: LoadedCertificate): string | null {
+  const cnpj = formatCnpj(onlyDigits(cert.icpBrasil.cnpj));
+  return cnpj || null;
 }
 
 export function getCertificateSummary(cert: LoadedCertificate): string {

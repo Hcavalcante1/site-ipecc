@@ -7,7 +7,10 @@
 import forge from "node-forge";
 import QRCode from "qrcode";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
-import { getCertificateHolderLabel } from "./certificateIdentity";
+import {
+  getCertificateHolderCnpj,
+  getCertificateHolderLabel,
+} from "./certificateIdentity";
 
 export type LoadedCertificate = {
   privateKeyPem: string;
@@ -753,11 +756,15 @@ export async function signPdfWithLocalCertificate(opts: {
     opacity: 1,
   });
 
-  const label = opts.appearance.signerLabel || opts.cert.subject || opts.cert.displayName || "";
-  const subject = opts.cert.subject?.trim() || opts.cert.displayName || label;
+  const label =
+    opts.appearance.signerLabel?.trim() ||
+    getCertificateHolderLabel(opts.cert) ||
+    opts.cert.displayName ||
+    "";
+  const subject = getCertificateHolderLabel(opts.cert) || opts.cert.displayName || label;
   const razaoSocial = opts.cert.icpBrasil.razaoSocial?.trim() || null;
   const responsavel = opts.cert.icpBrasil.responsavel?.trim() || null;
-  const cnpj = formatCnpjDigits(opts.cert.icpBrasil.cnpj);
+  const cnpj = formatCnpjDigits(opts.cert.icpBrasil.cnpj) || getCertificateHolderCnpj(opts.cert);
   const cpf = formatCpfDigits(opts.cert.icpBrasil.cpf);
   const validationQr = await QRCode.toDataURL("https://validar.iti.gov.br", {
     margin: 0,

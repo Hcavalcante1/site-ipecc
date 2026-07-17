@@ -14,6 +14,7 @@ import {
 } from "@/lib/documentos/assinaturas/certificate/clientCertSign";
 import {
   getCertificateHolderLabel,
+  getCertificateHolderCnpj,
 } from "@/lib/documentos/assinaturas/certificate/certificateIdentity";
 import QRCode from "qrcode";
 
@@ -233,7 +234,7 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
       >
         <div style={{ fontSize: 6.2, fontWeight: 700, lineHeight: 1.01 }}>Assinado digitalmente por</div>
         <div style={{ marginTop: 1, fontWeight: 700, fontSize: 6.9, lineHeight: 1.01, wordBreak: "break-word" }}>
-          {(cert.subject || label).toUpperCase()}
+          {label.toUpperCase()}
         </div>
         <div style={{ marginTop: 0, fontWeight: 400 }}>CNPJ: {cnpj || ""}</div>
         <div style={{ marginTop: 0, fontWeight: 400, wordBreak: "break-word" }}>
@@ -1417,9 +1418,13 @@ export default function AssinarComCertificadoModal({
           {step === "pages" ? (
             <>
               {certLabel ? (
-                <p style={{ color: "#6ee7b7", fontSize: 13, marginBottom: 8 }}>
-                  Assinando como: <strong>{certLabel}</strong>
-                  {" · "}
+                <div style={{ color: "#6ee7b7", fontSize: 13, marginBottom: 8, lineHeight: 1.35 }}>
+                  <div>
+                    Assinando como: <strong>{certLabel}</strong>
+                  </div>
+                  {certPreview?.icpBrasil.cnpj ? (
+                    <div>CNPJ: {getCertificateHolderCnpj(certPreview) || ""}</div>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => setStep("review")}
@@ -1435,7 +1440,7 @@ export default function AssinarComCertificadoModal({
                   >
                     ver certificado
                   </button>
-                </p>
+                </div>
               ) : null}
 
               {documentIds.length > 1 ? (
