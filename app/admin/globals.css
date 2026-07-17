@@ -180,12 +180,12 @@
 
 .admin-sidebar-footer {
   margin-top: auto;
-  padding-top: 8px;
+  padding-top: 6px;
   padding-bottom: 0;
   border-top: 1px solid rgba(148, 163, 184, 0.22);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   flex-shrink: 0;
   align-items: center;
 }
@@ -193,22 +193,22 @@
 .admin-sidebar-footer-brand {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 0;
   padding: 0 2px;
   width: 100%;
   text-align: center;
 }
 
 .admin-sidebar-footer-brand-name {
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   font-weight: 800;
   letter-spacing: 0.04em;
   color: #e2e8f0;
 }
 
 .admin-sidebar-footer-mini {
-  font-size: 0.68rem;
-  line-height: 1.15;
+  font-size: 0.66rem;
+  line-height: 1.1;
   color: #94a3b8;
   white-space: nowrap;
   overflow: hidden;
@@ -221,12 +221,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 12px;
+  padding: 7px 10px;
   border-radius: 12px;
   border: 1px solid rgba(248, 113, 113, 0.35);
   background: rgba(127, 29, 29, 0.28);
   color: #fecaca;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
   box-shadow: none;
