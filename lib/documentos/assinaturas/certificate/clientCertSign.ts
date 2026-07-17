@@ -781,10 +781,10 @@ export async function signPdfWithLocalCertificate(opts: {
   const ink = rgb(0, 0, 0);
 
   const contentX = x + 6;
-  const qrSize = 26;
-  const qrX = x + boxW - qrSize - 5;
-  const validationW = 50;
-  const validationX = Math.max(contentX, qrX - validationW - 4);
+  const qrSize = 22;
+  const qrX = x + boxW - qrSize - 4;
+  const validationW = 44;
+  const validationX = Math.max(contentX, qrX - validationW - 3);
   const textW = Math.max(0, validationX - contentX - 6);
   const qr = await pdfDoc.embedPng(validationQr);
 
@@ -857,7 +857,7 @@ export async function signPdfWithLocalCertificate(opts: {
   page.drawText("VALIDAR ITI", {
     x: validationX,
     y: y + boxH - 16,
-    size: 5.9,
+    size: 5.4,
     font: fontBold,
     color: ink,
     maxWidth: validationW,
@@ -866,7 +866,7 @@ export async function signPdfWithLocalCertificate(opts: {
   page.drawText("verifique em validar.iti.gov.br", {
     x: validationX,
     y: y + boxH - 24,
-    size: 5.2,
+    size: 4.9,
     font,
     color: ink,
     maxWidth: validationW,
@@ -874,7 +874,7 @@ export async function signPdfWithLocalCertificate(opts: {
   });
   page.drawImage(qr, {
     x: qrX,
-    y: y + 20,
+    y: y + 22,
     width: qrSize,
     height: qrSize,
   });

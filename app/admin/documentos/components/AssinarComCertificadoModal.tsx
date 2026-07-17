@@ -215,7 +215,7 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
           padding: 4,
           display: "inline-flex",
           flexDirection: "row",
-          gap: 3,
+          gap: 2,
           alignItems: "center",
           width: "fit-content",
           maxWidth: "100%",
@@ -224,8 +224,8 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
       <div
         style={{
           minWidth: 0,
-          flex: "1 1 auto",
-          maxWidth: 220,
+          flex: "0 1 auto",
+          maxWidth: 185,
           fontSize: 6.6,
           lineHeight: 1.02,
           fontFamily: "Helvetica, Arial, sans-serif",
@@ -247,34 +247,34 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
       </div>
       <div
         style={{
-          width: 72,
-          minWidth: 72,
+          width: 58,
+          minWidth: 58,
           display: "flex",
           flexDirection: "row",
           alignItems: "center",
-          gap: 3,
-          fontSize: 5.6,
+          gap: 2,
+          fontSize: 5.2,
           lineHeight: 1.02,
           fontFamily: "Helvetica, Arial, sans-serif",
           color: "#000",
         }}
       >
         <div style={{ minWidth: 0, textAlign: "right" }}>
-          <div style={{ fontWeight: 700, lineHeight: 1.02 }}>VALIDAR ITI</div>
-          <div style={{ lineHeight: 1.02 }}>verifique em validar.iti.gov.br</div>
+          <div style={{ fontWeight: 700, lineHeight: 1.01 }}>VALIDAR ITI</div>
+          <div style={{ lineHeight: 1.01 }}>verifique em validar.iti.gov.br</div>
         </div>
         {qrDataUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={qrDataUrl}
             alt="QR Code de validação"
-            style={{ width: 24, height: 24, display: "block", flex: "0 0 auto" }}
+            style={{ width: 22, height: 22, display: "block", flex: "0 0 auto" }}
           />
         ) : (
           <div
             style={{
-              width: 24,
-              height: 24,
+              width: 22,
+              height: 22,
               border: "1px solid #94a3b8",
               background: "#f8fafc",
               flex: "0 0 auto",
