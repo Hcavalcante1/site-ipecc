@@ -433,25 +433,55 @@ export function buildGdTemplateBody(
   const header = baseHeader(kind, modelName, values);
   const padrao =
     "Documento emitido no padrão institucional do IPECC, com campos variáveis mínimos e demais cláusulas padronizadas.";
+  const fechoInstitucional =
+    "Este instrumento preserva o texto institucional e normativo aplicável, cabendo alteração apenas dos campos específicos do caso concreto.";
+  const assinatura = [
+    "",
+    "________________________________________",
+    "Assinatura da autoridade competente",
+  ].join("\n");
+  const textoOficio = clean(
+    values.objeto,
+    "Encaminha-se a presente comunicação para ciência e providências cabíveis."
+  );
 
   switch (kind) {
     case "oficio":
       return [
         header,
         "",
-        section("DESTINATÁRIO", clean(values.destinatario)),
+        section(
+          "EXPEDIENTE",
+          [
+            `Ofício: ${clean(values.titulo, "Ofício")}`,
+            `Destinatário: ${clean(values.destinatario)}`,
+            `Assunto: ${clean(values.assunto)}`,
+          ].join("\n")
+        ),
         "",
-        section("ASSUNTO", clean(values.assunto)),
+        section(
+          "TEXTO",
+          [
+            "Senhor(a),",
+            "",
+            textoOficio,
+            "",
+            `Prazo / providência esperada: ${clean(values.prazo)}`,
+            `Fundamento / referência: ${clean(values.fundamento)}`,
+          ].join("\n")
+        ),
         "",
-        section("OBJETO", clean(values.objeto)),
-        "",
-        section("PRAZO", clean(values.prazo)),
-        "",
-        section("FUNDAMENTO / REFERÊNCIA", clean(values.fundamento)),
-        "",
-        section("FECHO", clean(values.observacoes)),
+        section(
+          "FECHO",
+          clean(
+            values.observacoes,
+            "Sem mais para o momento, renovamos protestos de elevada estima e consideração."
+          )
+        ),
         "",
         padrao,
+        fechoInstitucional,
+        assinatura,
       ].join("\n");
     case "declaracao":
       return [
@@ -461,7 +491,7 @@ export function buildGdTemplateBody(
           "DECLARAÇÃO",
           clean(
             values.declaracao,
-            "Declaro, para os devidos fins, a veracidade e a pertinência das informações apresentadas."
+            "Declaro, para os devidos fins e sob as penas da lei, a veracidade e a pertinência das informações apresentadas."
           )
         ),
         "",
@@ -474,6 +504,8 @@ export function buildGdTemplateBody(
         section("OBSERVAÇÕES", clean(values.observacoes)),
         "",
         padrao,
+        fechoInstitucional,
+        assinatura,
       ].join("\n");
     case "plano_trabalho":
       return [
@@ -494,6 +526,8 @@ export function buildGdTemplateBody(
         section("OBSERVAÇÕES", clean(values.observacoes)),
         "",
         padrao,
+        fechoInstitucional,
+        assinatura,
       ].join("\n");
     case "prestacao_contas":
       return [
@@ -510,6 +544,8 @@ export function buildGdTemplateBody(
         section("OBSERVAÇÕES FINAIS", clean(values.observacoes)),
         "",
         padrao,
+        fechoInstitucional,
+        assinatura,
       ].join("\n");
     case "convenio":
     case "termo":
@@ -517,7 +553,13 @@ export function buildGdTemplateBody(
       return [
         header,
         "",
-        section("PARTES", clean(values.partes)),
+        section(
+          "PREÂMBULO",
+          [
+            `Pelo presente instrumento, as partes qualificadas em ${clean(values.partes)}`,
+            `firmam o presente ${rotuloTipoModelo(kind).toLowerCase()}, que se regerá pelas cláusulas e condições seguintes.`,
+          ].join("\n")
+        ),
         "",
         section("OBJETO", clean(values.objeto)),
         "",
@@ -525,9 +567,17 @@ export function buildGdTemplateBody(
         "",
         section("CLÁUSULAS / FUNDAMENTO", clean(values.fundamento)),
         "",
-        section("DISPOSIÇÕES FINAIS", clean(values.observacoes)),
+        section(
+          "DISPOSIÇÕES FINAIS",
+          clean(
+            values.observacoes,
+            "Permanecem válidas as disposições padronizadas do instrumento, na forma da legislação e da regulamentação aplicáveis."
+          )
+        ),
         "",
         padrao,
+        fechoInstitucional,
+        assinatura,
       ].join("\n");
     case "ata":
       return [
@@ -539,11 +589,19 @@ export function buildGdTemplateBody(
         "",
         section("PAUTA / ASSUNTO", clean(values.assunto)),
         "",
-        section("DELIBERAÇÕES / OBJETO", clean(values.objeto)),
+        section(
+          "DELIBERAÇÕES / OBJETO",
+          clean(
+            values.objeto,
+            "Deliberações registradas conforme a ordem da pauta e as decisões colegiadas adotadas."
+          )
+        ),
         "",
         section("ENCERRAMENTO / OBSERVAÇÕES", clean(values.observacoes)),
         "",
         padrao,
+        fechoInstitucional,
+        assinatura,
       ].join("\n");
     case "relatorio":
       return [
@@ -560,6 +618,8 @@ export function buildGdTemplateBody(
         section("CONCLUSÃO / OBSERVAÇÕES", clean(values.observacoes)),
         "",
         padrao,
+        fechoInstitucional,
+        assinatura,
       ].join("\n");
     default:
       return [
@@ -574,7 +634,8 @@ export function buildGdTemplateBody(
         section("OBSERVAÇÕES FINAIS", clean(values.observacoes)),
         "",
         padrao,
+        fechoInstitucional,
+        assinatura,
       ].join("\n");
   }
 }
-
