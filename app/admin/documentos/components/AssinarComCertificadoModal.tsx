@@ -701,26 +701,26 @@ function CertStampPositionPreview({
                       </div>
                       <div style={{ marginTop: 1 }}>Dados: {when}</div>
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 0, alignItems: "center", justifyContent: "flex-end", flex: "0 0 auto", paddingBottom: 2 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 0, alignItems: "center", justifyContent: "center", flex: "0 0 auto", paddingBottom: 0 }}>
                       {qrDataUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={qrDataUrl}
                           alt="QR Code de validação"
-                          style={{ width: 30, height: 30, display: "block", flex: "0 0 auto" }}
+                          style={{ width: 34, height: 34, display: "block", flex: "0 0 auto" }}
                         />
                       ) : (
                         <div
                           style={{
-                            width: 30,
-                            height: 30,
+                            width: 34,
+                            height: 34,
                             border: "1px solid #94a3b8",
                             background: "#f8fafc",
                             flex: "0 0 auto",
                           }}
                         />
                       )}
-                      <div style={{ minWidth: 0, textAlign: "center", fontSize: 5.0, lineHeight: 1.02 }}>
+                      <div style={{ minWidth: 0, textAlign: "center", fontSize: 4.9, lineHeight: 1.01 }}>
                         <div style={{ fontWeight: 700 }}>VALIDAR ITI</div>
                         <div>verifique em validar.iti.gov.br</div>
                       </div>
