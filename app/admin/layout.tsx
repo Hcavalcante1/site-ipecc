@@ -411,29 +411,15 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           <div className="admin-sidebar-footer">
             <div className="admin-sidebar-footer-brand">
               <span className="admin-sidebar-footer-brand-name">IPECC</span>
-              <span className="admin-sidebar-footer-brand-tag">
-                Instituto Paulista de Esporte, Cultura e Cidadania
-              </span>
-            </div>
-
-            <div className="admin-sidebar-footer-user">
-              <span className="admin-sidebar-footer-label">Sessão administrativa</span>
               <span
-                className="admin-sidebar-footer-email"
+                className="admin-sidebar-footer-mini"
                 title={userEmail || undefined}
               >
                 {userEmail || "Conta administrativa"}
               </span>
-              <span className="admin-sidebar-footer-badge">
-                Área restrita - acesso autorizado
-              </span>
             </div>
 
             <LogoutButton />
-
-            <p className="admin-sidebar-footer-legal">
-              CNPJ 05.965.225/0001-04 | {new Date().getFullYear()} IPECC
-            </p>
           </div>
         </aside>
 
