@@ -249,6 +249,11 @@ export async function DELETE(req: NextRequest, ctx: Ctx) {
 
   if (signatureDocIds.length > 0) {
     await admin
+      .from("gd_signature_evidences")
+      .delete()
+      .in("signature_document_id", signatureDocIds);
+
+    await admin
       .from("gd_signature_signers")
       .update({ deleted_at: now, updated_at: now })
       .in("signature_document_id", signatureDocIds)
