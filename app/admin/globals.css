@@ -23,8 +23,7 @@
 
 .admin-wrapper {
   min-height: 100vh;
-  display: grid;
-  grid-template-columns: 272px minmax(0, 1fr);
+  display: block;
 }
 
 .admin-mobile-header,
@@ -38,9 +37,10 @@
   background: linear-gradient(150deg, #020617 0%, #020617 45%, #041a3b 100%);
   padding: 26px 20px 22px;
   box-shadow: 10px 0 40px rgba(0, 0, 0, 0.7);
-  position: sticky;
+  position: fixed;
   top: 0;
-  align-self: start;
+  left: 0;
+  width: 272px;
   z-index: 10;
   height: 100vh;
   display: flex;
@@ -248,6 +248,8 @@
   flex-direction: column;
   min-height: 100vh;
   overflow: visible;
+  margin-left: 272px;
+  width: calc(100% - 272px);
 }
 
 .admin-main-footer {
@@ -551,7 +553,7 @@ a.admin-button {
   }
 
   .admin-wrapper {
-    grid-template-columns: 1fr;
+    display: block;
     height: auto;
     overflow: visible;
   }
@@ -583,6 +585,8 @@ a.admin-button {
 
   .admin-main {
     padding: 14px 12px 18px;
+    margin-left: 0;
+    width: 100%;
     height: auto;
     min-height: 0;
     overflow-y: visible;
