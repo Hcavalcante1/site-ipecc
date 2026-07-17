@@ -254,9 +254,9 @@
 
 .admin-main-footer {
   margin-top: 10px;
-  padding: 10px 6px 4px;
-  text-align: center;
-  font-size: 0.72rem;
+  padding: 8px 12px 2px;
+  text-align: left;
+  font-size: 0.7rem;
   letter-spacing: 0.02em;
   color: #64748b;
 }
