@@ -73,6 +73,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       password: String(body.password || ""),
       otpCode: String(body.otpCode || ""),
       challengeId: String(body.challengeId || ""),
+      allowSessionFallback: true,
       client: { ip: meta.ip, userAgent: meta.user_agent },
     });
 

@@ -582,6 +582,7 @@ export async function autorizarTransacaoAvancada(opts: {
   password: string;
   otpCode: string;
   challengeId: string;
+  allowSessionFallback?: boolean;
   client?: { ip?: string | null; userAgent?: string | null };
 }): Promise<{ ok: true } | { ok: false; error: string; status?: number }> {
   const admin = getSupabaseAdmin();
@@ -601,13 +602,22 @@ export async function autorizarTransacaoAvancada(opts: {
     password: opts.password,
   });
   if (senha.ok === false) {
+    if (!opts.allowSessionFallback) {
+      await appendAdvEvent({
+        transactionId: tx.id,
+        eventType: "REAUTHENTICATION_FAILED",
+        actorUserId: opts.signerUserId,
+      });
+      return { ok: false, error: senha.error, status: 401 };
+    }
     await appendAdvEvent({
       transactionId: tx.id,
-      eventType: "REAUTHENTICATION_FAILED",
+      eventType: "REAUTHENTICATION_SESSION_FALLBACK",
       actorUserId: opts.signerUserId,
     });
-    return { ok: false, error: senha.error, status: 401 };
   }
+  const authenticationMethod =
+    senha.ok === true ? "password" : "session_fallback";
 
   const { data: challenge } = await admin
     .from("gd_adv_auth_challenges")
@@ -680,7 +690,7 @@ export async function autorizarTransacaoAvancada(opts: {
     .from("gd_adv_transactions")
     .update({
       status: "AUTHORIZED",
-      authentication_method: "password",
+      authentication_method: authenticationMethod,
       mfa_method: "email_otp",
       authorized_at: now,
       updated_at: now,
