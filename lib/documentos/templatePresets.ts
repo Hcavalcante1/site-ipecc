@@ -128,6 +128,11 @@ export function getGdTemplateFieldConfigs(
           rows: 3,
         },
         {
+          key: "responsavel",
+          label: "Responsável / assinante",
+          placeholder: "Nome da autoridade que assina o ofício",
+        },
+        {
           key: "observacoes",
           label: "Fecho / observações",
           placeholder: "Ex.: Sem mais, renovamos votos de estima.",
@@ -215,6 +220,11 @@ export function getGdTemplateFieldConfigs(
           rows: 3,
         },
         {
+          key: "responsavel",
+          label: "Responsável / signatário",
+          placeholder: "Nome de quem assina o plano",
+        },
+        {
           key: "observacoes",
           label: "Observações",
           placeholder: "Cronograma, anexos, ajustes ou comentários.",
@@ -254,6 +264,11 @@ export function getGdTemplateFieldConfigs(
           placeholder: "Norma, edital, termo ou referência institucional.",
           multiline: true,
           rows: 3,
+        },
+        {
+          key: "responsavel",
+          label: "Responsável / signatário",
+          placeholder: "Nome de quem assina a prestação",
         },
         {
           key: "observacoes",
@@ -297,6 +312,11 @@ export function getGdTemplateFieldConfigs(
           placeholder: "Cláusulas principais, base legal ou referência institucional.",
           multiline: true,
           rows: 4,
+        },
+        {
+          key: "responsavel",
+          label: "Responsável / signatário",
+          placeholder: "Nome da autoridade ou representante",
         },
         {
           key: "observacoes",
@@ -379,6 +399,11 @@ export function getGdTemplateFieldConfigs(
           placeholder: "Critérios, base técnica ou institucional.",
           multiline: true,
           rows: 3,
+        },
+        {
+          key: "responsavel",
+          label: "Responsável / signatário",
+          placeholder: "Nome do responsável pelo relatório",
         },
         {
           key: "observacoes",
