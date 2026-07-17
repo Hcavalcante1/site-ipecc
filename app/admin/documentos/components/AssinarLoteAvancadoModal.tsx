@@ -317,8 +317,8 @@ export default function AssinarLoteAvancadoModal({
           {step === "identity" ? (
             <>
               <p style={{ fontSize: 13, color: "#cbd5e1", lineHeight: 1.45 }}>
-                Antes do lote avançado, habilite sua identidade (nível BASIC).
-                Isso é exigido pela API e evita falha 403 ao congelar.
+                Antes do lote avançado, confirme sua habilitação interna do IPECC.
+                Isso evita falha 403 ao congelar.
               </p>
               <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>
                 Nome completo
@@ -359,18 +359,18 @@ export default function AssinarLoteAvancadoModal({
                   cursor: "pointer",
                 }}
               >
-                {busy ? "Salvando…" : "Habilitar identidade e continuar"}
+                {busy ? "Salvando…" : "Confirmar habilitação e continuar"}
               </button>
             </>
           ) : null}
 
           {step === "create" ? (
             <>
-              {identityOk ? (
-                <p style={{ fontSize: 13, color: "#6ee7b7" }}>
-                  Identidade habilitada{nome ? `: ${nome}` : ""}.
-                </p>
-              ) : null}
+                {identityOk ? (
+                  <p style={{ fontSize: 13, color: "#6ee7b7" }}>
+                  Habilitação interna confirmada{nome ? `: ${nome}` : ""}.
+                  </p>
+                ) : null}
               <p style={{ fontSize: 14 }}>
                 Documentos selecionados: <strong>{documentIds.length}</strong>
               </p>
@@ -490,7 +490,7 @@ export default function AssinarLoteAvancadoModal({
               </label>
               <button
                 type="button"
-                disabled={busy || !password || !otp || nome.length < 3}
+                disabled={busy || !otp || nome.length < 3}
                 onClick={() => void autorizarEConcluir()}
                 style={{
                   marginTop: 10,
@@ -505,6 +505,9 @@ export default function AssinarLoteAvancadoModal({
               >
                 {busy ? "Processando…" : "Autorizar e assinar lote"}
               </button>
+              <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 8 }}>
+                Senha opcional se a sessão já estiver ativa no admin.
+              </p>
             </>
           ) : null}
 

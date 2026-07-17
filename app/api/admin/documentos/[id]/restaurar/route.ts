@@ -42,6 +42,35 @@ export async function POST(_req: NextRequest, ctx: Ctx) {
     );
   }
 
+  const { data: signatureDocs } = await admin
+    .from("gd_signature_documents")
+    .select("id")
+    .eq("document_id", ctx.params.id)
+    .not("deleted_at", "is", null);
+
+  const signatureDocIds = (signatureDocs || [])
+    .map((row) => row.id)
+    .filter((value): value is string => Boolean(value));
+
+  if (signatureDocIds.length > 0) {
+    await admin
+      .from("gd_signature_documents")
+      .update({ deleted_at: null, updated_at: now })
+      .in("id", signatureDocIds);
+
+    await admin
+      .from("gd_signature_signers")
+      .update({ deleted_at: null, updated_at: now })
+      .in("signature_document_id", signatureDocIds)
+      .not("deleted_at", "is", null);
+
+    await admin
+      .from("gd_signature_batch_items")
+      .update({ deleted_at: null, updated_at: now })
+      .in("signature_document_id", signatureDocIds)
+      .not("deleted_at", "is", null);
+  }
+
   await registrarLog({
     processo_id: data.processo_id,
     document_id: data.id,

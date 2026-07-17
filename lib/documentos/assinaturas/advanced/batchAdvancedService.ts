@@ -397,6 +397,7 @@ export async function autorizarLoteAvancado(opts: {
     password: opts.password,
     otpCode: opts.otpCode,
     challengeId: opts.challengeId,
+    allowSessionFallback: true,
     client: opts.client,
   });
 
@@ -409,7 +410,7 @@ export async function autorizarLoteAvancado(opts: {
       .from("gd_adv_transactions")
       .update({
         status: "AUTHORIZED",
-        authentication_method: "password",
+        authentication_method: auth.authenticationMethod,
         mfa_method: "email_otp",
         authorized_at: now,
         updated_at: now,

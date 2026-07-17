@@ -310,7 +310,7 @@ export default function AssinarAvancadaModal({
               {identityOk ? (
                 <>
                   <p style={{ fontSize: 14, color: "#6ee7b7" }}>
-                    Identidade habilitada. Pode iniciar a transação.
+                    Habilitação interna confirmada. Pode iniciar a transação.
                   </p>
                   <button
                     type="button"
@@ -333,7 +333,7 @@ export default function AssinarAvancadaModal({
               ) : (
                 <>
                   <p style={{ fontSize: 14 }}>
-                    Habilite sua identidade (nível BASIC / VERIFIED interno).
+                    Confirme sua habilitação interna do IPECC para continuar.
                   </p>
                   <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>
                     Nome completo
@@ -374,7 +374,7 @@ export default function AssinarAvancadaModal({
                       cursor: "pointer",
                     }}
                   >
-                    {busy ? "Salvando…" : "Habilitar identidade"}
+                    {busy ? "Salvando…" : "Confirmar habilitação"}
                   </button>
                 </>
               )}

@@ -584,7 +584,10 @@ export async function autorizarTransacaoAvancada(opts: {
   challengeId: string;
   allowSessionFallback?: boolean;
   client?: { ip?: string | null; userAgent?: string | null };
-}): Promise<{ ok: true } | { ok: false; error: string; status?: number }> {
+}): Promise<
+  | { ok: true; authenticationMethod: "password" | "session_fallback" }
+  | { ok: false; error: string; status?: number }
+> {
   const admin = getSupabaseAdmin();
   const { data: tx } = await admin
     .from("gd_adv_transactions")
@@ -715,7 +718,7 @@ export async function autorizarTransacaoAvancada(opts: {
     actorUserId: opts.signerUserId,
   });
 
-  return { ok: true };
+  return { ok: true, authenticationMethod };
 }
 
 async function gerarCertificadoEvidenciasPdf(opts: {
