@@ -11,6 +11,8 @@ import {
   buildGdTemplateBody,
   getDefaultGdTemplateFieldValues,
   getGdTemplateFieldConfigs,
+  getGdTemplateFixedIntro,
+  getGdTemplateStructureChips,
   type GdTemplateFieldKey,
   type GdTemplateFieldValues,
 } from "@/lib/documentos/templatePresets";
@@ -119,6 +121,32 @@ const previewStyle = {
   boxShadow: "0 10px 30px rgba(15,23,42,0.12)",
 };
 
+const chipRailStyle = {
+  display: "flex",
+  gap: 8,
+  flexWrap: "wrap" as const,
+};
+
+const chipStyle = {
+  padding: "8px 12px",
+  borderRadius: 999,
+  border: "1px solid rgba(96,165,250,0.35)",
+  background: "rgba(37,99,235,0.10)",
+  color: "#dbeafe",
+  fontSize: 12,
+  fontWeight: 700,
+};
+
+const fixedTextStyle = {
+  padding: 14,
+  borderRadius: 14,
+  border: "1px solid rgba(148,163,184,0.22)",
+  background: "rgba(255,255,255,0.03)",
+  color: "#e5e7eb",
+  lineHeight: 1.55,
+  fontSize: 13,
+};
+
 const fieldWrapStyle = {
   display: "grid",
   gap: 6,
@@ -225,6 +253,8 @@ export default function ModelosPage() {
     () => kindOptions.find((opt) => opt.value === kind)?.help ?? "",
     [kind]
   );
+  const kindChips = useMemo(() => getGdTemplateStructureChips(kind), [kind]);
+  const kindIntro = useMemo(() => getGdTemplateFixedIntro(kind), [kind]);
   const generatedBody = useMemo(
     () => buildGdTemplateBody(kind, name, fieldValues),
     [kind, name, fieldValues]
@@ -437,8 +467,24 @@ export default function ModelosPage() {
         <div style={stepCardStyle(true)}>
           <strong style={{ display: "block", marginBottom: 6 }}>Dados especificos</strong>
           <p style={{ marginTop: 0, opacity: 0.85 }}>
-            Preencha apenas o que muda de um documento para outro. O texto-base institucional segue embutido.
+            Preencha apenas o que muda de um documento para outro. Os textos
+            fixos seguem nos chips e no bloco institucional embutido.
           </p>
+
+          <div style={chipRailStyle} aria-label="Chips do documento">
+            {kindChips.map((chip) => (
+              <span key={chip.label} style={chipStyle} title={chip.help}>
+                {chip.label}
+              </span>
+            ))}
+          </div>
+
+          <div style={fixedTextStyle}>
+            <strong style={{ display: "block", marginBottom: 6 }}>
+              Texto-base institucional
+            </strong>
+            <span>{kindIntro}</span>
+          </div>
 
           <div style={{ display: "grid", gap: 12 }}>
             {fieldConfigs.map((field) => {
@@ -488,7 +534,8 @@ export default function ModelosPage() {
       <div style={stepCardStyle(true)}>
         <strong style={{ display: "block", marginBottom: 6 }}>Minuta final</strong>
         <p style={{ marginTop: 0, opacity: 0.85 }}>
-          A minuta aparece pronta para revisao e assinatura.
+          A minuta aparece pronta para revisão e assinatura. Ela é o resultado;
+          os blocos fixos já estão montados acima.
         </p>
 
         <div style={previewStyle}>{generatedBody}</div>

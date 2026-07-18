@@ -27,6 +27,11 @@ export type GdTemplateFieldConfig = {
   rows?: number;
 };
 
+export type GdTemplateChip = {
+  label: string;
+  help: string;
+};
+
 export const GD_TEMPLATE_FIELD_KEYS: readonly GdTemplateFieldKey[] = [
   "titulo",
   "objeto",
@@ -83,6 +88,100 @@ function baseHeader(kind: string, name: string, values: GdTemplateFieldValues) {
     entry("Objeto", values.objeto),
     entry("Prazo", values.prazo),
   ].join("\n");
+}
+
+export function getGdTemplateFixedIntro(kind: GdTemplateKind): string {
+  switch (kind) {
+    case "oficio":
+      return "Texto-base institucional de comunicação formal. Mantém a estrutura fixa do expediente, destinatário, assunto, fecho e referência, cabendo ao campo variável apenas a personalização do caso.";
+    case "declaracao":
+      return "Texto-base institucional de declaração. Mantém a fórmula declaratória, a identificação do declarante, a finalidade e a validade, com adaptação apenas do conteúdo específico informado.";
+    case "contrato":
+    case "convenio":
+    case "termo":
+      return "Texto-base institucional de instrumento jurídico-administrativo. Preserva preâmbulo, objeto, vigência, cláusulas padronizadas e disposições finais, alterando apenas os dados variáveis do caso concreto.";
+    case "ata":
+      return "Texto-base institucional de ata. Mantém data, participantes, pauta, deliberações e encerramento, deixando o conteúdo variável para os registros efetivos da reunião.";
+    case "relatorio":
+      return "Texto-base institucional de relatório. Conserva escopo, achados, fundamento técnico, conclusão e encaminhamentos, ajustando apenas os dados do acompanhamento realizado.";
+    case "plano_trabalho":
+      return "Texto-base institucional de plano de trabalho. Mantém objeto, metas, resultados, prazo e observações estruturais, alterando só o que for próprio da execução prevista.";
+    case "prestacao_contas":
+      return "Texto-base institucional de prestação de contas. Conserva período, execução, conformidade e ressalvas, com atualização apenas dos dados do processo e do instrumento correspondente.";
+    default:
+      return "Texto-base institucional padronizado do IPECC. O modelo preserva a estrutura jurídica e documental, permitindo edição apenas dos campos variáveis do caso concreto.";
+  }
+}
+
+export function getGdTemplateStructureChips(kind: GdTemplateKind): GdTemplateChip[] {
+  switch (kind) {
+    case "oficio":
+      return [
+        { label: "Expediente", help: "Identificação formal do ofício." },
+        { label: "Destinatário", help: "Quem recebe a comunicação." },
+        { label: "Assunto", help: "Tema principal do ofício." },
+        { label: "Texto-base", help: "Corpo institucional fixo." },
+        { label: "Fecho", help: "Encerramento institucional." },
+      ];
+    case "declaracao":
+      return [
+        { label: "Identificação", help: "Título e enquadramento." },
+        { label: "Declarante", help: "Quem declara." },
+        { label: "Texto declaratório", help: "Conteúdo principal fixo." },
+        { label: "Finalidade", help: "Para que a declaração serve." },
+        { label: "Validade", help: "Prazo ou efeito da declaração." },
+      ];
+    case "contrato":
+    case "convenio":
+    case "termo":
+      return [
+        { label: "Preâmbulo", help: "Qualificação e contexto." },
+        { label: "Objeto", help: "Finalidade do instrumento." },
+        { label: "Vigência", help: "Prazo contratual." },
+        { label: "Cláusulas", help: "Base fixa do instrumento." },
+        { label: "Disposições finais", help: "Encerramento normativo." },
+      ];
+    case "ata":
+      return [
+        { label: "Data", help: "Quando ocorreu." },
+        { label: "Participantes", help: "Lista de presentes." },
+        { label: "Pauta", help: "Assunto tratado." },
+        { label: "Deliberações", help: "Decisões e encaminhamentos." },
+        { label: "Encerramento", help: "Fecho da ata." },
+      ];
+    case "relatorio":
+      return [
+        { label: "Escopo", help: "O que está sendo relatado." },
+        { label: "Achados", help: "Resultados ou evidências." },
+        { label: "Fundamento", help: "Base técnica ou institucional." },
+        { label: "Conclusão", help: "Síntese final." },
+        { label: "Assinatura", help: "Responsável pelo relatório." },
+      ];
+    case "plano_trabalho":
+      return [
+        { label: "Objeto", help: "Finalidade do plano." },
+        { label: "Metas", help: "Entregas esperadas." },
+        { label: "Resultados", help: "Efeitos ou impactos." },
+        { label: "Prazo", help: "Vigência do plano." },
+        { label: "Assinatura", help: "Responsável pelo plano." },
+      ];
+    case "prestacao_contas":
+      return [
+        { label: "Período", help: "Intervalo da prestação." },
+        { label: "Execução", help: "Resumo da aplicação." },
+        { label: "Conformidade", help: "Adequação às regras." },
+        { label: "Ressalvas", help: "Pendências ou alertas." },
+        { label: "Assinatura", help: "Responsável final." },
+      ];
+    default:
+      return [
+        { label: "Identificação", help: "Título e enquadramento." },
+        { label: "Objeto", help: "Conteúdo principal." },
+        { label: "Prazo", help: "Vigência ou duração." },
+        { label: "Fundamento", help: "Base legal ou institucional." },
+        { label: "Assinatura", help: "Responsável final." },
+      ];
+  }
 }
 
 export function getGdTemplateFieldConfigs(
@@ -456,6 +555,7 @@ export function buildGdTemplateBody(
   values: GdTemplateFieldValues
 ): string {
   const header = baseHeader(kind, modelName, values);
+  const intro = getGdTemplateFixedIntro(kind);
   const padrao =
     "Documento emitido no padrão institucional do IPECC, com campos variáveis mínimos e demais cláusulas padronizadas.";
   const fechoInstitucional =
@@ -474,6 +574,8 @@ export function buildGdTemplateBody(
     case "oficio":
       return [
         header,
+        "",
+        section("TEXTO-BASE INSTITUCIONAL", intro),
         "",
         section(
           "EXPEDIENTE",
@@ -512,6 +614,8 @@ export function buildGdTemplateBody(
       return [
         header,
         "",
+        section("TEXTO-BASE INSTITUCIONAL", intro),
+        "",
         section(
           "DECLARAÇÃO",
           clean(
@@ -536,6 +640,8 @@ export function buildGdTemplateBody(
       return [
         header,
         "",
+        section("TEXTO-BASE INSTITUCIONAL", intro),
+        "",
         section("IDENTIFICAÇÃO", clean(values.titulo)),
         "",
         section("OBJETO", clean(values.objeto)),
@@ -558,6 +664,8 @@ export function buildGdTemplateBody(
       return [
         header,
         "",
+        section("TEXTO-BASE INSTITUCIONAL", intro),
+        "",
         section("PERÍODO", clean(values.periodo)),
         "",
         section("OBJETO / REFERÊNCIA", clean(values.objeto)),
@@ -577,6 +685,8 @@ export function buildGdTemplateBody(
     case "contrato":
       return [
         header,
+        "",
+        section("TEXTO-BASE INSTITUCIONAL", intro),
         "",
         section(
           "PREÂMBULO",
@@ -620,6 +730,8 @@ export function buildGdTemplateBody(
       return [
         header,
         "",
+        section("TEXTO-BASE INSTITUCIONAL", intro),
+        "",
         section("DATA / PERÍODO", clean(values.periodo)),
         "",
         section("PARTICIPANTES", clean(values.partes)),
@@ -644,6 +756,8 @@ export function buildGdTemplateBody(
       return [
         header,
         "",
+        section("TEXTO-BASE INSTITUCIONAL", intro),
+        "",
         section("PERÍODO", clean(values.periodo)),
         "",
         section("ESCOPO / OBJETO", clean(values.objeto)),
@@ -661,6 +775,8 @@ export function buildGdTemplateBody(
     default:
       return [
         header,
+        "",
+        section("TEXTO-BASE INSTITUCIONAL", intro),
         "",
         section("OBJETO", clean(values.objeto)),
         "",
