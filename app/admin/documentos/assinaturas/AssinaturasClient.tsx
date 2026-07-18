@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import GestaoDocumentalShell, {
@@ -11,6 +11,8 @@ import GestaoDocumentalShell, {
 import AssinarNoAdminModal from "../components/AssinarNoAdminModal";
 import AssinarAvancadaModal from "../components/AssinarAvancadaModal";
 import AssinarComCertificadoModal from "../components/AssinarComCertificadoModal";
+import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
+import { carregarProcessosDoEscopo } from "@/lib/auth/processosEscopoCliente";
 import {
   rotuloProviderAssinatura,
   rotuloStatusAssinatura,
@@ -31,9 +33,35 @@ type SignatureRow = {
   created_at: string;
 };
 
+type ProcessoOpcao = {
+  id: string;
+  titulo: string;
+};
+
+type DocumentoImportado = {
+  id: string;
+  fileName: string;
+  title: string;
+  processoId: string | null;
+};
+
+function baseName(fileName: string): string {
+  const trimmed = fileName.trim();
+  const withoutExt = trimmed.replace(/\.[^.]+$/, "");
+  return withoutExt || "Documento";
+}
+
 export default function AssinaturasClient() {
   const search = useSearchParams();
+  const escopo = useAdminEscopoCliente();
   const [rows, setRows] = useState<SignatureRow[]>([]);
+  const [processos, setProcessos] = useState<ProcessoOpcao[]>([]);
+  const [processoId, setProcessoId] = useState("");
+  const [arquivos, setArquivos] = useState<File[]>([]);
+  const [documentosImportados, setDocumentosImportados] = useState<
+    DocumentoImportado[]
+  >([]);
+  const [importandoArquivos, setImportandoArquivos] = useState(false);
   const [documentId, setDocumentId] = useState("");
   const [signerEmail, setSignerEmail] = useState("");
   const [signerName, setSignerName] = useState("");
@@ -54,6 +82,16 @@ export default function AssinaturasClient() {
   const [advDocumentId, setAdvDocumentId] = useState<string | null>(null);
   const [advDocumentTitle, setAdvDocumentTitle] = useState<string | null>(null);
   const [certOpen, setCertOpen] = useState(false);
+  const processoSelecionado = useMemo(() => {
+    if (processoId) return processoId;
+    return processos[0]?.id || "";
+  }, [processoId, processos]);
+  const documentIdsCertificado = useMemo(() => {
+    if (documentosImportados.length > 0) {
+      return documentosImportados.map((item) => item.id);
+    }
+    return documentId.trim() ? [documentId.trim()] : [];
+  }, [documentId, documentosImportados]);
   const carregar = useCallback(async () => {
     setLoading(true);
     const [sigRes, cfgRes] = await Promise.all([
@@ -82,6 +120,21 @@ export default function AssinaturasClient() {
   }, [carregar]);
 
   useEffect(() => {
+    let ativo = true;
+    async function carregarProcessos() {
+      if (escopo.loading) return;
+      const lista = await carregarProcessosDoEscopo(escopo.processoIds);
+      if (!ativo) return;
+      setProcessos(lista);
+      setProcessoId((current) => current || lista[0]?.id || "");
+    }
+    void carregarProcessos();
+    return () => {
+      ativo = false;
+    };
+  }, [escopo.loading, escopo.processoIds]);
+
+  useEffect(() => {
     const erro = search.get("erro");
     const ok = search.get("ok");
     const st = search.get("state");
@@ -100,9 +153,14 @@ export default function AssinaturasClient() {
   }, [search]);
 
   useEffect(() => {
-    const docId = String(search.get("document_id") || "").trim();
+    const docId = documentId.trim();
     if (!docId) {
       setDocumentTitle(null);
+      return;
+    }
+    const local = documentosImportados.find((doc) => doc.id === docId);
+    if (local) {
+      setDocumentTitle(local.title);
       return;
     }
     let cancelled = false;
@@ -125,13 +183,119 @@ export default function AssinaturasClient() {
     return () => {
       cancelled = true;
     };
-  }, [search]);
+  }, [documentId, documentosImportados]);
 
   useEffect(() => {
     const docId = String(search.get("document_id") || "").trim();
     if (!docId) return;
     setDocumentId(docId);
   }, [search]);
+
+  function atualizarArquivosSelecionados(files: FileList | null) {
+    const lista = Array.from(files || []).filter(
+      (file) => file.type === "application/pdf" || /\.pdf$/i.test(file.name)
+    );
+    setArquivos(lista);
+    setDocumentosImportados([]);
+    if (!lista.length) {
+      setAviso("");
+      return;
+    }
+    setAviso(
+      `${lista.length} PDF(s) selecionado(s). O sistema vai criar os documentos e gerar os IDs automaticamente.`
+    );
+  }
+
+  async function importarArquivosComoDocumentos() {
+    if (!arquivos.length) {
+      setAviso("Escolha ao menos um PDF para gerar os documentos.");
+      return;
+    }
+
+    const pid =
+      processoSelecionado || (escopo.mestre ? processos[0]?.id || "" : "");
+    if (!pid) {
+      setAviso(
+        "Não encontrei um processo ativo no seu escopo. Escolha um processo antes de importar os PDFs."
+      );
+      return;
+    }
+
+    setImportandoArquivos(true);
+    setAviso("");
+    const importados: DocumentoImportado[] = [];
+
+    try {
+      for (let i = 0; i < arquivos.length; i++) {
+        const file = arquivos[i];
+        const titulo = `${baseName(file.name)}${arquivos.length > 1 ? ` ${i + 1}` : ""}`.trim();
+
+        const createRes = await fetch("/api/admin/documentos", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: titulo,
+            description: `Arquivo importado para assinatura: ${file.name}`,
+            processo_id: pid,
+            status: "draft",
+          }),
+        });
+        const createJson = (await createRes.json().catch(() => ({}))) as {
+          ok?: boolean;
+          error?: string;
+          document?: { id: string };
+        };
+        if (!createRes.ok || !createJson.ok || !createJson.document?.id) {
+          throw new Error(
+            createJson.error || `Falha ao criar documento para ${file.name}.`
+          );
+        }
+
+        const form = new FormData();
+        form.append("file", file, file.name);
+        form.append("file_name", file.name);
+        form.append("change_note", "Upload inicial para assinatura");
+
+        const uploadRes = await fetch(
+          `/api/admin/documentos/${encodeURIComponent(createJson.document.id)}/upload`,
+          {
+            method: "POST",
+            credentials: "include",
+            body: form,
+          }
+        );
+        const uploadJson = (await uploadRes.json().catch(() => ({}))) as {
+          ok?: boolean;
+          error?: string;
+        };
+        if (!uploadRes.ok || !uploadJson.ok) {
+          throw new Error(
+            uploadJson.error || `Falha ao enviar o arquivo ${file.name}.`
+          );
+        }
+
+        importados.push({
+          id: createJson.document.id,
+          fileName: file.name,
+          title: titulo,
+          processoId: pid,
+        });
+      }
+
+      setDocumentosImportados(importados);
+      setDocumentId(importados[0]?.id || "");
+      setDocumentTitle(importados[0]?.title || null);
+      setAviso(
+        `${importados.length} documento(s) criados com sucesso. Agora escolha o tipo de assinatura.`
+      );
+      carregar();
+    } catch (e) {
+      setAviso(e instanceof Error ? e.message : "Erro ao importar PDFs.");
+    } finally {
+      setImportandoArquivos(false);
+    }
+  }
 
   function abrirAssinatura(opts: {
     signatureId?: string | null;
@@ -439,7 +603,7 @@ export default function AssinaturasClient() {
       />
       <AssinarComCertificadoModal
         open={certOpen}
-        documentIds={documentId.trim() ? [documentId.trim()] : []}
+        documentIds={documentIdsCertificado}
         onClose={() => setCertOpen(false)}
         onCompleted={() => {
           setAviso("Assinatura com certificado registrada.");
@@ -450,6 +614,144 @@ export default function AssinaturasClient() {
       {aviso ? (
         <div style={{ ...gdCardStyle, borderColor: "#f59e0b" }}>{aviso}</div>
       ) : null}
+
+      <div style={gdCardStyle}>
+        <h2 className="admin-h2" style={{ marginTop: 0 }}>
+          Fluxo guiado de assinatura
+        </h2>
+        <p style={{ marginTop: 0, fontSize: 14, opacity: 0.9 }}>
+          Envie um ou mais PDFs, o sistema cria os documentos automaticamente e
+          só depois libera as assinaturas. O ID fica interno e não precisa ser
+          copiado da barra de endereço.
+        </p>
+        <div style={{ display: "grid", gap: 12 }}>
+          {processos.length > 1 ? (
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={{ fontSize: 13 }}>Processo do documento</span>
+              <select
+                style={gdInputStyle}
+                value={processoId}
+                onChange={(e) => setProcessoId(e.target.value)}
+              >
+                {processos.map((processo) => (
+                  <option key={processo.id} value={processo.id}>
+                    {processo.titulo}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          <label
+            style={{
+              display: "grid",
+              gap: 8,
+              padding: 14,
+              borderRadius: 12,
+              border: "1px dashed #64748b",
+              background: "rgba(15,23,42,0.45)",
+            }}
+          >
+            <span style={{ fontSize: 13, fontWeight: 600 }}>
+              Upload de PDFs para gerar os documentos
+            </span>
+            <input
+              type="file"
+              accept="application/pdf,.pdf"
+              multiple
+              onChange={(e) => atualizarArquivosSelecionados(e.target.files)}
+              style={{ color: "#cbd5e1" }}
+            />
+            <small style={{ color: "#94a3b8" }}>
+              Cada arquivo vira um documento pronto para assinatura.
+            </small>
+          </label>
+          {arquivos.length > 0 ? (
+            <div style={{ display: "grid", gap: 8 }}>
+              <strong>Arquivos selecionados</strong>
+              <ul style={{ margin: 0, paddingLeft: 18, color: "#cbd5e1" }}>
+                {arquivos.map((file) => (
+                  <li key={`${file.name}-${file.size}`}>{file.name}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              style={{ ...gdBtnStyle, background: "#0f766e" }}
+              disabled={importandoArquivos || arquivos.length === 0}
+              onClick={() => void importarArquivosComoDocumentos()}
+            >
+              {importandoArquivos
+                ? "Gerando documentos…"
+                : "Gerar documentos e IDs"}
+            </button>
+            <button
+              type="button"
+              style={{ ...gdBtnStyle, background: "#334155" }}
+              onClick={() => {
+                setArquivos([]);
+                setDocumentosImportados([]);
+                setDocumentId("");
+                setDocumentTitle(null);
+              }}
+              disabled={importandoArquivos && arquivos.length === 0}
+            >
+              Limpar fila
+            </button>
+          </div>
+          {documentosImportados.length > 0 ? (
+            <div style={{ display: "grid", gap: 8 }}>
+              <strong>Documentos gerados</strong>
+              <div style={{ display: "grid", gap: 8 }}>
+                {documentosImportados.map((doc) => (
+                  <div
+                    key={doc.id}
+                    style={{
+                      display: "flex",
+                      gap: 10,
+                      flexWrap: "wrap",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "10px 12px",
+                      borderRadius: 10,
+                      background:
+                        doc.id === documentId.trim()
+                          ? "rgba(14,165,233,0.18)"
+                          : "rgba(15,23,42,0.35)",
+                      border:
+                        doc.id === documentId.trim()
+                          ? "1px solid #38bdf8"
+                          : "1px solid #334155",
+                    }}
+                  >
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 700 }}>{doc.title}</div>
+                      <div style={{ fontSize: 13, opacity: 0.8 }}>
+                        {doc.fileName}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      style={{
+                        ...gdBtnStyle,
+                        background:
+                          doc.id === documentId.trim() ? "#0f766e" : "#1d4ed8",
+                      }}
+                      onClick={() => {
+                        setDocumentId(doc.id);
+                        setDocumentTitle(doc.title);
+                      }}
+                    >
+                      Usar este documento
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
 
       <div style={gdCardStyle}>
         <p style={{ marginTop: 0 }}>
@@ -464,8 +766,8 @@ export default function AssinaturasClient() {
           gov.br: <strong>{govbrOk ? "pronto" : "ausente"}</strong>
         </p>
         <p style={{ marginTop: 0, fontSize: 13, opacity: 0.85 }}>
-          Preferência: abra o documento e clique em <strong>Assinar no admin</strong> —
-          o ID entra sozinho. Não precisa copiar da barra de endereço.
+          Preferência: envie um PDF acima e escolha o tipo de assinatura. O
+          documento gerado já chega com o ID interno preenchido sozinho.
         </p>
         {documentTitle && documentId ? (
           <p
@@ -486,6 +788,31 @@ export default function AssinaturasClient() {
             </Link>
           </p>
         ) : null}
+        <details style={{ marginBottom: 10 }}>
+          <summary style={{ cursor: "pointer", fontSize: 13, opacity: 0.9 }}>
+            Usar documento já existente
+          </summary>
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+              alignItems: "center",
+              marginTop: 10,
+            }}
+          >
+            <input
+              style={gdInputStyle}
+              placeholder="ID do documento (fallback manual)"
+              value={documentId}
+              onChange={(e) => setDocumentId(e.target.value)}
+            />
+            <span style={{ fontSize: 13, opacity: 0.8 }}>
+              Se você já abriu a ficha do documento, o ID continua entrando
+              sozinho.
+            </span>
+          </div>
+        </details>
         <div
           style={{
             display: "flex",
@@ -494,16 +821,6 @@ export default function AssinaturasClient() {
             alignItems: "center",
           }}
         >
-          {!documentTitle ? (
-            <input
-              style={gdInputStyle}
-              placeholder="ID do documento (ou use Assinar na ficha)"
-              value={documentId}
-              onChange={(e) => setDocumentId(e.target.value)}
-            />
-          ) : (
-            <input type="hidden" value={documentId} readOnly />
-          )}
           <input
             style={gdInputStyle}
             placeholder="Seu nome (quem assina no admin)"
@@ -543,9 +860,9 @@ export default function AssinaturasClient() {
           <button
             type="button"
             style={{ ...gdBtnStyle, background: "#7c3aed" }}
-            disabled={!documentId.trim()}
+            disabled={documentIdsCertificado.length < 1}
             onClick={() => {
-              if (!documentId.trim()) {
+              if (documentIdsCertificado.length < 1) {
                 setAviso(
                   "Informe ou selecione um documento para assinar com certificado."
                 );
