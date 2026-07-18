@@ -28,6 +28,12 @@ const gdDangerBtnStyle = {
   boxShadow: "none",
 };
 
+const introCardStyle = {
+  ...gdCardStyle,
+  display: "grid",
+  gap: 12,
+};
+
 const wizardStyle = {
   display: "flex",
   gap: 8,
@@ -43,6 +49,7 @@ const wizardChipStyle = (active: boolean) => ({
   color: active ? "#dbeafe" : "#cbd5e1",
   fontSize: 12,
   fontWeight: 700,
+  cursor: "pointer",
 });
 
 const stepCardStyle = (active: boolean) => ({
@@ -53,11 +60,22 @@ const stepCardStyle = (active: boolean) => ({
   boxShadow: active ? "0 8px 22px rgba(37,99,235,0.10)" : "none",
 });
 
-const kindCardGridStyle = {
-  display: "grid",
-  gap: 10,
-  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+const kindTabsStyle = {
+  display: "flex",
+  gap: 8,
+  flexWrap: "wrap" as const,
 };
+
+const kindTabStyle = (active: boolean) => ({
+  padding: "8px 12px",
+  borderRadius: 999,
+  border: `1px solid ${active ? "#2563eb" : "#334155"}`,
+  background: active ? "rgba(37,99,235,0.18)" : "rgba(255,255,255,0.04)",
+  color: active ? "#dbeafe" : "#cbd5e1",
+  fontSize: 12,
+  fontWeight: 700,
+  cursor: "pointer",
+});
 
 const sectionStyle = {
   display: "grid",
@@ -85,35 +103,26 @@ const fieldWrapStyle = {
   gap: 6,
 };
 
-const notesStyle = {
-  marginTop: 16,
-  padding: 16,
-  borderRadius: 14,
-  border: "1px solid rgba(148,163,184,0.28)",
-  background: "rgba(248,250,252,0.9)",
-  color: "#0f172a",
-};
-
 const kindOptions: Array<{ value: GdTemplateKind; label: string; help: string }> = [
   {
     value: "oficio",
-    label: "Ofício",
-    help: "Comunicação formal com destinatário, assunto e fecho.",
+    label: "Oficio",
+    help: "Comunicaçao formal com destinatario, assunto e fecho.",
   },
   {
     value: "declaracao",
-    label: "Declaração",
-    help: "Texto declaratório com finalidade e validade.",
+    label: "Declaracao",
+    help: "Texto declaratorio com finalidade e validade.",
   },
   {
     value: "contrato",
     label: "Contrato",
-    help: "Instrumento jurídico com partes, objeto e vigência.",
+    help: "Instrumento juridico com partes, objeto e vigencia.",
   },
   {
     value: "convenio",
-    label: "Convênio",
-    help: "Instrumento de cooperação institucional.",
+    label: "Convenio",
+    help: "Instrumento de cooperacao institucional.",
   },
   {
     value: "termo",
@@ -123,12 +132,12 @@ const kindOptions: Array<{ value: GdTemplateKind; label: string; help: string }>
   {
     value: "ata",
     label: "Ata",
-    help: "Registro formal de reunião ou deliberação.",
+    help: "Registro formal de reuniao ou deliberacao.",
   },
   {
     value: "relatorio",
-    label: "Relatório",
-    help: "Resumo técnico com achados e conclusão.",
+    label: "Relatorio",
+    help: "Resumo tecnico com achados e conclusao.",
   },
   {
     value: "plano_trabalho",
@@ -137,15 +146,22 @@ const kindOptions: Array<{ value: GdTemplateKind; label: string; help: string }>
   },
   {
     value: "prestacao_contas",
-    label: "Prestação de contas",
-    help: "Execução, conformidade e encerramento.",
+    label: "Prestacao de contas",
+    help: "Execucao, conformidade e encerramento.",
   },
   {
     value: "outro",
     label: "Outro",
-    help: "Modelo genérico institucional.",
+    help: "Modelo generico institucional.",
   },
 ];
+
+const ETAPAS = [
+  { id: 1 as const, titulo: "Capa" },
+  { id: 2 as const, titulo: "Tipo" },
+  { id: 3 as const, titulo: "Dados" },
+  { id: 4 as const, titulo: "Minuta" },
+] as const;
 
 export default function ModelosPage() {
   const [templates, setTemplates] = useState<GdDocumentTemplate[]>([]);
@@ -158,7 +174,7 @@ export default function ModelosPage() {
   const [aviso, setAviso] = useState("");
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [etapa, setEtapa] = useState<1 | 2 | 3>(1);
+  const [etapa, setEtapa] = useState<1 | 2 | 3 | 4>(1);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -180,6 +196,14 @@ export default function ModelosPage() {
   }, [carregar]);
 
   const fieldConfigs = useMemo(() => getGdTemplateFieldConfigs(kind), [kind]);
+  const kindLabel = useMemo(
+    () => kindOptions.find((opt) => opt.value === kind)?.label ?? rotuloTipoModelo(kind),
+    [kind]
+  );
+  const kindHelp = useMemo(
+    () => kindOptions.find((opt) => opt.value === kind)?.help ?? "",
+    [kind]
+  );
   const generatedBody = useMemo(
     () => buildGdTemplateBody(kind, name, fieldValues),
     [kind, name, fieldValues]
@@ -202,7 +226,14 @@ export default function ModelosPage() {
   function alterarKind(v: GdTemplateKind) {
     setKind(v);
     setFieldValues(getDefaultGdTemplateFieldValues());
-    setEtapa(2);
+  }
+
+  function voltarEtapa() {
+    setEtapa((prev) => (prev > 1 ? ((prev - 1) as 1 | 2 | 3 | 4) : 1));
+  }
+
+  function seguirEtapa() {
+    setEtapa((prev) => (prev < 4 ? ((prev + 1) as 1 | 2 | 3 | 4) : 4));
   }
 
   async function salvar() {
@@ -212,7 +243,7 @@ export default function ModelosPage() {
     }
 
     if (!bodyToSave) {
-      setAviso("O corpo do modelo não pode ficar vazio.");
+      setAviso("O corpo do modelo nao pode ficar vazio.");
       return;
     }
 
@@ -263,137 +294,104 @@ export default function ModelosPage() {
     setKind(t.kind);
     setFormat(t.format);
     setFieldValues(getDefaultGdTemplateFieldValues());
-    setEtapa(2);
+    setEtapa(1);
   }
 
   async function remover(id: string) {
-    if (!confirm("Remover este modelo?")) return;
     const res = await fetch(`/api/admin/documentos/modelos?id=${id}`, {
       method: "DELETE",
       credentials: "include",
     });
     const json = await res.json();
     if (!res.ok) {
-      setAviso(json.error || "Erro ao remover.");
+      setAviso(json.error || "Erro ao remover modelo.");
       return;
     }
-    if (editingId === id) limparForm();
+    if (editingId === id) {
+      limparForm();
+    }
     carregar();
   }
 
-  return (
-    <GestaoDocumentalShell
-      title="Modelos"
-      description="Formulário guiado no molde CGU: o texto institucional vem pronto e você altera só os campos específicos."
-    >
-      <div style={gdCardStyle}>
-        <h2 className="admin-h2" style={{ marginTop: 0 }}>
-          {editingId ? "Editar modelo" : "Novo modelo"}
-        </h2>
-        <p style={{ marginTop: 0, opacity: 0.85 }}>
-          Preencha apenas o que muda de um documento para outro. O restante já
-          sai no padrão institucional.
-        </p>
+  function renderEtapa() {
+    if (etapa === 1) {
+      return (
+        <div style={stepCardStyle(true)}>
+          <strong style={{ display: "block", marginBottom: 6 }}>Capa do modelo</strong>
+          <p style={{ marginTop: 0, opacity: 0.85 }}>
+            Informe o nome do modelo e siga para a escolha guiada do tipo.
+          </p>
 
-        <div style={wizardStyle} aria-label="Etapas do formulário">
-          <button
-            type="button"
-            style={wizardChipStyle(etapa === 1)}
-            onClick={() => setEtapa(1)}
-          >
-            1. Capa
-          </button>
-          <button
-            type="button"
-            style={wizardChipStyle(etapa === 2)}
-            onClick={() => setEtapa(2)}
-          >
-            2. Dados específicos
-          </button>
-          <button
-            type="button"
-            style={wizardChipStyle(etapa === 3)}
-            onClick={() => setEtapa(3)}
-          >
-            3. Minuta
-          </button>
-        </div>
-
-        {etapa === 1 ? (
-          <div style={stepCardStyle(true)}>
-            <strong style={{ display: "block", marginBottom: 6 }}>
-              Capa do modelo
-            </strong>
-            <p style={{ marginTop: 0, opacity: 0.85 }}>
-              Escolha o tipo da peça e informe o nome do modelo. O sistema já
-              assume o formato institucional padrão.
-            </p>
-
-            <div style={sectionStyle}>
-              <div style={fieldWrapStyle}>
-                <label>Nome do modelo</label>
-                <input
-                  style={{ ...gdInputStyle, marginTop: 0, maxWidth: 640 }}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Ex.: Contrato padrão de parceria"
-                />
-              </div>
-              <div style={fieldWrapStyle}>
-                <label>Tipo do documento</label>
-                <div style={kindCardGridStyle}>
-                  {kindOptions.map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => alterarKind(opt.value)}
-                      style={{
-                        textAlign: "left",
-                        padding: 12,
-                        borderRadius: 14,
-                        border: `1px solid ${kind === opt.value ? "#2563eb" : "#334155"}`,
-                        background:
-                          kind === opt.value
-                            ? "rgba(37,99,235,0.14)"
-                            : "rgba(255,255,255,0.04)",
-                        color: "#e5e7eb",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <strong style={{ display: "block", marginBottom: 4 }}>
-                        {opt.label}
-                      </strong>
-                      <span style={{ fontSize: 12, opacity: 0.8 }}>{opt.help}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+          <div style={sectionStyle}>
+            <div style={fieldWrapStyle}>
+              <label>Nome do modelo</label>
+              <input
+                style={{ ...gdInputStyle, marginTop: 0, maxWidth: 640 }}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Ex.: Contrato padrao de parceria"
+              />
             </div>
           </div>
-        ) : null}
-      </div>
 
-      <div style={gdCardStyle}>
-        <h2 className="admin-h2" style={{ marginTop: 0 }}>
-          Campos específicos do modelo
-        </h2>
-        <p style={{ marginTop: 0, opacity: 0.85 }}>
-          O corpo jurídico, administrativo e institucional já vem montado.
-          Altere só os campos mínimos deste tipo de peça.
-        </p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
+            <button type="button" style={gdBtnStyle} onClick={seguirEtapa}>
+              Continuar
+            </button>
+          </div>
+        </div>
+      );
+    }
 
-        {etapa === 2 ? (
-          <div style={{ ...stepCardStyle(true), display: "grid", gap: 12 }}>
-            <div>
-              <strong style={{ display: "block", marginBottom: 6 }}>
-                Dados específicos da peça
-              </strong>
-              <p style={{ margin: 0, opacity: 0.82 }}>
-                Esta etapa concentra apenas as informações variáveis do caso.
-                O texto-base institucional fica embutido na minuta final.
-              </p>
-            </div>
+    if (etapa === 2) {
+      return (
+        <div style={stepCardStyle(true)}>
+          <strong style={{ display: "block", marginBottom: 6 }}>Tipo do modelo</strong>
+          <p style={{ marginTop: 0, opacity: 0.85 }}>
+            A escolha do tipo tambem e guiada. Selecione a modalidade para carregar a estrutura certa.
+          </p>
 
+          <div style={kindTabsStyle} role="tablist" aria-label="Tipos de modelo">
+            {kindOptions.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                role="tab"
+                aria-selected={kind === opt.value}
+                style={kindTabStyle(kind === opt.value)}
+                onClick={() => alterarKind(opt.value)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ display: "grid", gap: 6, marginTop: 12 }}>
+            <strong>{kindLabel}</strong>
+            <p style={{ margin: 0, opacity: 0.82 }}>{kindHelp}</p>
+          </div>
+
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
+            <button type="button" style={gdBtnStyle} onClick={voltarEtapa}>
+              Voltar
+            </button>
+            <button type="button" style={gdBtnStyle} onClick={seguirEtapa}>
+              Continuar
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (etapa === 3) {
+      return (
+        <div style={stepCardStyle(true)}>
+          <strong style={{ display: "block", marginBottom: 6 }}>Dados especificos</strong>
+          <p style={{ marginTop: 0, opacity: 0.85 }}>
+            Preencha apenas o que muda de um documento para outro. O texto-base institucional segue embutido.
+          </p>
+
+          <div style={{ display: "grid", gap: 12 }}>
             {fieldConfigs.map((field) => {
               const value = fieldValues[field.key] || "";
               return (
@@ -419,69 +417,40 @@ export default function ModelosPage() {
                       placeholder={field.placeholder}
                     />
                   )}
-                  {field.help ? (
-                    <small style={{ opacity: 0.72 }}>{field.help}</small>
-                  ) : null}
+                  {field.help ? <small style={{ opacity: 0.72 }}>{field.help}</small> : null}
                 </div>
               );
             })}
           </div>
-        ) : null}
 
-        {etapa === 3 ? (
-          <div style={{ marginTop: 14 }}>
-            <strong style={{ display: "block", marginBottom: 8 }}>
-              Minuta final
-            </strong>
-            <div style={previewStyle}>{generatedBody}</div>
-            <div style={notesStyle}>
-              <strong style={{ display: "block", marginBottom: 6 }}>
-                Notas explicativas - leitura obrigatória
-              </strong>
-              <p style={{ marginTop: 0, marginBottom: 8 }}>
-                O documento deve manter a redação institucional e apenas
-                adaptar o que for específico do caso concreto, seguindo o
-                mesmo espírito do formulário guiado da CGU.
-              </p>
-              <p style={{ margin: 0 }}>
-                Depois de aprovado internamente, a minuta segue para assinatura
-                e publicação/arquivo conforme o fluxo do módulo.
-              </p>
-            </div>
-          </div>
-        ) : null}
-
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            flexWrap: "wrap",
-            marginTop: 14,
-          }}
-        >
-          {etapa > 1 ? (
-            <button
-              type="button"
-              style={gdBtnStyle}
-              onClick={() => setEtapa((p) => (p - 1) as 1 | 2 | 3)}
-            >
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
+            <button type="button" style={gdBtnStyle} onClick={voltarEtapa}>
               Voltar
             </button>
-          ) : null}
-          {etapa < 3 ? (
-            <button
-              type="button"
-              style={gdBtnStyle}
-              onClick={() => setEtapa((p) => (p + 1) as 1 | 2 | 3)}
-            >
+            <button type="button" style={gdBtnStyle} onClick={seguirEtapa}>
               Continuar
             </button>
-          ) : null}
-          {etapa === 3 ? (
-            <button type="button" style={gdBtnStyle} onClick={salvar}>
-              {editingId ? "Salvar alterações" : "Criar modelo"}
-            </button>
-          ) : null}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div style={stepCardStyle(true)}>
+        <strong style={{ display: "block", marginBottom: 6 }}>Minuta final</strong>
+        <p style={{ marginTop: 0, opacity: 0.85 }}>
+          A minuta aparece pronta para revisao e assinatura.
+        </p>
+
+        <div style={previewStyle}>{generatedBody}</div>
+
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
+          <button type="button" style={gdBtnStyle} onClick={voltarEtapa}>
+            Voltar
+          </button>
+          <button type="button" style={gdBtnStyle} onClick={salvar}>
+            {editingId ? "Salvar alteracoes" : "Criar modelo"}
+          </button>
           {editingId ? (
             <button type="button" style={gdDangerBtnStyle} onClick={limparForm}>
               Cancelar
@@ -489,6 +458,39 @@ export default function ModelosPage() {
           ) : null}
         </div>
       </div>
+    );
+  }
+
+  return (
+    <GestaoDocumentalShell
+      title="Modelos"
+      description="Fluxo guiado em etapas: capa, tipo, dados e minuta final."
+    >
+      <div style={introCardStyle}>
+        <div>
+          <h2 className="admin-h2" style={{ marginTop: 0 }}>
+            Fluxo guiado do modelo
+          </h2>
+          <p style={{ marginTop: 0, marginBottom: 0, opacity: 0.86 }}>
+            O modelo ja carrega a estrutura institucional. Voce percorre as etapas e altera apenas o necessario.
+          </p>
+        </div>
+
+        <div style={wizardStyle} aria-label="Etapas do formulario">
+          {ETAPAS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              style={wizardChipStyle(etapa === item.id)}
+              onClick={() => setEtapa(item.id)}
+            >
+              {item.id}. {item.titulo}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {renderEtapa()}
 
       <div style={gdCardStyle}>
         <h2 className="admin-h2" style={{ marginTop: 0 }}>
