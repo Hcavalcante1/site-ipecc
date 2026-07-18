@@ -38,17 +38,17 @@ const introCardStyle = {
 
 const wizardStyle = {
   display: "flex",
-  gap: 10,
+  gap: 12,
   flexWrap: "wrap" as const,
   marginBottom: 14,
-  padding: 14,
-  borderRadius: 20,
+  padding: 16,
+  borderRadius: 22,
   border: "1px solid rgba(148,163,184,0.22)",
   background: "linear-gradient(180deg, rgba(15,23,42,0.24), rgba(15,23,42,0.1))",
 };
 
 const wizardChipStyle = (active: boolean) => ({
-  padding: "12px 18px",
+  padding: "14px 20px",
   borderRadius: 999,
   border: `1px solid ${active ? "#60a5fa" : "#334155"}`,
   background: active
@@ -58,7 +58,8 @@ const wizardChipStyle = (active: boolean) => ({
   fontSize: 13,
   fontWeight: 700,
   cursor: "pointer",
-  minWidth: 130,
+  minWidth: 148,
+  minHeight: 46,
   textAlign: "center" as const,
   boxShadow: active ? "0 8px 18px rgba(37,99,235,0.20)" : "none",
   transition: "transform 0.15s ease, background 0.15s ease, border-color 0.15s ease",
@@ -74,16 +75,16 @@ const stepCardStyle = (active: boolean) => ({
 
 const kindTabsStyle = {
   display: "flex",
-  gap: 8,
+  gap: 10,
   flexWrap: "wrap" as const,
-  padding: 10,
-  borderRadius: 16,
+  padding: 12,
+  borderRadius: 18,
   border: "1px solid rgba(148,163,184,0.18)",
   background: "rgba(15,23,42,0.24)",
 };
 
 const kindTabStyle = (active: boolean) => ({
-  padding: "10px 14px",
+  padding: "12px 16px",
   borderRadius: 999,
   border: `1px solid ${active ? "#60a5fa" : "#334155"}`,
   background: active
@@ -93,8 +94,9 @@ const kindTabStyle = (active: boolean) => ({
   fontSize: 12,
   fontWeight: 700,
   cursor: "pointer",
-  minWidth: 120,
-  flex: "1 1 120px" as const,
+  minWidth: 138,
+  minHeight: 46,
+  flex: "1 1 138px" as const,
   textAlign: "center" as const,
   boxShadow: active ? "0 8px 18px rgba(37,99,235,0.22)" : "none",
   transition: "transform 0.15s ease, background 0.15s ease, border-color 0.15s ease",
@@ -123,18 +125,19 @@ const previewStyle = {
 
 const chipRailStyle = {
   display: "flex",
-  gap: 8,
+  gap: 10,
   flexWrap: "wrap" as const,
 };
 
 const chipStyle = {
-  padding: "8px 12px",
+  padding: "12px 16px",
   borderRadius: 999,
   border: "1px solid rgba(96,165,250,0.35)",
   background: "rgba(37,99,235,0.10)",
   color: "#dbeafe",
-  fontSize: 12,
+  fontSize: 13,
   fontWeight: 700,
+  minHeight: 44,
 };
 
 const fixedTextStyle = {
@@ -437,13 +440,16 @@ export default function ModelosPage() {
             </div>
             <span
               style={{
-                padding: "6px 10px",
+                padding: "9px 14px",
                 borderRadius: 999,
                 background: "rgba(37,99,235,0.16)",
                 color: "#bfdbfe",
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: 700,
                 whiteSpace: "nowrap",
+                minHeight: 38,
+                display: "inline-flex",
+                alignItems: "center",
               }}
             >
               Tipo selecionado

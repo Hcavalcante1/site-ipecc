@@ -14,21 +14,30 @@ const shellStyle: CSSProperties = {
 const subnavStyle: CSSProperties = {
   display: "flex",
   flexWrap: "wrap",
-  gap: 8,
+  gap: 10,
   marginTop: adminTokens.spacing.base,
   marginBottom: adminTokens.spacing.base + adminTokens.spacing.sm,
 };
 
 const chipStyle = (active: boolean): CSSProperties => ({
-  display: "inline-block",
-  padding: "4px 10px",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "12px 16px",
   borderRadius: 999,
   border: `1px solid ${active ? "#3b82f6" : "#334155"}`,
-  background: active ? "rgba(59,130,246,0.2)" : "rgba(255,255,255,0.04)",
+  background: active
+    ? "linear-gradient(180deg, rgba(37,99,235,0.34), rgba(37,99,235,0.16))"
+    : "rgba(255,255,255,0.04)",
   color: "#e5e7eb",
-  fontSize: 12,
-  fontWeight: 600,
+  fontSize: 13,
+  fontWeight: 700,
   textDecoration: "none",
+  minHeight: 46,
+  minWidth: 132,
+  flex: "1 1 132px",
+  boxShadow: active ? "0 8px 18px rgba(37,99,235,0.20)" : "none",
+  transition: "transform 0.15s ease, background 0.15s ease, border-color 0.15s ease",
 });
 
 export default function GestaoDocumentalShell({
