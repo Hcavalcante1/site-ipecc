@@ -272,6 +272,9 @@ export default function GovernancaEditalPage() {
   const [oficialSigningUrl, setOficialSigningUrl] = useState<string | null>(
     null
   );
+  const [oficialSignatureId, setOficialSignatureId] = useState<string | null>(
+    null
+  );
   const [catalogTipos, setCatalogTipos] = useState<CatalogTipo[]>([]);
 
   const fases = useMemo(
@@ -615,18 +618,26 @@ export default function GovernancaEditalPage() {
       setOficialMsg(json.aviso || "Documento gerado.");
       await carregarEmissoesOficiais();
 
-      if (modo === "eu_assino" && (json.embedUrl || json.signingUrl)) {
+      if (modo === "eu_assino") {
+        const sigId =
+          json.signatureDocumentId ||
+          json.signature_document_id ||
+          json.emissao?.signature_document_id ||
+          null;
+        setOficialSignatureId(sigId);
         setOficialEmbedUrl(json.embedUrl || null);
         setOficialSigningUrl(json.signingUrl || null);
-        setOficialEmbedOpen(true);
-        triggerToast("Documento gerado — assine no painel.", "success");
+        if (sigId || json.embedUrl || json.signingUrl) {
+          setOficialEmbedOpen(true);
+          triggerToast("Documento gerado — assine no painel.", "success");
+        } else {
+          triggerToast(
+            "Documento gerado. Abra Assinaturas se o painel não abrir.",
+            "success"
+          );
+        }
       } else {
-        triggerToast(
-          modo === "eu_assino"
-            ? "Documento gerado. Abra Assinaturas se o painel não abrir."
-            : "Documento gerado e enviado para assinatura.",
-          "success"
-        );
+        triggerToast("Documento gerado e enviado para assinatura.", "success");
       }
     } catch {
       setOficialMsg("Erro inesperado ao gerar documento oficial.");
@@ -1313,10 +1324,14 @@ export default function GovernancaEditalPage() {
 
         <AssinarNoAdminModal
           open={oficialEmbedOpen}
+          signatureDocumentId={oficialSignatureId}
           embedUrl={oficialEmbedUrl}
           signingUrl={oficialSigningUrl}
           title="Assinar documento oficial"
-          onClose={() => setOficialEmbedOpen(false)}
+          onClose={() => {
+            setOficialEmbedOpen(false);
+            setOficialSignatureId(null);
+          }}
           onCompleted={() => {
             setOficialMsg("Atualizando status da emissão…");
             carregarEmissoesOficiais();

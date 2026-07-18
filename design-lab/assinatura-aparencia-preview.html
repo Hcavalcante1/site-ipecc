@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Preview — aparência de assinatura digital (sem commit)</title>
+  <style>
+    :root {
+      --page: #f4f4f0;
+      --ink: #000;
+      --muted: #333;
+    }
+    body {
+      margin: 0;
+      font-family: Helvetica, Arial, sans-serif;
+      background: #e8e8e8;
+      color: #111;
+      padding: 24px;
+      line-height: 1.35;
+    }
+    h1 { font-size: 18px; margin: 0 0 8px; }
+    h2 { font-size: 14px; margin: 24px 0 8px; }
+    p, li { font-size: 13px; max-width: 720px; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 16px;
+    }
+    @media (max-width: 800px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #bbb;
+      padding: 14px;
+    }
+    .label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .bad .label { color: #9a3412; }
+    .good .label { color: #166534; }
+    .page-mock {
+      background: var(--page);
+      border: 1px solid #ccc;
+      height: 220px;
+      position: relative;
+      overflow: hidden;
+    }
+    .page-lines {
+      position: absolute;
+      inset: 16px;
+      color: #999;
+      font-size: 11px;
+    }
+    /* ERRADO — inventado (azul + caixa) */
+    .stamp-wrong {
+      position: absolute;
+      right: 18px;
+      bottom: 18px;
+      width: 220px;
+      height: 70px;
+      background: rgba(237, 244, 252, 0.97);
+      border: 1.5px solid #1e3a5f;
+      box-shadow: 0 2px 8px rgba(29, 78, 216, 0.35);
+      padding: 6px 8px;
+      box-sizing: border-box;
+      font-size: 10px;
+      color: #1a3350;
+    }
+    .stamp-wrong .t1 { font-weight: 700; color: #1a3350; }
+    .stamp-wrong .t2 { color: #243447; font-size: 9px; }
+    .stamp-wrong .t3 { color: #475569; font-size: 8px; }
+    .stamp-wrong .t4 { color: #64748b; font-size: 7px; margin-top: 6px; }
+
+    /* CORRETO — padrão iText DESCRIPTION / ETSI / Adobe Reader
+       texto preto, fundo branco, SEM caixa colorida */
+    .stamp-right {
+      position: absolute;
+      right: 18px;
+      bottom: 18px;
+      width: 240px;
+      min-height: 58px;
+      background: #fff;
+      border: none;
+      box-shadow: none;
+      padding: 4px 2px;
+      box-sizing: border-box;
+      color: #000;
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 8px;
+      line-height: 1.25;
+    }
+    .stamp-right .by {
+      font-size: 8px;
+      color: #000;
+    }
+    .stamp-right .name {
+      font-size: 9px;
+      color: #000;
+      font-weight: 700;
+    }
+    .refs {
+      margin-top: 28px;
+      padding: 12px;
+      background: #fff;
+      border: 1px solid #bbb;
+      font-size: 12px;
+    }
+    code { font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Aparência visual da assinatura — preview local (não commitado)</h1>
+  <p>
+    Comparação do que o app faz hoje versus o padrão profissional usado por
+    bibliotecas e normas internacionais (sem inventar “carimbo azul”).
+  </p>
+
+  <div class="grid">
+    <div class="card bad">
+      <div class="label">Errado — o que o app faz hoje</div>
+      <div class="page-mock">
+        <div class="page-lines">
+          Lorem ipsum dolor sit amet…<br />
+          Conteúdo do documento…
+        </div>
+        <div class="stamp-wrong">
+          <div class="t1">Assinado digitalmente</div>
+          <div class="t2">NOME DO TITULAR</div>
+          <div class="t3">16/07/2026, 17:40:00</div>
+          <div class="t4">Certificado digital do signatário</div>
+        </div>
+      </div>
+      <ul>
+        <li>Caixa/borda azul inventada</li>
+        <li>Fundo azulado + sombra</li>
+        <li>Texto em tons de azul/cinza</li>
+      </ul>
+    </div>
+
+    <div class="card good">
+      <div class="label">Correto — padrão profissional</div>
+      <div class="page-mock">
+        <div class="page-lines">
+          Lorem ipsum dolor sit amet…<br />
+          Conteúdo do documento…
+        </div>
+        <div class="stamp-right">
+          <div class="by">Assinado de forma digital por</div>
+          <div class="name">NOME DO TITULAR</div>
+          <div>Data: 2026.07.16 17:40:00 -03:00</div>
+        </div>
+      </div>
+      <ul>
+        <li><strong>Sem</strong> quadrado/borda colorida</li>
+        <li>Fundo <strong>branco</strong> (ou transparente)</li>
+        <li>Texto <strong>preto</strong> — modo Description (iText / Adobe)</li>
+        <li>Só: nome do certificado + data (ETSI TS 102 778-6)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="refs">
+    <strong>Fontes (não só Adobe):</strong>
+    <ul>
+      <li>
+        ETSI TS 102 778-6 — Visual Representations of Electronic Signatures
+        (nome do signatário do certificado; aparência = texto/identidade do cert)
+      </li>
+      <li>
+        iText Knowledge Base — Part IV Appearances — layout
+        <em>Description only</em>:
+        “Digitally signed by” + nome + Date (texto preto no retângulo do campo)
+      </li>
+      <li>
+        ISO 32000-1 §12.8 — Signature appearance via annotation Rect; sem exigir
+        caixa azul
+      </li>
+      <li>
+        DocuSign / leitores: a “chrome/frame” colorida é opcional e muitos usuários
+        pedem para remover — assinatura profissional = sem moldura inventada
+      </li>
+    </ul>
+    <p>
+      Texto padrão proposto no PDF (pt-BR, equivalente ao iText):
+    </p>
+    <pre style="background:#f6f6f6;padding:10px;border:1px solid #ddd;overflow:auto">Assinado de forma digital por
+NOME DO TITULAR (do certificado)
+Data: aaaa.mm.dd HH:mm:ss -03:00</pre>
+    <p>
+      Arquivo só para preview: <code>design-lab/assinatura-aparencia-preview.html</code>
+      (não versionar / não commit).
+    </p>
+  </div>
+</body>
+</html>

@@ -1,14 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Instalação única do agente Digital IPECC no Windows (Agendador de Tarefas).
-
-.DESCRIPTION
-  - Inicia no logon do usuário
-  - Reinicia em falha
-  - Não abre segunda instância
-  - Não depende de VS Code / terminal aberto
-  - Publicação real (DIGITAL_PUBLISH_DRY_RUN=false)
+  Instalacao unica do agente Digital IPECC no Windows.
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File scripts\install-digital-agent-windows.ps1
@@ -16,24 +9,24 @@
 
 $ErrorActionPreference = "Stop"
 $TaskName = "IPECC-Digital-Publisher"
-$RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $Node = Get-Command node -ErrorAction SilentlyContinue
 if (-not $Node) {
-  throw "Node.js não encontrado no PATH. Instale Node LTS e rode de novo."
+  throw "Node.js nao encontrado no PATH. Instale Node LTS e rode de novo."
 }
 $NodeCmd = $Node.Source
 
 $EnvLocal = Join-Path $RepoRoot ".env.local"
 if (-not (Test-Path $EnvLocal)) {
-  throw "Falta .env.local na raiz do projeto ($RepoRoot)."
+  throw ("Falta .env.local na raiz do projeto: " + $RepoRoot)
 }
 
 $WorkerDir = Join-Path $RepoRoot "services\digital-publisher"
 if (-not (Test-Path (Join-Path $WorkerDir "package.json"))) {
-  throw "Pasta services/digital-publisher não encontrada."
+  throw "Pasta services/digital-publisher nao encontrada."
 }
 
-Write-Host "Instalando dependências do worker (se necessário)..."
+Write-Host "Instalando dependencias do worker (se necessario)..."
 Push-Location $WorkerDir
 try {
   npm install --silent
@@ -46,58 +39,93 @@ New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
 $StdoutLog = Join-Path $LogDir "agent-stdout.log"
 $StderrLog = Join-Path $LogDir "agent-stderr.log"
 
-# Wrapper .cmd ocultável pelo Agendador
 $Wrapper = Join-Path $WorkerDir "data\run-resident.cmd"
-$WrapperContent = @"
-@echo off
-cd /d "$RepoRoot"
-set DIGITAL_PUBLISH_DRY_RUN=false
-set DIGITAL_WORKER_ID=worker-pc
-set DIGITAL_BROWSER_CHANNEL=chrome
-set DIGITAL_BROWSER_HEADLESS=true
-"$NodeCmd" scripts\run-digital-publisher.cjs --resident >> "$StdoutLog" 2>> "$StderrLog"
-"@
-Set-Content -Path $Wrapper -Value $WrapperContent -Encoding ASCII
+$WrapperLines = @(
+  "@echo off"
+  ("cd /d """ + $RepoRoot + """")
+  "set DIGITAL_PUBLISH_DRY_RUN=false"
+  "set DIGITAL_WORKER_ID=worker-pc"
+  "set DIGITAL_BROWSER_CHANNEL=chrome"
+  "set DIGITAL_BROWSER_HEADLESS=true"
+  ('"' + $NodeCmd + '" scripts\run-digital-publisher.cjs --resident >> "' + $StdoutLog + '" 2>> "' + $StderrLog + '"')
+)
+Set-Content -Path $Wrapper -Value $WrapperLines -Encoding ASCII
 
-# Remove tarefa antiga
-schtasks /Delete /TN $TaskName /F 2>$null | Out-Null
+$installedVia = $null
 
-$User = "$env:USERDOMAIN\$env:USERNAME"
-# /SC ONLOGON = inicia com o Windows (após login)
-# /F força; /RL LIMITED = usuário atual (Chrome/perfil)
-$Create = schtasks /Create /TN $TaskName /TR "`"$Wrapper`"" /SC ONLOGON /RL LIMITED /F /RU $User
-if ($LASTEXITCODE -ne 0) {
-  throw "Falha ao criar tarefa: $Create"
-}
-
-# Ajustes via PowerShell: reinício, sem múltiplas instâncias, sem limite de tempo
+# 1) Tenta Agendador (usuario atual, sem /RU admin)
 try {
-  $task = Get-ScheduledTask -TaskName $TaskName
-  $settings = $task.Settings
-  $settings.MultipleInstances = "IgnoreNew"
-  $settings.RestartCount = 3
-  $settings.RestartInterval = "PT1M"
-  $settings.ExecutionTimeLimit = "PT0S"
-  $settings.AllowDemandStart = $true
-  $settings.StartWhenAvailable = $true
-  $settings.DisallowStartIfOnBatteries = $false
-  $settings.StopIfGoingOnBatteries = $false
-  Set-ScheduledTask -TaskName $TaskName -Settings $settings | Out-Null
+  Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
+
+  $action = New-ScheduledTaskAction -Execute $Wrapper
+  $trigger = New-ScheduledTaskTrigger -AtLogOn
+  $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Limited
+  $settings = New-ScheduledTaskSettingsSet `
+    -AllowStartIfOnBatteries `
+    -DontStopIfGoingOnBatteries `
+    -StartWhenAvailable `
+    -MultipleInstances IgnoreNew `
+    -RestartCount 3 `
+    -RestartInterval (New-TimeSpan -Minutes 1) `
+    -ExecutionTimeLimit (New-TimeSpan -Days 0)
+
+  Register-ScheduledTask `
+    -TaskName $TaskName `
+    -Action $action `
+    -Trigger $trigger `
+    -Principal $principal `
+    -Settings $settings `
+    -Force | Out-Null
+
+  $installedVia = "agendador"
+  Write-Host ("OK - tarefa do Agendador: " + $TaskName)
 } catch {
-  Write-Warning "Tarefa criada, mas ajustes avançados falharam: $_"
-  Write-Warning "Ainda assim o ONLOGON deve funcionar."
+  Write-Warning ("Agendador falhou: " + $_.Exception.Message)
+  Write-Warning "Usando pasta Inicializar do Windows como alternativa."
+
+  $startup = [Environment]::GetFolderPath("Startup")
+  $lnkPath = Join-Path $startup "IPECC-Digital-Publisher.lnk"
+  $wshell = New-Object -ComObject WScript.Shell
+  $lnk = $wshell.CreateShortcut($lnkPath)
+  $lnk.TargetPath = $Wrapper
+  $lnk.WorkingDirectory = $RepoRoot
+  $lnk.WindowStyle = 7
+  $lnk.Description = "Agente Digital IPECC"
+  $lnk.Save()
+  $installedVia = "inicializar"
+  Write-Host ("OK - atalho em: " + $lnkPath)
 }
 
 Write-Host ""
-Write-Host "OK — tarefa '$TaskName' instalada."
-Write-Host "  Repo:   $RepoRoot"
-Write-Host "  Wrapper:$Wrapper"
-Write-Host "  Logs:   $LogDir"
+Write-Host ("  Repo:    " + $RepoRoot)
+Write-Host ("  Wrapper: " + $Wrapper)
+Write-Host ("  Logs:    " + $LogDir)
+Write-Host ("  Via:     " + $installedVia)
 Write-Host ""
-Write-Host "Próximos passos:"
-Write-Host "  1) node scripts/aplicar-digital-agents-resident.cjs   (ou SQL Editor)"
-Write-Host "  2) Inicie agora:  schtasks /Run /TN $TaskName"
-Write-Host "  3) No admin /admin/digital veja 'Agente conectado'"
-Write-Host "  4) Conectar conta Meta uma vez (Perfis → Conectar)"
+Write-Host "IMPORTANTE - SQL no Supabase (uma vez):"
+Write-Host "  Abra o SQL Editor e rode o arquivo:"
+Write-Host "  docs\sql\digital-agents-resident.sql"
+Write-Host ""
+Write-Host "Iniciar agora:"
+if ($installedVia -eq "agendador") {
+  Write-Host ("  schtasks /Run /TN " + $TaskName)
+} else {
+  Write-Host ("  start """" """ + $Wrapper + """")
+}
+Write-Host "Depois: /admin/digital -> Agente conectado; Perfis -> Conectar"
 Write-Host ""
 Write-Host "Desinstalar: powershell -File scripts\uninstall-digital-agent-windows.ps1"
+
+# Tenta iniciar imediatamente
+try {
+  if ($installedVia -eq "agendador") {
+    Start-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+    Write-Host "Agente iniciado via Agendador."
+  } else {
+    Start-Process -FilePath $Wrapper -WindowStyle Minimized
+    Write-Host "Agente iniciado via wrapper."
+  }
+} catch {
+  Write-Warning ("Nao foi possivel iniciar agora: " + $_.Exception.Message)
+  Write-Warning "Rode o comando de iniciar acima manualmente."
+}

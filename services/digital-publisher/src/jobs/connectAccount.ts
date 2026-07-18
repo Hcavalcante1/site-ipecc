@@ -30,29 +30,120 @@ const SESSION_PROBE_URL: Record<string, string> = {
   youtube: "https://www.youtube.com/",
 };
 
-const PLATFORM_HOST: Record<string, RegExp> = {
-  instagram: /(^|\.)instagram\.com$/i,
-  facebook: /(^|\.)facebook\.com$/i,
-  linkedin: /(^|\.)linkedin\.com$/i,
-  tiktok: /(^|\.)tiktok\.com$/i,
-  youtube: /(^|\.)(google|youtube)\.com$/i,
-};
-
-function resolveStartUrl(acc: AccountRow): string {
-  const fallback = LOGIN_URL[acc.platform];
-  if (!fallback) return "";
-
-  const href = acc.href?.trim();
-  if (!href || !/^https?:\/\//i.test(href)) return fallback;
-
-  try {
-    const fullHost = new URL(href).hostname;
-    const ok = PLATFORM_HOST[acc.platform]?.test(fullHost);
-    if (ok) return href;
-  } catch {
-    /* fallback */
+/** Monta URL pública a partir do @handle se o href estiver vazio. */
+function hrefFromHandle(
+  platform: string,
+  handle: string | null | undefined
+): string | null {
+  const h = (handle || "").trim().replace(/^@+/, "");
+  if (!h) return null;
+  switch (platform) {
+    case "instagram":
+      return `https://www.instagram.com/${encodeURIComponent(h)}/`;
+    case "facebook":
+      return /^\d+$/.test(h)
+        ? `https://www.facebook.com/profile.php?id=${h}`
+        : `https://www.facebook.com/${encodeURIComponent(h)}`;
+    case "linkedin":
+      return `https://www.linkedin.com/in/${encodeURIComponent(h)}/`;
+    case "tiktok":
+      return `https://www.tiktok.com/@${encodeURIComponent(h)}`;
+    case "youtube":
+      return `https://www.youtube.com/@${encodeURIComponent(h)}`;
+    default:
+      return null;
   }
-  return fallback;
+}
+
+/**
+ * URL do perfil cadastrado (todas as plataformas).
+ * Prioridade: href do admin → handle → só então login genérico.
+ * Nunca troca um href válido por tela de login.
+ */
+function resolveProfileUrl(acc: AccountRow): string {
+  const href = acc.href?.trim();
+  if (href && /^https?:\/\//i.test(href)) {
+    return href;
+  }
+
+  const fromHandle = hrefFromHandle(acc.platform, acc.handle);
+  if (fromHandle) return fromHandle;
+
+  return LOGIN_URL[acc.platform] || "";
+}
+
+/** @deprecated use resolveProfileUrl — mantido para verify/session probe */
+function resolveStartUrl(acc: AccountRow): string {
+  return resolveProfileUrl(acc);
+}
+
+async function gotoSafe(page: Page, url: string, label: string) {
+  console.log(`[digital-publisher] Navegando (${label}): ${url}`);
+  try {
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45000 });
+    return;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(
+      `[digital-publisher] goto demorou/falhou (${label}): ${msg}. Tentando modo commit…`
+    );
+  }
+  await page.goto(url, { waitUntil: "commit", timeout: 30000 });
+}
+
+/** Se a Meta redirecionou para login/home, força de volta o perfil cadastrado. */
+async function ensureOnRegisteredProfile(page: Page, profileUrl: string) {
+  const current = page.url();
+  let sameHost = false;
+  try {
+    sameHost = new URL(current).hostname === new URL(profileUrl).hostname;
+  } catch {
+    sameHost = false;
+  }
+  const onLogin =
+    /\/accounts\/login|\/login\.php|\/login\/?/i.test(current) ||
+    /source=desktop_dynamic_landing/i.test(current);
+  const alreadyOnProfile =
+    sameHost &&
+    !onLogin &&
+    (current === profileUrl ||
+      current.replace(/\/$/, "") === profileUrl.replace(/\/$/, "") ||
+      current.startsWith(profileUrl));
+
+  if (!alreadyOnProfile) {
+    await gotoSafe(page, profileUrl, "forcar-perfil-cadastrado");
+  }
+}
+
+/** Libera contas presas em connecting (ex.: goto travado / worker reiniciado). */
+export async function recoverStaleConnecting(
+  db: SupabaseClient,
+  olderThanMs = 2 * 60 * 1000
+) {
+  const cutoff = new Date(Date.now() - olderThanMs).toISOString();
+  const { data } = await db
+    .from("digital_accounts")
+    .select("id, label, updated_at")
+    .eq("connection_status", "connecting")
+    .lt("updated_at", cutoff)
+    .limit(20);
+
+  for (const row of data || []) {
+    await db
+      .from("digital_accounts")
+      .update({
+        connection_status: "error",
+        requires_reconnect: true,
+        last_connection_error:
+          "Conectar ficou preso. Clique Conectar de novo (mantenha a janela aberta).",
+        last_connection_check_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", row.id);
+    console.warn(
+      `[digital-publisher] Connecting antigo liberado: ${row.label || row.id}`
+    );
+  }
 }
 
 function profileDir(cfg: WorkerConfig, accountId: string) {
@@ -139,8 +230,10 @@ async function launchConnectBrowser(profile: string): Promise<BrowserContext> {
       "--disable-session-crashed-bubble",
       "--hide-crash-restore-bubble",
       "--disable-blink-features=AutomationControlled",
+      "--start-maximized",
     ],
     ignoreDefaultArgs: ["--enable-automation"],
+    timeout: 60000,
   });
 
   await context.addInitScript(`
@@ -397,6 +490,9 @@ export async function processConnectRequests(
   db: SupabaseClient,
   cfg: WorkerConfig
 ): Promise<boolean> {
+  await recoverStaleConnecting(db);
+
+  // Clique mais recente primeiro (senão um Conectar antigo trava o Facebook)
   const { data: accounts, error } = await db
     .from("digital_accounts")
     .select(
@@ -404,7 +500,7 @@ export async function processConnectRequests(
     )
     .eq("connection_status", "connecting")
     .eq("automation_strategy", "browser")
-    .order("updated_at", { ascending: true })
+    .order("updated_at", { ascending: false })
     .limit(1);
 
   if (error || !accounts?.length) return false;
@@ -412,13 +508,12 @@ export async function processConnectRequests(
   const acc = accounts[0] as AccountRow;
   const publisherConfig =
     (acc.publisher_config as Record<string, unknown>) || {};
-  const loginUrl = LOGIN_URL[acc.platform];
-  const startUrl = resolveStartUrl(acc);
-  if (!loginUrl || !startUrl) {
+  const profileUrl = resolveProfileUrl(acc);
+  if (!profileUrl) {
     await markConnectError(
       db,
       acc,
-      `Plataforma ${acc.platform} sem URL de login/perfil configurada.`
+      `Plataforma ${acc.platform} sem URL de perfil cadastrada.`
     );
     return true;
   }
@@ -426,13 +521,23 @@ export async function processConnectRequests(
   const profile = profileDir(cfg, acc.id);
   fs.mkdirSync(profile, { recursive: true });
 
+  console.log(
+    `[digital-publisher] Conectar INÍCIO ${acc.platform} (${acc.label}) → perfil cadastrado ${profileUrl}`
+  );
+
   await logEvent(db, {
     account_id: acc.id,
     platform: acc.platform,
     event_type: "account_connect_started",
-    message: `Abrindo URL cadastrada de ${acc.label}.`,
-    details: { profile, startUrl, href: acc.href },
+    message: `Abrindo perfil cadastrado de ${acc.label}.`,
+    details: { profile, profileUrl, href: acc.href },
   });
+
+  // Touch updated_at para não cair no recover stale durante o login
+  await db
+    .from("digital_accounts")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("id", acc.id);
 
   let context: BrowserContext | null = null;
   const timeoutMs = Number(
@@ -451,20 +556,25 @@ export async function processConnectRequests(
       await extra.close().catch(() => {});
     }
 
-    // Limpa cookies antigos para a janela não “conectar e fechar” na hora
     await clearPlatformAuthCookies(context, acc.platform);
 
-    await page.goto(startUrl, {
-      waitUntil: "domcontentloaded",
-      timeout: 60000,
-    });
+    // Sempre só o href cadastrado (nunca login.php / accounts/login)
+    await gotoSafe(page, profileUrl, "perfil-cadastrado");
 
     console.log(
-      `[digital-publisher] Conectar ${acc.platform} (${acc.label}): ${startUrl}. Faça login — a janela fica aberta (sem reload).`
+      `[digital-publisher] Conectar ${acc.platform} (${acc.label}): aberto=${page.url()} (alvo=${profileUrl}). Faça login se pedir — janela aberta.`
     );
 
     while (Date.now() - started < timeoutMs) {
       try {
+        // Renova updated_at a cada ~30s para o recover stale não matar o login ativo
+        if ((Date.now() - started) % 30000 < 2500) {
+          await db
+            .from("digital_accounts")
+            .update({ updated_at: new Date().toISOString() })
+            .eq("id", acc.id);
+        }
+
         if (page.isClosed()) {
           await markConnectError(
             db,
@@ -474,13 +584,18 @@ export async function processConnectRequests(
           return true;
         }
         if (await hasAuthCookies(context, acc.platform)) {
+          try {
+            await ensureOnRegisteredProfile(page, profileUrl);
+          } catch {
+            /* cookies já bastam */
+          }
           await markConnected(db, acc, profile, publisherConfig);
           await logEvent(db, {
             account_id: acc.id,
             platform: acc.platform,
             event_type: "account_connect_success",
             message: "Sessão conectada (cookies confirmados).",
-            details: { profile, startUrl, finalUrl: page.url() },
+            details: { profile, profileUrl, finalUrl: page.url() },
           });
           console.log(
             `[digital-publisher] Conta ${acc.label} conectada. Mantendo janela aberta ${Math.round(keepOpenMs / 1000)}s.`
@@ -511,6 +626,7 @@ export async function processConnectRequests(
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    console.error(`[digital-publisher] Conectar ERRO ${acc.platform}:`, message);
     await markConnectError(db, acc, message);
   } finally {
     try {

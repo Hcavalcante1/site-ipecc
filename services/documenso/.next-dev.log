@@ -1,0 +1,26 @@
+
+> ipecc-public-site@1.0.0 dev
+> next dev -p 3000
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3000
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 21.3s
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 5.2s (122 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 29.1s (681 modules)
+ GET / 200 in 161ms
+ GET / 200 in 188ms
+ GET / 200 in 237ms
+ ○ Compiling /api/public/social-links ...
+ ✓ Compiled /api/public/social-links in 1735ms (372 modules)
+ GET /api/public/social-links 200 in 4956ms
+ GET /api/public/social-links 200 in 31ms
+ GET /api/public/social-links 200 in 46ms
+ GET /api/public/social-links 200 in 34ms
+ ✓ Compiled in 8.7s (753 modules)
+ ✓ Compiled in 13.6s (753 modules)
+ ✓ Compiled in 7.4s (753 modules)

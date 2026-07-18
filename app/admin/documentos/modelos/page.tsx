@@ -31,32 +31,32 @@ const gdDangerBtnStyle = {
 const introCardStyle = {
   ...gdCardStyle,
   display: "grid",
-  gap: 12,
+  gap: 14,
 };
 
 const wizardStyle = {
   display: "flex",
-  gap: 8,
+  gap: 10,
   flexWrap: "wrap" as const,
   marginBottom: 14,
-  padding: 10,
-  borderRadius: 18,
+  padding: 14,
+  borderRadius: 20,
   border: "1px solid rgba(148,163,184,0.22)",
   background: "linear-gradient(180deg, rgba(15,23,42,0.24), rgba(15,23,42,0.1))",
 };
 
 const wizardChipStyle = (active: boolean) => ({
-  padding: "10px 14px",
+  padding: "12px 18px",
   borderRadius: 999,
   border: `1px solid ${active ? "#60a5fa" : "#334155"}`,
   background: active
     ? "linear-gradient(180deg, rgba(37,99,235,0.30), rgba(37,99,235,0.14))"
     : "rgba(255,255,255,0.04)",
   color: active ? "#eff6ff" : "#cbd5e1",
-  fontSize: 12,
+  fontSize: 13,
   fontWeight: 700,
   cursor: "pointer",
-  minWidth: 110,
+  minWidth: 130,
   textAlign: "center" as const,
   boxShadow: active ? "0 8px 18px rgba(37,99,235,0.20)" : "none",
   transition: "transform 0.15s ease, background 0.15s ease, border-color 0.15s ease",

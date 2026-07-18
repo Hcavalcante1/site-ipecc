@@ -5,6 +5,7 @@ import { claimNextJob, recoverExpiredLocks } from "./jobs/claimJob";
 import {
   processConnectRequests,
   processVerifyRequests,
+  recoverStaleConnecting,
 } from "./jobs/connectAccount";
 import { executePost } from "./jobs/executePost";
 
@@ -12,6 +13,7 @@ export async function runPollCycle(db: SupabaseClient, cfg: WorkerConfig) {
   await sendHeartbeat(db, cfg);
 
   await recoverExpiredLocks(db, cfg);
+  await recoverStaleConnecting(db);
 
   const verified = await processVerifyRequests(db, cfg);
   if (verified) {

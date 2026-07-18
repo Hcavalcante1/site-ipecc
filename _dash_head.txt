@@ -1,0 +1,12 @@
+﻿import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { supabase } from "@/lib/supabaseClient";
+import { labelAcaoAdmin } from "@/lib/admin/acaoLabel";
+import {
+  editalAceitaEnvioProposta,
+  editalVisivelNoSitePublico,
+} from "@/lib/editais/governancaRules";
+import { registroNoEscopoProcesso } from "@/lib/auth/adminEscopo";
+import type { AdminModulo } from "@/lib/auth/adminEscopo";
+import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
+import { carregarProcessosDoEscopo } from "@/lib/auth/processosEscopoCliente";
