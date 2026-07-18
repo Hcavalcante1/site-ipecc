@@ -39,17 +39,27 @@ const wizardStyle = {
   gap: 8,
   flexWrap: "wrap" as const,
   marginBottom: 14,
+  padding: 10,
+  borderRadius: 18,
+  border: "1px solid rgba(148,163,184,0.22)",
+  background: "linear-gradient(180deg, rgba(15,23,42,0.24), rgba(15,23,42,0.1))",
 };
 
 const wizardChipStyle = (active: boolean) => ({
-  padding: "8px 12px",
+  padding: "10px 14px",
   borderRadius: 999,
-  border: `1px solid ${active ? "#2563eb" : "#334155"}`,
-  background: active ? "rgba(37,99,235,0.16)" : "rgba(255,255,255,0.04)",
-  color: active ? "#dbeafe" : "#cbd5e1",
+  border: `1px solid ${active ? "#60a5fa" : "#334155"}`,
+  background: active
+    ? "linear-gradient(180deg, rgba(37,99,235,0.30), rgba(37,99,235,0.14))"
+    : "rgba(255,255,255,0.04)",
+  color: active ? "#eff6ff" : "#cbd5e1",
   fontSize: 12,
   fontWeight: 700,
   cursor: "pointer",
+  minWidth: 110,
+  textAlign: "center" as const,
+  boxShadow: active ? "0 8px 18px rgba(37,99,235,0.20)" : "none",
+  transition: "transform 0.15s ease, background 0.15s ease, border-color 0.15s ease",
 });
 
 const stepCardStyle = (active: boolean) => ({
@@ -64,17 +74,28 @@ const kindTabsStyle = {
   display: "flex",
   gap: 8,
   flexWrap: "wrap" as const,
+  padding: 10,
+  borderRadius: 16,
+  border: "1px solid rgba(148,163,184,0.18)",
+  background: "rgba(15,23,42,0.24)",
 };
 
 const kindTabStyle = (active: boolean) => ({
-  padding: "8px 12px",
+  padding: "10px 14px",
   borderRadius: 999,
-  border: `1px solid ${active ? "#2563eb" : "#334155"}`,
-  background: active ? "rgba(37,99,235,0.18)" : "rgba(255,255,255,0.04)",
-  color: active ? "#dbeafe" : "#cbd5e1",
+  border: `1px solid ${active ? "#60a5fa" : "#334155"}`,
+  background: active
+    ? "linear-gradient(180deg, rgba(37,99,235,0.34), rgba(37,99,235,0.16))"
+    : "rgba(255,255,255,0.04)",
+  color: active ? "#eff6ff" : "#cbd5e1",
   fontSize: 12,
   fontWeight: 700,
   cursor: "pointer",
+  minWidth: 120,
+  flex: "1 1 120px" as const,
+  textAlign: "center" as const,
+  boxShadow: active ? "0 8px 18px rgba(37,99,235,0.22)" : "none",
+  transition: "transform 0.15s ease, background 0.15s ease, border-color 0.15s ease",
 });
 
 const sectionStyle = {
@@ -366,9 +387,37 @@ export default function ModelosPage() {
             ))}
           </div>
 
-          <div style={{ display: "grid", gap: 6, marginTop: 12 }}>
-            <strong>{kindLabel}</strong>
-            <p style={{ margin: 0, opacity: 0.82 }}>{kindHelp}</p>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+              marginTop: 12,
+              padding: "12px 14px",
+              borderRadius: 14,
+              border: "1px solid rgba(148,163,184,0.18)",
+              background: "rgba(255,255,255,0.03)",
+              flexWrap: "wrap",
+            }}
+          >
+            <div style={{ display: "grid", gap: 4 }}>
+              <strong>{kindLabel}</strong>
+              <p style={{ margin: 0, opacity: 0.82 }}>{kindHelp}</p>
+            </div>
+            <span
+              style={{
+                padding: "6px 10px",
+                borderRadius: 999,
+                background: "rgba(37,99,235,0.16)",
+                color: "#bfdbfe",
+                fontSize: 12,
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+              }}
+            >
+              Tipo selecionado
+            </span>
           </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
