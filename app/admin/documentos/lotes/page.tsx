@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import GestaoDocumentalShell, {
   gdBtnStyle,
   gdCardStyle,
@@ -9,6 +9,8 @@ import GestaoDocumentalShell, {
 import AssinarNoAdminModal from "../components/AssinarNoAdminModal";
 import AssinarLoteAvancadoModal from "../components/AssinarLoteAvancadoModal";
 import AssinarComCertificadoModal from "../components/AssinarComCertificadoModal";
+import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
+import { carregarProcessosDoEscopo } from "@/lib/auth/processosEscopoCliente";
 
 type Batch = {
   id: string;
@@ -36,20 +38,51 @@ type AdvBatch = {
   completed_at?: string | null;
 };
 
+type ProcessoOpcao = {
+  id: string;
+  titulo: string;
+};
+
+type DocumentoImportado = {
+  id: string;
+  fileName: string;
+  title: string;
+  processoId: string | null;
+};
+
+function baseName(fileName: string): string {
+  const trimmed = fileName.trim();
+  const withoutExt = trimmed.replace(/\.[^.]+$/, "");
+  return withoutExt || "Documento";
+}
+
 export default function LotesPage() {
+  const escopo = useAdminEscopoCliente();
   const [batches, setBatches] = useState<Batch[]>([]);
   const [advBatches, setAdvBatches] = useState<AdvBatch[]>([]);
+  const [processos, setProcessos] = useState<ProcessoOpcao[]>([]);
+  const [processoId, setProcessoId] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [items, setItems] = useState<BatchItem[]>([]);
   const [title, setTitle] = useState("");
   const [docIds, setDocIds] = useState("");
+  const [arquivos, setArquivos] = useState<File[]>([]);
+  const [documentosImportados, setDocumentosImportados] = useState<
+    DocumentoImportado[]
+  >([]);
   const [signerEmail, setSignerEmail] = useState("");
   const [signerName, setSignerName] = useState("");
   const [aviso, setAviso] = useState("");
   const [loading, setLoading] = useState(true);
+  const [importandoArquivos, setImportandoArquivos] = useState(false);
   const [ipeccOpen, setIpeccOpen] = useState(false);
   const [advLoteOpen, setAdvLoteOpen] = useState(false);
   const [certLoteOpen, setCertLoteOpen] = useState(false);
+
+  const processoSelecionado = useMemo(() => {
+    if (processoId) return processoId;
+    return processos[0]?.id || "";
+  }, [processoId, processos]);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -90,6 +123,136 @@ export default function LotesPage() {
     carregar();
   }, [carregar]);
 
+  useEffect(() => {
+    let ativo = true;
+
+    async function carregarProcessos() {
+      if (escopo.loading) return;
+      const lista = await carregarProcessosDoEscopo(escopo.processoIds);
+      if (!ativo) return;
+      setProcessos(lista);
+      setProcessoId((current) => current || lista[0]?.id || "");
+    }
+
+    void carregarProcessos();
+    return () => {
+      ativo = false;
+    };
+  }, [escopo.loading, escopo.processoIds]);
+
+  function atualizarArquivosSelecionados(files: FileList | null) {
+    const lista = Array.from(files || []).filter(
+      (file) => file.type === "application/pdf" || /\.pdf$/i.test(file.name)
+    );
+    setArquivos(lista);
+    setDocumentosImportados([]);
+    setDocIds("");
+    setAviso(
+      lista.length
+        ? `${lista.length} arquivo(s) selecionado(s). O sistema vai criar os documentos e gerar os IDs automaticamente.`
+        : ""
+    );
+  }
+
+  async function importarArquivosComoDocumentos(): Promise<boolean> {
+    if (!arquivos.length) {
+      setAviso("Escolha ao menos um PDF para gerar os documentos.");
+      return false;
+    }
+
+    const pid =
+      processoSelecionado || (escopo.mestre ? processos[0]?.id || "" : "");
+    if (!pid) {
+      setAviso(
+        "Não encontrei um processo ativo no seu escopo. Escolha um processo antes de importar os PDFs."
+      );
+      return false;
+    }
+
+    setImportandoArquivos(true);
+    setAviso("");
+    const importados: DocumentoImportado[] = [];
+
+    try {
+      for (let i = 0; i < arquivos.length; i++) {
+        const file = arquivos[i];
+        const titulo = `${baseName(file.name)}${arquivos.length > 1 ? ` ${i + 1}` : ""}`.trim();
+
+        const createRes = await fetch("/api/admin/documentos", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: titulo,
+            description: `Arquivo importado para assinatura: ${file.name}`,
+            processo_id: pid,
+            status: "draft",
+          }),
+        });
+        const createJson = (await createRes.json().catch(() => ({}))) as {
+          ok?: boolean;
+          error?: string;
+          document?: { id: string };
+        };
+        if (!createRes.ok || !createJson.ok || !createJson.document?.id) {
+          throw new Error(
+            createJson.error ||
+              `Falha ao criar documento para ${file.name}.`
+          );
+        }
+
+        const form = new FormData();
+        form.append("file", file, file.name);
+        form.append("file_name", file.name);
+        form.append("change_note", "Upload inicial para assinatura");
+
+        const uploadRes = await fetch(
+          `/api/admin/documentos/${encodeURIComponent(createJson.document.id)}/upload`,
+          {
+            method: "POST",
+            credentials: "include",
+            body: form,
+          }
+        );
+        const uploadJson = (await uploadRes.json().catch(() => ({}))) as {
+          ok?: boolean;
+          error?: string;
+        };
+        if (!uploadRes.ok || !uploadJson.ok) {
+          throw new Error(
+            uploadJson.error ||
+              `Falha ao enviar o arquivo ${file.name}.`
+          );
+        }
+
+        importados.push({
+          id: createJson.document.id,
+          fileName: file.name,
+          title: titulo,
+          processoId: pid,
+        });
+      }
+
+      const ids = importados.map((doc) => doc.id);
+      setDocumentosImportados(importados);
+      setDocIds(ids.join(","));
+      setTitle((current) => current || `Lote de assinatura ${new Date().toLocaleDateString("pt-BR")}`);
+      setAviso(
+        `${importados.length} documento(s) criado(s) com sucesso. Os IDs foram gerados pelo sistema e já ficaram prontos para assinatura.`
+      );
+      await carregar();
+      if (ids.length === 1) {
+        setSelectedId(ids[0]);
+      }
+    } catch (e) {
+      setAviso(e instanceof Error ? e.message : "Erro ao importar os arquivos.");
+      return false;
+    } finally {
+      setImportandoArquivos(false);
+    }
+    return true;
+  }
+
   async function criar() {
     const document_ids = docIds
       .split(/[,\s]+/)
@@ -112,6 +275,8 @@ export default function LotesPage() {
     }
     setTitle("");
     setDocIds("");
+    setArquivos([]);
+    setDocumentosImportados([]);
     await carregar();
     if (json.batch?.id) await carregarDetalhe(json.batch.id);
   }
@@ -230,18 +395,94 @@ export default function LotesPage() {
         <h2 className="admin-h2" style={{ marginTop: 0 }}>
           Novo lote
         </h2>
-        <div style={{ display: "grid", gap: 8, maxWidth: 520 }}>
+        <div style={{ display: "grid", gap: 10, maxWidth: 680 }}>
           <input
             style={gdInputStyle}
             placeholder="Título do lote"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
+          <div
+            style={{
+              border: "1px solid #334155",
+              borderRadius: 12,
+              padding: 12,
+              background: "rgba(15,23,42,0.45)",
+            }}
+          >
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>
+              Upload de PDFs
+            </div>
+            <p style={{ fontSize: 12, opacity: 0.85, marginTop: 0, marginBottom: 10 }}>
+              O sistema vai criar o documento, receber o arquivo e gerar o ID
+              automaticamente. Você não precisa copiar nada no navegador.
+            </p>
+            {processos.length > 1 ? (
+              <label style={{ display: "block", fontSize: 13, marginBottom: 10 }}>
+                Processo do upload
+                <select
+                  value={processoSelecionado}
+                  onChange={(e) => setProcessoId(e.target.value)}
+                  style={{ ...gdInputStyle, marginTop: 6 }}
+                >
+                  {processos.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.titulo}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            <input
+              type="file"
+              accept="application/pdf,.pdf"
+              multiple
+              onChange={(e) => atualizarArquivosSelecionados(e.target.files)}
+              style={{
+                ...gdInputStyle,
+                paddingTop: 10,
+                paddingBottom: 10,
+              }}
+            />
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+              <button
+                type="button"
+                style={{ ...gdBtnStyle, background: "#0f766e" }}
+                onClick={() => void importarArquivosComoDocumentos()}
+                disabled={importandoArquivos || arquivos.length === 0}
+              >
+                {importandoArquivos ? "Criando documentos..." : "Gerar IDs a partir dos PDFs"}
+              </button>
+              <button
+                type="button"
+                style={{ ...gdBtnStyle, background: "#7c3aed" }}
+                onClick={async () => {
+                  const ok = await importarArquivosComoDocumentos();
+                  if (ok) window.setTimeout(() => setCertLoteOpen(true), 0);
+                }}
+                disabled={importandoArquivos || arquivos.length === 0}
+              >
+                {importandoArquivos ? "Preparando..." : "Gerar IDs e abrir certificado"}
+              </button>
+            </div>
+            {documentosImportados.length ? (
+              <div style={{ marginTop: 10, fontSize: 12, lineHeight: 1.45 }}>
+                <strong>Documentos gerados:</strong>
+                <ul style={{ margin: "8px 0 0 18px" }}>
+                  {documentosImportados.map((doc) => (
+                    <li key={doc.id}>
+                      {doc.fileName} → {doc.id.slice(0, 8)}…
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
           <input
             style={gdInputStyle}
-            placeholder="IDs dos documentos (separados por vírgula)"
+            placeholder="IDs dos documentos (preenchido automaticamente pelo upload)"
             value={docIds}
-            onChange={(e) => setDocIds(e.target.value)}
+            readOnly
           />
           <input
             style={gdInputStyle}
@@ -277,8 +518,9 @@ export default function LotesPage() {
             </button>
           </div>
           <p style={{ fontSize: 12, opacity: 0.8, marginBottom: 0 }}>
-            Lote avançado ou certificado: use os IDs acima. O certificado .pfx
-            fica só no seu computador.
+            Depois do upload, os IDs já ficam prontos aqui e você só decide se
+            quer lote simples, lote avançado ou certificado. O .pfx continua só
+            no seu computador.
           </p>
         </div>
       </div>
