@@ -20,41 +20,49 @@ export default function LoginPage() {
       const emailTrim = email.trim();
       const passwordTrim = password.trim();
 
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: emailTrim,
-        password: passwordTrim,
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: emailTrim,
+          password: passwordTrim,
+        }),
       });
 
-      if (error || !data.session?.access_token) {
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        modulos?: string[];
+        mestre?: boolean;
+        session?: {
+          access_token?: string;
+          refresh_token?: string;
+          expires_at?: number | null;
+        } | null;
+      };
+
+      if (!res.ok || !body.session?.access_token || !body.session.refresh_token) {
         setMsg(
           mensagemErroLoginAdmin({
-            authErrorMessage: error?.message || null,
+            status: res.status,
+            apiError: body.error || null,
           })
         );
         setLoading(false);
         return;
       }
 
-      const gate = await fetch("/api/admin/session", {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          Authorization: `Bearer ${data.session.access_token}`,
-        },
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: body.session.access_token,
+        refresh_token: body.session.refresh_token,
       });
 
-      const body = (await gate.json().catch(() => ({}))) as {
-        error?: string;
-        modulos?: string[];
-        mestre?: boolean;
-      };
-
-      if (!gate.ok) {
-        await supabase.auth.signOut().catch(() => null);
+      if (sessionError) {
         setMsg(
           mensagemErroLoginAdmin({
-            status: gate.status,
-            apiError: body.error || null,
+            authErrorMessage: sessionError.message,
           })
         );
         setLoading(false);
