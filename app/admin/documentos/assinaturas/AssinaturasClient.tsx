@@ -191,6 +191,20 @@ export default function AssinaturasClient() {
     setDocumentId(docId);
   }, [search]);
 
+  useEffect(() => {
+    if (search.get("cert") === "1" && documentId.trim()) {
+      setCertOpen(true);
+    }
+  }, [documentId, search]);
+
+  useEffect(() => {
+    if (search.get("adv") === "1" && documentId.trim()) {
+      setAdvDocumentId(documentId.trim());
+      setAdvDocumentTitle(documentTitle);
+      setAdvOpen(true);
+    }
+  }, [documentId, documentTitle, search]);
+
   function atualizarArquivosSelecionados(files: FileList | null) {
     const lista = Array.from(files || []).filter(
       (file) => file.type === "application/pdf" || /\.pdf$/i.test(file.name)
