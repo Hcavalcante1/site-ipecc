@@ -4,12 +4,19 @@ import { createClient } from "@supabase/supabase-js";
 export async function confirmarSenhaUsuario(opts: {
   email: string;
   password: string;
+  allowEmptyPassword?: boolean;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const email = String(opts.email || "")
     .trim()
     .toLowerCase();
   const password = String(opts.password || "");
-  if (!email || !password) {
+  if (!email) {
+    return { ok: false, error: "E-mail e senha são obrigatórios." };
+  }
+  if (!password && opts.allowEmptyPassword) {
+    return { ok: true };
+  }
+  if (!password) {
     return { ok: false, error: "E-mail e senha são obrigatórios." };
   }
 

@@ -153,6 +153,7 @@ export async function confirmarLoteIpecc(opts: {
   const senha = await confirmarSenhaUsuario({
     email,
     password: opts.password,
+    allowEmptyPassword: true,
   });
   if (senha.ok === false) {
     return { ok: false, error: senha.error, status: 401 };

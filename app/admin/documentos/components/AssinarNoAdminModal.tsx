@@ -676,6 +676,7 @@ export default function AssinarNoAdminModal({
 
   const src = embedUrl || signingUrl || "";
   const modalWide = useIpecc && step === "auth";
+  const passwordObrigatoria = !batchId;
 
   return (
     <div
@@ -810,7 +811,10 @@ export default function AssinarNoAdminModal({
             {step === "auth" ? (
               <>
                 <p style={{ fontSize: 14, color: "#94a3b8" }}>
-                  Digite sua senha do admin e o código OTP.
+                  Digite o código OTP.{" "}
+                  {passwordObrigatoria
+                    ? "A senha do admin também é obrigatória."
+                    : "A senha do admin é opcional se a sessão já estiver ativa."}
                 </p>
                 {emailWarning ? (
                   <p style={{ fontSize: 13, color: "#fbbf24", marginBottom: 8 }}>
@@ -1096,10 +1100,10 @@ export default function AssinarNoAdminModal({
                     type="button"
                     disabled={
                       busy ||
-                      password.length < 4 ||
                       otp.length !== 6 ||
                       nome.trim().length < 3 ||
-                      cpf.replace(/\D/g, "").length !== 11
+                      cpf.replace(/\D/g, "").length !== 11 ||
+                      (passwordObrigatoria && password.length < 4)
                     }
                     onClick={() => void confirmar()}
                     style={{
