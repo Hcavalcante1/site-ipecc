@@ -398,7 +398,7 @@ export default function DocumentoDetalhePage() {
                   style={{ ...gdBtnStyle, background: "#1e40af" }}
                   onClick={pedirAssinaturaExterna}
                 >
-                  Enviar a outra pessoa
+                  Envio externo
                 </button>
               </>
             ) : null}

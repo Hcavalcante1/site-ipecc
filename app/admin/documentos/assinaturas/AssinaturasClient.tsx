@@ -700,16 +700,16 @@ export default function AssinaturasClient() {
             </div>
           ) : null}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button
-              type="button"
-              style={{ ...gdBtnStyle, background: "#0f766e" }}
-              disabled={importandoArquivos || arquivos.length === 0}
-              onClick={() => void importarArquivosComoDocumentos()}
-            >
-              {importandoArquivos
-                ? "Gerando documentos…"
-                : "Gerar documentos e IDs"}
-            </button>
+              <button
+                type="button"
+                style={{ ...gdBtnStyle, background: "#0f766e" }}
+                disabled={importandoArquivos || arquivos.length === 0}
+                onClick={() => void importarArquivosComoDocumentos()}
+              >
+                {importandoArquivos
+                  ? "Gerando documentos…"
+                : "Criar documentos automaticamente"}
+              </button>
             <button
               type="button"
               style={{ ...gdBtnStyle, background: "#334155" }}
@@ -721,7 +721,7 @@ export default function AssinaturasClient() {
               }}
               disabled={importandoArquivos && arquivos.length === 0}
             >
-              Limpar fila
+              Remover PDFs
             </button>
           </div>
           {documentosImportados.length > 0 ? (
@@ -767,7 +767,7 @@ export default function AssinaturasClient() {
                         setDocumentTitle(doc.title);
                       }}
                     >
-                      Usar este documento
+                      Selecionar para assinar
                     </button>
                   </div>
                 ))}
@@ -789,9 +789,10 @@ export default function AssinaturasClient() {
           {" · "}
           gov.br: <strong>{govbrOk ? "pronto" : "ausente"}</strong>
         </p>
-        <p style={{ marginTop: 0, fontSize: 13, opacity: 0.85 }}>
+          <p style={{ marginTop: 0, fontSize: 13, opacity: 0.85 }}>
           Preferência: envie um PDF acima e escolha o tipo de assinatura. O
-          documento gerado já chega com o ID interno preenchido sozinho.
+          documento gerado já chega com o identificador interno preenchido
+          sozinho.
         </p>
         {documentTitle && documentId ? (
           <p
@@ -827,7 +828,7 @@ export default function AssinaturasClient() {
           >
             <input
               style={gdInputStyle}
-              placeholder="ID do documento (fallback manual)"
+              placeholder="Identificador interno do documento"
               value={documentId}
               onChange={(e) => setDocumentId(e.target.value)}
             />
@@ -1070,16 +1071,16 @@ export default function AssinaturasClient() {
                       >
                         Assinar agora
                       </button>
-                      <button
-                        type="button"
-                        style={gdBtnStyle}
-                        onClick={() => enviarDocumento(row.id)}
-                        disabled={Boolean(row.external_session_id)}
-                      >
-                        {row.external_session_id
-                          ? "Já enviado"
-                          : "Enviar a outra pessoa"}
-                      </button>
+                  <button
+                    type="button"
+                    style={gdBtnStyle}
+                    onClick={() => enviarDocumento(row.id)}
+                    disabled={Boolean(row.external_session_id)}
+                  >
+                    {row.external_session_id
+                      ? "Já enviado"
+                      : "Envio externo"}
+                  </button>
                     </>
                   ) : (
                     <>
