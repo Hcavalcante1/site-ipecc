@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import GestaoDocumentalShell, {
   gdBtnStyle,
   gdCardStyle,
@@ -19,6 +20,7 @@ type Signer = {
 };
 
 export default function SignatariosPage() {
+  const search = useSearchParams();
   const [signers, setSigners] = useState<Signer[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -50,6 +52,13 @@ export default function SignatariosPage() {
   useEffect(() => {
     carregar();
   }, [carregar]);
+
+  useEffect(() => {
+    const docId = search.get("document_id")?.trim() || "";
+    const loteId = search.get("batch_id")?.trim() || "";
+    if (docId) setDocumentId(docId);
+    if (loteId) setBatchId(loteId);
+  }, [search]);
 
   async function criar() {
     const res = await fetch("/api/admin/documentos/signatarios", {
@@ -108,7 +117,7 @@ export default function SignatariosPage() {
   return (
     <GestaoDocumentalShell
       title="Signatários"
-      description="Cadastro e ordem de signatários (sequencial ou paralelo)."
+      description="Cadastro e ordem de signatários vinculados a um documento ou lote."
     >
       {aviso ? (
         <div style={{ ...gdCardStyle, borderColor: "#f59e0b" }}>{aviso}</div>
@@ -118,6 +127,10 @@ export default function SignatariosPage() {
         <h2 className="admin-h2" style={{ marginTop: 0 }}>
           Novo signatário
         </h2>
+        <p style={{ marginTop: 0, fontSize: 13, opacity: 0.85 }}>
+          Você pode vincular o signatário a um documento ou lote já aberto.
+          Se vier da ficha, o identificador entra sozinho.
+        </p>
         <div style={{ display: "grid", gap: 8, maxWidth: 520 }}>
           <input
             style={gdInputStyle}
@@ -133,13 +146,13 @@ export default function SignatariosPage() {
           />
           <input
             style={gdInputStyle}
-            placeholder="ID do documento (opcional)"
+            placeholder="Identificador interno do documento"
             value={documentId}
             onChange={(e) => setDocumentId(e.target.value)}
           />
           <input
             style={gdInputStyle}
-            placeholder="ID do lote (opcional)"
+            placeholder="Identificador interno do lote"
             value={batchId}
             onChange={(e) => setBatchId(e.target.value)}
           />
@@ -154,7 +167,7 @@ export default function SignatariosPage() {
             <option value="sequential">Sequencial</option>
           </select>
           <button type="button" style={gdBtnStyle} onClick={criar}>
-            Adicionar
+            Vincular signatário
           </button>
         </div>
       </div>

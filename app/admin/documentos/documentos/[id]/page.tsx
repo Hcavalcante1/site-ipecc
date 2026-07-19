@@ -342,6 +342,16 @@ export default function DocumentoDetalhePage() {
     );
   }
 
+  async function gerenciarSignatarios() {
+    if (!document?.storage_path) {
+      setAviso("Envie um arquivo PDF antes de vincular signatários.");
+      return;
+    }
+    router.push(
+      `/admin/documentos/signatarios?document_id=${encodeURIComponent(id)}`
+    );
+  }
+
   if (!document && !aviso) {
     return (
       <GestaoDocumentalShell title="Documento">
@@ -399,6 +409,13 @@ export default function DocumentoDetalhePage() {
                   onClick={pedirAssinaturaExterna}
                 >
                   Envio externo
+                </button>
+                <button
+                  type="button"
+                  style={{ ...gdBtnStyle, background: "#334155" }}
+                  onClick={gerenciarSignatarios}
+                >
+                  Signatários
                 </button>
               </>
             ) : null}
