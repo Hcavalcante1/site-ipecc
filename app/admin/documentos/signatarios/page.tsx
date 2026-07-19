@@ -144,18 +144,6 @@ export default function SignatariosPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-          <input
-            style={gdInputStyle}
-            placeholder="Identificador interno do documento"
-            value={documentId}
-            onChange={(e) => setDocumentId(e.target.value)}
-          />
-          <input
-            style={gdInputStyle}
-            placeholder="Identificador interno do lote"
-            value={batchId}
-            onChange={(e) => setBatchId(e.target.value)}
-          />
           <select
             style={gdInputStyle}
             value={mode}
@@ -169,6 +157,28 @@ export default function SignatariosPage() {
           <button type="button" style={gdBtnStyle} onClick={criar}>
             Vincular signatário
           </button>
+          <details style={{ marginTop: 4 }}>
+            <summary style={{ cursor: "pointer", fontSize: 13, opacity: 0.85 }}>
+              Vinculação manual
+            </summary>
+            <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+              <input
+                style={gdInputStyle}
+                placeholder="Identificador interno do documento"
+                value={documentId}
+                onChange={(e) => setDocumentId(e.target.value)}
+              />
+              <input
+                style={gdInputStyle}
+                placeholder="Identificador interno do lote"
+                value={batchId}
+                onChange={(e) => setBatchId(e.target.value)}
+              />
+              <small style={{ opacity: 0.8 }}>
+                Use apenas se não vier da ficha do documento ou do lote.
+              </small>
+            </div>
+          </details>
         </div>
       </div>
 
