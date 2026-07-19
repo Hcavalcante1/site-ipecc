@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import GestaoDocumentalShell, {
@@ -82,6 +82,7 @@ export default function AssinaturasClient() {
   const [advDocumentId, setAdvDocumentId] = useState<string | null>(null);
   const [advDocumentTitle, setAdvDocumentTitle] = useState<string | null>(null);
   const [certOpen, setCertOpen] = useState(false);
+  const autoSimpleKey = useRef<string | null>(null);
   const processoSelecionado = useMemo(() => {
     if (processoId) return processoId;
     return processos[0]?.id || "";
@@ -190,6 +191,15 @@ export default function AssinaturasClient() {
     if (!docId) return;
     setDocumentId(docId);
   }, [search]);
+
+  useEffect(() => {
+    const docId = documentId.trim();
+    if (search.get("simple") !== "1" || !docId) return;
+    const chave = `simple:${docId}`;
+    if (autoSimpleKey.current === chave) return;
+    autoSimpleKey.current = chave;
+    void criarEAssinarAgora();
+  }, [documentId, search]);
 
   useEffect(() => {
     if (search.get("cert") === "1" && documentId.trim()) {

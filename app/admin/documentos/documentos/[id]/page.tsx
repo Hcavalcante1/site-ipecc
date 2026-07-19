@@ -284,7 +284,17 @@ export default function DocumentoDetalhePage() {
       return;
     }
     router.push(
-      `/admin/documentos/assinaturas?document_id=${encodeURIComponent(id)}`
+      `/admin/documentos/assinaturas?document_id=${encodeURIComponent(id)}&simple=1`
+    );
+  }
+
+  async function assinarAvancada() {
+    if (!document?.storage_path) {
+      setAviso("Envie um arquivo PDF antes de assinar.");
+      return;
+    }
+    router.push(
+      `/admin/documentos/assinaturas?document_id=${encodeURIComponent(id)}&adv=1`
     );
   }
 
@@ -367,7 +377,14 @@ export default function DocumentoDetalhePage() {
                   style={{ ...gdBtnStyle, background: "#0f766e" }}
                   onClick={assinarNoAdmin}
                 >
-                  Escolher assinatura
+                  Assinar no admin
+                </button>
+                <button
+                  type="button"
+                  style={{ ...gdBtnStyle, background: "#1d4ed8" }}
+                  onClick={assinarAvancada}
+                >
+                  Assinatura avançada
                 </button>
                 <button
                   type="button"
