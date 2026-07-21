@@ -1,5 +1,8 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 import "./globals.css";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type MouseEvent, type ReactNode } from "react";

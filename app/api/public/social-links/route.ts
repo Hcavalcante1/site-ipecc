@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { PUBLIC_SOCIAL_LINKS } from "@/lib/public/socialLinks";
 import { supabasePublic } from "@/lib/supabasePublic";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 /**
  * Links oficiais do site para topbar e rodapé.
  * Usa a lista fixa se a tabela Digital ainda não existir.
