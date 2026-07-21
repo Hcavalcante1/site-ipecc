@@ -39,7 +39,7 @@ export type LoadedCertificate = {
 };
 
 /** Dimensões do carimbo visual (pt) — preview e PDF usam o mesmo. */
-export const CERT_STAMP_BOX = { w: 238, h: 80, margin: 12 };
+export const CERT_STAMP_BOX = { w: 228, h: 64, margin: 12 };
 
 export type AppearanceOptions = {
   page: number; // 1-based
@@ -798,8 +798,8 @@ export async function signPdfWithLocalCertificate(opts: {
   const ink = rgb(0, 0, 0);
 
   const contentX = x + 6;
-  const qrSize = 57;
-  const validationW = 57;
+  const qrSize = 44;
+  const validationW = 44;
   const textW = 170;
   const validationX = contentX + textW + 2;
   const qrX = validationX + 1;
@@ -871,7 +871,7 @@ export async function signPdfWithLocalCertificate(opts: {
   }
   page.drawText(`Codigo de validacao: ${validationCode}`, {
     x: contentX,
-    y: y + 15.5,
+    y: y + 9.5,
     size: 5.0,
     font,
     color: ink,
@@ -880,7 +880,7 @@ export async function signPdfWithLocalCertificate(opts: {
   });
   page.drawText(`Dados: ${when}`, {
     x: contentX,
-    y: y + 6.5,
+    y: y + 3.0,
     size: 5.0,
     font,
     color: ink,
@@ -889,13 +889,13 @@ export async function signPdfWithLocalCertificate(opts: {
   });
   page.drawImage(qr, {
     x: qrX,
-    y: y + 17,
+    y: y + 14,
     width: qrSize,
     height: qrSize,
   });
   page.drawText("VALIDAR ITI", {
     x: validationX,
-    y: y + 12,
+    y: y + 9.5,
     size: 4.4,
     font: fontBold,
     color: ink,
@@ -904,7 +904,7 @@ export async function signPdfWithLocalCertificate(opts: {
   });
   page.drawText("verifique em validar.iti.gov.br", {
     x: validationX,
-    y: y + 6.5,
+    y: y + 3.0,
     size: 3.9,
     font,
     color: ink,

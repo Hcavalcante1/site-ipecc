@@ -248,8 +248,8 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
       </div>
       <div
         style={{
-          width: 60,
-          minWidth: 60,
+          width: 48,
+          minWidth: 48,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -266,13 +266,13 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
           <img
             src={qrDataUrl}
             alt="QR Code de validação"
-            style={{ width: 57, height: 57, display: "block", flex: "0 0 auto" }}
+            style={{ width: 44, height: 44, display: "block", flex: "0 0 auto" }}
           />
         ) : (
           <div
             style={{
-              width: 57,
-              height: 57,
+              width: 44,
+              height: 44,
               border: "1px solid #94a3b8",
               background: "#f8fafc",
               flex: "0 0 auto",
@@ -708,7 +708,7 @@ function CertStampPositionPreview({
                         <img
                           src={qrDataUrl}
                           alt="QR Code de validação"
-                          style={{ width: 57, height: 57, display: "block", flex: "0 0 auto" }}
+                          style={{ width: 44, height: 44, display: "block", flex: "0 0 auto" }}
                         />
                       ) : (
                         <div
