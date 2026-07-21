@@ -39,7 +39,7 @@ export type LoadedCertificate = {
 };
 
 /** Dimensões do carimbo visual (pt) — preview e PDF usam o mesmo. */
-export const CERT_STAMP_BOX = { w: 286, h: 80, margin: 12 };
+export const CERT_STAMP_BOX = { w: 238, h: 80, margin: 12 };
 
 export type AppearanceOptions = {
   page: number; // 1-based

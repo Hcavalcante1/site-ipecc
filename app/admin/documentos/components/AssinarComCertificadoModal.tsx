@@ -663,7 +663,6 @@ function CertStampPositionPreview({
                     gap: 4,
                     overflow: "hidden",
                     alignItems: "stretch",
-                    minHeight: 80,
                   }}
                 >
                   <div
