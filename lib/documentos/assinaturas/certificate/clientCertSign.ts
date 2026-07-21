@@ -671,23 +671,26 @@ async function createPkcs7ForPdf(
   const OID_RSA            = "1.2.840.113549.1.1.1";
   const OID_CONTENT_TYPE   = "1.2.840.113549.1.9.3";
   const OID_MESSAGE_DIGEST = "1.2.840.113549.1.9.4";
-  const OID_SIGNING_TIME   = "1.2.840.113549.1.9.5";
+  // adbe-revocationInfoArchival: presente (vazio) no Adobe — exigido pelo ITI para "Aprovado"
+  const OID_ADBE_REVINFO   = "1.2.840.113583.1.1.8";
 
   // 1. SHA-256 do conteúdo (ByteRange) via WebCrypto — garantidamente correto
   const hashBuf   = await crypto.subtle.digest("SHA-256", bytesToSign);
   const hashBytes = new Uint8Array(hashBuf);
 
-  const cert    = forge.pki.certificateFromPem(certificatePem);
-  const sigDate = new Date();
-  const p2 = (n: number) => String(n).padStart(2, "0");
-  // UTCTime: YYMMDDHHMMSSZ
-  const utcTime =
-    `${String(sigDate.getUTCFullYear()).slice(-2)}` +
-    `${p2(sigDate.getUTCMonth() + 1)}${p2(sigDate.getUTCDate())}` +
-    `${p2(sigDate.getUTCHours())}${p2(sigDate.getUTCMinutes())}${p2(sigDate.getUTCSeconds())}Z`;
+  const cert = forge.pki.certificateFromPem(certificatePem);
 
-  // 2. signedAttributes como SET (tag 0x31) — RFC 5652 §5.4 exige SET para assinar
+  // 2. signedAttributes como SET (tag 0x31) — RFC 5652 §5.4 exige SET para assinar.
+  //    Ordem e atributos idênticos ao Adobe Acrobat: adbe-revocationInfoArchival
+  //    (SEQUENCE vazia), contentType, messageDigest. Sem signingTime.
   const signedAttrsSet = A.create(U, A.Type.SET, true, [
+    // adbe-revocationInfoArchival — SEQUENCE vazia (sem CRL/OCSP embarcado)
+    A.create(U, A.Type.SEQUENCE, true, [
+      A.create(U, A.Type.OID, false, oidDer(OID_ADBE_REVINFO)),
+      A.create(U, A.Type.SET, true, [
+        A.create(U, A.Type.SEQUENCE, true, []),
+      ]),
+    ]),
     // contentType = id-data
     A.create(U, A.Type.SEQUENCE, true, [
       A.create(U, A.Type.OID, false, oidDer(OID_CONTENT_TYPE)),
@@ -700,13 +703,6 @@ async function createPkcs7ForPdf(
       A.create(U, A.Type.OID, false, oidDer(OID_MESSAGE_DIGEST)),
       A.create(U, A.Type.SET, true, [
         A.create(U, A.Type.OCTETSTRING, false, uint8ToBinary(hashBytes)),
-      ]),
-    ]),
-    // signingTime
-    A.create(U, A.Type.SEQUENCE, true, [
-      A.create(U, A.Type.OID, false, oidDer(OID_SIGNING_TIME)),
-      A.create(U, A.Type.SET, true, [
-        A.create(U, 23 /* UTCTime */, false, utcTime),
       ]),
     ]),
   ]);
@@ -1127,24 +1123,16 @@ export async function signPdfWithLocalCertificate(opts: {
     maxWidth: textW,
     lineHeight: 6.4,
   });
-  if (razaoSocial || responsavel) {
-    page.drawText(
-      [
-        razaoSocial ? `Razão social: ${razaoSocial}` : null,
-        responsavel ? `Responsável: ${responsavel}` : null,
-      ]
-        .filter(Boolean)
-        .join(" • "),
-      {
-        x: contentX,
-        y: y + 24,
-        size: 5.7,
-        font,
-        color: ink,
-        maxWidth: textW,
-        lineHeight: 6.0,
-      }
-    );
+  if (responsavel) {
+    page.drawText(`Responsavel: ${responsavel}`, {
+      x: contentX,
+      y: y + 24,
+      size: 5.7,
+      font,
+      color: ink,
+      maxWidth: textW,
+      lineHeight: 6.0,
+    });
   }
   if (cpf) {
     page.drawText(`CPF: ${cpf}`, {
