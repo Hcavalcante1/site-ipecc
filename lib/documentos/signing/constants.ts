@@ -65,13 +65,18 @@ export function validationBaseUrl(): string {
         host === "localhost" ||
         host === "127.0.0.1"
       ) {
+        const cleanPath = normalized.pathname.replace(/\/+$/, "");
+        const rootPath = cleanPath.replace(/\/validar$/i, "");
+        normalized.pathname = rootPath || "/";
+        normalized.search = "";
+        normalized.hash = "";
         return normalized.toString().replace(/\/$/, "");
       }
     } catch {
       // ignore invalid env url
     }
   }
-  return `${getPublicSiteUrl()}/validar`;
+  return getPublicSiteUrl().replace(/\/$/, "");
 }
 
 export function otpPepper(): string {

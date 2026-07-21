@@ -39,7 +39,7 @@ export type LoadedCertificate = {
 };
 
 /** Dimensões do carimbo visual (pt) — preview e PDF usam o mesmo. */
-export const CERT_STAMP_BOX = { w: 292, h: 64, margin: 14 };
+export const CERT_STAMP_BOX = { w: 300, h: 82, margin: 14 };
 
 export type AppearanceOptions = {
   page: number; // 1-based
@@ -53,6 +53,7 @@ export type AppearanceOptions = {
   width?: number;
   height?: number;
   signerLabel?: string;
+  validationCode?: string;
 };
 
 function clampPct(n: number, fallback: number): number {
@@ -666,6 +667,7 @@ export async function signPdfWithLocalCertificate(opts: {
   pdfBytes: Uint8Array;
   expectedHashSha256: string;
   cert: LoadedCertificate;
+  validationCode?: string;
   appearance: AppearanceOptions;
 }): Promise<{
   signedPdfBytes: Uint8Array;
@@ -766,6 +768,7 @@ export async function signPdfWithLocalCertificate(opts: {
   const responsavel = opts.cert.icpBrasil.responsavel?.trim() || null;
   const cnpj = formatCnpjDigits(opts.cert.icpBrasil.cnpj) || getCertificateHolderCnpj(opts.cert);
   const cpf = formatCpfDigits(opts.cert.icpBrasil.cpf);
+  const validationCode = String(opts.validationCode || "").trim() || "-";
   const validationQr = await QRCode.toDataURL("https://validar.iti.gov.br", {
     margin: 0,
     width: 128,
@@ -782,16 +785,16 @@ export async function signPdfWithLocalCertificate(opts: {
 
   const contentX = x + 6;
   const qrSize = 38;
-  const validationW = 38;
-  const textW = 150;
+  const validationW = 52;
+  const textW = 174;
   const validationX = contentX + textW + 3;
   const qrX = validationX + 1;
   const qr = await pdfDoc.embedPng(validationQr);
 
   page.drawText("Assinado digitalmente por", {
     x: contentX,
-    y: y + boxH - 11,
-    size: 7.4,
+    y: y + boxH - 12,
+    size: 7.2,
     font,
     color: ink,
     maxWidth: textW,
@@ -799,8 +802,8 @@ export async function signPdfWithLocalCertificate(opts: {
   });
   page.drawText((subject || "").toUpperCase(), {
     x: contentX,
-    y: y + boxH - 22,
-    size: 8.3,
+    y: y + boxH - 23,
+    size: 8.0,
     font: fontBold,
     color: ink,
     maxWidth: textW,
@@ -808,8 +811,8 @@ export async function signPdfWithLocalCertificate(opts: {
   });
   page.drawText(cnpj ? `CNPJ: ${cnpj}` : "CNPJ:", {
     x: contentX,
-    y: y + boxH - 33,
-    size: 7.1,
+    y: y + boxH - 34,
+    size: 6.9,
     font,
     color: ink,
     maxWidth: textW,
@@ -825,8 +828,8 @@ export async function signPdfWithLocalCertificate(opts: {
         .join(" • "),
       {
         x: contentX,
-        y: y + boxH - 43,
-        size: 6.4,
+        y: y + boxH - 44,
+        size: 6.2,
         font,
         color: ink,
         maxWidth: textW,
@@ -837,33 +840,42 @@ export async function signPdfWithLocalCertificate(opts: {
   if (cpf) {
     page.drawText(`CPF: ${cpf}`, {
       x: contentX,
-      y: y + boxH - 53,
-      size: 6.4,
+      y: y + boxH - 54,
+      size: 6.2,
       font,
       color: ink,
       maxWidth: textW,
       lineHeight: 6.6,
     });
   }
-  page.drawText(`Dados: ${when}`, {
+  page.drawText(`Codigo de validacao: ${validationCode}`, {
     x: contentX,
-    y: y + 8,
-    size: 6,
+    y: y + 16,
+    size: 5.8,
     font,
     color: ink,
     maxWidth: textW,
-    lineHeight: 6.2,
+    lineHeight: 6.0,
+  });
+  page.drawText(`Dados: ${when}`, {
+    x: contentX,
+    y: y + 7,
+    size: 5.8,
+    font,
+    color: ink,
+    maxWidth: textW,
+    lineHeight: 6.0,
   });
   page.drawImage(qr, {
     x: qrX,
-    y: y + 16,
+    y: y + 18,
     width: qrSize,
     height: qrSize,
   });
   page.drawText("VALIDAR ITI", {
     x: validationX,
-    y: y + 5,
-    size: 5.1,
+    y: y + 6,
+    size: 4.9,
     font: fontBold,
     color: ink,
     maxWidth: validationW,
@@ -871,8 +883,8 @@ export async function signPdfWithLocalCertificate(opts: {
   });
   page.drawText("verifique em validar.iti.gov.br", {
     x: validationX,
-    y: y - 3,
-    size: 4.7,
+    y: y - 1,
+    size: 4.4,
     font,
     color: ink,
     maxWidth: validationW,

@@ -31,6 +31,7 @@ type SessionItem = {
   documentId: string;
   documentHashSha256: string;
   downloadPath: string;
+  validationCode: string;
 };
 
 type SavedCertificateProfile = {
@@ -1056,6 +1057,7 @@ export default function AssinarComCertificadoModal({
             pdfBytes,
             expectedHashSha256: item.documentHashSha256,
             cert,
+            validationCode: item.validationCode,
             appearance: {
               page: placement.page,
               xPct: placement.xPct,

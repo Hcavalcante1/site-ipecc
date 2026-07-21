@@ -214,10 +214,12 @@ export async function criarSessaoCertificado(opts: {
     documentId: string;
     documentHashSha256: string;
     downloadPath: string;
+    validationCode: string;
   }> = [];
 
   for (let i = 0; i < loaded.length; i++) {
     const doc = loaded[i];
+    const validationCode = gerarCodigoValidacao();
     const { data: tx, error: txErr } = await admin
       .from("gd_cert_transactions")
       .insert({
@@ -229,6 +231,7 @@ export async function criarSessaoCertificado(opts: {
         document_hash_sha256: doc.hash,
         original_storage_path: doc.storagePath,
         batch_id: batchId,
+        verification_code: validationCode,
       })
       .select("id")
       .single();
@@ -291,6 +294,7 @@ export async function criarSessaoCertificado(opts: {
       documentId: doc.documentId,
       documentHashSha256: doc.hash,
       downloadPath: `/api/admin/documentos/assinaturas-certificado/${tx.id}/arquivo`,
+      validationCode,
     });
   }
 
@@ -408,7 +412,9 @@ export async function concluirItemCertificado(opts: {
     };
   }
 
-  const validationCode = gerarCodigoValidacao();
+  const validationCode =
+    String(tx.verification_code || "").trim().toUpperCase() ||
+    gerarCodigoValidacao();
   const signedPath = `assinaturas-certificado/${tx.document_id}/${tx.id}/assinado-${validationCode}.pdf`;
   const now = new Date().toISOString();
 

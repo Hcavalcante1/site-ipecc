@@ -124,6 +124,210 @@ function caberTexto(
   return `${out}…`;
 }
 
+function quebrarTexto(
+  texto: string,
+  font: PDFFont,
+  size: number,
+  maxWidth: number
+): string[] {
+  const t = String(texto || "").trim();
+  if (!t) return [""];
+  if (font.widthOfTextAtSize(t, size) <= maxWidth) return [t];
+
+  const out: string[] = [];
+  const words = t.split(/\s+/).filter(Boolean);
+  let current = "";
+
+  const pushCurrent = () => {
+    const trimmed = current.trim();
+    if (trimmed) out.push(trimmed);
+    current = "";
+  };
+
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (font.widthOfTextAtSize(candidate, size) <= maxWidth) {
+      current = candidate;
+      continue;
+    }
+    if (current) pushCurrent();
+
+    if (font.widthOfTextAtSize(word, size) <= maxWidth) {
+      current = word;
+      continue;
+    }
+
+    let chunk = "";
+    for (const ch of word) {
+      const test = `${chunk}${ch}`;
+      if (font.widthOfTextAtSize(test, size) <= maxWidth) {
+        chunk = test;
+      } else {
+        if (chunk) out.push(chunk);
+        chunk = ch;
+      }
+    }
+    current = chunk;
+  }
+
+  pushCurrent();
+  return out.length ? out : [t];
+}
+
+function desenharSeloCompacto(opts: {
+  page: PDFPage;
+  font: PDFFont;
+  fontBold: PDFFont;
+  nome: string;
+  cpf: string;
+  cargo?: string | null;
+  signedAt: Date;
+  timezone: string;
+  validationCode: string;
+  qrImage: Awaited<ReturnType<PDFDocument["embedPng"]>>;
+  logoImage: Awaited<ReturnType<PDFDocument["embedPng"]>> | null;
+  xPct: number;
+  yPct: number;
+}) {
+  const { page, font, fontBold } = opts;
+  const { width, height } = page.getSize();
+  const nome = opts.nome.trim();
+  const cargo = String(opts.cargo || "").trim();
+  const cpfFmt = formatarCpfExibicao(opts.cpf);
+  const codigo = String(opts.validationCode || "").trim() || "-";
+
+  const side = SELO_SIDE_PT;
+  const pad = SELO_PAD_PT;
+  const gap = SELO_GAP_PT;
+  const inset = SELO_INSET_PT;
+  const leftColW = 190;
+  const rightColW = 52;
+
+  const lines: {
+    text: string;
+    size: number;
+    bold?: boolean;
+    color: typeof COR.corpo;
+  }[] = [
+    { text: "Documento assinado digitalmente", size: 5.1, color: COR.corpo },
+    { text: nome.toUpperCase(), size: 6.9, bold: true, color: COR.titulo },
+    { text: `CNPJ: ${cpfFmt}`, size: 5.0, color: COR.corpo },
+    ...(cargo
+      ? [{ text: `Responsavel: ${cargo}`, size: 4.9, color: COR.corpo }]
+      : []),
+    { text: `CPF: ${cpfFmt}`, size: 4.9, color: COR.corpo },
+    {
+      text: `Data: ${formatarDataSimples(opts.signedAt, opts.timezone)}`,
+      size: 5.0,
+      color: COR.corpo,
+    },
+    {
+      text: `Codigo de validacao: ${codigo}`,
+      size: 4.8,
+      bold: true,
+      color: COR.faixa,
+    },
+  ];
+
+  const leftRendered = lines.flatMap((line) => {
+    const f = line.bold ? fontBold : font;
+    return quebrarTexto(line.text, f, line.size, leftColW).map((text) => ({
+      ...line,
+      text,
+    }));
+  });
+
+  const leftHeight = leftRendered.reduce((sum, line) => sum + line.size + 1, 0);
+  const rightHeight = side + 14;
+  const boxW = pad + side + gap + leftColW + gap + rightColW + pad;
+  const boxH = Math.max(78, Math.ceil(Math.max(leftHeight + pad * 2, rightHeight + pad * 2)));
+  const { x, y } = origemLivre(width, height, boxW, boxH, opts.xPct, opts.yPct);
+
+  page.drawRectangle({
+    x,
+    y,
+    width: boxW,
+    height: boxH,
+    color: COR.fundo,
+    opacity: 0.97,
+    borderColor: COR.borda,
+    borderWidth: 0.45,
+  });
+
+  const logoX = x + pad;
+  const logoY = y + pad;
+  const icon = side - inset * 2;
+  if (opts.logoImage) {
+    page.drawImage(opts.logoImage, {
+      x: logoX + inset,
+      y: logoY + inset,
+      width: icon,
+      height: icon,
+    });
+  } else {
+    page.drawRectangle({
+      x: logoX + inset,
+      y: logoY + inset,
+      width: icon,
+      height: icon,
+      borderColor: COR.faixa,
+      borderWidth: 0.7,
+      color: rgb(0.97, 0.98, 1),
+    });
+    page.drawText("IPECC", {
+      x: logoX + inset + 3,
+      y: logoY + inset + icon / 2 - 2.5,
+      size: 6,
+      font: fontBold,
+      color: COR.faixa,
+    });
+  }
+
+  const colLeft = x + pad + side + gap;
+  let cursorY = y + boxH - pad - 3;
+  for (const linha of leftRendered) {
+    const f = linha.bold ? fontBold : font;
+    cursorY -= linha.size;
+    page.drawText(linha.text, {
+      x: colLeft,
+      y: cursorY,
+      size: linha.size,
+      font: f,
+      color: linha.color,
+      maxWidth: leftColW,
+      lineHeight: linha.size + 1,
+    });
+    cursorY -= 1;
+  }
+
+  const qrX = x + pad + side + gap + leftColW + gap + Math.max(0, (rightColW - side) / 2);
+  page.drawImage(opts.qrImage, {
+    x: qrX + inset,
+    y: y + boxH - pad - side - 4,
+    width: icon,
+    height: icon,
+  });
+
+  page.drawText("VALIDAR ITI", {
+    x: qrX - 1,
+    y: y + 11.5,
+    size: 4.9,
+    font: fontBold,
+    color: COR.titulo,
+    maxWidth: rightColW + 2,
+    lineHeight: 5.0,
+  });
+  page.drawText("verifique em validar.iti.gov.br", {
+    x: qrX - 3,
+    y: y + 5.5,
+    size: 4.2,
+    font,
+    color: COR.corpo,
+    maxWidth: rightColW + 6,
+    lineHeight: 4.4,
+  });
+}
+
 function presetsParaPct(
   posicao?: PosicaoAssinatura,
   zona?: ZonaVerticalAssinatura
@@ -203,6 +407,23 @@ function desenharSelo(opts: {
   const gap = SELO_GAP_PT;
   const inset = SELO_INSET_PT;
   const codigo = String(opts.validationCode || "").trim();
+
+  desenharSeloCompacto({
+    page,
+    font,
+    fontBold,
+    nome: opts.nome,
+    cpf: opts.cpf,
+    cargo: opts.cargo,
+    signedAt: opts.signedAt,
+    timezone: opts.timezone,
+    validationCode: codigo,
+    qrImage: opts.qrImage,
+    logoImage: opts.logoImage,
+    xPct: opts.xPct,
+    yPct: opts.yPct,
+  });
+  return;
 
   // Fontes no tamanho anterior
   const linhasBase: {
@@ -342,7 +563,10 @@ export async function carimbarPdfAssinatura(opts: {
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
 
-  const validUrl = `${validationBaseUrl()}/validar/${opts.validationCode}`;
+  const validUrl = new URL(
+    `/validar/${opts.validationCode}`,
+    validationBaseUrl()
+  ).toString();
   const qrPng = await QRCode.toBuffer(validUrl, {
     type: "png",
     width: SELO_SIDE_PT * 4,
