@@ -647,34 +647,163 @@ function pdfSigningDate(date: Date): string {
 }
 
 /**
- * Cria PKCS#7 detached para assinatura PDF (adbe.pkcs7.detached).
- * O conteúdo passado são os bytes reais do ByteRange — forge calcula o messageDigest internamente.
+ * Cria PKCS#7/CMS detached (adbe.pkcs7.detached) conforme RFC 5652.
+ *
+ * Usa WebCrypto para SHA-256 (hash do ByteRange e dos signedAttributes) e
+ * constrói o ASN.1 manualmente, garantindo que o SET tag 0x31 seja usado ao
+ * assinar — exigência do RFC 5652 §5.4 frequentemente violada por toolkits JS.
  */
-function createPkcs7SignatureForPdf(
+async function createPkcs7ForPdf(
   bytesToSign: Uint8Array,
   privateKeyPem: string,
   certificatePem: string,
   chainPem: string[]
-): Uint8Array {
+): Promise<Uint8Array> {
+  const A   = forge.asn1;
+  const U   = A.Class.UNIVERSAL;
+  const CTX = A.Class.CONTEXT_SPECIFIC;
+  const oidDer = (o: string): string => A.oidToDer(o).getBytes();
+
+  // OIDs relevantes
+  const OID_SIGNED_DATA    = "1.2.840.113549.1.7.2";
+  const OID_DATA           = "1.2.840.113549.1.7.1";
+  const OID_SHA256         = "2.16.840.1.101.3.4.2.1";
+  const OID_RSA            = "1.2.840.113549.1.1.1";
+  const OID_CONTENT_TYPE   = "1.2.840.113549.1.9.3";
+  const OID_MESSAGE_DIGEST = "1.2.840.113549.1.9.4";
+  const OID_SIGNING_TIME   = "1.2.840.113549.1.9.5";
+
+  // 1. SHA-256 do conteúdo (ByteRange) via WebCrypto — garantidamente correto
+  const hashBuf   = await crypto.subtle.digest("SHA-256", bytesToSign);
+  const hashBytes = new Uint8Array(hashBuf);
+
+  const cert    = forge.pki.certificateFromPem(certificatePem);
+  const sigDate = new Date();
+  const p2 = (n: number) => String(n).padStart(2, "0");
+  // UTCTime: YYMMDDHHMMSSZ
+  const utcTime =
+    `${String(sigDate.getUTCFullYear()).slice(-2)}` +
+    `${p2(sigDate.getUTCMonth() + 1)}${p2(sigDate.getUTCDate())}` +
+    `${p2(sigDate.getUTCHours())}${p2(sigDate.getUTCMinutes())}${p2(sigDate.getUTCSeconds())}Z`;
+
+  // 2. signedAttributes como SET (tag 0x31) — RFC 5652 §5.4 exige SET para assinar
+  const signedAttrsSet = A.create(U, A.Type.SET, true, [
+    // contentType = id-data
+    A.create(U, A.Type.SEQUENCE, true, [
+      A.create(U, A.Type.OID, false, oidDer(OID_CONTENT_TYPE)),
+      A.create(U, A.Type.SET, true, [
+        A.create(U, A.Type.OID, false, oidDer(OID_DATA)),
+      ]),
+    ]),
+    // messageDigest = SHA-256(ByteRange)
+    A.create(U, A.Type.SEQUENCE, true, [
+      A.create(U, A.Type.OID, false, oidDer(OID_MESSAGE_DIGEST)),
+      A.create(U, A.Type.SET, true, [
+        A.create(U, A.Type.OCTETSTRING, false, uint8ToBinary(hashBytes)),
+      ]),
+    ]),
+    // signingTime
+    A.create(U, A.Type.SEQUENCE, true, [
+      A.create(U, A.Type.OID, false, oidDer(OID_SIGNING_TIME)),
+      A.create(U, A.Type.SET, true, [
+        A.create(U, 23 /* UTCTime */, false, utcTime),
+      ]),
+    ]),
+  ]);
+
+  const signedAttrsDer      = A.toDer(signedAttrsSet).getBytes();
+  const signedAttrsDerBytes = binaryToUint8(signedAttrsDer);
+
+  // 3. Assina os signedAttributes DER
+  let sigBytes: Uint8Array;
   const privateKey = forge.pki.privateKeyFromPem(privateKeyPem);
-  const certificate = forge.pki.certificateFromPem(certificatePem);
-  const p7 = forge.pkcs7.createSignedData();
-  p7.content = forge.util.createBuffer(uint8ToBinary(bytesToSign));
-  for (const pem of (chainPem.length ? chainPem : [certificatePem])) {
-    try { p7.addCertificate(forge.pki.certificateFromPem(pem)); } catch { /* ignora */ }
+  try {
+    // Converte chave RSA PKCS#1 → PKCS#8 para WebCrypto
+    const pkcs8Asn1 = forge.pki.wrapRsaPrivateKey(forge.pki.privateKeyToAsn1(privateKey));
+    const pkcs8Der  = binaryToUint8(A.toDer(pkcs8Asn1).getBytes());
+    const cryptoKey = await crypto.subtle.importKey(
+      "pkcs8", pkcs8Der,
+      { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+      false, ["sign"]
+    );
+    // WebCrypto calcula SHA-256 internamente sobre signedAttrsDerBytes
+    const sigBuf = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", cryptoKey, signedAttrsDerBytes);
+    sigBytes = new Uint8Array(sigBuf);
+  } catch {
+    // Fallback: forge RSA com SHA-256 explícito
+    const md = forge.md.sha256.create();
+    md.update(signedAttrsDer);
+    sigBytes = binaryToUint8(privateKey.sign(md));
   }
-  p7.addSigner({
-    key: privateKey,
-    certificate,
-    digestAlgorithm: forge.pki.oids.sha256,
-    authenticatedAttributes: [
-      { type: forge.pki.oids.contentType, value: forge.pki.oids.data },
-      { type: forge.pki.oids.messageDigest },
-      { type: forge.pki.oids.signingTime, value: new Date() as unknown as string },
-    ],
-  });
-  p7.sign({ detached: true });
-  return binaryToUint8(forge.asn1.toDer(p7.toAsn1()).getBytes());
+
+  // 4. Extrai issuer do certificado (DER exato, para IssuerAndSerialNumber)
+  const certAsn1    = forge.pki.certificateToAsn1(cert);
+  const tbsCert     = (certAsn1.value as forge.asn1.Asn1[])[0];
+  const tbsFields   = tbsCert.value as forge.asn1.Asn1[];
+  // TBSCertificate: campo [0] versão é CONTEXT_SPECIFIC se presente
+  const hasVersion  = tbsFields[0].tagClass === CTX && tbsFields[0].type === 0;
+  const issuerAsn1  = tbsFields[hasVersion ? 3 : 2];   // issuer Name
+
+  const serialHex     = cert.serialNumber;
+  const serialPadded  = serialHex.length % 2 === 0 ? serialHex : "0" + serialHex;
+  const serialBytes   = forge.util.hexToBytes(serialPadded);
+
+  // signedAttributes no SignerInfo usam [0] IMPLICIT (mesmo conteúdo, tag diferente)
+  const signedAttrsImplicit = A.create(
+    CTX, 0, true,
+    signedAttrsSet.value as forge.asn1.Asn1[]
+  );
+
+  const signerInfo = A.create(U, A.Type.SEQUENCE, true, [
+    A.create(U, A.Type.INTEGER, false, "\x01"),           // version 1
+    A.create(U, A.Type.SEQUENCE, true, [                  // issuerAndSerialNumber
+      issuerAsn1,
+      A.create(U, A.Type.INTEGER, false, serialBytes),
+    ]),
+    A.create(U, A.Type.SEQUENCE, true, [                  // digestAlgorithm SHA-256
+      A.create(U, A.Type.OID, false, oidDer(OID_SHA256)),
+      A.create(U, A.Type.NULL, false, ""),
+    ]),
+    signedAttrsImplicit,                                   // [0] signedAttrs
+    A.create(U, A.Type.SEQUENCE, true, [                  // signatureAlgorithm RSA
+      A.create(U, A.Type.OID, false, oidDer(OID_RSA)),
+      A.create(U, A.Type.NULL, false, ""),
+    ]),
+    A.create(U, A.Type.OCTETSTRING, false, uint8ToBinary(sigBytes)),
+  ]);
+
+  // 5. Certificados [0] IMPLICIT dentro do SignedData
+  const allCertAsn1s = (chainPem.length ? chainPem : [certificatePem])
+    .map(pem => {
+      try { return forge.pki.certificateToAsn1(forge.pki.certificateFromPem(pem)); }
+      catch { return null; }
+    })
+    .filter((c): c is forge.asn1.Asn1 => c !== null);
+  const certsImplicit = A.create(CTX, 0, true, allCertAsn1s);
+
+  // 6. SignedData
+  const signedData = A.create(U, A.Type.SEQUENCE, true, [
+    A.create(U, A.Type.INTEGER, false, "\x01"),            // version 1
+    A.create(U, A.Type.SET, true, [                        // digestAlgorithms
+      A.create(U, A.Type.SEQUENCE, true, [
+        A.create(U, A.Type.OID, false, oidDer(OID_SHA256)),
+        A.create(U, A.Type.NULL, false, ""),
+      ]),
+    ]),
+    A.create(U, A.Type.SEQUENCE, true, [                   // encapContentInfo (detached)
+      A.create(U, A.Type.OID, false, oidDer(OID_DATA)),
+    ]),
+    certsImplicit,                                          // certificates [0]
+    A.create(U, A.Type.SET, true, [signerInfo]),           // signerInfos
+  ]);
+
+  // 7. ContentInfo
+  const contentInfo = A.create(U, A.Type.SEQUENCE, true, [
+    A.create(U, A.Type.OID, false, oidDer(OID_SIGNED_DATA)),
+    A.create(CTX, 0, true, [signedData]),                  // [0] EXPLICIT
+  ]);
+
+  return binaryToUint8(A.toDer(contentInfo).getBytes());
 }
 
 /**
@@ -808,7 +937,7 @@ async function embedPdfSignature(
   toSign.set(withBRBytes.slice(r2, r2 + r3), r1);
 
   // Assina
-  const sigDer = createPkcs7SignatureForPdf(
+  const sigDer = await createPkcs7ForPdf(
     toSign,
     opts.privateKeyPem,
     opts.certificatePem,
