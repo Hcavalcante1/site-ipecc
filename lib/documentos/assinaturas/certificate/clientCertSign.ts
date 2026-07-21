@@ -634,30 +634,34 @@ async function sha256Hex(u8: Uint8Array): Promise<string> {
     .join("");
 }
 
-function createDetachedPkcs7(
-  contentBytes: Uint8Array,
+/** Espaço reservado (bytes) para o DER do PKCS#7 no PDF. 16 KB cobre qualquer cadeia ICP-Brasil. */
+const SIG_DER_MAX_BYTES = 16384;
+
+/** Data no formato PDF: D:YYYYMMDDHHmmSS+HH'MM' */
+function pdfSigningDate(date: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  const tz = -date.getTimezoneOffset();
+  const s = tz >= 0 ? "+" : "-";
+  const a = Math.abs(tz);
+  return `D:${date.getFullYear()}${p(date.getMonth() + 1)}${p(date.getDate())}${p(date.getHours())}${p(date.getMinutes())}${p(date.getSeconds())}${s}${p(Math.floor(a / 60))}'${p(a % 60)}'`;
+}
+
+/**
+ * Cria PKCS#7 detached para assinatura PDF (adbe.pkcs7.detached).
+ * O conteúdo passado são os bytes reais do ByteRange — forge calcula o messageDigest internamente.
+ */
+function createPkcs7SignatureForPdf(
+  bytesToSign: Uint8Array,
   privateKeyPem: string,
   certificatePem: string,
-  chainPem: string[] = []
+  chainPem: string[]
 ): Uint8Array {
   const privateKey = forge.pki.privateKeyFromPem(privateKeyPem);
   const certificate = forge.pki.certificateFromPem(certificatePem);
-
-  // Assina o digest SHA-256 do PDF (conteúdo pequeno e estável no browser).
-  const md = forge.md.sha256.create();
-  md.update(uint8ToBinary(contentBytes));
-  const digestBinary = md.digest().getBytes();
-
   const p7 = forge.pkcs7.createSignedData();
-  p7.content = forge.util.createBuffer(digestBinary);
-  // Cadeia completa (titular + intermediários), como o Adobe
-  const chain = chainPem.length ? chainPem : [certificatePem];
-  for (const pem of chain) {
-    try {
-      p7.addCertificate(forge.pki.certificateFromPem(pem));
-    } catch {
-      /* ignora PEM inválido da cadeia */
-    }
+  p7.content = forge.util.createBuffer(uint8ToBinary(bytesToSign));
+  for (const pem of (chainPem.length ? chainPem : [certificatePem])) {
+    try { p7.addCertificate(forge.pki.certificateFromPem(pem)); } catch { /* ignora */ }
   }
   p7.addSigner({
     key: privateKey,
@@ -670,8 +674,167 @@ function createDetachedPkcs7(
     ],
   });
   p7.sign({ detached: true });
-  const p7Der = forge.asn1.toDer(p7.toAsn1()).getBytes();
-  return binaryToUint8(p7Der);
+  return binaryToUint8(forge.asn1.toDer(p7.toAsn1()).getBytes());
+}
+
+/**
+ * Embute assinatura digital no PDF usando atualização incremental (PAdES-B-B).
+ * Adiciona campo /Sig com /ByteRange e /Contents conforme PDF 1.7 §12.8.
+ * O validador ITI (validar.iti.gov.br) reconhece este formato.
+ */
+async function embedPdfSignature(
+  pdfBytes: Uint8Array,
+  opts: {
+    privateKeyPem: string;
+    certificatePem: string;
+    chainPem: string[];
+    name: string;
+    date: Date;
+  }
+): Promise<Uint8Array> {
+  const src = uint8ToBinary(pdfBytes);
+
+  // Extrai metadados do trailer existente
+  const trIdx = src.lastIndexOf("trailer");
+  if (trIdx < 0) throw new Error("PDF inválido: sem trailer");
+  const trSec = src.substring(trIdx, trIdx + 600);
+  const existingSize = parseInt(trSec.match(/\/Size\s+(\d+)/)?.[1] ?? "10");
+  const sxIdx = src.lastIndexOf("startxref");
+  const prevXref =
+    sxIdx >= 0
+      ? parseInt(src.substring(sxIdx + 9, sxIdx + 40).trim()) || 0
+      : 0;
+  const catalogNum = parseInt(
+    trSec.match(/\/Root\s+(\d+)\s+0\s+R/)?.[1] ?? "1"
+  );
+
+  // Lê a referência /Pages do catálogo original
+  let pagesRef = "2 0 R";
+  const catPos = src.indexOf(`${catalogNum} 0 obj`);
+  if (catPos >= 0) {
+    const m = src
+      .substring(catPos, src.indexOf("endobj", catPos))
+      .match(/\/Pages\s+(\d+\s+0\s+R)/);
+    if (m) pagesRef = m[1];
+  }
+
+  // Novos números de objeto
+  const acroFormNum = existingSize;
+  const sigFieldNum = existingSize + 1;
+  const sigValueNum = existingSize + 2;
+
+  const dateStr = pdfSigningDate(opts.date);
+  const p10 = (n: number) => String(n).padStart(10, "0");
+  const BR_PH = `[${p10(0)} ${p10(0)} ${p10(0)} ${p10(0)}]`;
+  const SIG_PH = "0".repeat(SIG_DER_MAX_BYTES * 2);
+
+  // Objetos do update incremental
+  const catalogObj =
+    `${catalogNum} 0 obj\n` +
+    `<<\n/Type /Catalog\n/Pages ${pagesRef}\n/AcroForm ${acroFormNum} 0 R\n>>\n` +
+    `endobj\n`;
+  const acroFormObj =
+    `${acroFormNum} 0 obj\n` +
+    `<<\n/Fields [${sigFieldNum} 0 R]\n/SigFlags 3\n>>\n` +
+    `endobj\n`;
+  const sigFieldObj =
+    `${sigFieldNum} 0 obj\n` +
+    `<<\n/Type /Annot\n/Subtype /Widget\n/FT /Sig\n` +
+    `/Rect [0 0 0 0]\n/V ${sigValueNum} 0 R\n/T (Signature1)\n/F 132\n>>\n` +
+    `endobj\n`;
+  const sigValueObj =
+    `${sigValueNum} 0 obj\n` +
+    `<<\n/Type /Sig\n/Filter /Adobe.PPKLite\n/SubFilter /adbe.pkcs7.detached\n` +
+    `/ByteRange ${BR_PH}\n` +
+    `/Contents <${SIG_PH}>\n` +
+    `/M (${dateStr})\n/Name (${opts.name})\n` +
+    `/Reason (Assinado digitalmente)\n/Location (Brasil)\n>>\n` +
+    `endobj\n`;
+
+  // Calcula offsets
+  const base = pdfBytes.length;
+  const oC = base;
+  const oA = oC + catalogObj.length;
+  const oF = oA + acroFormObj.length;
+  const oS = oF + sigFieldObj.length;
+  const incObjects = catalogObj + acroFormObj + sigFieldObj + sigValueObj;
+  const xrefPos = base + incObjects.length;
+
+  const xe = (off: number) => `${p10(off)} 00000 n \n`;
+  const xrefStr =
+    `xref\n` +
+    `${catalogNum} 1\n${xe(oC)}` +
+    `${acroFormNum} 3\n${xe(oA)}${xe(oF)}${xe(oS)}`;
+  const trailerStr =
+    `trailer\n<<\n/Size ${existingSize + 3}\n/Root ${catalogNum} 0 R\n/Prev ${prevXref}\n>>\n` +
+    `startxref\n${xrefPos}\n%%EOF\n`;
+
+  // PDF pré-assinatura (com placeholders)
+  const preSign = src + incObjects + xrefStr + trailerStr;
+  const preSignBytes = binaryToUint8(preSign);
+
+  // Localiza /Contents <SIG_PH> no objeto de assinatura
+  const svPos = preSign.indexOf(`${sigValueNum} 0 obj`);
+  if (svPos < 0) throw new Error("Erro interno: objeto de assinatura não encontrado");
+  const contentsPos = preSign.indexOf(`/Contents <${SIG_PH}`, svPos);
+  if (contentsPos < 0) throw new Error("Erro interno: placeholder de assinatura não encontrado");
+
+  const ltPos = contentsPos + "/Contents ".length; // posição do '<'
+  const gtPos = ltPos + 1 + SIG_PH.length;         // posição do '>'
+
+  // ByteRange exclui '<HEX>'
+  const r0 = 0, r1 = ltPos, r2 = gtPos + 1, r3 = preSignBytes.length - (gtPos + 1);
+  const actualBR = `[${p10(r0)} ${p10(r1)} ${p10(r2)} ${p10(r3)}]`;
+  if (actualBR.length !== BR_PH.length) {
+    throw new Error(`ByteRange length mismatch: ${actualBR.length} vs ${BR_PH.length}`);
+  }
+
+  // Substitui ByteRange placeholder (tamanho idêntico — não desloca offsets)
+  const brPos = preSign.indexOf(`/ByteRange ${BR_PH}`, svPos);
+  if (brPos < 0) throw new Error("Erro interno: ByteRange placeholder não encontrado");
+  const withBR =
+    preSign.slice(0, brPos + "/ByteRange ".length) +
+    actualBR +
+    preSign.slice(brPos + "/ByteRange ".length + BR_PH.length);
+  if (withBR.length !== preSign.length) {
+    throw new Error("Erro interno: substituição do ByteRange alterou tamanho");
+  }
+
+  const withBRBytes = binaryToUint8(withBR);
+
+  // Monta o conteúdo a assinar (ByteRange: duas fatias)
+  const toSign = new Uint8Array(r1 + r3);
+  toSign.set(withBRBytes.slice(r0, r0 + r1), 0);
+  toSign.set(withBRBytes.slice(r2, r2 + r3), r1);
+
+  // Assina
+  const sigDer = createPkcs7SignatureForPdf(
+    toSign,
+    opts.privateKeyPem,
+    opts.certificatePem,
+    opts.chainPem
+  );
+  if (sigDer.length > SIG_DER_MAX_BYTES) {
+    throw new Error(`Assinatura muito grande: ${sigDer.length} B (máx ${SIG_DER_MAX_BYTES} B)`);
+  }
+
+  // Converte DER → hex e preenche o espaço reservado
+  const sigHex = Array.from(sigDer)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .toUpperCase()
+    .padEnd(SIG_PH.length, "0");
+
+  const hexStart = ltPos + 1; // posição do primeiro char hex (após '<')
+  const finalStr =
+    withBR.slice(0, hexStart) +
+    sigHex +
+    withBR.slice(hexStart + SIG_PH.length);
+  if (finalStr.length !== preSign.length) {
+    throw new Error("Erro interno: substituição da assinatura alterou tamanho");
+  }
+
+  return binaryToUint8(finalStr);
 }
 
 /**
@@ -912,40 +1075,29 @@ export async function signPdfWithLocalCertificate(opts: {
   const stampedU8 =
     stamped instanceof Uint8Array ? stamped : new Uint8Array(stamped);
 
-  let pkcs7Bytes: Uint8Array;
+  // Embute assinatura PAdES na estrutura do PDF (campo /Sig com /ByteRange + /Contents).
+  let finalU8: Uint8Array;
   try {
-    pkcs7Bytes = createDetachedPkcs7(
-      stampedU8,
-      opts.cert.privateKeyPem,
-      opts.cert.certificatePem,
-      opts.cert.chainPem || [opts.cert.certificatePem]
-    );
+    finalU8 = await embedPdfSignature(stampedU8, {
+      privateKeyPem: opts.cert.privateKeyPem,
+      certificatePem: opts.cert.certificatePem,
+      chainPem: opts.cert.chainPem?.length
+        ? opts.cert.chainPem
+        : [opts.cert.certificatePem],
+      name: opts.cert.displayName || opts.cert.subject || "",
+      date: new Date(),
+    });
   } catch (e) {
     throw new Error(
       e instanceof Error
-        ? `Falha ao gerar PKCS#7: ${e.message}`
-        : "Falha ao gerar a assinatura criptográfica."
+        ? `Falha ao embutir assinatura no PDF: ${e.message}`
+        : "Falha ao gerar a assinatura digital."
     );
-  }
-
-  // Anexar .p7s é opcional — se falhar, mantém o PDF carimbado.
-  let finalU8 = stampedU8;
-  try {
-    const withAttach = await PDFDocument.load(stampedU8);
-    await withAttach.attach(pkcs7Bytes, "assinatura.p7s", {
-      mimeType: "application/pkcs7-signature",
-      description: "Assinatura PKCS#7 (detached) do PDF carimbado",
-    });
-    const finalPdf = await withAttach.save({ useObjectStreams: false });
-    finalU8 =
-      finalPdf instanceof Uint8Array ? finalPdf : new Uint8Array(finalPdf);
-  } catch {
-    finalU8 = stampedU8;
   }
 
   return {
     signedPdfBytes: finalU8,
-    pkcs7Bytes,
+    pkcs7Bytes: new Uint8Array(0),
     finalHashSha256: await sha256Hex(finalU8),
     pageCount,
   };
