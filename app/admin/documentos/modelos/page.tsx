@@ -17,6 +17,8 @@ import {
   type GdTemplateFieldValues,
 } from "@/lib/documentos/templatePresets";
 import GestaoDocumentalShell, {
+  GD_CHIP_MIN_HEIGHT,
+  GD_CHIP_MIN_WIDTH,
   gdBtnStyle,
   gdCardStyle,
   gdInputStyle,
@@ -48,7 +50,7 @@ const wizardStyle = {
 };
 
 const wizardChipStyle = (active: boolean) => ({
-  padding: "14px 20px",
+  padding: "12px 18px",
   borderRadius: 999,
   border: `1px solid ${active ? "#60a5fa" : "#334155"}`,
   background: active
@@ -58,8 +60,8 @@ const wizardChipStyle = (active: boolean) => ({
   fontSize: 13,
   fontWeight: 700,
   cursor: "pointer",
-  minWidth: 148,
-  minHeight: 46,
+  minWidth: GD_CHIP_MIN_WIDTH,
+  minHeight: GD_CHIP_MIN_HEIGHT,
   textAlign: "center" as const,
   boxShadow: active ? "0 8px 18px rgba(37,99,235,0.20)" : "none",
   transition: "transform 0.15s ease, background 0.15s ease, border-color 0.15s ease",
@@ -84,7 +86,7 @@ const kindTabsStyle = {
 };
 
 const kindTabStyle = (active: boolean) => ({
-  padding: "12px 16px",
+  padding: "12px 18px",
   borderRadius: 999,
   border: `1px solid ${active ? "#60a5fa" : "#334155"}`,
   background: active
@@ -94,9 +96,9 @@ const kindTabStyle = (active: boolean) => ({
   fontSize: 12,
   fontWeight: 700,
   cursor: "pointer",
-  minWidth: 138,
-  minHeight: 46,
-  flex: "1 1 138px" as const,
+  minWidth: GD_CHIP_MIN_WIDTH,
+  minHeight: GD_CHIP_MIN_HEIGHT,
+  flex: `1 1 ${GD_CHIP_MIN_WIDTH}px` as const,
   textAlign: "center" as const,
   boxShadow: active ? "0 8px 18px rgba(37,99,235,0.22)" : "none",
   transition: "transform 0.15s ease, background 0.15s ease, border-color 0.15s ease",
@@ -130,14 +132,15 @@ const chipRailStyle = {
 };
 
 const chipStyle = {
-  padding: "12px 16px",
+  padding: "12px 18px",
   borderRadius: 999,
   border: "1px solid rgba(96,165,250,0.35)",
   background: "rgba(37,99,235,0.10)",
   color: "#dbeafe",
   fontSize: 13,
   fontWeight: 700,
-  minHeight: 44,
+  minHeight: GD_CHIP_MIN_HEIGHT,
+  minWidth: GD_CHIP_MIN_WIDTH,
 };
 
 const fixedTextStyle = {

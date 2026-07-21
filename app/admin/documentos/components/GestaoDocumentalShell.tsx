@@ -11,6 +11,10 @@ const shellStyle: CSSProperties = {
   color: "#e5e7eb",
 };
 
+export const GD_CHIP_MIN_WIDTH = 150;
+export const GD_CHIP_MIN_HEIGHT = 46;
+export const GD_CHIP_PADDING_X = 18;
+
 const subnavStyle: CSSProperties = {
   display: "flex",
   flexWrap: "wrap",
@@ -23,7 +27,7 @@ const chipStyle = (active: boolean): CSSProperties => ({
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  padding: "12px 16px",
+  padding: `12px ${GD_CHIP_PADDING_X}px`,
   borderRadius: 999,
   border: `1px solid ${active ? "#3b82f6" : "#334155"}`,
   background: active
@@ -33,9 +37,9 @@ const chipStyle = (active: boolean): CSSProperties => ({
   fontSize: 13,
   fontWeight: 700,
   textDecoration: "none",
-  minHeight: 46,
-  minWidth: 132,
-  flex: "1 1 132px",
+  minHeight: GD_CHIP_MIN_HEIGHT,
+  minWidth: GD_CHIP_MIN_WIDTH,
+  flex: `1 1 ${GD_CHIP_MIN_WIDTH}px`,
   boxShadow: active ? "0 8px 18px rgba(37,99,235,0.20)" : "none",
   transition: "transform 0.15s ease, background 0.15s ease, border-color 0.15s ease",
 });
