@@ -729,11 +729,9 @@ async function embedPdfSignature(
   const SIG_PH = "0".repeat(SIG_DER_MAX_BYTES * 2);
 
   // Objetos do update incremental
-  // /Perms associa o DocMDP ao catálogo — exigido pelo PDF 1.7 §12.8.2.2 e pelo ITI.
   const catalogObj =
     `${catalogNum} 0 obj\n` +
-    `<<\n/Type /Catalog\n/Pages ${pagesRef}\n/AcroForm ${acroFormNum} 0 R\n` +
-    `/Perms <<\n/DocMDP ${sigValueNum} 0 R\n>>\n>>\n` +
+    `<<\n/Type /Catalog\n/Pages ${pagesRef}\n/AcroForm ${acroFormNum} 0 R\n>>\n` +
     `endobj\n`;
   const acroFormObj =
     `${acroFormNum} 0 obj\n` +
@@ -744,22 +742,11 @@ async function embedPdfSignature(
     `<<\n/Type /Annot\n/Subtype /Widget\n/FT /Sig\n` +
     `/Rect [0 0 0 0]\n/V ${sigValueNum} 0 R\n/T (Signature1)\n/F 132\n>>\n` +
     `endobj\n`;
-  // DocMDP: exigido pelo ITI para resultado "Aprovado" (sem ele = "Indeterminado").
-  // /P 2 = permite preenchimento de formulários e assinaturas adicionais.
-  const docMdpRef =
-    `[<<\n` +
-    `/Type /SigRef\n` +
-    `/TransformMethod /DocMDP\n` +
-    `/DigestMethod /SHA256\n` +
-    `/TransformParams <<\n/Type /TransformParams\n/P 2\n/V /1.2\n>>\n` +
-    `>>]\n`;
-
   const sigValueObj =
     `${sigValueNum} 0 obj\n` +
     `<<\n/Type /Sig\n/Filter /Adobe.PPKLite\n/SubFilter /adbe.pkcs7.detached\n` +
     `/ByteRange ${BR_PH}\n` +
     `/Contents <${SIG_PH}>\n` +
-    `/Reference ${docMdpRef}` +
     `/M (${dateStr})\n/Name (${opts.name})\n` +
     `/Reason (Assinado digitalmente)\n/Location (Brasil)\n>>\n` +
     `endobj\n`;
