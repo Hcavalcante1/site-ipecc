@@ -191,7 +191,7 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
     let active = true;
     void QRCode.toDataURL("https://validar.iti.gov.br", {
       margin: 0,
-      width: 96,
+      width: 110,
       errorCorrectionLevel: "M",
     })
       .then((url) => {
@@ -216,7 +216,7 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
           padding: 4,
           display: "inline-flex",
           flexDirection: "row",
-          gap: 1,
+          gap: 2,
           alignItems: "center",
           width: "fit-content",
           maxWidth: "100%",
@@ -226,30 +226,30 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
         style={{
           minWidth: 0,
           flex: "0 1 auto",
-          maxWidth: 150,
-          fontSize: 6.6,
-          lineHeight: 1.02,
+          maxWidth: 182,
+          fontSize: 6.4,
+          lineHeight: 1.01,
           fontFamily: "Helvetica, Arial, sans-serif",
           color: "#000",
         }}
       >
-        <div style={{ fontSize: 6.2, fontWeight: 700, lineHeight: 1.01 }}>Assinado digitalmente por</div>
-        <div style={{ marginTop: 1, fontWeight: 700, fontSize: 6.9, lineHeight: 1.01, wordBreak: "break-word" }}>
+        <div style={{ fontSize: 6.8, fontWeight: 700, lineHeight: 1.01 }}>Assinado digitalmente por</div>
+        <div style={{ marginTop: 1, fontWeight: 700, fontSize: 7.0, lineHeight: 1.01, wordBreak: "break-word" }}>
           {label.toUpperCase()}
         </div>
-        <div style={{ marginTop: 0, fontWeight: 400 }}>CNPJ: {cnpj || ""}</div>
-        <div style={{ marginTop: 0, fontWeight: 400, wordBreak: "break-word" }}>
+        <div style={{ marginTop: 0, fontWeight: 400, fontSize: 6.1 }}>CNPJ: {cnpj || ""}</div>
+        <div style={{ marginTop: 0, fontWeight: 400, fontSize: 5.9, wordBreak: "break-word" }}>
           {[cert.icpBrasil.razaoSocial ? `Razão social: ${cert.icpBrasil.razaoSocial}` : null, cert.icpBrasil.responsavel ? `Responsável: ${cert.icpBrasil.responsavel}` : null]
             .filter(Boolean)
             .join(" • ")}
         </div>
-        <div style={{ marginTop: 0, fontWeight: 400 }}>CPF: {cpf || ""}</div>
-        <div style={{ marginTop: 0, fontWeight: 400 }}>Dados: {when}</div>
+        <div style={{ marginTop: 0, fontWeight: 400, fontSize: 5.9 }}>CPF: {cpf || ""}</div>
+        <div style={{ marginTop: 0, fontWeight: 400, fontSize: 5.9 }}>Dados: {when}</div>
       </div>
       <div
         style={{
-          width: 52,
-          minWidth: 52,
+          width: 48,
+          minWidth: 48,
           display: "flex",
           flexDirection: "row",
           alignItems: "center",
@@ -261,21 +261,21 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
         }}
       >
         <div style={{ minWidth: 0, textAlign: "right" }}>
-          <div style={{ fontWeight: 700, lineHeight: 1.01 }}>VALIDAR ITI</div>
-          <div style={{ lineHeight: 1.01 }}>verifique em validar.iti.gov.br</div>
+          <div style={{ fontWeight: 700, lineHeight: 1.01, fontSize: 4.5 }}>VALIDAR ITI</div>
+          <div style={{ lineHeight: 1.01, fontSize: 4.0 }}>verifique em validar.iti.gov.br</div>
         </div>
         {qrDataUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={qrDataUrl}
             alt="QR Code de validação"
-            style={{ width: 22, height: 22, display: "block", flex: "0 0 auto" }}
+            style={{ width: 34, height: 34, display: "block", flex: "0 0 auto" }}
           />
         ) : (
           <div
             style={{
-              width: 22,
-              height: 22,
+              width: 34,
+              height: 34,
               border: "1px solid #94a3b8",
               background: "#f8fafc",
               flex: "0 0 auto",
@@ -658,12 +658,12 @@ function CertStampPositionPreview({
                     outline: grabbing ? "1px dashed #999" : "1px dashed transparent",
                     zIndex: 3,
                     touchAction: "none",
-                    padding: "6px 8px",
+                    padding: "4px 6px",
                     display: "flex",
                     gap: 4,
                     overflow: "hidden",
                     alignItems: "stretch",
-                    minHeight: 84,
+                    minHeight: 80,
                   }}
                 >
                   <div
@@ -673,55 +673,55 @@ function CertStampPositionPreview({
                       display: "flex",
                       flexDirection: "row",
                       justifyContent: "flex-start",
-                      alignItems: "center",
-                      gap: 6,
-                      fontSize: 6.6,
-                      lineHeight: 1.05,
+                      alignItems: "flex-start",
+                      gap: 4,
+                      fontSize: 6.4,
+                      lineHeight: 1.02,
                       fontFamily: "Helvetica, Arial, sans-serif",
                       color: "#000",
                       position: "relative",
                     }}
                   >
-                    <div style={{ minWidth: 0, flex: "0 1 auto", maxWidth: 170 }}>
-                      <div style={{ fontSize: 6.6, fontWeight: 700, lineHeight: 1.04 }}>
+                    <div style={{ minWidth: 0, flex: "0 1 auto", maxWidth: 182 }}>
+                      <div style={{ fontSize: 6.8, fontWeight: 700, lineHeight: 1.04 }}>
                         Assinado digitalmente por
                       </div>
-                      <div style={{ marginTop: 2, fontSize: 7, fontWeight: 700, wordBreak: "break-word", lineHeight: 1.04 }}>
+                      <div style={{ marginTop: 1, fontSize: 7, fontWeight: 700, wordBreak: "break-word", lineHeight: 1.04 }}>
                         {String(stampSubject || signerLabel).toUpperCase() || "TITULAR DO CERTIFICADO"}
                       </div>
-                      <div style={{ marginTop: 0, fontWeight: 400 }}>
+                      <div style={{ marginTop: 0, fontWeight: 400, fontSize: 6.1 }}>
                         CNPJ: {stampCnpj || ""}
                       </div>
-                      <div style={{ marginTop: 1, wordBreak: "break-word" }}>
+                      <div style={{ marginTop: 0, wordBreak: "break-word", fontSize: 5.9 }}>
                         {[stampRazaoSocial ? `Razão social: ${stampRazaoSocial}` : null, stampResponsavel ? `Responsável: ${stampResponsavel}` : null]
                           .filter(Boolean)
                           .join(" • ")}
                       </div>
-                      <div style={{ marginTop: 1, wordBreak: "break-word" }}>
+                      <div style={{ marginTop: 0, wordBreak: "break-word", fontSize: 5.9 }}>
                         {stampCpf ? `CPF: ${stampCpf}` : ""}
                       </div>
-                      <div style={{ marginTop: 1 }}>Dados: {when}</div>
+                      <div style={{ marginTop: 0, fontSize: 5.9 }}>Dados: {when}</div>
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 0, alignItems: "center", justifyContent: "flex-end", flex: "0 0 auto", paddingBottom: 0 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 0, alignItems: "center", justifyContent: "flex-start", flex: "0 0 auto", paddingTop: 2 }}>
                       {qrDataUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={qrDataUrl}
                           alt="QR Code de validação"
-                          style={{ width: 38, height: 38, display: "block", flex: "0 0 auto" }}
+                          style={{ width: 34, height: 34, display: "block", flex: "0 0 auto" }}
                         />
                       ) : (
                         <div
                           style={{
-                            width: 38,
-                            height: 38,
+                            width: 34,
+                            height: 34,
                             border: "1px solid #94a3b8",
                             background: "#f8fafc",
                             flex: "0 0 auto",
                           }}
                         />
                       )}
-                      <div style={{ minWidth: 0, textAlign: "center", fontSize: 4.8, lineHeight: 1.0, marginTop: 0 }}>
+                      <div style={{ minWidth: 0, textAlign: "center", fontSize: 4.4, lineHeight: 1.0, marginTop: 0 }}>
                         <div style={{ fontWeight: 700 }}>VALIDAR ITI</div>
                         <div>verifique em validar.iti.gov.br</div>
                       </div>
