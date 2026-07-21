@@ -798,8 +798,8 @@ export async function signPdfWithLocalCertificate(opts: {
   const ink = rgb(0, 0, 0);
 
   const contentX = x + 6;
-  const qrSize = 53;
-  const validationW = 54;
+  const qrSize = 57;
+  const validationW = 57;
   const textW = 170;
   const validationX = contentX + textW + 2;
   const qrX = validationX + 1;
@@ -889,13 +889,13 @@ export async function signPdfWithLocalCertificate(opts: {
   });
   page.drawImage(qr, {
     x: qrX,
-    y: y + 20,
+    y: y + 17,
     width: qrSize,
     height: qrSize,
   });
   page.drawText("VALIDAR ITI", {
     x: validationX,
-    y: y + 15.5,
+    y: y + 12,
     size: 4.4,
     font: fontBold,
     color: ink,
