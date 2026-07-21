@@ -45,6 +45,8 @@ type DocumentoImportado = {
   processoId: string | null;
 };
 
+type CertificateTargetSource = "importado" | "existente" | "linha" | null;
+
 function baseName(fileName: string): string {
   const trimmed = fileName.trim();
   const withoutExt = trimmed.replace(/\.[^.]+$/, "");
@@ -67,9 +69,7 @@ export default function AssinaturasClient() {
   const [signerName, setSignerName] = useState("");
   const [aviso, setAviso] = useState("");
   const [loading, setLoading] = useState(true);
-  const [state, setState] = useState("");
   const [documentoOk, setDocumentoOk] = useState(false);
-  const [govbrOk, setGovbrOk] = useState(false);
   const [provedorPadrao, setProvedorPadrao] = useState<string | null>(null);
   const [embedSignatureId, setEmbedSignatureId] = useState<string | null>(null);
   const [embedDocumentId, setEmbedDocumentId] = useState<string | null>(null);
@@ -82,17 +82,47 @@ export default function AssinaturasClient() {
   const [advDocumentId, setAdvDocumentId] = useState<string | null>(null);
   const [advDocumentTitle, setAdvDocumentTitle] = useState<string | null>(null);
   const [certOpen, setCertOpen] = useState(false);
+  const [certDocumentIds, setCertDocumentIds] = useState<string[] | null>(null);
+  const [certificateTargetSource, setCertificateTargetSource] =
+    useState<CertificateTargetSource>(null);
   const autoSimpleKey = useRef<string | null>(null);
   const processoSelecionado = useMemo(() => {
     if (processoId) return processoId;
     return processos[0]?.id || "";
   }, [processoId, processos]);
   const documentIdsCertificado = useMemo(() => {
-    if (documentosImportados.length > 0) {
+    if (certDocumentIds && certDocumentIds.length > 0) {
+      return certDocumentIds;
+    }
+    if (
+      certificateTargetSource === "importado" &&
+      documentosImportados.length > 0
+    ) {
       return documentosImportados.map((item) => item.id);
     }
     return documentId.trim() ? [documentId.trim()] : [];
-  }, [documentId, documentosImportados]);
+  }, [
+    certDocumentIds,
+    certificateTargetSource,
+    documentId,
+    documentosImportados,
+  ]);
+
+  const abrirCertificado = useCallback(
+    (documentIds: string[], source: CertificateTargetSource = null) => {
+      const ids = documentIds.map((id) => String(id).trim()).filter(Boolean);
+      if (!ids.length) {
+        setAviso(
+          "Informe ou selecione um documento para assinar com certificado."
+        );
+        return;
+      }
+      setCertificateTargetSource(source);
+      setCertDocumentIds(ids);
+      setCertOpen(true);
+    },
+    []
+  );
   const carregar = useCallback(async () => {
     setLoading(true);
     const [sigRes, cfgRes] = await Promise.all([
@@ -109,7 +139,6 @@ export default function AssinaturasClient() {
     }
     if (cfgRes.ok) {
       setDocumentoOk(Boolean(cfg.documento?.configurado));
-      setGovbrOk(Boolean(cfg.govbrConfigurado));
       setIpeccOk(Boolean(cfg.ipecc?.configurado ?? true));
       setProvedorPadrao(cfg.provedorPadrao || null);
     }
@@ -137,20 +166,9 @@ export default function AssinaturasClient() {
 
   useEffect(() => {
     const erro = search.get("erro");
-    const ok = search.get("ok");
-    const st = search.get("state");
-    const sigId = search.get("signature_id");
     const docId = search.get("document_id");
     if (docId) setDocumentId(docId);
     if (erro) setAviso(erro);
-    if (ok && st) {
-      setState(st);
-      setAviso(
-        sigId
-          ? "Autorização gov.br concluída. Clique em Assinar PKCS#7 no pedido correspondente."
-          : "Autorização gov.br concluída."
-      );
-    }
   }, [search]);
 
   useEffect(() => {
@@ -199,11 +217,11 @@ export default function AssinaturasClient() {
     if (autoSimpleKey.current === chave) return;
     autoSimpleKey.current = chave;
     void criarEAssinarAgora();
-  }, [documentId, search]);
+  }, [abrirCertificado, documentId, search]);
 
   useEffect(() => {
     if (search.get("cert") === "1" && documentId.trim()) {
-      setCertOpen(true);
+      abrirCertificado([documentId.trim()]);
     }
   }, [documentId, search]);
 
@@ -310,6 +328,7 @@ export default function AssinaturasClient() {
       setDocumentosImportados(importados);
       setDocumentId(importados[0]?.id || "");
       setDocumentTitle(importados[0]?.title || null);
+      setCertificateTargetSource("importado");
       setAviso(
         `${importados.length} documento(s) criados com sucesso. Agora escolha o tipo de assinatura.`
       );
@@ -555,49 +574,10 @@ export default function AssinaturasClient() {
     carregar();
   }
 
-  async function autorizar(signatureId: string) {
-    const res = await fetch("/api/admin/documentos/assinaturas/authorize", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ signature_document_id: signatureId }),
-    });
-    const json = await res.json();
-    if (!res.ok) {
-      setAviso(json.error || "Erro ao iniciar OAuth gov.br.");
-      return;
-    }
-    window.location.href = json.authorizationUrl;
-  }
-
-  async function assinar(signatureId: string) {
-    if (!state) {
-      setAviso("Autorize com gov.br antes de assinar (botão Autorizar).");
-      return;
-    }
-    const res = await fetch(
-      `/api/admin/documentos/assinaturas/${signatureId}/assinar`,
-      {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ state }),
-      }
-    );
-    const json = await res.json();
-    if (!res.ok) {
-      setAviso(json.error || "Erro ao assinar.");
-      return;
-    }
-    setAviso("Documento assinado com sucesso (PKCS#7).");
-    setState("");
-    carregar();
-  }
-
   return (
     <GestaoDocumentalShell
       title="Assinaturas"
-      description="Documentos institucionais: assine você mesmo no admin (IPECC). Envio externo por e-mail é opcional. gov.br só para órgãos públicos."
+      description="Documentos institucionais: assine você mesmo no admin (IPECC). Envio externo por e-mail é opcional."
     >
       <AssinarNoAdminModal
         open={embedOpen}
@@ -628,7 +608,10 @@ export default function AssinaturasClient() {
       <AssinarComCertificadoModal
         open={certOpen}
         documentIds={documentIdsCertificado}
-        onClose={() => setCertOpen(false)}
+        onClose={() => {
+          setCertOpen(false);
+          setCertDocumentIds(null);
+        }}
         onCompleted={() => {
           setAviso("Assinatura com certificado registrada.");
           carregar();
@@ -786,8 +769,6 @@ export default function AssinaturasClient() {
           {" · "}
           Legado Documento:{" "}
           <strong>{documentoOk ? "pronta" : "não configurada"}</strong>
-          {" · "}
-          gov.br: <strong>{govbrOk ? "pronto" : "ausente"}</strong>
         </p>
           <p style={{ marginTop: 0, fontSize: 13, opacity: 0.85 }}>
           Preferência: envie um PDF acima e escolha o tipo de assinatura. O
@@ -830,7 +811,10 @@ export default function AssinaturasClient() {
               style={gdInputStyle}
               placeholder="Identificador interno do documento"
               value={documentId}
-              onChange={(e) => setDocumentId(e.target.value)}
+              onChange={(e) => {
+                setDocumentId(e.target.value);
+                setCertificateTargetSource("existente");
+              }}
             />
             <span style={{ fontSize: 13, opacity: 0.8 }}>
               Se você já abriu a ficha do documento, o ID continua entrando
@@ -882,21 +866,22 @@ export default function AssinaturasClient() {
           >
             Assinatura avançada
           </button>
-          <button
-            type="button"
-            style={{ ...gdBtnStyle, background: "#7c3aed" }}
-            disabled={documentIdsCertificado.length < 1}
-            onClick={() => {
-              if (documentIdsCertificado.length < 1) {
-                setAviso(
-                  "Informe ou selecione um documento para assinar com certificado."
-                );
-                return;
-              }
-              setCertOpen(true);
-            }}
-          >
-            Assinar com certificado
+              <button
+                type="button"
+                style={{ ...gdBtnStyle, background: "#7c3aed" }}
+                disabled={documentIdsCertificado.length < 1}
+                onClick={() => {
+                  if (documentIdsCertificado.length < 1) {
+                    abrirCertificado([]);
+                    return;
+                  }
+                  abrirCertificado(
+                    documentIdsCertificado,
+                    certificateTargetSource
+                  );
+                }}
+              >
+                Assinar com certificado
           </button>
           <button
             type="button"
@@ -916,6 +901,9 @@ export default function AssinaturasClient() {
               onClick={() => {
                 setDocumentId("");
                 setDocumentTitle(null);
+                setDocumentosImportados([]);
+                setCertDocumentIds(null);
+                setCertificateTargetSource(null);
               }}
             >
               Trocar documento
@@ -1076,29 +1064,29 @@ export default function AssinaturasClient() {
                     style={gdBtnStyle}
                     onClick={() => enviarDocumento(row.id)}
                     disabled={Boolean(row.external_session_id)}
-                  >
-                    {row.external_session_id
-                      ? "Já enviado"
-                      : "Envio externo"}
-                  </button>
+                      >
+                        {row.external_session_id
+                          ? "Já enviado"
+                          : "Envio externo"}
+                      </button>
                     </>
+                  ) : row.provider_code === "certificado" ||
+                    row.kind === "certificate" ? (
+                    <button
+                      type="button"
+                      style={{ ...gdBtnStyle, background: "#7c3aed" }}
+                      onClick={() => {
+                        setDocumentId(row.document_id);
+                        setDocumentTitle(row.document_title || null);
+                        abrirCertificado([row.document_id], "linha");
+                      }}
+                    >
+                      Assinar com certificado
+                    </button>
                   ) : (
-                    <>
-                      <button
-                        type="button"
-                        style={gdBtnStyle}
-                        onClick={() => autorizar(row.id)}
-                      >
-                        Autorizar gov.br
-                      </button>
-                      <button
-                        type="button"
-                        style={{ ...gdBtnStyle, background: "#0f766e" }}
-                        onClick={() => assinar(row.id)}
-                      >
-                        Assinar PKCS#7
-                      </button>
-                    </>
+                    <span style={{ fontSize: 13, color: "#cbd5e1" }}>
+                      Sem ação automática para este provedor
+                    </span>
                   )
                 ) : (
                   <span style={{ fontSize: 13, color: "#86efac" }}>

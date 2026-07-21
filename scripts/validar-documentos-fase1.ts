@@ -169,13 +169,11 @@ async function main() {
   assert("audit ip", meta.ip === "203.0.113.10");
   assert("audit ua", meta.user_agent === "IPECC-Test/1.0");
 
-  assert("provider govbr", listSignatureProviderCodes().includes("govbr"));
   assert(
     "provider documento",
     listSignatureProviderCodes().includes("documento")
   );
   assert("provider ipecc", listSignatureProviderCodes().includes("ipecc"));
-  assert("provider code", getSignatureProvider("govbr").code === "govbr");
   assert(
     "provider documento code",
     getSignatureProvider("documento").code === "documento"

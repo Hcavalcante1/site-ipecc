@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 import { PublicProjectDetail } from "@/components/public";
 
 export default function CulturaInclusaoSocial() {

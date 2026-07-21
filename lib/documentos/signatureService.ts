@@ -1,4 +1,5 @@
 import { createHash } from "crypto";
+import { getPublicSiteUrl } from "@/lib/seo";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { GD_STORAGE_BUCKET } from "./types";
 import { registrarLog } from "./documentsService";
@@ -7,15 +8,10 @@ import {
   documentoConfigurado,
   pickRecipientSigning,
 } from "./signature/DocumentoProvider";
-import {
-  GovBrProvider,
-  govbrConfigurado,
-  govbrRedirectUriPadrao,
-} from "./signature/GovBrProvider";
 import { ipeccConfigurado } from "./signature/IpeccProvider";
 import { notificarEventoDocumental } from "./notificationsService";
 
-export type SignatureProviderCode = "ipecc" | "documento" | "govbr";
+export type SignatureProviderCode = "ipecc" | "documento";
 
 /** eu_assino = admin assina no painel; enviar_signatarios = e-mail externo. */
 export type ModoAssinatura = "eu_assino" | "enviar_signatarios";
@@ -29,7 +25,6 @@ export type AssinaturaLinks = {
 export function resolverProviderPadrao(): SignatureProviderCode | null {
   if (ipeccConfigurado()) return "ipecc";
   if (documentoConfigurado()) return "documento";
-  if (govbrConfigurado()) return "govbr";
   return null;
 }
 
@@ -58,7 +53,6 @@ function tabelaAusente(message?: string, code?: string) {
 
 export {
   tabelaAusente as tabelaAssinaturaAusente,
-  govbrConfigurado,
   documentoConfigurado,
   documentoConfigurado as documensoConfigurado,
 };
@@ -189,12 +183,10 @@ export async function criarAssinaturaDocumento(opts: {
 }) {
   const admin = getSupabaseAdmin();
   const requested = String(opts.providerCode || "").trim().toLowerCase();
-  const normalized =
-    requested === "documenso" ? "documento" : requested;
+  const normalized = requested === "documenso" ? "documento" : requested;
   const code =
     (normalized === "ipecc" ||
-    normalized === "documento" ||
-    normalized === "govbr"
+    normalized === "documento"
       ? (normalized as SignatureProviderCode)
       : null) || resolverProviderPadrao();
   const modo: ModoAssinatura =
@@ -220,19 +212,6 @@ export async function criarAssinaturaDocumento(opts: {
         message:
           "Assinatura Documento (legado) não configurada. Prefira o motor IPECC ou defina DOCUMENTO_API_URL e DOCUMENTO_API_TOKEN.",
         code: "DOCUMENTO_MISSING",
-      },
-      signingUrl: null as string | null,
-      embedUrl: null as string | null,
-    };
-  }
-
-  if (code === "govbr" && !govbrConfigurado()) {
-    return {
-      data: null,
-      error: {
-        message:
-          "gov.br não configurado. Esse provedor é só para órgãos públicos com credenciais ITI.",
-        code: "GOVBR_MISSING",
       },
       signingUrl: null as string | null,
       embedUrl: null as string | null,
@@ -798,280 +777,6 @@ export async function concluirAssinaturaDocumentoWebhook(opts: {
   }
 }
 
-export async function iniciarAutorizeGovBr(opts: {
-  userId: string;
-  signatureDocumentId?: string | null;
-  batchId?: string | null;
-  scope?: "sign" | "signature_session";
-}) {
-  if (!govbrConfigurado()) {
-    return {
-      error:
-        "Credenciais gov.br ausentes. Configure GOVBR_SIGNATURE_CLIENT_ID e GOVBR_SIGNATURE_CLIENT_SECRET no servidor (Vercel).",
-    };
-  }
-
-  const provider = new GovBrProvider();
-  const redirectUri = govbrRedirectUriPadrao();
-  const scope =
-    opts.scope || (opts.batchId ? "signature_session" : "sign");
-  const scopes = GovBrProvider.montarEscopos(scope);
-  const auth = await provider.authorize({
-    redirectUri,
-    scopes,
-  });
-
-  const admin = getSupabaseAdmin();
-  const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-  const { error } = await admin.from("gd_oauth_states").upsert({
-    state: auth.state,
-    user_id: opts.userId,
-    signature_document_id: opts.signatureDocumentId || null,
-    batch_id: opts.batchId || null,
-    scope,
-    access_token: null,
-    token_expires_at: null,
-    expires_at: expires,
-  });
-
-  if (error) {
-    if (tabelaAusente(error.message, error.code)) {
-      return {
-        error:
-          "Tabela gd_oauth_states ausente. Aplique docs/sql/gestao-documental-fase-4-6.sql no Supabase.",
-      };
-    }
-    return { error: error.message };
-  }
-
-  if (opts.signatureDocumentId) {
-    await admin
-      .from("gd_signature_documents")
-      .update({ status: "authorizing", updated_at: new Date().toISOString() })
-      .eq("id", opts.signatureDocumentId);
-  }
-
-  return { authorizationUrl: auth.authorizationUrl, state: auth.state };
-}
-
-export async function concluirCallbackGovBr(opts: {
-  code: string;
-  state: string;
-}) {
-  const admin = getSupabaseAdmin();
-  const { data: row, error } = await admin
-    .from("gd_oauth_states")
-    .select(
-      "state, user_id, signature_document_id, batch_id, scope, expires_at"
-    )
-    .eq("state", opts.state)
-    .maybeSingle();
-
-  if (error) return { error: error.message };
-  if (!row) return { error: "Estado OAuth inválido ou expirado." };
-  if (new Date(row.expires_at).getTime() < Date.now()) {
-    await admin.from("gd_oauth_states").delete().eq("state", opts.state);
-    return { error: "Estado OAuth expirado. Reinicie a autorização." };
-  }
-
-  const provider = new GovBrProvider();
-  const token = await provider.exchangeCode({
-    code: opts.code,
-    redirectUri: govbrRedirectUriPadrao(),
-  });
-
-  const tokenExpires = token.expiresIn
-    ? new Date(Date.now() + token.expiresIn * 1000).toISOString()
-    : new Date(Date.now() + 10 * 60 * 1000).toISOString();
-
-  await admin
-    .from("gd_oauth_states")
-    .update({
-      access_token: token.accessToken,
-      token_expires_at: tokenExpires,
-    })
-    .eq("state", opts.state);
-
-  if (row.signature_document_id) {
-    await admin
-      .from("gd_signature_documents")
-      .update({
-        status: "ready",
-        external_session_id: opts.state,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", row.signature_document_id);
-  }
-
-  return {
-    ok: true as const,
-    userId: row.user_id,
-    signatureDocumentId: row.signature_document_id as string | null,
-    batchId: row.batch_id as string | null,
-    state: opts.state,
-  };
-}
-
-export async function executarAssinaturaComToken(opts: {
-  signatureDocumentId: string;
-  state: string;
-  userId: string;
-  actorEmail?: string | null;
-  ip?: string | null;
-  userAgent?: string | null;
-}) {
-  const admin = getSupabaseAdmin();
-  const { data: oauth } = await admin
-    .from("gd_oauth_states")
-    .select("*")
-    .eq("state", opts.state)
-    .eq("user_id", opts.userId)
-    .maybeSingle();
-
-  if (!oauth?.access_token) {
-    return {
-      error:
-        "Token OAuth ausente. Autorize novamente com a conta gov.br.",
-    };
-  }
-
-  const { data: sig } = await admin
-    .from("gd_signature_documents")
-    .select(SIG_DOC_SELECT)
-    .eq("id", opts.signatureDocumentId)
-    .is("deleted_at", null)
-    .maybeSingle();
-
-  if (!sig) return { error: "Pedido de assinatura não encontrado." };
-
-  const { data: doc } = await admin
-    .from("gd_documents")
-    .select(
-      "id, processo_id, title, storage_path, file_hash, file_name, status"
-    )
-    .eq("id", sig.document_id)
-    .maybeSingle();
-
-  if (!doc?.storage_path) {
-    return { error: "Documento sem arquivo para assinar." };
-  }
-
-  let fileHash = doc.file_hash;
-  if (!fileHash) {
-    const downloaded = await admin.storage
-      .from(GD_STORAGE_BUCKET)
-      .download(doc.storage_path);
-    if (downloaded.error || !downloaded.data) {
-      return {
-        error:
-          downloaded.error?.message ||
-          "Não foi possível baixar o arquivo para calcular o hash.",
-      };
-    }
-      const buf = Buffer.from(await downloaded.data.arrayBuffer());
-    fileHash = createHash("sha256").update(buf).digest("hex");
-    await admin
-      .from("gd_documents")
-      .update({ file_hash: fileHash, updated_at: new Date().toISOString() })
-      .eq("id", doc.id);
-  }
-
-  await admin
-    .from("gd_signature_documents")
-    .update({ status: "signing", updated_at: new Date().toISOString() })
-    .eq("id", sig.id);
-
-  try {
-    const provider = new GovBrProvider();
-    const { pkcs7, signedHash } = await provider.assinarPkcs7Bytes({
-      accessToken: oauth.access_token,
-      fileHashSha256Hex: fileHash,
-    });
-
-    const signedPath = `${doc.processo_id || "geral"}/${doc.id}/assinado-${Date.now()}.p7s`;
-    const upload = await admin.storage
-      .from(GD_STORAGE_BUCKET)
-      .upload(signedPath, pkcs7, {
-        contentType: "application/pkcs7-signature",
-        upsert: false,
-      });
-
-    if (upload.error) {
-      throw new Error(upload.error.message);
-    }
-
-    const { data: updated, error } = await admin
-      .from("gd_signature_documents")
-      .update({
-        status: "signed",
-        signed_storage_path: signedPath,
-        signed_hash: signedHash,
-        error_message: null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", sig.id)
-      .select(SIG_DOC_SELECT)
-      .single();
-
-    if (error) throw new Error(error.message);
-
-    await admin
-      .from("gd_documents")
-      .update({
-        status: "signed",
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", doc.id);
-
-    await admin.from("gd_signature_events").insert({
-      signature_document_id: sig.id,
-      event_type: "signed",
-      payload: { signed_hash: signedHash, path: signedPath },
-      ip: opts.ip,
-      user_agent: opts.userAgent,
-      created_by: opts.userId,
-    });
-
-    await registrarLog({
-      processo_id: doc.processo_id,
-      document_id: doc.id,
-      action: "documento_assinado_govbr",
-      detail: { signature_document_id: sig.id, signed_path: signedPath },
-      actor_id: opts.userId,
-      actor_email: opts.actorEmail,
-      ip: opts.ip,
-      user_agent: opts.userAgent,
-    });
-
-    await notificarEventoDocumental({
-      event_type: "documento_assinado",
-      title: `Documento assinado: ${doc.title}`,
-      body: "A assinatura digital gov.br foi concluída com sucesso.",
-      document_id: doc.id,
-      processo_id: doc.processo_id,
-      user_id: opts.userId,
-      link_path: `/admin/documentos/documentos/${doc.id}`,
-      created_by: opts.userId,
-    });
-
-    // limpa token após uso
-    await admin.from("gd_oauth_states").delete().eq("state", opts.state);
-
-    return { data: updated, error: null };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    await admin
-      .from("gd_signature_documents")
-      .update({
-        status: "failed",
-        error_message: msg,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", sig.id);
-    return { error: msg };
-  }
-}
-
 /**
  * Envia cada item do lote via provedor Documento (um envelope por PDF).
  */
@@ -1272,12 +977,10 @@ export async function providerStatusResumo() {
     .order("code");
 
   const site =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "") ||
-    "https://www.ipecc.org.br";
+    getPublicSiteUrl();
 
   return {
-    configurado:
-      ipeccConfigurado() || documentoConfigurado() || govbrConfigurado(),
+    configurado: ipeccConfigurado() || documentoConfigurado(),
     provedorPadrao: resolverProviderPadrao(),
     ipecc: {
       configurado: ipeccConfigurado(),
@@ -1287,22 +990,27 @@ export async function providerStatusResumo() {
     },
     documento: {
       configurado: documentoConfigurado(),
-      apiUrl: process.env.DOCUMENTO_API_URL || process.env.DOCUMENSO_API_URL || null,
+      apiUrl:
+        process.env.DOCUMENTO_API_URL ||
+        process.env.DOCUMENSO_API_URL ||
+        null,
       webhookUrl: `${site}/api/webhooks/documento`,
     },
-    redirectUri: govbrRedirectUriPadrao(),
-    env: process.env.GOVBR_SIGNATURE_ENV || "staging",
-    govbrConfigurado: govbrConfigurado(),
-    providers: (data || []).map((p) => ({
-      ...p,
-      servidor_pronto:
-        p.code === "ipecc"
-          ? ipeccConfigurado()
-          : p.code === "documento" || p.code === "documenso"
-            ? documentoConfigurado()
-            : p.code === "govbr"
-              ? govbrConfigurado()
+    providers: (data || [])
+      .filter(
+        (p) =>
+          p.code === "ipecc" ||
+          p.code === "documento" ||
+          p.code === "documenso"
+      )
+      .map((p) => ({
+        ...p,
+        servidor_pronto:
+          p.code === "ipecc"
+            ? ipeccConfigurado()
+            : p.code === "documento" || p.code === "documenso"
+              ? documentoConfigurado()
               : false,
-    })),
+      })),
   };
 }

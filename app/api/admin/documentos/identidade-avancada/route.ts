@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
         cpfLast4: result.row.cpf_last4,
       },
       aviso:
-        "Habilitação interna IPECC. Não equivale a verificação ICP-Brasil ou gov.br.",
+        "Habilitação interna IPECC. Não equivale a verificação ICP-Brasil ou verificação externa.",
     });
   } catch (err) {
     return NextResponse.json(

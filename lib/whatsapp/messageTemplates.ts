@@ -4,14 +4,10 @@ import {
   topicSubmenuLines,
   type TopicScript,
 } from "./botTopicScripts";
+import { getPublicSiteUrl } from "@/lib/seo";
 
 export function getSiteBaseUrl(): string {
-  const fromEnv = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (fromEnv) return fromEnv.replace(/\/$/, "");
-  if (typeof window !== "undefined" && window.location?.origin) {
-    return window.location.origin.replace(/\/$/, "");
-  }
-  return "http://localhost:3000";
+  return getPublicSiteUrl();
 }
 
 function url(path: string): string {

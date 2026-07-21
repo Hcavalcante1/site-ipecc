@@ -248,7 +248,6 @@ export async function POST(req: NextRequest) {
         code === "NO_PROVIDER" ||
         code === "DOCUMENTO_MISSING" ||
         code === "DOCUMENSO_MISSING" ||
-        code === "GOVBR_MISSING" ||
         code === "NO_ACTOR_EMAIL"
           ? 400
           : 500;

@@ -1,9 +1,8 @@
 import type { DigitalDraftInput } from "./types";
+import { getPublicSiteUrl } from "@/lib/seo";
 
 function siteBase(): string {
-  const fromEnv = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (fromEnv) return fromEnv.replace(/\/$/, "");
-  return "https://www.ipecc.org.br";
+  return getPublicSiteUrl();
 }
 
 function absoluteUrl(path: string): string {

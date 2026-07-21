@@ -134,11 +134,32 @@ async function parseConcluirBody(req: NextRequest): Promise<{
         cert = undefined;
       }
     }
-    let appearance: { page?: number } | undefined;
+    let appearance:
+      | {
+          page?: number;
+          x?: number;
+          y?: number;
+          width?: number;
+          height?: number;
+        }
+      | undefined;
     const appRaw = form.get("appearance");
     if (typeof appRaw === "string" && appRaw.trim()) {
       try {
-        appearance = JSON.parse(appRaw) as { page?: number };
+        const parsed = JSON.parse(appRaw) as {
+          page?: number;
+          x?: number;
+          y?: number;
+          width?: number;
+          height?: number;
+        };
+        appearance = {
+          page: parsed.page,
+          x: parsed.x,
+          y: parsed.y,
+          width: parsed.width,
+          height: parsed.height,
+        };
       } catch {
         appearance = undefined;
       }

@@ -1,8 +1,50 @@
 import type { Metadata } from "next";
 
-export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, "") ||
-  "https://www.ipecc.org.br";
+const DEFAULT_SITE_URL = "https://www.ipecc.org.br";
+
+function normalizeUrl(value: string | undefined | null): string | null {
+  const trimmed = value?.trim().replace(/\/+$/, "");
+  if (!trimmed) return null;
+
+  try {
+    const parsed = new URL(
+      /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
+    );
+    const host = parsed.hostname.toLowerCase();
+
+    if (
+      host === "ipecc.org.br" ||
+      host.endsWith(".ipecc.org.br") ||
+      host === "localhost" ||
+      host === "127.0.0.1"
+    ) {
+      return `${parsed.protocol}//${parsed.host}`;
+    }
+  } catch {
+    // ignore invalid URLs
+  }
+
+  return null;
+}
+
+export function getPublicSiteUrl(): string {
+  const envUrl =
+    normalizeUrl(process.env.NEXT_PUBLIC_SITE_URL) ||
+    normalizeUrl(process.env.NEXT_PUBLIC_APP_URL);
+  if (envUrl) return envUrl;
+
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin.replace(/\/$/, "");
+  }
+
+  const isProd =
+    process.env.NODE_ENV === "production" ||
+    process.env.VERCEL_ENV === "production";
+
+  return isProd ? DEFAULT_SITE_URL : "http://localhost:3000";
+}
+
+export const SITE_URL = getPublicSiteUrl();
 
 const ogImage = "/media/seo/og-image.jpg";
 

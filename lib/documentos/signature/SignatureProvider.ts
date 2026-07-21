@@ -1,6 +1,6 @@
 /**
  * Interface comum para provedores de assinatura eletrônica.
- * Implementações: Documento (padrão ente privado), GovBr (órgãos públicos), futuros ICP/Clicksign etc.
+ * Implementações: Documento (padrão ente privado), IPECC e futuros ICP/Clicksign etc.
  */
 
 export type SignatureAuthorizeInput = {

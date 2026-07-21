@@ -17,13 +17,10 @@ type Provider = {
 export default function ConfiguracoesPage() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [configurado, setConfigurado] = useState(false);
-  const [govbrOk, setGovbrOk] = useState(false);
   const [documentoOk, setDocumentoOk] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState("");
   const [apiUrl, setApiUrl] = useState("");
   const [provedorPadrao, setProvedorPadrao] = useState<string | null>(null);
-  const [redirectUri, setRedirectUri] = useState("");
-  const [env, setEnv] = useState("staging");
   const [aviso, setAviso] = useState("");
 
   const carregar = useCallback(async () => {
@@ -37,13 +34,10 @@ export default function ConfiguracoesPage() {
     }
     setProviders(json.providers || []);
     setConfigurado(Boolean(json.configurado));
-    setGovbrOk(Boolean(json.govbrConfigurado));
     setDocumentoOk(Boolean(json.documento?.configurado));
     setWebhookUrl(json.documento?.webhookUrl || "");
     setApiUrl(json.documento?.apiUrl || "");
     setProvedorPadrao(json.provedorPadrao || null);
-    setRedirectUri(json.redirectUri || "");
-    setEnv(json.env || "staging");
     setAviso("");
   }, []);
 
@@ -111,41 +105,6 @@ export default function ConfiguracoesPage() {
 
       <div style={gdCardStyle}>
         <h2 className="admin-h2" style={{ marginTop: 0 }}>
-          gov.br (somente órgãos públicos)
-        </h2>
-        <p style={{ marginTop: 0 }}>
-          Status servidor:{" "}
-          <strong>{govbrOk ? "credenciais presentes" : "ausentes"}</strong>
-        </p>
-        <p style={{ fontSize: 13, opacity: 0.9 }}>
-          A API de Assinatura Avançada gov.br{" "}
-          <strong>não libera credenciais para entes privados</strong>. Use
-          o provedor Documento no IPECC.
-        </p>
-        <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14 }}>
-          <li>
-            Ambiente: <code>{env}</code> (GOVBR_SIGNATURE_ENV)
-          </li>
-          <li>
-            Redirect URI: <code>{redirectUri}</code>
-          </li>
-          <li>GOVBR_SIGNATURE_CLIENT_ID / SECRET</li>
-        </ul>
-        <p style={{ fontSize: 13, opacity: 0.85, marginBottom: 0 }}>
-          Manual ITI:{" "}
-          <a
-            href="https://manual-integracao-assinatura-eletronica.servicos.gov.br/pt-br/7.4/iniciarintegracao.html"
-            target="_blank"
-            rel="noreferrer"
-          >
-            roteiro v7.4
-          </a>
-          .
-        </p>
-      </div>
-
-      <div style={gdCardStyle}>
-        <h2 className="admin-h2" style={{ marginTop: 0 }}>
           Provedores
         </h2>
         <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
@@ -179,7 +138,7 @@ export default function ConfiguracoesPage() {
           ))}
         </ul>
         <p style={{ marginTop: 12, fontSize: 13, opacity: 0.85 }}>
-          Ativos no código: documento, govbr. Futuros: icp_brasil, clicksign,
+          Ativos no código: documento. Futuros: icp_brasil, clicksign,
           autentique, docusign, zapsign, adobe_sign.
         </p>
       </div>

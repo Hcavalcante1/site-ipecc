@@ -935,7 +935,7 @@ export default function AssinarNoAdminModal({
                   />
                 </label>
                 <p style={{ fontSize: 13, color: "#94a3b8", margin: "12px 0 6px" }}>
-                  Posição do selo no PDF (modelo gov.br — em qualquer parte da página)
+                  Posição do selo no PDF (modelo institucional — em qualquer parte da página)
                 </p>
                 <label style={{ display: "block", fontSize: 13, marginBottom: 8 }}>
                   Página

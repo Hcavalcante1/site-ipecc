@@ -349,7 +349,7 @@ export default function LotesPage() {
   return (
     <GestaoDocumentalShell
       title="Lotes"
-      description="Assinatura em lote com motor IPECC (uma autenticação para vários documentos). Envios Documento/gov.br ficam como legado."
+      description="Assinatura em lote com motor IPECC (uma autenticação para vários documentos). Envios Documento ficam como legado."
     >
       <AssinarNoAdminModal
         open={ipeccOpen}

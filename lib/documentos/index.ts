@@ -90,10 +90,6 @@ export {
 } from "./signature";
 export type { SignatureProvider } from "./signature/SignatureProvider";
 export {
-  govbrConfigurado,
-  govbrRedirectUriPadrao,
-} from "./signature/GovBrProvider";
-export {
   documentoConfigurado,
   documentoApiBaseUrl,
   documentoConfigurado as documensoConfigurado,

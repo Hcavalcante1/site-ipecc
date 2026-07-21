@@ -1,4 +1,5 @@
 /** Constantes e tipos do motor Assinatura Eletrônica IPECC. */
+import { getPublicSiteUrl } from "@/lib/seo";
 
 export const CONSENTIMENTO_ASSINATURA_IPECC =
   "Li e concordo em assinar eletronicamente este documento.";
@@ -51,14 +52,26 @@ export const EVIDENCE_SELECT =
   "id, signature_document_id, signer_id, document_id, version_id, nome, cpf, email, user_id, signed_at, timezone, ip, user_agent, os, browser, screen_resolution, document_hash_sha256, signed_hash_sha256, signed_storage_path, consent_text, consent_accepted_at, auth_methods, otp_challenge_id, validation_code, signature_serial, cargo, payload, created_at";
 
 export function validationBaseUrl(): string {
-  const fromEnv = String(
-    process.env.SIGNATURE_VALIDATION_BASE_URL ||
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      process.env.NEXT_PUBLIC_APP_URL ||
-      ""
-  ).trim();
-  if (fromEnv) return fromEnv.replace(/\/$/, "");
-  return "https://www.ipecc.org.br";
+  const fromEnv = String(process.env.SIGNATURE_VALIDATION_BASE_URL || "").trim();
+  if (fromEnv) {
+    try {
+      const normalized = new URL(
+        /^https?:\/\//i.test(fromEnv) ? fromEnv : `https://${fromEnv}`
+      );
+      const host = normalized.hostname.toLowerCase();
+      if (
+        host === "ipecc.org.br" ||
+        host.endsWith(".ipecc.org.br") ||
+        host === "localhost" ||
+        host === "127.0.0.1"
+      ) {
+        return normalized.toString().replace(/\/$/, "");
+      }
+    } catch {
+      // ignore invalid env url
+    }
+  }
+  return `${getPublicSiteUrl()}/validar`;
 }
 
 export function otpPepper(): string {

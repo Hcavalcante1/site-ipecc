@@ -1,50 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { denyIfSemModuloDocumentos, requestAuditMeta } from "@/lib/documentos";
-import { executarAssinaturaComToken } from "@/lib/documentos/signatureService";
+import { denyIfSemModuloDocumentos } from "@/lib/documentos";
 
-export async function POST(
-  req: NextRequest,
-  ctx: { params: { id: string } }
-) {
-  const { denied, auth } = await denyIfSemModuloDocumentos();
-  if (denied || !auth) return denied!;
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-  const id = ctx.params.id;
-  try {
-    const body = (await req.json()) as { state?: string };
-    const state = String(body.state || "").trim();
-    if (!state) {
-      return NextResponse.json(
-        { ok: false, error: "state OAuth é obrigatório." },
-        { status: 400 }
-      );
-    }
+export async function POST(_req: NextRequest) {
+  const { denied } = await denyIfSemModuloDocumentos();
+  if (denied) return denied;
 
-    const meta = requestAuditMeta(req);
-    const result = await executarAssinaturaComToken({
-      signatureDocumentId: id,
-      state,
-      userId: auth.userId,
-      actorEmail: auth.contexto.email,
-      ip: meta.ip,
-      userAgent: meta.user_agent,
-    });
-
-    if (result.error) {
-      return NextResponse.json(
-        { ok: false, error: result.error },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json({ ok: true, signature: result.data });
-  } catch (err) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: err instanceof Error ? err.message : "Erro ao assinar.",
-      },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(
+    {
+      ok: false,
+      error: "Fluxo de assinatura por autorização externa desativado.",
+    },
+    { status: 410 }
+  );
 }

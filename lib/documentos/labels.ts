@@ -36,7 +36,6 @@ export const LABEL_PROVIDER_ASSINATURA: Record<string, string> = {
   ipecc: "IPECC",
   documento: "Documento (legado)",
   documenso: "Documento (legado)",
-  govbr: "gov.br",
   icp_brasil: "ICP-Brasil",
 };
 
