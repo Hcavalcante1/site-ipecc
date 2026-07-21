@@ -396,22 +396,11 @@ function desenharSelo(opts: {
   xPct: number;
   yPct: number;
 }) {
-  const { page, font, fontBold } = opts;
-  const { width, height } = page.getSize();
-  const nome = opts.nome.trim();
-  const cargo = String(opts.cargo || "").trim();
-  const cpfFmt = formatarCpfExibicao(opts.cpf);
-
-  const side = SELO_SIDE_PT;
-  const pad = SELO_PAD_PT;
-  const gap = SELO_GAP_PT;
-  const inset = SELO_INSET_PT;
   const codigo = String(opts.validationCode || "").trim();
-
   desenharSeloCompacto({
-    page,
-    font,
-    fontBold,
+    page: opts.page,
+    font: opts.font,
+    fontBold: opts.fontBold,
     nome: opts.nome,
     cpf: opts.cpf,
     cargo: opts.cargo,
@@ -422,125 +411,6 @@ function desenharSelo(opts: {
     logoImage: opts.logoImage,
     xPct: opts.xPct,
     yPct: opts.yPct,
-  });
-  return;
-
-  // Fontes no tamanho anterior
-  const linhasBase: {
-    text: string;
-    size: number;
-    bold?: boolean;
-    color: typeof COR.corpo;
-  }[] = [
-    {
-      text: "Documento assinado digitalmente",
-      size: 5.2,
-      color: COR.corpo,
-    },
-    {
-      text: nome.toUpperCase(),
-      size: 6.8,
-      bold: true,
-      color: COR.titulo,
-    },
-    {
-      text: `Data: ${formatarDataSimples(opts.signedAt, opts.timezone)}`,
-      size: 5.2,
-      color: COR.corpo,
-    },
-    {
-      text: cargo ? `${cargo} · CPF ${cpfFmt}` : `CPF ${cpfFmt}`,
-      size: 5,
-      color: COR.corpo,
-    },
-    {
-      text: `Lei 14.063/2020 · ${codigo}`,
-      size: 4.5,
-      color: COR.faixa,
-    },
-  ];
-
-  // Miolo = linha mais larga (CPF, Lei etc. aparecem por completo)
-  let textW = SELO_TEXT_W_PT;
-  for (const l of linhasBase) {
-    const f = l.bold ? fontBold : font;
-    textW = Math.max(textW, f.widthOfTextAtSize(l.text, l.size));
-  }
-  textW += 2;
-
-  const boxW = pad + side + gap + textW + gap + side + pad;
-  const boxH = side + pad * 2;
-  const { x, y } = origemLivre(width, height, boxW, boxH, opts.xPct, opts.yPct);
-
-  page.drawRectangle({
-    x,
-    y,
-    width: boxW,
-    height: boxH,
-    color: COR.fundo,
-    opacity: 0.97,
-    borderColor: COR.borda,
-    borderWidth: 0.45,
-  });
-
-  const logoX = x + pad;
-  const logoY = y + pad;
-  const qrX = x + boxW - pad - side;
-  const icon = side - inset * 2;
-
-  if (opts.logoImage) {
-    page.drawImage(opts.logoImage, {
-      x: logoX + inset,
-      y: logoY + inset,
-      width: icon,
-      height: icon,
-    });
-  } else {
-    page.drawRectangle({
-      x: logoX + inset,
-      y: logoY + inset,
-      width: icon,
-      height: icon,
-      borderColor: COR.faixa,
-      borderWidth: 0.7,
-      color: rgb(0.97, 0.98, 1),
-    });
-    page.drawText("IPECC", {
-      x: logoX + inset + 3,
-      y: logoY + inset + icon / 2 - 2.5,
-      size: 6,
-      font: fontBold,
-      color: COR.faixa,
-    });
-  }
-
-  const colLeft = x + pad + side + gap;
-  const lineGap = 1.1;
-  const blockH =
-    linhasBase.reduce((a, l) => a + l.size, 0) +
-    lineGap * (linhasBase.length - 1);
-  let cursorY = y + pad + (side + blockH) / 2;
-
-  for (const linha of linhasBase) {
-    cursorY -= linha.size;
-    const f = linha.bold ? fontBold : font;
-    const tw = f.widthOfTextAtSize(linha.text, linha.size);
-    const textX = colLeft + Math.max(0, (textW - tw) / 2);
-    page.drawText(linha.text, {
-      x: textX,
-      y: cursorY,
-      size: linha.size,
-      font: f,
-      color: linha.color,
-    });
-    cursorY -= lineGap;
-  }
-
-  page.drawImage(opts.qrImage, {
-    x: qrX + inset,
-    y: logoY + inset,
-    width: icon,
-    height: icon,
   });
 }
 
