@@ -226,7 +226,7 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
         style={{
           minWidth: 0,
           flex: "0 1 auto",
-          maxWidth: 182,
+          maxWidth: 170,
           fontSize: 6.4,
           lineHeight: 1.01,
           fontFamily: "Helvetica, Arial, sans-serif",
@@ -248,40 +248,41 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
       </div>
       <div
         style={{
-          width: 48,
-          minWidth: 48,
+          width: 56,
+          minWidth: 56,
           display: "flex",
-          flexDirection: "row",
+          flexDirection: "column",
           alignItems: "center",
-          gap: 1,
+          justifyContent: "space-between",
+          gap: 0,
           fontSize: 5.0,
           lineHeight: 1.02,
           fontFamily: "Helvetica, Arial, sans-serif",
           color: "#000",
         }}
       >
-        <div style={{ minWidth: 0, textAlign: "right" }}>
-          <div style={{ fontWeight: 700, lineHeight: 1.01, fontSize: 4.5 }}>VALIDAR ITI</div>
-          <div style={{ lineHeight: 1.01, fontSize: 4.0 }}>verifique em validar.iti.gov.br</div>
-        </div>
         {qrDataUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={qrDataUrl}
             alt="QR Code de validação"
-            style={{ width: 34, height: 34, display: "block", flex: "0 0 auto" }}
+            style={{ width: 53, height: 53, display: "block", flex: "0 0 auto" }}
           />
         ) : (
           <div
             style={{
-              width: 34,
-              height: 34,
+              width: 53,
+              height: 53,
               border: "1px solid #94a3b8",
               background: "#f8fafc",
               flex: "0 0 auto",
             }}
           />
         )}
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontWeight: 700, lineHeight: 1.01, fontSize: 4.5 }}>VALIDAR ITI</div>
+          <div style={{ lineHeight: 1.01, fontSize: 4.0 }}>verifique em validar.iti.gov.br</div>
+        </div>
       </div>
     </div>
   );
@@ -681,7 +682,7 @@ function CertStampPositionPreview({
                       position: "relative",
                     }}
                   >
-                    <div style={{ minWidth: 0, flex: "0 1 auto", maxWidth: 182 }}>
+                    <div style={{ minWidth: 0, flex: "0 1 auto", maxWidth: 170 }}>
                       <div style={{ fontSize: 6.8, fontWeight: 700, lineHeight: 1.04 }}>
                         Assinado digitalmente por
                       </div>
@@ -701,26 +702,26 @@ function CertStampPositionPreview({
                       </div>
                       <div style={{ marginTop: 0, fontSize: 5.9 }}>Dados: {when}</div>
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 0, alignItems: "center", justifyContent: "flex-start", flex: "0 0 auto", paddingTop: 2 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 0, alignItems: "center", justifyContent: "space-between", flex: "0 0 auto" }}>
                       {qrDataUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={qrDataUrl}
                           alt="QR Code de validação"
-                          style={{ width: 34, height: 34, display: "block", flex: "0 0 auto" }}
+                          style={{ width: 53, height: 53, display: "block", flex: "0 0 auto" }}
                         />
                       ) : (
                         <div
                           style={{
-                            width: 34,
-                            height: 34,
+                            width: 53,
+                            height: 53,
                             border: "1px solid #94a3b8",
                             background: "#f8fafc",
                             flex: "0 0 auto",
                           }}
                         />
                       )}
-                      <div style={{ minWidth: 0, textAlign: "center", fontSize: 4.4, lineHeight: 1.0, marginTop: 0 }}>
+                      <div style={{ minWidth: 0, textAlign: "center", fontSize: 4.4, lineHeight: 1.0 }}>
                         <div style={{ fontWeight: 700 }}>VALIDAR ITI</div>
                         <div>verifique em validar.iti.gov.br</div>
                       </div>
