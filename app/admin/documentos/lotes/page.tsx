@@ -520,24 +520,27 @@ export default function LotesPage() {
             <button
               type="button"
               style={{ ...gdBtnStyle, background: "#1d4ed8" }}
-              onClick={() => setAdvLoteOpen(true)}
-              disabled={!docIds.trim()}
+              onClick={() => {
+                if (!docIds.trim()) { setAviso("Importe os PDFs ou informe os IDs antes de assinar em lote."); return; }
+                setAdvLoteOpen(true);
+              }}
             >
               Assinar lote avançado
             </button>
             <button
               type="button"
               style={{ ...gdBtnStyle, background: "#7c3aed" }}
-              onClick={() => setCertLoteOpen(true)}
-              disabled={!docIds.trim()}
+              onClick={() => {
+                if (!docIds.trim()) { setAviso("Importe os PDFs ou informe os IDs antes de assinar com certificado."); return; }
+                setCertLoteOpen(true);
+              }}
             >
               Assinar lote com certificado
             </button>
           </div>
           <p style={{ fontSize: 12, opacity: 0.8, marginBottom: 0 }}>
-            Depois do upload, os IDs já ficam prontos aqui e você só decide se
-            quer lote simples, lote avançado ou certificado. O .pfx continua só
-            no seu computador.
+            Faça o upload dos PDFs acima para gerar os IDs automaticamente, depois
+            escolha o tipo de assinatura. O .pfx continua só no seu computador.
           </p>
         </div>
       </div>
@@ -700,6 +703,17 @@ export default function LotesPage() {
               onClick={() => setIpeccOpen(true)}
             >
               Assinar lote (IPECC)
+            </button>
+            <button
+              type="button"
+              style={{ ...gdBtnStyle, background: "#7c3aed" }}
+              onClick={() => {
+                const ids = items.map((i) => i.document_id).filter(Boolean);
+                setDocIds(ids.join(","));
+                setCertLoteOpen(true);
+              }}
+            >
+              Assinar com certificado
             </button>
             <button
               type="button"
