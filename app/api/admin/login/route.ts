@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import type { CookieOptions } from "@supabase/ssr";
 import {
   type AdminContexto,
@@ -10,6 +10,10 @@ import {
   modulosPermitidos,
   processoIdsDoEscopo,
 } from "@/lib/auth/adminEscopo";
+import {
+  checkRateLimit,
+  mensagemRateLimit,
+} from "@/lib/documentos/signing/rateLimit";
 
 const ADMIN_GATE_COOKIE = "ipecc_admin_gate";
 const ADMIN_GATE_MAX_AGE = 300;
@@ -43,6 +47,16 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { error: "Informe e-mail e senha." },
         { status: 400 }
+      );
+    }
+
+    const ip = headers().get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
+    const rlKey = `admin-login:${ip ?? "sem-ip"}`;
+    const rl = await checkRateLimit(rlKey, { windowMs: 60_000, max: 10 });
+    if (rl.limited) {
+      return NextResponse.json(
+        { error: mensagemRateLimit(rl.retryAfterSec) },
+        { status: 429 }
       );
     }
 
