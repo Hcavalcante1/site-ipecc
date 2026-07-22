@@ -86,6 +86,7 @@ export default function AdminProcessosPage() {
   }
 
   async function encerrar(id: string) {
+    if (!window.confirm("Encerrar este processo? Esta ação não pode ser desfeita pela interface.")) return;
     try {
       const res = await fetch("/api/admin/processos", {
         method: "POST",

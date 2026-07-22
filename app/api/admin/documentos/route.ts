@@ -33,9 +33,12 @@ export async function GET(req: NextRequest) {
       : processoIds.length === 1
         ? processoIds[0]
         : undefined;
+  const processoFiltroMulti =
+    processoIds !== "todos" && processoIds.length > 1 ? processoIds : undefined;
 
   const { data, error } = await listarDocumentos({
     processoId: processoFiltro,
+    processoIds: processoFiltroMulti,
     status,
     q: q || undefined,
     favorite: favorite || undefined,

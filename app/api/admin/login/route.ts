@@ -12,7 +12,7 @@ import {
 } from "@/lib/auth/adminEscopo";
 
 const ADMIN_GATE_COOKIE = "ipecc_admin_gate";
-const ADMIN_GATE_MAX_AGE = 60;
+const ADMIN_GATE_MAX_AGE = 300;
 
 type PerfilRow = {
   user_id: string;

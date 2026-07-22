@@ -565,7 +565,7 @@ export async function concluirLoteAvancado(opts: {
   const done = resultados.length;
   const total = items.length;
   const finalStatus =
-    done === 0 ? "FAILED" : falhas.length ? "COMPLETED" : "COMPLETED";
+    done === 0 ? "FAILED" : falhas.length > 0 ? "PARTIAL" : "COMPLETED";
 
   await admin
     .from("gd_adv_batches")

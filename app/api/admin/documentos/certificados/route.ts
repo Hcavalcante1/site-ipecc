@@ -65,6 +65,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if ((file as File).size > 5 * 1024 * 1024) {
+      return NextResponse.json(
+        { ok: false, error: "Arquivo .pfx/.p12 excede 5 MB." },
+        { status: 400 }
+      );
+    }
     const bytes = Buffer.from(await file.arrayBuffer());
     if (bytes.length < 8) {
       return NextResponse.json(

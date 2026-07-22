@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { requireMestreSession } from "@/lib/auth/adminSession";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const TIPOS = new Set([
   "interno_ipecc",
   "publico_externo",
@@ -80,13 +82,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    if (body.acao === "encerrar") {
-      if (!body.id) {
-        return NextResponse.json({ error: "Identificador é obrigatório." }, { status: 400 });
+    if (body.acao === "encerrar" || body.acao === "reabrir") {
+      if (!body.id || !UUID_RE.test(String(body.id))) {
+        return NextResponse.json({ error: "Identificador inválido." }, { status: 400 });
       }
+      const novoStatus = body.acao === "encerrar" ? "encerrado" : "ativo";
       const { error } = await admin
         .from("processos_contratacao")
-        .update({ status: "encerrado", updated_at: new Date().toISOString() })
+        .update({ status: novoStatus, updated_at: new Date().toISOString() })
         .eq("id", body.id);
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });

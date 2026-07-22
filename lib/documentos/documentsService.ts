@@ -18,6 +18,7 @@ type ListResult = {
 
 export async function listarDocumentos(opts?: {
   processoId?: string | null;
+  processoIds?: string[];
   status?: GdDocumentStatus;
   q?: string;
   favorite?: boolean;
@@ -42,7 +43,9 @@ export async function listarDocumentos(opts?: {
       query = query.is("deleted_at", null);
     }
 
-    if (opts?.processoId) {
+    if (opts?.processoIds && opts.processoIds.length > 0) {
+      query = query.in("processo_id", opts.processoIds);
+    } else if (opts?.processoId) {
       query = query.eq("processo_id", opts.processoId);
     }
     if (opts?.status) {

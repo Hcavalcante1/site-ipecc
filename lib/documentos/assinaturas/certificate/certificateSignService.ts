@@ -581,11 +581,28 @@ export async function finalizarLoteCertificado(opts: {
   }
 
   // Itens ainda PENDING ao finalizar = não foram assinados (erro no cliente)
-  await admin
+  const { data: pendingItems } = await admin
     .from("gd_cert_batch_items")
-    .update({ status: "FAILED" })
+    .select("id, transaction_id")
     .eq("batch_id", opts.batchId)
     .eq("status", "PENDING");
+
+  if (pendingItems && pendingItems.length > 0) {
+    await admin
+      .from("gd_cert_batch_items")
+      .update({ status: "FAILED" })
+      .eq("batch_id", opts.batchId)
+      .eq("status", "PENDING");
+
+    const txIds = pendingItems.map((i) => i.transaction_id).filter(Boolean);
+    if (txIds.length > 0) {
+      await admin
+        .from("gd_cert_transactions")
+        .update({ status: "FAILED", updated_at: new Date().toISOString() })
+        .in("id", txIds)
+        .eq("status", "PENDING");
+    }
+  }
 
   const { data: items } = await admin
     .from("gd_cert_batch_items")
@@ -666,7 +683,7 @@ export async function listarHistoricoCertificado(opts: {
   if (opts.processoIds && opts.processoIds !== "todos") {
     const allowed = new Set(opts.processoIds as string[]);
     list = list.filter(
-      (t) => !t.processo_id || allowed.has(String(t.processo_id))
+      (t) => t.processo_id && allowed.has(String(t.processo_id))
     );
   }
 
