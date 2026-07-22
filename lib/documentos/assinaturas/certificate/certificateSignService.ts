@@ -580,6 +580,13 @@ export async function finalizarLoteCertificado(opts: {
     return { ok: false, error: "Apenas o signatário do lote.", status: 403 };
   }
 
+  // Itens ainda PENDING ao finalizar = não foram assinados (erro no cliente)
+  await admin
+    .from("gd_cert_batch_items")
+    .update({ status: "FAILED" })
+    .eq("batch_id", opts.batchId)
+    .eq("status", "PENDING");
+
   const { data: items } = await admin
     .from("gd_cert_batch_items")
     .select("id, status")
@@ -592,9 +599,9 @@ export async function finalizarLoteCertificado(opts: {
   const status =
     done === total && total > 0
       ? "COMPLETED"
-      : falhas === total
+      : done === 0
         ? "FAILED"
-        : "PROCESSING";
+        : "PARTIAL";
 
   await admin
     .from("gd_cert_batches")
