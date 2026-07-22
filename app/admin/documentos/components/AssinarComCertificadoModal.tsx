@@ -22,6 +22,7 @@ type Props = {
   open: boolean;
   onClose: () => void;
   documentIds: string[];
+  documentNames?: Record<string, string>;
   onCompleted?: () => void;
 };
 
@@ -741,6 +742,7 @@ export default function AssinarComCertificadoModal({
   open,
   onClose,
   documentIds,
+  documentNames,
   onCompleted,
 }: Props) {
   const [step, setStep] = useState<Step>("cert");
@@ -759,11 +761,21 @@ export default function AssinarComCertificadoModal({
   const [selectedProfileId, setSelectedProfileId] = useState("");
   const [selectedProfilePassword, setSelectedProfilePassword] = useState("");
   const [previewDocId, setPreviewDocId] = useState<string | null>(null);
-  const [placement, setPlacement] = useState<Placement>({
-    page: 1,
-    xPct: 96,
-    yPct: 96,
-  });
+  const [placements, setPlacements] = useState<Record<string, Placement>>({});
+
+  function getPlacement(docId: string | null | undefined): Placement {
+    if (!docId) return { page: 1, xPct: 96, yPct: 96 };
+    return placements[docId] ?? { page: 1, xPct: 96, yPct: 96 };
+  }
+
+  function setDocPlacement(docId: string | null | undefined, p: Placement) {
+    if (!docId) return;
+    setPlacements((prev) => ({ ...prev, [docId]: p }));
+  }
+
+  function docLabel(id: string) {
+    return documentNames?.[id] || `${id.slice(0, 8)}…`;
+  }
   const [sessionItems, setSessionItems] = useState<SessionItem[]>([]);
   const [batchId, setBatchId] = useState<string | null>(null);
   const [progress, setProgress] = useState("");
@@ -789,7 +801,7 @@ export default function AssinarComCertificadoModal({
     setSelectedProfileId("");
     setSelectedProfilePassword("");
     setPreviewDocId(documentIds[0] || null);
-    setPlacement({ page: 1, xPct: 96, yPct: 96 });
+    setPlacements({});
     setSessionItems([]);
     setBatchId(null);
     setProgress("");
@@ -1034,8 +1046,9 @@ export default function AssinarComCertificadoModal({
 
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
+        const docPlacement = getPlacement(item.documentId);
         setProgress(
-          `Assinando ${i + 1}/${items.length}: ${item.documentId.slice(0, 8)}…`
+          `Assinando ${i + 1}/${items.length}: ${docLabel(item.documentId)}`
         );
         try {
           const dl = await fetch(item.downloadPath, { credentials: "include" });
@@ -1059,18 +1072,21 @@ export default function AssinarComCertificadoModal({
             cert,
             validationCode: item.validationCode,
             appearance: {
-              page: placement.page,
-              xPct: placement.xPct,
-              yPct: placement.yPct,
+              page: docPlacement.page,
+              xPct: docPlacement.xPct,
+              yPct: docPlacement.yPct,
               width: CERT_STAMP_BOX.w,
               height: CERT_STAMP_BOX.h,
               signerLabel: getCertificateHolderLabel(cert),
             },
           });
 
+          const fileName = documentNames?.[item.documentId]
+            ? `assinado-${documentNames[item.documentId]}`
+            : `assinado-${item.documentId.slice(0, 8)}.pdf`;
           triggerDownload(
             u8ToBlob(signed.signedPdfBytes, "application/pdf"),
-            `assinado-${item.documentId.slice(0, 8)}.pdf`
+            fileName
           );
 
           const form = new FormData();
@@ -1103,9 +1119,9 @@ export default function AssinarComCertificadoModal({
           form.append(
             "appearance",
             JSON.stringify({
-              page: placement.page,
-              x: placement.xPct,
-              y: placement.yPct,
+              page: docPlacement.page,
+              x: docPlacement.xPct,
+              y: docPlacement.yPct,
               width: CERT_STAMP_BOX.w,
               height: CERT_STAMP_BOX.h,
             })
@@ -1448,29 +1464,30 @@ export default function AssinarComCertificadoModal({
                 </div>
               ) : null}
 
-              {documentIds.length > 1 ? (
-                <label
-                  style={{ display: "block", fontSize: 13, marginBottom: 10 }}
+              <label
+                style={{ display: "block", fontSize: 13, marginBottom: 10 }}
+              >
+                {documentIds.length > 1
+                  ? "Posicionar carimbo em:"
+                  : "Documento:"}
+                <select
+                  value={previewDocId || ""}
+                  onChange={(e) => setPreviewDocId(e.target.value || null)}
+                  style={field}
                 >
-                  Documento no preview
-                  <select
-                    value={previewDocId || ""}
-                    onChange={(e) => setPreviewDocId(e.target.value || null)}
-                    style={field}
-                  >
-                    {documentIds.map((id) => (
-                      <option key={id} value={id}>
-                        {id.slice(0, 8)}…
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
+                  {documentIds.map((id) => (
+                    <option key={id} value={id}>
+                      {docLabel(id)}
+                      {placements[id] ? " ✓" : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
               <CertStampPositionPreview
                 documentId={previewDocId}
-                placement={placement}
-                onChange={setPlacement}
+                placement={getPlacement(previewDocId)}
+                onChange={(p) => setDocPlacement(previewDocId, p)}
                 signerLabel={
                   certRef.current ? getCertificateHolderLabel(certRef.current) : ""
                 }
@@ -1481,13 +1498,16 @@ export default function AssinarComCertificadoModal({
                 stampResponsavel={certPreview?.icpBrasil.responsavel || null}
               />
 
-              <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
-                Ajuste a posição antes da prévia final. A posição do carimbo será aplicada
-                {documentIds.length > 1
-                  ? " a todos os documentos do lote"
-                  : " neste documento"}
-                .
-              </p>
+              {documentIds.length > 1 ? (
+                <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
+                  Posicione o carimbo para cada documento separadamente — selecione acima, arraste o carimbo e troque para o próximo.
+                  {" "}Documentos configurados: {Object.keys(placements).length}/{documentIds.length}.
+                </p>
+              ) : (
+                <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
+                  Arraste o carimbo para a posição desejada no documento.
+                </p>
+              )}
 
               <button
                 type="button"
@@ -1519,8 +1539,8 @@ export default function AssinarComCertificadoModal({
               <SignatureAppearancePreview cert={certPreview} />
               <CertStampPositionPreview
                 documentId={previewDocId}
-                placement={placement}
-                onChange={setPlacement}
+                placement={getPlacement(previewDocId)}
+                onChange={(p) => setDocPlacement(previewDocId, p)}
                 signerLabel={
                   certRef.current ? getCertificateHolderLabel(certRef.current) : ""
                 }

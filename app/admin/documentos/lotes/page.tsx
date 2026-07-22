@@ -412,6 +412,9 @@ export default function LotesPage() {
           .split(/[,\s]+/)
           .map((s) => s.trim())
           .filter(Boolean)}
+        documentNames={Object.fromEntries(
+          documentosImportados.map((d) => [d.id, d.fileName])
+        )}
         onClose={() => setCertLoteOpen(false)}
         onCompleted={() => {
           setAviso("Lote com certificado processado.");
