@@ -397,7 +397,6 @@ export async function autorizarLoteAvancado(opts: {
     password: opts.password,
     otpCode: opts.otpCode,
     challengeId: opts.challengeId,
-    allowSessionFallback: true,
     client: opts.client,
   });
 

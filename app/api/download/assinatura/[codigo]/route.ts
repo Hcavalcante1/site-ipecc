@@ -21,7 +21,7 @@ type Ctx = { params: { codigo: string } };
  */
 export async function GET(req: Request, { params }: Ctx) {
   const meta = requestAuditMeta(req);
-  const rate = checkRateLimit(
+  const rate = await checkRateLimit(
     validarPublicoRateKey(meta.ip),
     RATE_VALIDAR_PUBLICO
   );

@@ -49,7 +49,7 @@ export default function EditarEdital() {
     async function carregar() {
       const [dataRes, listaProcessos] = await Promise.all([
         supabase.from("editais").select("*").eq("id", id).single(),
-        carregarProcessosDoEscopo(escopo.processoIds),
+        carregarProcessosDoEscopo(),
       ]);
 
       setProcessos(listaProcessos);

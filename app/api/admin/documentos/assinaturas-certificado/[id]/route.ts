@@ -216,7 +216,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
     const body = await parseConcluirBody(req);
     const action = String(body.action || "").trim();
     const meta = requestAuditMeta(req);
-    const rate = checkRateLimit(
+    const rate = await checkRateLimit(
       assinaturaRateKey("cert-concluir", auth.userId, meta.ip),
       RATE_ASSINATURA
     );

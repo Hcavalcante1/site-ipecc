@@ -32,7 +32,7 @@ export async function POST(
       browser?: string;
     };
     const meta = requestAuditMeta(req);
-    const rate = checkRateLimit(
+    const rate = await checkRateLimit(
       assinaturaRateKey("iniciar", auth.userId, meta.ip),
       RATE_ASSINATURA
     );

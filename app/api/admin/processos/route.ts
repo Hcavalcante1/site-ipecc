@@ -94,6 +94,12 @@ export async function POST(req: Request) {
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
+      if (body.acao === "encerrar") {
+        await admin
+          .from("admin_escopos")
+          .delete()
+          .eq("processo_id", body.id);
+      }
       return NextResponse.json({ ok: true });
     }
 

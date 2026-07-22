@@ -1,22 +1,13 @@
-import { supabase } from "@/lib/supabaseClient";
-
 export type ProcessoOpcao = { id: string; titulo: string };
 
-/** Lista processos ativos limitados ao escopo do admin (cliente). */
-export async function carregarProcessosDoEscopo(
-  processoIds: string[] | "todos"
-): Promise<ProcessoOpcao[]> {
-  const { data, error } = await supabase
-    .from("processos_contratacao")
-    .select("id, titulo")
-    .eq("status", "ativo")
-    .order("titulo", { ascending: true });
-
-  if (error) return [];
-
-  let lista = (data || []) as ProcessoOpcao[];
-  if (processoIds !== "todos") {
-    lista = lista.filter((p) => processoIds.includes(p.id));
+/** Lista processos ativos do escopo do admin (via API server-side com service role). */
+export async function carregarProcessosDoEscopo(): Promise<ProcessoOpcao[]> {
+  try {
+    const res = await fetch("/api/admin/processos/opcoes", { credentials: "include" });
+    if (!res.ok) return [];
+    const json = await res.json();
+    return (json.processos || []) as ProcessoOpcao[];
+  } catch {
+    return [];
   }
-  return lista;
 }

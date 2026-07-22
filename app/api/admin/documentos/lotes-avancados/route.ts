@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import {
   denyIfSemModuloDocumentos,
   requestAuditMeta,
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     }
 
     const meta = requestAuditMeta(req);
-    const rate = checkRateLimit(
+    const rate = await checkRateLimit(
       assinaturaRateKey("adv-criar", auth.userId, meta.ip),
       RATE_ASSINATURA
     );

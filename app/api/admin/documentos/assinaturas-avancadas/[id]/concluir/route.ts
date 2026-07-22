@@ -57,7 +57,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       };
     };
     const meta = requestAuditMeta(req);
-    const rate = checkRateLimit(
+    const rate = await checkRateLimit(
       assinaturaRateKey("adv-concluir", auth.userId, meta.ip),
       RATE_ASSINATURA
     );

@@ -95,7 +95,7 @@ export default function AdminDashboardClient({ userEmail }: Props) {
 
     let ativo = true;
     void (async () => {
-      const lista = await carregarProcessosDoEscopo(escopo.processoIds);
+      const lista = await carregarProcessosDoEscopo();
       if (!ativo) return;
       setTitulosProcesso(lista.map((p) => p.titulo).filter(Boolean));
     })();

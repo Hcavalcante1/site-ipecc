@@ -46,7 +46,7 @@ export default function EventoForm() {
   const [msg, setMsg] = useState("");
 
   async function carregar() {
-    const lista = await carregarProcessosDoEscopo(escopo.processoIds);
+    const lista = await carregarProcessosDoEscopo();
     setProcessos(lista);
     if (lista.length === 1) setProcessoId(lista[0].id);
 

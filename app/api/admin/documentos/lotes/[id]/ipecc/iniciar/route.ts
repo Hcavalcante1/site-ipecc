@@ -63,7 +63,7 @@ export async function POST(
       screenResolution?: string;
     };
     const meta = requestAuditMeta(req);
-    const rate = checkRateLimit(
+    const rate = await checkRateLimit(
       assinaturaRateKey("lote-iniciar", auth.userId, meta.ip),
       RATE_ASSINATURA
     );

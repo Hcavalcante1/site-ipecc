@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from "crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes, scryptSync } from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 export type CertificateVaultMeta = {
@@ -38,31 +38,35 @@ export type CertificateVaultProfile = {
 const AAD = Buffer.from("ipecc-certificate-vault:v1", "utf8");
 
 function getVaultSecret(): string {
-  const secret =
-    process.env.CERTIFICATE_VAULT_SECRET?.trim() ||
-    process.env.SIGNATURE_OTP_PEPPER?.trim() ||
-    process.env.NEXTAUTH_SECRET?.trim();
+  const secret = process.env.CERTIFICATE_VAULT_SECRET?.trim();
   if (!secret) {
     throw new Error(
-      "Defina CERTIFICATE_VAULT_SECRET (ou SIGNATURE_OTP_PEPPER/NEXTAUTH_SECRET) para proteger o cofre de certificados."
+      "CERTIFICATE_VAULT_SECRET não definido. Configure esta variável de ambiente para proteger o cofre de certificados."
     );
   }
   return secret;
 }
 
-function deriveKey(secret: string): Buffer {
+function deriveKeyV1(secret: string): Buffer {
   return createHash("sha256").update(secret).digest();
 }
 
+function deriveKeyV2(secret: string, salt: Buffer): Buffer {
+  return scryptSync(secret, salt, 32, { N: 16384, r: 8, p: 1 });
+}
+
 function encryptEnvelope(payload: Buffer): string {
-  const key = deriveKey(getVaultSecret());
+  const secret = getVaultSecret();
+  const salt = randomBytes(16);
+  const key = deriveKeyV2(secret, salt);
   const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", key, iv);
   cipher.setAAD(AAD);
   const encrypted = Buffer.concat([cipher.update(payload), cipher.final()]);
   const tag = cipher.getAuthTag();
   return JSON.stringify({
-    v: 1,
+    v: 2,
+    salt: salt.toString("base64"),
     iv: iv.toString("base64"),
     tag: tag.toString("base64"),
     ciphertext: encrypted.toString("base64"),
@@ -72,14 +76,24 @@ function encryptEnvelope(payload: Buffer): string {
 function decryptEnvelope(serialized: string): Buffer {
   const parsed = JSON.parse(serialized) as {
     v?: number;
+    salt?: string;
     iv?: string;
     tag?: string;
     ciphertext?: string;
   };
-  if (parsed.v !== 1 || !parsed.iv || !parsed.tag || !parsed.ciphertext) {
+  if (!parsed.iv || !parsed.tag || !parsed.ciphertext) {
     throw new Error("Envelope do cofre inválido.");
   }
-  const key = deriveKey(getVaultSecret());
+  const secret = getVaultSecret();
+  let key: Buffer;
+  if (parsed.v === 2) {
+    if (!parsed.salt) throw new Error("Envelope v2 sem salt.");
+    key = deriveKeyV2(secret, Buffer.from(parsed.salt, "base64"));
+  } else if (parsed.v === 1) {
+    key = deriveKeyV1(secret);
+  } else {
+    throw new Error("Versão de envelope desconhecida.");
+  }
   const decipher = createDecipheriv(
     "aes-256-gcm",
     key,

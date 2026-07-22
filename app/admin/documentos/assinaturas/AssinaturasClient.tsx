@@ -153,7 +153,7 @@ export default function AssinaturasClient() {
     let ativo = true;
     async function carregarProcessos() {
       if (escopo.loading) return;
-      const lista = await carregarProcessosDoEscopo(escopo.processoIds);
+      const lista = await carregarProcessosDoEscopo();
       if (!ativo) return;
       setProcessos(lista);
       setProcessoId((current) => current || lista[0]?.id || "");

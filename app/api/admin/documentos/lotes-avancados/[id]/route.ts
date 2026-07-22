@@ -83,7 +83,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
     const email = String(auth.contexto.email || "").trim();
 
     if (action === "consentimento") {
-      const rate = checkRateLimit(
+      const rate = await checkRateLimit(
         assinaturaRateKey("adv-consent", auth.userId, meta.ip),
         RATE_ASSINATURA
       );
@@ -121,7 +121,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
           { status: 400 }
         );
       }
-      const rate = checkRateLimit(
+      const rate = await checkRateLimit(
         assinaturaRateKey("adv-mfa", auth.userId, meta.ip),
         RATE_OTP
       );
@@ -162,7 +162,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
           { status: 400 }
         );
       }
-      const rate = checkRateLimit(
+      const rate = await checkRateLimit(
         assinaturaRateKey("adv-auth", auth.userId, meta.ip),
         RATE_ASSINATURA
       );
@@ -194,7 +194,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
     }
 
     if (action === "concluir") {
-      const rate = checkRateLimit(
+      const rate = await checkRateLimit(
         assinaturaRateKey("adv-concluir", auth.userId, meta.ip),
         RATE_ASSINATURA
       );

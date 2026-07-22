@@ -48,7 +48,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       challengeId?: string;
     };
     const meta = requestAuditMeta(req);
-    const rate = checkRateLimit(
+    const rate = await checkRateLimit(
       assinaturaRateKey("adv-auth", auth.userId, meta.ip),
       RATE_ASSINATURA
     );
@@ -73,7 +73,6 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       password: String(body.password || ""),
       otpCode: String(body.otpCode || ""),
       challengeId: String(body.challengeId || ""),
-      allowSessionFallback: true,
       client: { ip: meta.ip, userAgent: meta.user_agent },
     });
 

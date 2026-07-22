@@ -25,7 +25,7 @@ export async function POST(
 
   try {
     const meta = requestAuditMeta(req);
-    const rate = checkRateLimit(
+    const rate = await checkRateLimit(
       assinaturaRateKey("otp", auth.userId, meta.ip),
       RATE_OTP
     );
