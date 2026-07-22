@@ -38,6 +38,15 @@ type AdvBatch = {
   completed_at?: string | null;
 };
 
+type CertBatch = {
+  id: string;
+  status: string;
+  item_count: number;
+  batch_hash_sha256?: string | null;
+  created_at: string;
+  completed_at?: string | null;
+};
+
 type ProcessoOpcao = {
   id: string;
   titulo: string;
@@ -60,6 +69,7 @@ export default function LotesPage() {
   const escopo = useAdminEscopoCliente();
   const [batches, setBatches] = useState<Batch[]>([]);
   const [advBatches, setAdvBatches] = useState<AdvBatch[]>([]);
+  const [certBatches, setCertBatches] = useState<CertBatch[]>([]);
   const [processos, setProcessos] = useState<ProcessoOpcao[]>([]);
   const [processoId, setProcessoId] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -86,12 +96,14 @@ export default function LotesPage() {
 
   const carregar = useCallback(async () => {
     setLoading(true);
-    const [res, advRes] = await Promise.all([
+    const [res, advRes, certRes] = await Promise.all([
       fetch("/api/admin/documentos/lotes", { credentials: "include" }),
       fetch("/api/admin/documentos/lotes-avancados", { credentials: "include" }),
+      fetch("/api/admin/documentos/assinaturas-certificado", { credentials: "include" }),
     ]);
     const json = await res.json();
     const advJson = await advRes.json().catch(() => ({}));
+    const certJson = await certRes.json().catch(() => ({}));
     if (res.ok) {
       setBatches(json.batches || []);
       setAviso(json.aviso || "");
@@ -102,6 +114,11 @@ export default function LotesPage() {
       setAdvBatches(advJson.batches || []);
     } else {
       setAdvBatches([]);
+    }
+    if (certRes.ok && certJson?.ok) {
+      setCertBatches(certJson.batches || []);
+    } else {
+      setCertBatches([]);
     }
     setLoading(false);
   }, []);
@@ -594,6 +611,63 @@ export default function LotesPage() {
               {b.item_count} documento(s)
               {" · "}
               {new Date(b.created_at).toLocaleString("pt-BR")}
+              {b.batch_hash_sha256 ? (
+                <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
+                  Hash: {b.batch_hash_sha256.slice(0, 16)}…
+                </div>
+              ) : null}
+              <div style={{ fontSize: 12, opacity: 0.65, marginTop: 2 }}>
+                id {b.id}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div style={gdCardStyle}>
+        <h2 className="admin-h2" style={{ marginTop: 0 }}>
+          Lotes com certificado digital
+        </h2>
+        {!loading && certBatches.length === 0 ? (
+          <p style={{ opacity: 0.8, marginBottom: 0 }}>
+            Nenhum lote com certificado seu ainda. Use &quot;Assinar lote com
+            certificado&quot; com os IDs acima.
+          </p>
+        ) : null}
+        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+          {certBatches.map((b) => (
+            <li
+              key={b.id}
+              style={{
+                borderTop: "1px solid #334155",
+                padding: "10px 0",
+                fontSize: 14,
+              }}
+            >
+              <strong
+                style={{
+                  color:
+                    b.status === "COMPLETED"
+                      ? "#6ee7b7"
+                      : b.status === "PARTIAL"
+                        ? "#fbbf24"
+                        : b.status === "FAILED"
+                          ? "#fca5a5"
+                          : "#e2e8f0",
+                }}
+              >
+                {b.status}
+              </strong>
+              {" · "}
+              {b.item_count} documento(s)
+              {" · "}
+              {new Date(b.created_at).toLocaleString("pt-BR")}
+              {b.completed_at ? (
+                <span style={{ opacity: 0.75 }}>
+                  {" · concluído "}
+                  {new Date(b.completed_at).toLocaleString("pt-BR")}
+                </span>
+              ) : null}
               {b.batch_hash_sha256 ? (
                 <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
                   Hash: {b.batch_hash_sha256.slice(0, 16)}…
