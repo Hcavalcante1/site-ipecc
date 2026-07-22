@@ -158,17 +158,32 @@ export default function LotesPage() {
   }, [escopo.loading, escopo.processoIds]);
 
   function atualizarArquivosSelecionados(files: FileList | null) {
-    const lista = Array.from(files || []).filter(
+    const novos = Array.from(files || []).filter(
       (file) => file.type === "application/pdf" || /\.pdf$/i.test(file.name)
     );
-    setArquivos(lista);
+    setArquivos((prev) => {
+      const nomesExistentes = new Set(prev.map((f) => f.name));
+      const unicos = novos.filter((f) => !nomesExistentes.has(f.name));
+      const total = [...prev, ...unicos];
+      setAviso(
+        total.length
+          ? `${total.length} arquivo(s) na fila. Selecione mais ou clique em Gerar IDs.`
+          : ""
+      );
+      return total;
+    });
     setDocumentosImportados([]);
     setDocIds("");
-    setAviso(
-      lista.length
-        ? `${lista.length} arquivo(s) selecionado(s). O sistema vai criar os documentos e gerar os IDs automaticamente.`
-        : ""
-    );
+  }
+
+  function removerArquivo(nome: string) {
+    setArquivos((prev) => {
+      const total = prev.filter((f) => f.name !== nome);
+      setAviso(
+        total.length ? `${total.length} arquivo(s) na fila.` : ""
+      );
+      return total;
+    });
   }
 
   async function importarArquivosComoDocumentos(): Promise<boolean> {
@@ -461,6 +476,28 @@ export default function LotesPage() {
                 paddingBottom: 10,
               }}
             />
+            {arquivos.length > 0 && documentosImportados.length === 0 ? (
+              <div style={{ marginTop: 8, fontSize: 12, lineHeight: 1.5 }}>
+                <strong>{arquivos.length} arquivo(s) na fila:</strong>
+                <ul style={{ margin: "6px 0 0 0", padding: 0, listStyle: "none" }}>
+                  {arquivos.map((f) => (
+                    <li key={f.name} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                      <span style={{ flex: 1, opacity: 0.9 }}>{f.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => removerArquivo(f.name)}
+                        style={{ background: "#7f1d1d", border: "none", color: "#fca5a5", borderRadius: 6, padding: "2px 8px", cursor: "pointer", fontSize: 11 }}
+                      >
+                        remover
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <p style={{ margin: "6px 0 0", opacity: 0.7, fontSize: 11 }}>
+                  Pode selecionar mais arquivos — eles serão acumulados na fila.
+                </p>
+              </div>
+            ) : null}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
               <button
                 type="button"
@@ -468,7 +505,7 @@ export default function LotesPage() {
                 onClick={() => void importarArquivosComoDocumentos()}
                 disabled={importandoArquivos || arquivos.length === 0}
               >
-                {importandoArquivos ? "Criando documentos..." : "Gerar IDs a partir dos PDFs"}
+                {importandoArquivos ? `Criando... (${documentosImportados.length}/${arquivos.length})` : `Gerar IDs (${arquivos.length || 0} PDF${arquivos.length !== 1 ? "s" : ""})`}
               </button>
               <button
                 type="button"
@@ -479,12 +516,14 @@ export default function LotesPage() {
                 }}
                 disabled={importandoArquivos || arquivos.length === 0}
               >
-                {importandoArquivos ? "Preparando..." : "Gerar IDs e abrir certificado"}
+                {importandoArquivos ? `Preparando... (${documentosImportados.length}/${arquivos.length})` : "Gerar IDs e abrir certificado"}
               </button>
             </div>
-            {documentosImportados.length ? (
+            {documentosImportados.length > 0 ? (
               <div style={{ marginTop: 10, fontSize: 12, lineHeight: 1.45 }}>
-                <strong>Documentos gerados:</strong>
+                <strong style={{ color: "#6ee7b7" }}>
+                  {documentosImportados.length} documento(s) criado(s) com sucesso:
+                </strong>
                 <ul style={{ margin: "8px 0 0 18px" }}>
                   {documentosImportados.map((doc) => (
                     <li key={doc.id}>
