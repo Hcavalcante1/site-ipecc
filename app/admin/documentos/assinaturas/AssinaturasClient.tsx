@@ -983,56 +983,55 @@ export default function AssinaturasClient() {
             Selecionar todos ({rows.length})
           </label>
         )}
-        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+        <div style={{ display: "grid", gap: 8 }}>
           {rows.map((row) => (
-            <li
+            <div
               key={row.id}
               style={{
-                borderTop: "1px solid #334155",
-                padding: "12px 0",
                 display: "flex",
                 flexWrap: "wrap",
-                gap: 8,
+                gap: 12,
+                alignItems: "flex-start",
                 justifyContent: "space-between",
-                alignItems: "center",
-                outline: selectedPedidos.has(row.id) ? "2px solid #3b82f6" : "none",
-                borderRadius: selectedPedidos.has(row.id) ? 6 : 0,
-                paddingLeft: selectedPedidos.has(row.id) ? 8 : 0,
+                padding: "12px",
+                borderRadius: 8,
+                background: selectedPedidos.has(row.id) ? "rgba(59,130,246,0.12)" : "rgba(255,255,255,0.03)",
+                border: selectedPedidos.has(row.id) ? "1px solid #3b82f6" : "1px solid #334155",
               }}
             >
-              <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <div style={{ display: "flex", gap: 10, alignItems: "flex-start", flex: 1, minWidth: 200 }}>
                 <input
                   type="checkbox"
                   checked={selectedPedidos.has(row.id)}
                   onChange={() => toggleSelectPedido(row.id)}
-                  style={{ marginTop: 4, flexShrink: 0, cursor: "pointer" }}
+                  style={{ marginTop: 3, flexShrink: 0, cursor: "pointer", width: 16, height: 16 }}
                 />
-              <div>
                 <div>
-                  <strong>
-                    {row.document_title?.trim() || "Documento sem título"}
-                  </strong>
-                </div>
-                <div style={{ fontSize: 13, opacity: 0.85, marginTop: 4 }}>
-                  {rotuloStatusAssinatura(row.status)}
-                  {" · "}
-                  {rotuloProviderAssinatura(row.provider_code)}
-                  {" · "}
-                  {new Date(row.created_at).toLocaleString("pt-BR")}
-                </div>
-                {row.signer_name ? (
-                  <div style={{ fontSize: 13, opacity: 0.9, marginTop: 2 }}>
-                    Assinado por: <strong>{row.signer_name}</strong>
+                  <div>
+                    <strong>
+                      {row.document_title?.trim() || "Documento sem título"}
+                    </strong>
                   </div>
-                ) : null}
-                {row.error_message ? (
-                  <div style={{ color: "#fca5a5", fontSize: 13 }}>
-                    {row.error_message}
+                  <div style={{ fontSize: 13, opacity: 0.85, marginTop: 4 }}>
+                    {rotuloStatusAssinatura(row.status)}
+                    {" · "}
+                    {rotuloProviderAssinatura(row.provider_code)}
+                    {" · "}
+                    {new Date(row.created_at).toLocaleString("pt-BR")}
                   </div>
-                ) : null}
+                  {row.signer_name ? (
+                    <div style={{ fontSize: 13, opacity: 0.9, marginTop: 2 }}>
+                      Assinado por: <strong>{row.signer_name}</strong>
+                    </div>
+                  ) : null}
+                  {row.error_message ? (
+                    <div style={{ color: "#fca5a5", fontSize: 13 }}>
+                      {row.error_message}
+                    </div>
+                  ) : null}
+                </div>
               </div>
-              </div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flexShrink: 0 }}>
                 <Link
                   href={`/admin/documentos/documentos/${row.document_id}`}
                   style={{
@@ -1183,9 +1182,9 @@ export default function AssinaturasClient() {
                   Excluir
                 </button>
               </div>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       </div>
     </GestaoDocumentalShell>
   );
