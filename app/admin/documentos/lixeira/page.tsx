@@ -33,6 +33,30 @@ export default function LixeiraPage() {
     carregar();
   }, [carregar]);
 
+  async function esvaziar() {
+    if (
+      !confirm(
+        "Excluir permanentemente TODOS os documentos da lixeira? Esta ação não pode ser desfeita."
+      )
+    )
+      return;
+    const res = await fetch("/api/admin/documentos?esvaziar=1", {
+      method: "DELETE",
+      credentials: "include",
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      alert(json.error || "Erro ao esvaziar lixeira.");
+      return;
+    }
+    alert(
+      json.deleted
+        ? `${json.deleted} documento(s) excluído(s) permanentemente.`
+        : "Lixeira já estava vazia."
+    );
+    carregar();
+  }
+
   async function restaurar(id: string) {
     const res = await fetch(`/api/admin/documentos/${id}/restaurar`, {
       method: "POST",
@@ -51,9 +75,20 @@ export default function LixeiraPage() {
       title="Lixeira"
       description="Documentos removidos (soft delete). Dá para restaurar."
       actions={
-        <Link href="/admin/documentos/documentos" style={gdBtnStyle}>
-          Voltar aos documentos
-        </Link>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {documents.length > 0 && (
+            <button
+              type="button"
+              style={{ ...gdBtnStyle, background: "#7f1d1d" }}
+              onClick={esvaziar}
+            >
+              Esvaziar lixeira
+            </button>
+          )}
+          <Link href="/admin/documentos/documentos" style={gdBtnStyle}>
+            Voltar aos documentos
+          </Link>
+        </div>
       }
     >
       {aviso ? (

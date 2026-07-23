@@ -90,6 +90,27 @@ export async function listarNotificacoes(opts: {
   return query;
 }
 
+export async function marcarTodasNotificacoesLidas(
+  userId: string,
+  processoIds: string[] | "todos"
+) {
+  const admin = getSupabaseAdmin();
+  const now = new Date().toISOString();
+  let query = admin
+    .from("gd_notifications")
+    .update({ read_at: now, updated_at: now })
+    .eq("user_id", userId)
+    .is("deleted_at", null)
+    .is("read_at", null);
+
+  if (processoIds !== "todos") {
+    if (processoIds.length === 0) return { data: null, error: null };
+    query = query.in("processo_id", processoIds);
+  }
+
+  return query;
+}
+
 export async function marcarNotificacaoLida(id: string, userId: string) {
   const admin = getSupabaseAdmin();
   return admin

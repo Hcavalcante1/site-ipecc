@@ -4,6 +4,7 @@ import { processoIdsDoEscopo } from "@/lib/auth/adminEscopo";
 import {
   listarNotificacoes,
   marcarNotificacaoLida,
+  marcarTodasNotificacoesLidas,
   tabelaNotificacaoAusente,
 } from "@/lib/documentos/notificationsService";
 
@@ -35,6 +36,22 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({ ok: true, notifications: data || [] });
+}
+
+export async function DELETE(_req: NextRequest) {
+  const { denied, auth } = await denyIfSemModuloDocumentos();
+  if (denied || !auth) return denied!;
+
+  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const { error } = await marcarTodasNotificacoesLidas(auth.userId, processoIds);
+  if (error) {
+    return NextResponse.json(
+      { ok: false, error: (error as { message: string }).message },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ ok: true });
 }
 
 export async function PATCH(req: NextRequest) {

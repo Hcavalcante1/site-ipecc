@@ -74,6 +74,80 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ ok: true, documents });
 }
 
+export async function DELETE(req: NextRequest) {
+  const { denied, auth } = await denyIfSemModuloDocumentos();
+  if (denied || !auth) return denied!;
+
+  const esvaziar = req.nextUrl.searchParams.get("esvaziar") === "1";
+  if (!esvaziar) {
+    return NextResponse.json(
+      { ok: false, error: "Parâmetro esvaziar=1 obrigatório." },
+      { status: 400 }
+    );
+  }
+
+  const admin = getSupabaseAdmin();
+  const processoIds = processoIdsDoEscopo(auth.contexto);
+
+  let docsQuery = admin
+    .from("gd_documents")
+    .select("id")
+    .not("deleted_at", "is", null);
+
+  if (processoIds !== "todos") {
+    if (processoIds.length === 0) {
+      return NextResponse.json({ ok: true, deleted: 0 });
+    }
+    docsQuery = docsQuery.in("processo_id", processoIds);
+  }
+
+  const { data: docs, error: docsError } = await docsQuery;
+  if (docsError) {
+    return NextResponse.json(
+      { ok: false, error: docsError.message },
+      { status: 500 }
+    );
+  }
+
+  const docIds = (docs || []).map((d) => d.id).filter((id): id is string => Boolean(id));
+  if (docIds.length === 0) {
+    return NextResponse.json({ ok: true, deleted: 0 });
+  }
+
+  const { data: sigDocs } = await admin
+    .from("gd_signature_documents")
+    .select("id")
+    .in("document_id", docIds);
+
+  const sigDocIds = (sigDocs || []).map((s) => s.id).filter((id): id is string => Boolean(id));
+
+  if (sigDocIds.length > 0) {
+    await admin.from("gd_signature_signers").delete().in("signature_document_id", sigDocIds);
+    await admin.from("gd_signature_batch_items").delete().in("signature_document_id", sigDocIds);
+    await admin.from("gd_cert_transactions").delete().in("document_id", docIds);
+    await admin.from("gd_signature_documents").delete().in("id", sigDocIds);
+  }
+
+  const { error: delError } = await admin.from("gd_documents").delete().in("id", docIds);
+  if (delError) {
+    return NextResponse.json(
+      { ok: false, error: delError.message },
+      { status: 500 }
+    );
+  }
+
+  await registrarLog({
+    processo_id: null,
+    document_id: null,
+    action: "document.empty_trash",
+    detail: { count: docIds.length },
+    actor_id: auth.userId,
+    actor_email: auth.contexto.email,
+  });
+
+  return NextResponse.json({ ok: true, deleted: docIds.length });
+}
+
 export async function POST(req: NextRequest) {
   const { denied, auth } = await denyIfSemModuloDocumentos();
   if (denied || !auth) return denied!;

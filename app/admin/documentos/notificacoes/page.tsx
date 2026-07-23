@@ -41,6 +41,15 @@ export default function NotificacoesPage() {
     carregar();
   }, [carregar]);
 
+  async function limparTudo() {
+    if (!confirm("Marcar todas as notificações como lidas?")) return;
+    await fetch("/api/admin/documentos/notificacoes", {
+      method: "DELETE",
+      credentials: "include",
+    });
+    carregar();
+  }
+
   async function marcarLida(id: string) {
     await fetch("/api/admin/documentos/notificacoes", {
       method: "PATCH",
@@ -55,6 +64,13 @@ export default function NotificacoesPage() {
     <GestaoDocumentalShell
       title="Notificações"
       description="Alertas in-app de assinatura, fluxos e lotes (Fase 6)."
+      actions={
+        rows.some((n) => !n.read_at) ? (
+          <button type="button" style={gdBtnStyle} onClick={limparTudo}>
+            Limpar tudo
+          </button>
+        ) : undefined
+      }
     >
       {aviso ? (
         <div style={{ ...gdCardStyle, borderColor: "#f59e0b" }}>{aviso}</div>
