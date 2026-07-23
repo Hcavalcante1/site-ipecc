@@ -106,6 +106,27 @@ export default function AdminProcessosPage() {
     }
   }
 
+  async function excluir(id: string) {
+    if (!window.confirm("Excluir permanentemente este processo? Os documentos vinculados não serão afetados.")) return;
+    try {
+      const res = await fetch("/api/admin/processos", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ acao: "excluir", id }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        triggerToast(json.error || "Erro ao excluir.", "error");
+        return;
+      }
+      triggerToast("Processo excluído.", "success");
+      carregar();
+    } catch {
+      triggerToast("Falha de rede ao excluir.", "error");
+    }
+  }
+
   return (
     <div className="admin-page">
       <div
@@ -190,16 +211,26 @@ export default function AdminProcessosPage() {
                   Tipo: {p.tipo} · Status: {p.status}
                 </p>
                 {p.resumo ? <p style={{ marginTop: 6 }}>{p.resumo}</p> : null}
-                {p.status === "ativo" ? (
+                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  {p.status === "ativo" ? (
+                    <button
+                      type="button"
+                      className="admin-button"
+                      style={{ background: "#b45309" }}
+                      onClick={() => encerrar(p.id)}
+                    >
+                      Encerrar
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     className="admin-button"
-                    style={{ marginTop: 10, background: "#b45309" }}
-                    onClick={() => encerrar(p.id)}
+                    style={{ background: "#7f1d1d" }}
+                    onClick={() => excluir(p.id)}
                   >
-                    Encerrar
+                    Excluir
                   </button>
-                ) : null}
+                </div>
               </div>
             ))}
           </div>

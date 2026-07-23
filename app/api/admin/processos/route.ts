@@ -103,6 +103,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
+    if (body.acao === "excluir") {
+      if (!body.id || !UUID_RE.test(String(body.id))) {
+        return NextResponse.json({ error: "Identificador inválido." }, { status: 400 });
+      }
+      await admin.from("admin_escopos").delete().eq("processo_id", body.id);
+      const { error } = await admin
+        .from("processos_contratacao")
+        .delete()
+        .eq("id", body.id);
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ ok: true });
+    }
+
     return NextResponse.json({ error: "Ação inválida." }, { status: 400 });
   } catch (err) {
     const message =
