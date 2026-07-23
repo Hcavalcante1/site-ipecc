@@ -114,8 +114,38 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ ok: true, deleted: 0 });
   }
 
-  // Cascade na ordem correta: filhas das filhas primeiro, depois filhas diretas, por último gd_documents
-  await admin.from("gd_signature_evidences").delete().in("document_id", docIds);
+  // IDs intermediários para cascade de netos
+  const { data: advTxRows } = await admin.from("gd_adv_transactions").select("id").in("document_id", docIds);
+  const advTxIds = (advTxRows || []).map((r) => r.id).filter(Boolean) as string[];
+
+  const { data: certTxRows } = await admin.from("gd_cert_transactions").select("id").in("document_id", docIds);
+  const certTxIds = (certTxRows || []).map((r) => r.id).filter(Boolean) as string[];
+
+  const { data: sigDocRows } = await admin.from("gd_signature_documents").select("id").in("document_id", docIds);
+  const sigDocIds = (sigDocRows || []).map((r) => r.id).filter(Boolean) as string[];
+
+  // Netos de adv_transactions (gd_adv_artifacts é append-only, ignorar erro)
+  if (advTxIds.length > 0) {
+    await admin.from("gd_adv_events").delete().in("transaction_id", advTxIds);
+    await admin.from("gd_adv_auth_challenges").delete().in("transaction_id", advTxIds);
+    await admin.from("gd_adv_consents").delete().in("transaction_id", advTxIds);
+  }
+
+  // Netos de cert_transactions
+  if (certTxIds.length > 0) {
+    await admin.from("gd_cert_artifacts").delete().in("transaction_id", certTxIds);
+    await admin.from("gd_cert_events").delete().in("transaction_id", certTxIds);
+  }
+
+  // Netos de signature_documents / signature_signers
+  if (sigDocIds.length > 0) {
+    await admin.from("gd_signature_evidences").delete().in("signature_document_id", sigDocIds);
+    await admin.from("gd_signature_events").delete().in("signature_document_id", sigDocIds);
+    await admin.from("gd_oauth_states").delete().in("signature_document_id", sigDocIds);
+    await admin.from("gd_signature_otp_challenges").delete().in("signature_document_id", sigDocIds);
+  }
+
+  // Cascade principal por document_id
   await admin.from("gd_adv_batch_items").delete().in("document_id", docIds);
   await admin.from("gd_cert_batch_items").delete().in("document_id", docIds);
   await admin.from("gd_signature_batch_items").delete().in("document_id", docIds);
