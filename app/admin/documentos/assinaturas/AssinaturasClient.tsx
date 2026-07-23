@@ -57,6 +57,8 @@ export default function AssinaturasClient() {
   const search = useSearchParams();
   const escopo = useAdminEscopoCliente();
   const [rows, setRows] = useState<SignatureRow[]>([]);
+  const [selectedPedidos, setSelectedPedidos] = useState<Set<string>>(new Set());
+  const [excluindoLote, setExcluindoLote] = useState(false);
   const [processos, setProcessos] = useState<ProcessoOpcao[]>([]);
   const [processoId, setProcessoId] = useState("");
   const [arquivos, setArquivos] = useState<File[]>([]);
@@ -498,6 +500,44 @@ export default function AssinaturasClient() {
     carregar();
   }
 
+  function toggleSelectPedido(id: string) {
+    setSelectedPedidos((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleTodosPedidos() {
+    if (selectedPedidos.size === rows.length) {
+      setSelectedPedidos(new Set());
+    } else {
+      setSelectedPedidos(new Set(rows.map((r) => r.id)));
+    }
+  }
+
+  async function excluirPedidosSelecionados() {
+    if (selectedPedidos.size === 0) return;
+    if (!confirm(`Excluir ${selectedPedidos.size} registro(s) do histórico? Os documentos originais permanecem.`)) return;
+    setExcluindoLote(true);
+    await Promise.all(
+      Array.from(selectedPedidos).map((id) => {
+        const row = rows.find((r) => r.id === id);
+        const isCert = row?.provider_code === "certificado" || row?.kind === "certificate";
+        const qs = new URLSearchParams({ id });
+        if (isCert) qs.set("kind", "certificate");
+        return fetch(`/api/admin/documentos/assinaturas?${qs}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+      })
+    );
+    setSelectedPedidos(new Set());
+    setExcluindoLote(false);
+    carregar();
+  }
+
   async function excluirPedido(id: string, kind?: string | null) {
     if (
       !confirm(
@@ -913,13 +953,35 @@ export default function AssinaturasClient() {
       </div>
 
       <div style={gdCardStyle}>
-        <h2 className="admin-h2" style={{ marginTop: 0 }}>
-          Pedidos
-        </h2>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+          <h2 className="admin-h2" style={{ marginTop: 0, marginBottom: 0 }}>
+            Pedidos
+          </h2>
+          {selectedPedidos.size > 0 && (
+            <button
+              type="button"
+              style={{ ...gdBtnStyle, background: "#7f1d1d" }}
+              onClick={excluirPedidosSelecionados}
+              disabled={excluindoLote}
+            >
+              {excluindoLote ? "Excluindo…" : `Excluir selecionados (${selectedPedidos.size})`}
+            </button>
+          )}
+        </div>
         {loading ? <p>Carregando...</p> : null}
         {!loading && rows.length === 0 ? (
           <p style={{ opacity: 0.8 }}>Nenhum pedido de assinatura.</p>
         ) : null}
+        {rows.length > 0 && (
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, opacity: 0.8, cursor: "pointer", userSelect: "none", marginBottom: 8 }}>
+            <input
+              type="checkbox"
+              checked={selectedPedidos.size === rows.length && rows.length > 0}
+              onChange={toggleTodosPedidos}
+            />
+            Selecionar todos ({rows.length})
+          </label>
+        )}
         <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
           {rows.map((row) => (
             <li
@@ -932,8 +994,18 @@ export default function AssinaturasClient() {
                 gap: 8,
                 justifyContent: "space-between",
                 alignItems: "center",
+                outline: selectedPedidos.has(row.id) ? "2px solid #3b82f6" : "none",
+                borderRadius: selectedPedidos.has(row.id) ? 6 : 0,
+                paddingLeft: selectedPedidos.has(row.id) ? 8 : 0,
               }}
             >
+              <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <input
+                  type="checkbox"
+                  checked={selectedPedidos.has(row.id)}
+                  onChange={() => toggleSelectPedido(row.id)}
+                  style={{ marginTop: 4, flexShrink: 0, cursor: "pointer" }}
+                />
               <div>
                 <div>
                   <strong>
@@ -957,6 +1029,7 @@ export default function AssinaturasClient() {
                     {row.error_message}
                   </div>
                 ) : null}
+              </div>
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <Link
