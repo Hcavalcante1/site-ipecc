@@ -94,41 +94,46 @@ export async function GET(req: NextRequest, ctx: Ctx) {
     storagePath.startsWith("/") ? storagePath : `/${storagePath}`,
   ].filter((p, i, arr) => p && arr.indexOf(p) === i);
 
-  let file: Blob | null = null;
-  let lastErr: string | null = null;
-  for (const path of candidates) {
-    const { data, error } = await admin.storage
-      .from(GD_STORAGE_BUCKET)
-      .download(path);
-    if (data && !error) {
-      file = data;
-      storagePath = path;
-      break;
+  try {
+    let file: Blob | null = null;
+    let lastErr: string | null = null;
+    for (const path of candidates) {
+      const { data, error } = await admin.storage
+        .from(GD_STORAGE_BUCKET)
+        .download(path);
+      if (data && !error) {
+        file = data;
+        storagePath = path;
+        break;
+      }
+      lastErr = error?.message || "Arquivo indisponível.";
     }
-    lastErr = error?.message || "Arquivo indisponível.";
-  }
 
-  if (!file) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: lastErr || "Arquivo indisponível no storage.",
-        storagePath,
+    if (!file) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: lastErr || "Arquivo indisponível no storage.",
+          storagePath,
+        },
+        { status: 404 }
+      );
+    }
+
+    const buf = Buffer.from(await file.arrayBuffer());
+    const name = fileName || storagePath.split("/").pop() || "documento";
+
+    return new NextResponse(buf, {
+      status: 200,
+      headers: {
+        "Content-Type": contentTypeFromName(name),
+        "Content-Disposition": `inline; filename="${name.replace(/"/g, "")}"`,
+        "Cache-Control": "private, no-store",
+        "X-Content-Type-Options": "nosniff",
       },
-      { status: 404 }
-    );
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Erro ao baixar arquivo do storage.";
+    return NextResponse.json({ ok: false, error: msg }, { status: 500 });
   }
-
-  const buf = Buffer.from(await file.arrayBuffer());
-  const name = fileName || storagePath.split("/").pop() || "documento";
-
-  return new NextResponse(buf, {
-    status: 200,
-    headers: {
-      "Content-Type": contentTypeFromName(name),
-      "Content-Disposition": `inline; filename="${name.replace(/"/g, "")}"`,
-      "Cache-Control": "private, no-store",
-      "X-Content-Type-Options": "nosniff",
-    },
-  });
 }

@@ -298,6 +298,7 @@ export default function LotesPage() {
         title,
         document_ids,
         provider_code: "ipecc",
+        processo_id: processoSelecionado || null,
       }),
     });
     const json = await res.json();

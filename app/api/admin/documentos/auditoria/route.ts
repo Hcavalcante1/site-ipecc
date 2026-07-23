@@ -23,7 +23,6 @@ export async function GET() {
     .select(
       "id, action, document_id, processo_id, actor_email, created_at, detail"
     )
-    .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(100);
 
