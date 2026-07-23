@@ -453,9 +453,9 @@ export default function LotesPage() {
               O sistema vai criar o documento, receber o arquivo e gerar o ID
               automaticamente. Você não precisa copiar nada no navegador.
             </p>
-            {processos.length > 1 ? (
+            {processos.length > 0 ? (
               <label style={{ display: "block", fontSize: 13, marginBottom: 10 }}>
-                Processo do upload
+                Processo vinculado
                 <select
                   value={processoSelecionado}
                   onChange={(e) => setProcessoId(e.target.value)}
