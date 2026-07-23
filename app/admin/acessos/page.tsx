@@ -90,20 +90,18 @@ export default function AdminAcessosPage() {
       if (json.aviso) {
         setMsg(json.aviso);
       }
-      const operadores = (json.perfis || []).filter(
-        (p: Perfil) => p.ativo && p.papel !== "mestre"
-      );
+      const ativos = (json.perfis || []).filter((p: Perfil) => p.ativo);
       setUserIdEscopo((prev) => {
         if (
           preferUserId &&
-          operadores.some((p: Perfil) => p.user_id === preferUserId)
+          ativos.some((p: Perfil) => p.user_id === preferUserId)
         ) {
           return preferUserId;
         }
-        if (prev && operadores.some((p: Perfil) => p.user_id === prev)) {
+        if (prev && ativos.some((p: Perfil) => p.user_id === prev)) {
           return prev;
         }
-        return operadores[0]?.user_id || "";
+        return ativos[0]?.user_id || "";
       });
       setProcessoId((prev) => {
         if (prev && (json.processos || []).some((p: Processo) => p.id === prev)) {
@@ -284,11 +282,11 @@ export default function AdminAcessosPage() {
           value={userIdEscopo}
           onChange={(e) => setUserIdEscopo(e.target.value)}
         >
-          {perfis.filter((p) => p.ativo && p.papel !== "mestre").length === 0 ? (
-            <option value="">Nenhum operador/externo ativo</option>
+          {perfis.filter((p) => p.ativo).length === 0 ? (
+            <option value="">Nenhum perfil ativo</option>
           ) : null}
           {perfis
-            .filter((p) => p.ativo && p.papel !== "mestre")
+            .filter((p) => p.ativo)
             .map((p) => (
               <option key={p.user_id} value={p.user_id}>
                 {p.email || p.user_id} ({p.papel})
