@@ -43,10 +43,15 @@ export default function NotificacoesPage() {
 
   async function limparTudo() {
     if (!confirm("Marcar todas as notificações como lidas?")) return;
-    await fetch("/api/admin/documentos/notificacoes", {
+    const res = await fetch("/api/admin/documentos/notificacoes", {
       method: "DELETE",
       credentials: "include",
     });
+    const json = await res.json();
+    if (!res.ok) {
+      setAviso(json.error || "Erro ao limpar notificações.");
+      return;
+    }
     carregar();
   }
 

@@ -114,19 +114,21 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ ok: true, deleted: 0 });
   }
 
-  const { data: sigDocs } = await admin
-    .from("gd_signature_documents")
-    .select("id")
-    .in("document_id", docIds);
-
-  const sigDocIds = (sigDocs || []).map((s) => s.id).filter((id): id is string => Boolean(id));
-
-  if (sigDocIds.length > 0) {
-    await admin.from("gd_signature_signers").delete().in("signature_document_id", sigDocIds);
-    await admin.from("gd_signature_batch_items").delete().in("signature_document_id", sigDocIds);
-    await admin.from("gd_cert_transactions").delete().in("document_id", docIds);
-    await admin.from("gd_signature_documents").delete().in("id", sigDocIds);
-  }
+  // Cascade na ordem correta: filhas das filhas primeiro, depois filhas diretas, por último gd_documents
+  await admin.from("gd_signature_evidences").delete().in("document_id", docIds);
+  await admin.from("gd_adv_batch_items").delete().in("document_id", docIds);
+  await admin.from("gd_cert_batch_items").delete().in("document_id", docIds);
+  await admin.from("gd_signature_batch_items").delete().in("document_id", docIds);
+  await admin.from("gd_signature_signers").delete().in("document_id", docIds);
+  await admin.from("gd_adv_transactions").delete().in("document_id", docIds);
+  await admin.from("gd_cert_transactions").delete().in("document_id", docIds);
+  await admin.from("gd_signature_documents").delete().in("document_id", docIds);
+  await admin.from("gd_notifications").delete().in("document_id", docIds);
+  await admin.from("gd_document_permissions").delete().in("document_id", docIds);
+  await admin.from("gd_workflow_history").delete().in("document_id", docIds);
+  await admin.from("gd_document_tags").delete().in("document_id", docIds);
+  await admin.from("gd_document_logs").delete().in("document_id", docIds);
+  await admin.from("gd_document_versions").delete().in("document_id", docIds);
 
   const { error: delError } = await admin.from("gd_documents").delete().in("id", docIds);
   if (delError) {
