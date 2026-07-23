@@ -1436,98 +1436,153 @@ export default function AssinarComCertificadoModal({
             </>
           ) : null}
 
-          {step === "pages" ? (
-            <>
-              {certLabel ? (
-                <div style={{ color: "#6ee7b7", fontSize: 13, marginBottom: 8, lineHeight: 1.35 }}>
-                  <div>
-                    Assinando como: <strong>{certLabel}</strong>
+          {step === "pages" ? (() => {
+            const currentIdx = previewDocId
+              ? Math.max(0, documentIds.indexOf(previewDocId))
+              : 0;
+            const isFirst = currentIdx === 0;
+            const isLast = currentIdx === documentIds.length - 1;
+            const posicionados = Object.keys(placements).filter((id) =>
+              documentIds.includes(id)
+            ).length;
+            const allPositioned = posicionados >= documentIds.length;
+
+            function goTo(idx: number) {
+              setPreviewDocId(documentIds[idx] || null);
+            }
+
+            return (
+              <>
+                {certLabel ? (
+                  <div style={{ color: "#6ee7b7", fontSize: 13, marginBottom: 8, lineHeight: 1.35 }}>
+                    <div>Assinando como: <strong>{certLabel}</strong></div>
+                    {certPreview?.icpBrasil.cnpj ? (
+                      <div>CNPJ: {getCertificateHolderCnpj(certPreview) || ""}</div>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => setStep("review")}
+                      style={{ background: "none", border: "none", color: "#7dd3fc", cursor: "pointer", padding: 0, fontSize: 13, textDecoration: "underline" }}
+                    >
+                      ver certificado
+                    </button>
                   </div>
-                  {certPreview?.icpBrasil.cnpj ? (
-                    <div>CNPJ: {getCertificateHolderCnpj(certPreview) || ""}</div>
+                ) : null}
+
+                {/* Cabeçalho do documento atual */}
+                <div style={{ background: "#1e293b", borderRadius: 8, padding: "10px 14px", marginBottom: 8 }}>
+                  {documentIds.length > 1 ? (
+                    <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>
+                      Documento {currentIdx + 1} de {documentIds.length}
+                      {" — "}
+                      <span style={{ color: allPositioned ? "#6ee7b7" : "#fbbf24" }}>
+                        {posicionados}/{documentIds.length} posicionados
+                      </span>
+                    </div>
                   ) : null}
+                  <div style={{ fontWeight: 600, fontSize: 14, color: "#e2e8f0", wordBreak: "break-all" }}>
+                    {docLabel(previewDocId || documentIds[0] || "")}
+                    {placements[previewDocId || ""] ? (
+                      <span style={{ marginLeft: 8, color: "#6ee7b7", fontSize: 12 }}>✓ posicionado</span>
+                    ) : (
+                      <span style={{ marginLeft: 8, color: "#f59e0b", fontSize: 12 }}>▼ arraste o carimbo</span>
+                    )}
+                  </div>
+                </div>
+
+                <CertStampPositionPreview
+                  documentId={previewDocId}
+                  placement={getPlacement(previewDocId)}
+                  onChange={(p) => setDocPlacement(previewDocId, p)}
+                  signerLabel={certRef.current ? getCertificateHolderLabel(certRef.current) : ""}
+                  stampSubject={certLabel || certPreview?.subject || null}
+                  stampCnpj={certPreview ? getCertificateHolderCnpj(certPreview) : null}
+                  stampCpf={formatCpf(certPreview?.icpBrasil.cpf)}
+                  stampRazaoSocial={certPreview?.icpBrasil.razaoSocial || null}
+                  stampResponsavel={certPreview?.icpBrasil.responsavel || null}
+                />
+
+                {/* Navegação entre documentos */}
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10, alignItems: "center" }}>
+                  {documentIds.length > 1 ? (
+                    <>
+                      <button
+                        type="button"
+                        disabled={isFirst}
+                        onClick={() => goTo(currentIdx - 1)}
+                        style={{ background: "transparent", color: "#cbd5e1", border: "1px solid #475569", borderRadius: 8, padding: "8px 14px", fontWeight: 600, cursor: isFirst ? "not-allowed" : "pointer", opacity: isFirst ? 0.4 : 1 }}
+                      >
+                        ← Anterior
+                      </button>
+
+                      {/* Mini-lista de todos os documentos */}
+                      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", flex: 1 }}>
+                        {documentIds.map((id, i) => (
+                          <button
+                            key={id}
+                            type="button"
+                            onClick={() => goTo(i)}
+                            title={docLabel(id)}
+                            style={{
+                              background: id === previewDocId ? "#1d4ed8" : placements[id] ? "#064e3b" : "#1e293b",
+                              border: `1px solid ${id === previewDocId ? "#3b82f6" : placements[id] ? "#059669" : "#475569"}`,
+                              color: id === previewDocId ? "#fff" : placements[id] ? "#6ee7b7" : "#94a3b8",
+                              borderRadius: 6,
+                              padding: "4px 10px",
+                              fontSize: 11,
+                              cursor: "pointer",
+                              fontWeight: id === previewDocId ? 700 : 400,
+                            }}
+                          >
+                            {i + 1}{placements[id] ? " ✓" : ""}
+                          </button>
+                        ))}
+                      </div>
+
+                      {!isLast ? (
+                        <button
+                          type="button"
+                          onClick={() => goTo(currentIdx + 1)}
+                          style={{ background: "#0f766e", color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontWeight: 600, cursor: "pointer" }}
+                        >
+                          Próximo →
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => setStep("preview")}
+                          style={{ background: "#1d4ed8", color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontWeight: 600, cursor: "pointer" }}
+                        >
+                          Ver prévia final →
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => setStep("preview")}
+                      style={{ background: "#1d4ed8", color: "#fff", border: "none", borderRadius: 8, padding: "10px 14px", fontWeight: 600, cursor: "pointer" }}
+                    >
+                      Ver prévia final
+                    </button>
+                  )}
+                </div>
+
+                {documentIds.length > 1 && !isLast ? (
                   <button
                     type="button"
-                    onClick={() => setStep("review")}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: "#7dd3fc",
-                      cursor: "pointer",
-                      padding: 0,
-                      fontSize: 13,
-                      textDecoration: "underline",
-                    }}
+                    disabled={busy}
+                    onClick={() => setStep("preview")}
+                    style={{ marginTop: 8, background: "transparent", color: "#94a3b8", border: "1px solid #334155", borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer" }}
                   >
-                    ver certificado
+                    Pular para prévia final ({posicionados}/{documentIds.length} posicionados)
                   </button>
-                </div>
-              ) : null}
-
-              <label
-                style={{ display: "block", fontSize: 13, marginBottom: 10 }}
-              >
-                {documentIds.length > 1
-                  ? "Posicionar carimbo em:"
-                  : "Documento:"}
-                <select
-                  value={previewDocId || ""}
-                  onChange={(e) => setPreviewDocId(e.target.value || null)}
-                  style={field}
-                >
-                  {documentIds.map((id) => (
-                    <option key={id} value={id}>
-                      {docLabel(id)}
-                      {placements[id] ? " ✓" : ""}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <CertStampPositionPreview
-                documentId={previewDocId}
-                placement={getPlacement(previewDocId)}
-                onChange={(p) => setDocPlacement(previewDocId, p)}
-                signerLabel={
-                  certRef.current ? getCertificateHolderLabel(certRef.current) : ""
-                }
-                stampSubject={certLabel || certPreview?.subject || null}
-                stampCnpj={certPreview ? getCertificateHolderCnpj(certPreview) : null}
-                stampCpf={formatCpf(certPreview?.icpBrasil.cpf)}
-                stampRazaoSocial={certPreview?.icpBrasil.razaoSocial || null}
-                stampResponsavel={certPreview?.icpBrasil.responsavel || null}
-              />
-
-              {documentIds.length > 1 ? (
-                <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
-                  Posicione o carimbo para cada documento separadamente — selecione acima, arraste o carimbo e troque para o próximo.
-                  {" "}Documentos configurados: {Object.keys(placements).length}/{documentIds.length}.
-                </p>
-              ) : (
-                <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
-                  Arraste o carimbo para a posição desejada no documento.
-                </p>
-              )}
-
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => setStep("preview")}
-                style={{
-                  marginTop: 6,
-                  background: "#1d4ed8",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 8,
-                  padding: "10px 14px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                Ver prévia final
-              </button>
-            </>
-          ) : null}
+                ) : null}
+              </>
+            );
+          })() : null}
 
           {step === "preview" && certPreview ? (
             <>
