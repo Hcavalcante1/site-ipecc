@@ -8,9 +8,18 @@ export const dynamic = "force-dynamic";
 
 type Ctx = { params: { id: string } };
 
+function contentTypeFromName(name: string | null | undefined) {
+  const n = String(name || "").toLowerCase();
+  if (n.endsWith(".pdf")) return "application/pdf";
+  if (n.endsWith(".png")) return "image/png";
+  if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
+  if (n.endsWith(".webp")) return "image/webp";
+  if (n.endsWith(".txt")) return "text/plain; charset=utf-8";
+  return "application/octet-stream";
+}
+
 /**
- * Retorna URL assinada (5 min) do arquivo no storage.
- * O browser faz redirect e baixa direto do Supabase — evita streaming no servidor.
+ * Retorna o arquivo do storage: gera signed URL e faz o download server-side.
  * GET /api/admin/documentos/{id}/arquivo?versao=atual|assinado
  */
 export async function GET(req: NextRequest, ctx: Ctx) {
@@ -28,6 +37,7 @@ export async function GET(req: NextRequest, ctx: Ctx) {
 
   const admin = getSupabaseAdmin();
   let storagePath = doc.storage_path as string | null;
+  let fileName = doc.file_name as string | null;
 
   if (tipo === "assinado") {
     const { data: evid } = await admin
@@ -44,6 +54,7 @@ export async function GET(req: NextRequest, ctx: Ctx) {
       );
     }
     storagePath = evid.signed_storage_path;
+    fileName = `assinado-${evid.validation_code}.pdf`;
   }
 
   // Fallback: busca versão mais recente em gd_document_versions
@@ -76,13 +87,14 @@ export async function GET(req: NextRequest, ctx: Ctx) {
     );
   }
 
-  // Normaliza o caminho (remove barra inicial se houver)
   const cleanPath = storagePath.replace(/^\//, "");
 
   try {
+    // Gera signed URL (60s) e faz o download server-side com fetch simples —
+    // evita o problema de CORS ao redirecionar para domínio cross-origin.
     const { data: signed, error: signErr } = await admin.storage
       .from(GD_STORAGE_BUCKET)
-      .createSignedUrl(cleanPath, 300); // 5 minutos
+      .createSignedUrl(cleanPath, 60);
 
     if (signErr || !signed?.signedUrl) {
       return NextResponse.json(
@@ -94,7 +106,26 @@ export async function GET(req: NextRequest, ctx: Ctx) {
       );
     }
 
-    return NextResponse.redirect(signed.signedUrl, 302);
+    const fileRes = await fetch(signed.signedUrl);
+    if (!fileRes.ok) {
+      return NextResponse.json(
+        { ok: false, error: `Storage retornou ${fileRes.status}.` },
+        { status: 404 }
+      );
+    }
+
+    const buf = Buffer.from(await fileRes.arrayBuffer());
+    const name = fileName || cleanPath.split("/").pop() || "documento";
+
+    return new NextResponse(buf, {
+      status: 200,
+      headers: {
+        "Content-Type": contentTypeFromName(name),
+        "Content-Disposition": `inline; filename="${name.replace(/"/g, "")}"`,
+        "Cache-Control": "private, no-store",
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro ao acessar storage.";
     return NextResponse.json({ ok: false, error: msg }, { status: 500 });
