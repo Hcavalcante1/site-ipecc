@@ -251,16 +251,17 @@ export default function DocumentosListaPage() {
           Nenhum documento encontrado com os filtros atuais.
         </div>
       ) : (
-        <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+        <div style={{ display: "grid", gap: 6, marginTop: 12 }}>
           <label
             style={{
               display: "flex",
               alignItems: "center",
               gap: 8,
               fontSize: 13,
-              opacity: 0.8,
+              opacity: 0.75,
               cursor: "pointer",
               userSelect: "none",
+              padding: "4px 0",
             }}
           >
             <input
@@ -274,82 +275,137 @@ export default function DocumentosListaPage() {
             <div
               key={doc.id}
               style={{
-                ...gdCardStyle,
-                marginTop: 0,
+                background: selected.has(doc.id)
+                  ? "rgba(59,130,246,0.10)"
+                  : "rgba(255,255,255,0.04)",
+                border: `1px solid ${selected.has(doc.id) ? "#3b82f6" : "#334155"}`,
+                borderRadius: 10,
+                padding: "10px 14px",
                 display: "flex",
-                justifyContent: "space-between",
-                gap: 12,
+                alignItems: "center",
+                gap: 10,
                 flexWrap: "wrap",
-                outline: selected.has(doc.id) ? "2px solid #3b82f6" : "none",
               }}
             >
-              <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                <input
-                  type="checkbox"
-                  checked={selected.has(doc.id)}
-                  onChange={() => toggleSelect(doc.id)}
-                  style={{ marginTop: 4, flexShrink: 0, cursor: "pointer" }}
-                />
-                <div>
+              <input
+                type="checkbox"
+                checked={selected.has(doc.id)}
+                onChange={() => toggleSelect(doc.id)}
+                style={{ flexShrink: 0, cursor: "pointer", width: 16, height: 16 }}
+              />
+              <div style={{ flex: 1, minWidth: 180 }}>
                 <Link
                   href={`/admin/documentos/documentos/${doc.id}`}
-                  style={{ color: "#93c5fd", fontWeight: 700 }}
+                  style={{ color: "#93c5fd", fontWeight: 600, fontSize: 14 }}
                 >
-                  {doc.favorite ? "★ " : ""}
-                  {doc.title}
+                  {doc.favorite ? "★ " : ""}{doc.title}
                 </Link>
-                <p style={{ margin: "6px 0 0", fontSize: 13, opacity: 0.85 }}>
+                <div style={{ fontSize: 12, opacity: 0.7, marginTop: 2 }}>
                   {rotuloStatus(doc.status)}
-                  {doc.current_version
-                    ? ` · v${doc.current_version}`
-                    : " · sem arquivo"}
+                  {doc.current_version ? ` · v${doc.current_version}` : " · sem arquivo"}
                   {doc.number ? ` · nº ${doc.number}` : ""}
-                </p>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 6, flexShrink: 0, flexWrap: "wrap" }}>
                 <button
                   type="button"
-                  style={{ ...gdBtnStyle, background: "#334155" }}
                   onClick={() => favoritar(doc)}
                   title={doc.favorite ? "Remover favorito" : "Favoritar"}
+                  style={{
+                    background: "transparent",
+                    border: "1px solid #475569",
+                    borderRadius: 6,
+                    color: doc.favorite ? "#fbbf24" : "#94a3b8",
+                    cursor: "pointer",
+                    padding: "4px 8px",
+                    fontSize: 14,
+                    lineHeight: 1,
+                  }}
                 >
                   {doc.favorite ? "★" : "☆"}
                 </button>
                 <Link
                   href={`/admin/documentos/documentos/${doc.id}`}
-                  style={{ ...gdBtnStyle, background: "#334155" }}
+                  style={{
+                    background: "#1e3a5f",
+                    border: "none",
+                    borderRadius: 6,
+                    color: "#93c5fd",
+                    cursor: "pointer",
+                    padding: "4px 10px",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                  }}
                 >
                   Abrir
                 </Link>
-                {doc.storage_path || doc.current_version ? (
+                {(doc.storage_path || doc.current_version) ? (
                   <Link
                     href={`/admin/documentos/assinaturas?document_id=${encodeURIComponent(doc.id)}`}
-                    style={{ ...gdBtnStyle, background: "#0f766e" }}
+                    style={{
+                      background: "#134e4a",
+                      border: "none",
+                      borderRadius: 6,
+                      color: "#6ee7b7",
+                      cursor: "pointer",
+                      padding: "4px 10px",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      textDecoration: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                    }}
                   >
-                    Escolher assinatura
+                    Assinar
                   </Link>
                 ) : null}
                 <button
                   type="button"
-                  style={{ ...gdBtnStyle, background: "#475569" }}
                   onClick={() => duplicar(doc.id)}
+                  style={{
+                    background: "#1e293b",
+                    border: "1px solid #475569",
+                    borderRadius: 6,
+                    color: "#cbd5e1",
+                    cursor: "pointer",
+                    padding: "4px 10px",
+                    fontSize: 13,
+                  }}
                 >
                   Duplicar
                 </button>
                 {doc.status !== "archived" ? (
                   <button
                     type="button"
-                    style={{ ...gdBtnStyle, background: "#64748b" }}
                     onClick={() => arquivar(doc.id)}
+                    style={{
+                      background: "#1e293b",
+                      border: "1px solid #475569",
+                      borderRadius: 6,
+                      color: "#94a3b8",
+                      cursor: "pointer",
+                      padding: "4px 10px",
+                      fontSize: 13,
+                    }}
                   >
                     Arquivar
                   </button>
                 ) : null}
                 <button
                   type="button"
-                  style={{ ...gdBtnStyle, background: "#ef4444" }}
                   onClick={() => excluir(doc.id)}
+                  style={{
+                    background: "#450a0a",
+                    border: "1px solid #7f1d1d",
+                    borderRadius: 6,
+                    color: "#fca5a5",
+                    cursor: "pointer",
+                    padding: "4px 10px",
+                    fontSize: 13,
+                  }}
                 >
                   Lixeira
                 </button>
