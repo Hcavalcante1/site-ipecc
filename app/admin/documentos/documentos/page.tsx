@@ -22,6 +22,8 @@ export default function DocumentosListaPage() {
   const [categoryId, setCategoryId] = useState("");
   const [aviso, setAviso] = useState("");
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [excluindoLote, setExcluindoLote] = useState(false);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -78,6 +80,41 @@ export default function DocumentosListaPage() {
     carregar();
   }
 
+  async function excluirSelecionados() {
+    if (selected.size === 0) return;
+    if (!confirm(`Mover ${selected.size} documento(s) para a lixeira?`)) return;
+    setExcluindoLote(true);
+    const ids = Array.from(selected);
+    await Promise.all(
+      ids.map((id) =>
+        fetch(`/api/admin/documentos/${id}`, {
+          method: "DELETE",
+          credentials: "include",
+        })
+      )
+    );
+    setSelected(new Set());
+    setExcluindoLote(false);
+    carregar();
+  }
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleTodos() {
+    if (selected.size === documents.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(documents.map((d) => d.id)));
+    }
+  }
+
   async function favoritar(doc: GdDocument) {
     const res = await fetch(`/api/admin/documentos/${doc.id}`, {
       method: "PATCH",
@@ -127,6 +164,16 @@ export default function DocumentosListaPage() {
       description="Busca, filtros, favoritos, arquivamento e lixeira."
       actions={
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {selected.size > 0 && (
+            <button
+              type="button"
+              style={{ ...gdBtnStyle, background: "#7f1d1d" }}
+              onClick={excluirSelecionados}
+              disabled={excluindoLote}
+            >
+              {excluindoLote ? "Excluindo…" : `Lixeira (${selected.size})`}
+            </button>
+          )}
           <Link href="/admin/documentos/lixeira" style={{ ...gdBtnStyle, background: "#334155" }}>
             Lixeira
           </Link>
@@ -205,6 +252,24 @@ export default function DocumentosListaPage() {
         </div>
       ) : (
         <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              fontSize: 13,
+              opacity: 0.8,
+              cursor: "pointer",
+              userSelect: "none",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={selected.size === documents.length && documents.length > 0}
+              onChange={toggleTodos}
+            />
+            Selecionar todos ({documents.length})
+          </label>
           {documents.map((doc) => (
             <div
               key={doc.id}
@@ -215,9 +280,17 @@ export default function DocumentosListaPage() {
                 justifyContent: "space-between",
                 gap: 12,
                 flexWrap: "wrap",
+                outline: selected.has(doc.id) ? "2px solid #3b82f6" : "none",
               }}
             >
-              <div>
+              <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <input
+                  type="checkbox"
+                  checked={selected.has(doc.id)}
+                  onChange={() => toggleSelect(doc.id)}
+                  style={{ marginTop: 4, flexShrink: 0, cursor: "pointer" }}
+                />
+                <div>
                 <Link
                   href={`/admin/documentos/documentos/${doc.id}`}
                   style={{ color: "#93c5fd", fontWeight: 700 }}
@@ -232,6 +305,7 @@ export default function DocumentosListaPage() {
                     : " · sem arquivo"}
                   {doc.number ? ` · nº ${doc.number}` : ""}
                 </p>
+                </div>
               </div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 <button
