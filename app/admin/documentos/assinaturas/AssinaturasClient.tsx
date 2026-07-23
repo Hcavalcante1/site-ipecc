@@ -519,22 +519,23 @@ export default function AssinaturasClient() {
 
   async function excluirPedidosSelecionados() {
     if (selectedPedidos.size === 0) return;
-    if (!confirm(`Excluir ${selectedPedidos.size} registro(s) do histórico? Os documentos originais permanecem.`)) return;
+    if (!confirm(`Excluir ${selectedPedidos.size} registro(s) de assinatura e mover os documentos para a lixeira?`)) return;
     setExcluindoLote(true);
+    const selecionados = rows.filter((r) => selectedPedidos.has(r.id));
     await Promise.all(
-      Array.from(selectedPedidos).map((id) => {
-        const row = rows.find((r) => r.id === id);
-        const isCert = row?.provider_code === "certificado" || row?.kind === "certificate";
-        const qs = new URLSearchParams({ id });
+      selecionados.flatMap((row) => {
+        const isCert = row.provider_code === "certificado" || row.kind === "certificate";
+        const qs = new URLSearchParams({ id: row.id });
         if (isCert) qs.set("kind", "certificate");
-        return fetch(`/api/admin/documentos/assinaturas?${qs}`, {
-          method: "DELETE",
-          credentials: "include",
-        });
+        return [
+          fetch(`/api/admin/documentos/assinaturas?${qs}`, { method: "DELETE", credentials: "include" }),
+          fetch(`/api/admin/documentos/${row.document_id}`, { method: "DELETE", credentials: "include" }),
+        ];
       })
     );
     setSelectedPedidos(new Set());
     setExcluindoLote(false);
+    setAviso(`${selecionados.length} registro(s) excluído(s) e documento(s) movido(s) para a lixeira.`);
     carregar();
   }
 
