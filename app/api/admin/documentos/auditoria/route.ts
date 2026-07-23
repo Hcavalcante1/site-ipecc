@@ -51,3 +51,26 @@ export async function GET() {
 
   return NextResponse.json({ ok: true, logs });
 }
+
+export async function DELETE() {
+  const { denied, auth } = await denyIfSemModuloDocumentos();
+  if (denied || !auth) return denied!;
+
+  const admin = getSupabaseAdmin();
+  const processoIds = processoIdsDoEscopo(auth.contexto);
+
+  if (processoIds !== "todos" && processoIds.length === 0) {
+    return NextResponse.json({ ok: true });
+  }
+
+  let query = admin.from("gd_document_logs").delete().not("id", "is", null);
+  if (processoIds !== "todos") {
+    query = query.in("processo_id", processoIds);
+  }
+
+  const { error } = await query;
+  if (error) {
+    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+  }
+  return NextResponse.json({ ok: true });
+}
