@@ -33,6 +33,7 @@ export default function AuditoriaPage() {
   const [evidencias, setEvidencias] = useState<EvidenciaRow[]>([]);
   const [aviso, setAviso] = useState("");
   const [loading, setLoading] = useState(true);
+  const [limpando, setLimpando] = useState(false);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -68,10 +69,72 @@ export default function AuditoriaPage() {
     carregar();
   }, [carregar]);
 
+  function baixarCSV() {
+    if (logs.length === 0) return;
+    const header = ["id", "action", "actor_email", "document_id", "created_at", "detail"];
+    const linhas = logs.map((l) =>
+      [
+        l.id,
+        l.action,
+        l.actor_email ?? "",
+        l.document_id ?? "",
+        l.created_at,
+        l.detail ? JSON.stringify(l.detail).replace(/"/g, '""') : "",
+      ]
+        .map((v) => `"${v}"`)
+        .join(",")
+    );
+    const csv = [header.join(","), ...linhas].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `auditoria_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function limparLogs() {
+    if (!confirm(`Excluir ${logs.length} log(s) permanentemente? Faça o download antes se quiser guardar.`)) return;
+    setLimpando(true);
+    const res = await fetch("/api/admin/documentos/auditoria", {
+      method: "DELETE",
+      credentials: "include",
+    });
+    const json = await res.json();
+    setLimpando(false);
+    if (!res.ok) {
+      setAviso(json.error || "Erro ao limpar logs.");
+      return;
+    }
+    carregar();
+  }
+
   return (
     <GestaoDocumentalShell
       title="Auditoria"
       description="Logs do módulo e evidências de assinatura eletrônica IPECC."
+      actions={
+        logs.length > 0 ? (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              style={{ ...gdBtnStyle, background: "#334155" }}
+              onClick={baixarCSV}
+            >
+              Baixar CSV
+            </button>
+            <button
+              type="button"
+              style={{ ...gdBtnStyle, background: "#7f1d1d" }}
+              onClick={limparLogs}
+              disabled={limpando}
+            >
+              {limpando ? "Limpando…" : `Limpar logs (${logs.length})`}
+            </button>
+          </div>
+        ) : undefined
+      }
     >
       {aviso ? (
         <div style={{ ...gdCardStyle, borderColor: "#f59e0b", color: "#fde68a" }}>
