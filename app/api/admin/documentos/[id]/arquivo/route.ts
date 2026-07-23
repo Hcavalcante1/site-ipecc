@@ -8,20 +8,10 @@ export const dynamic = "force-dynamic";
 
 type Ctx = { params: { id: string } };
 
-function contentTypeFromName(name: string | null | undefined) {
-  const n = String(name || "").toLowerCase();
-  if (n.endsWith(".pdf")) return "application/pdf";
-  if (n.endsWith(".png")) return "image/png";
-  if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
-  if (n.endsWith(".webp")) return "image/webp";
-  if (n.endsWith(".txt")) return "text/plain; charset=utf-8";
-  return "application/octet-stream";
-}
-
 /**
- * Stream do arquivo pelo domínio IPECC (admin autenticado).
- * GET /api/admin/documentos/{id}/arquivo
- * ?versao=atual|assinado — assinado usa a evidência IPECC mais recente.
+ * Retorna URL assinada (5 min) do arquivo no storage.
+ * O browser faz redirect e baixa direto do Supabase — evita streaming no servidor.
+ * GET /api/admin/documentos/{id}/arquivo?versao=atual|assinado
  */
 export async function GET(req: NextRequest, ctx: Ctx) {
   const { denied, auth } = await denyIfSemModuloDocumentos();
@@ -38,7 +28,6 @@ export async function GET(req: NextRequest, ctx: Ctx) {
 
   const admin = getSupabaseAdmin();
   let storagePath = doc.storage_path as string | null;
-  let fileName = doc.file_name as string | null;
 
   if (tipo === "assinado") {
     const { data: evid } = await admin
@@ -55,10 +44,9 @@ export async function GET(req: NextRequest, ctx: Ctx) {
       );
     }
     storagePath = evid.signed_storage_path;
-    fileName = `assinado-${evid.validation_code}.pdf`;
   }
 
-  // Fallback: caminho da versão atual (mesmo padrão da assinatura avançada)
+  // Fallback: busca versão mais recente em gd_document_versions
   if (!storagePath) {
     const currentVersion = Number(doc.current_version) || 1;
     const { data: versionExact } = await admin
@@ -88,52 +76,27 @@ export async function GET(req: NextRequest, ctx: Ctx) {
     );
   }
 
-  const candidates = [
-    storagePath,
-    storagePath.replace(/^\//, ""),
-    storagePath.startsWith("/") ? storagePath : `/${storagePath}`,
-  ].filter((p, i, arr) => p && arr.indexOf(p) === i);
+  // Normaliza o caminho (remove barra inicial se houver)
+  const cleanPath = storagePath.replace(/^\//, "");
 
   try {
-    let file: Blob | null = null;
-    let lastErr: string | null = null;
-    for (const path of candidates) {
-      const { data, error } = await admin.storage
-        .from(GD_STORAGE_BUCKET)
-        .download(path);
-      if (data && !error) {
-        file = data;
-        storagePath = path;
-        break;
-      }
-      lastErr = error?.message || "Arquivo indisponível.";
-    }
+    const { data: signed, error: signErr } = await admin.storage
+      .from(GD_STORAGE_BUCKET)
+      .createSignedUrl(cleanPath, 300); // 5 minutos
 
-    if (!file) {
+    if (signErr || !signed?.signedUrl) {
       return NextResponse.json(
         {
           ok: false,
-          error: lastErr || "Arquivo indisponível no storage.",
-          storagePath,
+          error: signErr?.message || "Não foi possível gerar URL de acesso ao arquivo.",
         },
-        { status: 404 }
+        { status: 500 }
       );
     }
 
-    const buf = Buffer.from(await file.arrayBuffer());
-    const name = fileName || storagePath.split("/").pop() || "documento";
-
-    return new NextResponse(buf, {
-      status: 200,
-      headers: {
-        "Content-Type": contentTypeFromName(name),
-        "Content-Disposition": `inline; filename="${name.replace(/"/g, "")}"`,
-        "Cache-Control": "private, no-store",
-        "X-Content-Type-Options": "nosniff",
-      },
-    });
+    return NextResponse.redirect(signed.signedUrl, 302);
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Erro ao baixar arquivo do storage.";
+    const msg = e instanceof Error ? e.message : "Erro ao acessar storage.";
     return NextResponse.json({ ok: false, error: msg }, { status: 500 });
   }
 }
