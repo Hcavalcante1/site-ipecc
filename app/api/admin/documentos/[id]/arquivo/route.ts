@@ -115,13 +115,16 @@ export async function GET(req: NextRequest, ctx: Ctx) {
     }
 
     const buf = Buffer.from(await fileRes.arrayBuffer());
-    const name = fileName || cleanPath.split("/").pop() || "documento";
+    const name = (fileName || cleanPath.split("/").pop() || "documento").normalize("NFC");
+    // Content-Disposition só aceita ASCII — usa filename* (RFC 5987) para UTF-8
+    const asciiName = name.replace(/[^\x20-\x7E]/g, "_");
+    const encodedName = encodeURIComponent(name);
 
     return new NextResponse(buf, {
       status: 200,
       headers: {
         "Content-Type": contentTypeFromName(name),
-        "Content-Disposition": `inline; filename="${name.replace(/"/g, "")}"`,
+        "Content-Disposition": `inline; filename="${asciiName}"; filename*=UTF-8''${encodedName}`,
         "Cache-Control": "private, no-store",
         "X-Content-Type-Options": "nosniff",
       },
