@@ -290,7 +290,7 @@
 /* Container com o quadro azul escuro */
 .admin-content-shell {
   border-radius: 20px;
-  background: radial-gradient(circle at top, #0b4b8d 0%, #020617 60%);
+  background: radial-gradient(ellipse at 50% 0%, #041a3b 0%, #020617 55%);
   padding: 10px 10px 12px;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.56);
   border: 1px solid rgba(148, 163, 184, 0.28);
