@@ -110,6 +110,17 @@ export default function AssinaturasClient() {
     documentosImportados,
   ]);
 
+  const documentNomesCertificado = useMemo<Record<string, string>>(() => {
+    const names: Record<string, string> = {};
+    for (const doc of documentosImportados) {
+      names[doc.id] = doc.fileName || doc.title || "";
+    }
+    if (documentId.trim() && documentTitle) {
+      names[documentId.trim()] = documentTitle;
+    }
+    return names;
+  }, [documentosImportados, documentId, documentTitle]);
+
   const abrirCertificado = useCallback(
     (documentIds: string[], source: CertificateTargetSource = null) => {
       const ids = documentIds.map((id) => String(id).trim()).filter(Boolean);
@@ -649,6 +660,7 @@ export default function AssinaturasClient() {
       <AssinarComCertificadoModal
         open={certOpen}
         documentIds={documentIdsCertificado}
+        documentNames={documentNomesCertificado}
         onClose={() => {
           setCertOpen(false);
           setCertDocumentIds(null);
