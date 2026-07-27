@@ -53,7 +53,7 @@ type SavedCertificateProfile = {
 
 type Step = "cert" | "review" | "pages" | "preview" | "signing" | "done";
 
-type Placement = { page: number; xPct: number; yPct: number };
+type Placement = { page: number; xPct: number; yPct: number; extraPages: number[] };
 
 function stampLeftTopPct(
   pageW: number,
@@ -299,6 +299,7 @@ function CertStampPositionPreview({
   stampCpf,
   stampRazaoSocial,
   stampResponsavel,
+  onPageCountKnown,
 }: {
   documentId?: string | null;
   placement: Placement;
@@ -309,6 +310,7 @@ function CertStampPositionPreview({
   stampCpf?: string | null;
   stampRazaoSocial?: string | null;
   stampResponsavel?: string | null;
+  onPageCountKnown?: (count: number) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<Array<HTMLDivElement | null>>([]);
@@ -406,6 +408,7 @@ function CertStampPositionPreview({
         if (cancelled) return;
         setPages(rendered);
         pageRefs.current = rendered.map(() => null);
+        onPageCountKnown?.(rendered.length);
       } catch (e) {
         if (!cancelled) {
           // Fallback: página A4 em branco para ainda posicionar a aparência
@@ -762,10 +765,11 @@ export default function AssinarComCertificadoModal({
   const [selectedProfilePassword, setSelectedProfilePassword] = useState("");
   const [previewDocId, setPreviewDocId] = useState<string | null>(null);
   const [placements, setPlacements] = useState<Record<string, Placement>>({});
+  const [documentPageCounts, setDocumentPageCounts] = useState<Record<string, number>>({});
 
   function getPlacement(docId: string | null | undefined): Placement {
-    if (!docId) return { page: 1, xPct: 96, yPct: 96 };
-    return placements[docId] ?? { page: 1, xPct: 96, yPct: 96 };
+    if (!docId) return { page: 1, xPct: 96, yPct: 96, extraPages: [] };
+    return placements[docId] ?? { page: 1, xPct: 96, yPct: 96, extraPages: [] };
   }
 
   function setDocPlacement(docId: string | null | undefined, p: Placement) {
@@ -1079,6 +1083,7 @@ export default function AssinarComCertificadoModal({
               height: CERT_STAMP_BOX.h,
               signerLabel: getCertificateHolderLabel(cert),
             },
+            extraStampPages: docPlacement.extraPages,
           });
 
           const fileName = documentNames?.[item.documentId]
@@ -1500,7 +1505,57 @@ export default function AssinarComCertificadoModal({
                   stampCpf={formatCpf(certPreview?.icpBrasil.cpf)}
                   stampRazaoSocial={certPreview?.icpBrasil.razaoSocial || null}
                   stampResponsavel={certPreview?.icpBrasil.responsavel || null}
+                  onPageCountKnown={(count) => {
+                    if (!previewDocId) return;
+                    setDocumentPageCounts((prev) => ({ ...prev, [previewDocId]: count }));
+                  }}
                 />
+
+                {/* Seleção de páginas extras para o carimbo */}
+                {(() => {
+                  const docId = previewDocId || documentIds[0] || "";
+                  const totalPages = documentPageCounts[docId] || 0;
+                  const placement = getPlacement(docId);
+                  if (totalPages <= 1) return null;
+                  const otherPages = Array.from({ length: totalPages }, (_, i) => i + 1).filter(p => p !== placement.page);
+                  return (
+                    <div style={{ background: "#1e293b", borderRadius: 8, padding: "10px 14px", marginTop: 8 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: "#94a3b8", marginBottom: 8 }}>
+                        Também carimbar nas páginas:
+                        <span style={{ fontWeight: 400, marginLeft: 6 }}>(a assinatura criptográfica cobre o documento inteiro)</span>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        {otherPages.map(p => {
+                          const checked = placement.extraPages.includes(p);
+                          return (
+                            <label
+                              key={p}
+                              style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer", fontSize: 13, userSelect: "none" }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => {
+                                  const next = checked
+                                    ? placement.extraPages.filter(x => x !== p)
+                                    : [...placement.extraPages, p].sort((a, b) => a - b);
+                                  setDocPlacement(docId, { ...placement, extraPages: next });
+                                }}
+                                style={{ cursor: "pointer", width: 15, height: 15 }}
+                              />
+                              <span style={{ color: checked ? "#6ee7b7" : "#cbd5e1" }}>Pág. {p}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      {placement.extraPages.length > 0 && (
+                        <div style={{ fontSize: 11, color: "#6ee7b7", marginTop: 6 }}>
+                          Carimbo na pág. {placement.page} + {placement.extraPages.join(", ")}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Navegação entre documentos */}
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10, alignItems: "center" }}>
