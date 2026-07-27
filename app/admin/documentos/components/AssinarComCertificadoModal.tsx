@@ -53,7 +53,8 @@ type SavedCertificateProfile = {
 
 type Step = "cert" | "review" | "pages" | "preview" | "signing" | "done";
 
-type Placement = { page: number; xPct: number; yPct: number; extraPages: number[] };
+type PageStamp = { xPct: number; yPct: number };
+type DocStamps = Record<number, PageStamp>; // chave = número da página (1-based)
 
 function stampLeftTopPct(
   pageW: number,
@@ -291,8 +292,9 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
 
 function CertStampPositionPreview({
   documentId,
-  placement,
-  onChange,
+  pageStamps,
+  onStampChange,
+  onStampRemove,
   signerLabel,
   stampSubject,
   stampCnpj,
@@ -302,8 +304,9 @@ function CertStampPositionPreview({
   onPageCountKnown,
 }: {
   documentId?: string | null;
-  placement: Placement;
-  onChange: (next: Placement) => void;
+  pageStamps: DocStamps;
+  onStampChange: (page: number, xPct: number, yPct: number) => void;
+  onStampRemove: (page: number) => void;
   signerLabel: string;
   stampSubject?: string | null;
   stampCnpj?: string | null;
@@ -314,7 +317,7 @@ function CertStampPositionPreview({
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<Array<HTMLDivElement | null>>([]);
-  const dragging = useRef(false);
+  const draggingPage = useRef<number | null>(null);
   const [grabbing, setGrabbing] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [pages, setPages] = useState<
@@ -452,62 +455,15 @@ function CertStampPositionPreview({
     };
   }, [pdfUrl]);
 
-  const activePage =
-    pages.find((p) => p.index === placement.page) || pages[pages.length - 1];
-  const pageW = activePage?.w || 595.28;
-  const pageH = activePage?.h || 841.89;
-  const geom = stampLeftTopPct(
-    pageW,
-    pageH,
-    CERT_STAMP_BOX.w,
-    CERT_STAMP_BOX.h,
-    placement.xPct,
-    placement.yPct
-  );
-
-  function autoScrollSeBorda(clientY: number) {
-    const sc = scrollRef.current;
-    if (!sc) return;
-    const r = sc.getBoundingClientRect();
-    const zona = 48;
-    if (clientY > r.bottom - zona) sc.scrollTop += 22;
-    else if (clientY < r.top + zona) sc.scrollTop -= 22;
-  }
-
-  function placementFromClient(clientX: number, clientY: number) {
-    autoScrollSeBorda(clientY);
-    let hitIdx = -1;
-    for (let i = 0; i < pageRefs.current.length; i++) {
-      const el = pageRefs.current[i];
-      if (!el) continue;
-      const r = el.getBoundingClientRect();
-      if (clientY >= r.top && clientY <= r.bottom) {
-        hitIdx = i;
-        break;
-      }
-    }
-    if (hitIdx < 0) {
-      // Fora das páginas: escolhe a mais próxima pelo centro
-      let best = 0;
-      let bestDist = Infinity;
-      for (let i = 0; i < pageRefs.current.length; i++) {
-        const el = pageRefs.current[i];
-        if (!el) continue;
-        const r = el.getBoundingClientRect();
-        const mid = (r.top + r.bottom) / 2;
-        const d = Math.abs(clientY - mid);
-        if (d < bestDist) {
-          bestDist = d;
-          best = i;
-        }
-      }
-      hitIdx = best;
-    }
-    const el = pageRefs.current[hitIdx];
-    const meta = pages[hitIdx];
-    if (!el || !meta) return;
-    const r = el.getBoundingClientRect();
-    if (r.width <= 0 || r.height <= 0) return;
+  function positionOnPage(
+    clientX: number,
+    clientY: number,
+    pageEl: HTMLDivElement | null,
+    meta: { w: number; h: number }
+  ): { xPct: number; yPct: number } | null {
+    if (!pageEl) return null;
+    const r = pageEl.getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) return null;
     const margin = CERT_STAMP_BOX.margin;
     const boxW = CERT_STAMP_BOX.w;
     const boxH = CERT_STAMP_BOX.h;
@@ -515,44 +471,10 @@ function CertStampPositionPreview({
     const spanY = Math.max(0, meta.h - boxH - 2 * margin);
     const relX = ((clientX - r.left) / r.width) * meta.w;
     const relY = ((clientY - r.top) / r.height) * meta.h;
-    const x = Math.min(
-      100,
-      Math.max(0, ((relX - boxW / 2 - margin) / Math.max(spanX, 1)) * 100)
-    );
-    const y = Math.min(
-      100,
-      Math.max(0, ((relY - boxH / 2 - margin) / Math.max(spanY, 1)) * 100)
-    );
-    onChange({
-      page: meta.index,
-      xPct: Math.round(x),
-      yPct: Math.round(y),
-      extraPages: placement.extraPages,
-    });
-  }
-
-  function onPointerDown(e: ReactPointerEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    dragging.current = true;
-    setGrabbing(true);
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    placementFromClient(e.clientX, e.clientY);
-  }
-
-  function onPointerMove(e: ReactPointerEvent) {
-    if (!dragging.current) return;
-    placementFromClient(e.clientX, e.clientY);
-  }
-
-  function onPointerUp(e: ReactPointerEvent) {
-    dragging.current = false;
-    setGrabbing(false);
-    try {
-      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-    } catch {
-      /* ignore */
-    }
+    return {
+      xPct: Math.round(Math.min(100, Math.max(0, ((relX - boxW / 2 - margin) / Math.max(spanX, 1)) * 100))),
+      yPct: Math.round(Math.min(100, Math.max(0, ((relY - boxH / 2 - margin) / Math.max(spanY, 1)) * 100))),
+    };
   }
 
   const when = (() => {
@@ -565,101 +487,93 @@ function CertStampPositionPreview({
     return `${now.getFullYear()}.${pad(now.getMonth() + 1)}.${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())} ${tz}`;
   })();
 
+  const stampCount = Object.keys(pageStamps).length;
+
   return (
     <div style={{ marginBottom: 12 }}>
-      <p
-        style={{
-          fontSize: 12,
-          color: "#94a3b8",
-          margin: "0 0 6px",
-          lineHeight: 1.35,
-        }}
-      >
-        Role o documento e arraste o carimbo para qualquer lugar (posição
-        livre).
-        {pages.length
-          ? ` · Página atual do carimbo: ${placement.page} de ${pages.length}`
-          : ""}
+      <p style={{ fontSize: 12, color: "#94a3b8", margin: "0 0 6px", lineHeight: 1.35 }}>
+        Clique em qualquer página para adicionar o carimbo naquele local. Arraste para reposicionar. Botão ✕ remove.
+        {stampCount > 0
+          ? ` · ${stampCount} página${stampCount > 1 ? "s" : ""} com carimbo`
+          : " · Nenhum carimbo posicionado ainda"}
       </p>
-      {loadErro ? (
-        <p style={{ color: "#fca5a5", fontSize: 13 }}>{loadErro}</p>
-      ) : null}
+      {loadErro ? <p style={{ color: "#fca5a5", fontSize: 13 }}>{loadErro}</p> : null}
       <div
         ref={scrollRef}
-        style={{
-          borderRadius: 8,
-          overflow: "auto",
-          maxHeight: "min(62vh, 680px)",
-          border: "1px solid #334155",
-          background: "#334155",
-          padding: 8,
-        }}
+        style={{ borderRadius: 8, overflow: "auto", maxHeight: "min(62vh, 680px)", border: "1px solid #334155", background: "#334155", padding: 8 }}
       >
-        {loadingPdf ? (
-          <p style={{ color: "#f8fafc", fontSize: 13, padding: 16 }}>
-            Carregando documento…
-          </p>
-        ) : null}
+        {loadingPdf ? <p style={{ color: "#f8fafc", fontSize: 13, padding: 16 }}>Carregando documento…</p> : null}
         {pages.map((p, idx) => {
-          const isActive = p.index === placement.page;
-          const isExtra = placement.extraPages.includes(p.index);
-          const showStamp = isActive || isExtra;
-          const g = stampLeftTopPct(
-            p.w,
-            p.h,
-            CERT_STAMP_BOX.w,
-            CERT_STAMP_BOX.h,
-            placement.xPct,
-            placement.yPct
-          );
+          const stamp = pageStamps[p.index];
+          const g = stamp
+            ? stampLeftTopPct(p.w, p.h, CERT_STAMP_BOX.w, CERT_STAMP_BOX.h, stamp.xPct, stamp.yPct)
+            : null;
+          const isDragging = draggingPage.current === p.index;
           return (
             <div
               key={p.index}
-              ref={(el) => {
-                pageRefs.current[idx] = el;
-              }}
+              ref={(el) => { pageRefs.current[idx] = el; }}
               style={{
                 position: "relative",
                 width: "100%",
                 lineHeight: 0,
                 background: "#fff",
                 marginBottom: 10,
-                boxShadow: isActive
+                boxShadow: stamp
                   ? "0 0 0 2px #3b82f6, 0 1px 4px rgba(0,0,0,0.25)"
-                  : isExtra
-                  ? "0 0 0 2px #059669, 0 1px 4px rgba(0,0,0,0.25)"
                   : "0 1px 4px rgba(0,0,0,0.25)",
+                cursor: stamp ? "default" : "crosshair",
               }}
               onPointerDown={(e) => {
                 if ((e.target as HTMLElement).closest("[data-stamp]")) return;
-                placementFromClient(e.clientX, e.clientY);
+                const pos = positionOnPage(e.clientX, e.clientY, pageRefs.current[idx], p);
+                if (pos) onStampChange(p.index, pos.xPct, pos.yPct);
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={p.dataUrl}
-                alt={`Página ${p.index}`}
-                draggable={false}
-                style={{ width: "100%", height: "auto", display: "block" }}
-              />
-              {/* Label de página */}
               <div style={{
-                position: "absolute", top: 4, left: 4, fontSize: 9, fontWeight: 700,
-                background: isActive ? "#3b82f6" : isExtra ? "#059669" : "rgba(0,0,0,0.35)",
-                color: "#fff", borderRadius: 4, padding: "1px 5px", lineHeight: 1.4, zIndex: 4,
+                position: "absolute", top: 4, left: 4, fontSize: 9, fontWeight: 700, zIndex: 4,
+                background: stamp ? "#3b82f6" : "rgba(0,0,0,0.3)",
+                color: "#fff", borderRadius: 4, padding: "1px 6px", lineHeight: 1.5,
               }}>
-                {isActive ? `Pág. ${p.index} ★` : `Pág. ${p.index}`}
+                Pág. {p.index}
               </div>
-              {showStamp ? (
+              {!stamp && (
+                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+                  <div style={{ border: "2px dashed #475569", borderRadius: 8, padding: "6px 16px", color: "#64748b", fontSize: 11, background: "rgba(255,255,255,0.6)" }}>
+                    Clique para adicionar carimbo
+                  </div>
+                </div>
+              )}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={p.dataUrl} alt={`Página ${p.index}`} draggable={false} style={{ width: "100%", height: "auto", display: "block" }} />
+              {stamp && g ? (
                 <div
                   data-stamp="1"
-                  role={isActive ? "button" : undefined}
-                  aria-label={isActive ? "Arrastar carimbo de assinatura" : undefined}
-                  title={isActive ? "Arraste livremente pelo documento" : `Carimbo na página ${p.index}`}
-                  onPointerDown={isActive ? onPointerDown : undefined}
-                  onPointerMove={isActive ? onPointerMove : undefined}
-                  onPointerUp={isActive ? onPointerUp : undefined}
-                  onPointerCancel={isActive ? onPointerUp : undefined}
+                  role="button"
+                  aria-label="Arrastar carimbo"
+                  title="Arraste para reposicionar"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    draggingPage.current = p.index;
+                    setGrabbing(true);
+                    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                  }}
+                  onPointerMove={(e) => {
+                    if (draggingPage.current !== p.index) return;
+                    const pos = positionOnPage(e.clientX, e.clientY, pageRefs.current[idx], p);
+                    if (pos) onStampChange(p.index, pos.xPct, pos.yPct);
+                  }}
+                  onPointerUp={(e) => {
+                    draggingPage.current = null;
+                    setGrabbing(false);
+                    try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+                  }}
+                  onPointerCancel={(e) => {
+                    draggingPage.current = null;
+                    setGrabbing(false);
+                    try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+                  }}
                   style={{
                     position: "absolute",
                     left: `${g.leftPct}%`,
@@ -667,70 +581,50 @@ function CertStampPositionPreview({
                     width: `${g.wPct}%`,
                     height: `${g.hPct}%`,
                     background: "#ffffff",
-                    border: "none",
-                    borderRadius: 0,
                     boxSizing: "border-box",
-                    cursor: isActive ? (grabbing ? "grabbing" : "grab") : "default",
-                    boxShadow: "none",
-                    outline: isActive && grabbing ? "1px dashed #999" : "1px dashed transparent",
+                    cursor: isDragging ? "grabbing" : "grab",
+                    outline: isDragging ? "1px dashed #999" : "1px dashed transparent",
                     zIndex: 3,
-                    touchAction: isActive ? "none" : undefined,
+                    touchAction: "none",
                     padding: "4px 6px",
                     display: "flex",
-                    gap: 4,
                     overflow: "hidden",
                     alignItems: "stretch",
-                    opacity: isExtra ? 0.85 : 1,
                   }}
                 >
-                  <div
+                  {/* Botão remover */}
+                  <button
+                    type="button"
+                    data-stamp="1"
+                    onClick={(e) => { e.stopPropagation(); onStampRemove(p.index); }}
+                    title="Remover carimbo desta página"
                     style={{
-                      width: "100%",
-                      minWidth: 0,
-                      display: "flex",
-                      flexDirection: "row",
-                      justifyContent: "flex-start",
-                      alignItems: "flex-start",
-                      gap: 4,
-                      fontSize: 6.4,
-                      lineHeight: 1.02,
-                      fontFamily: "Helvetica, Arial, sans-serif",
-                      color: "#000",
-                      position: "relative",
+                      position: "absolute", top: 1, right: 1, width: 13, height: 13,
+                      background: "#7f1d1d", color: "#fecaca", border: "none", borderRadius: 2,
+                      cursor: "pointer", fontSize: 8, lineHeight: 1, zIndex: 5,
+                      display: "flex", alignItems: "center", justifyContent: "center",
                     }}
-                  >
+                  >✕</button>
+                  <div style={{ width: "100%", minWidth: 0, display: "flex", flexDirection: "row", gap: 4, fontSize: 6.4, lineHeight: 1.02, fontFamily: "Helvetica, Arial, sans-serif", color: "#000" }}>
                     <div style={{ minWidth: 0, flex: "0 1 auto", maxWidth: 170 }}>
-                      <div style={{ fontSize: 6.8, fontWeight: 700, lineHeight: 1.04 }}>
-                        Assinado digitalmente por
-                      </div>
-                      <div style={{ marginTop: 1, fontSize: 7, fontWeight: 700, wordBreak: "break-word", lineHeight: 1.04 }}>
+                      <div style={{ fontSize: 6.8, fontWeight: 700 }}>Assinado digitalmente por</div>
+                      <div style={{ marginTop: 1, fontSize: 7, fontWeight: 700, wordBreak: "break-word" }}>
                         {String(stampSubject || signerLabel).toUpperCase() || "TITULAR DO CERTIFICADO"}
                       </div>
-                      <div style={{ marginTop: 0, fontWeight: 400, fontSize: 6.1 }}>
-                        CNPJ: {stampCnpj || ""}
+                      <div style={{ fontSize: 6.1 }}>CNPJ: {stampCnpj || ""}</div>
+                      <div style={{ fontSize: 5.9, wordBreak: "break-word" }}>
+                        {[stampRazaoSocial ? `Razão social: ${stampRazaoSocial}` : null, stampResponsavel ? `Responsável: ${stampResponsavel}` : null].filter(Boolean).join(" • ")}
                       </div>
-                      <div style={{ marginTop: 0, wordBreak: "break-word", fontSize: 5.9 }}>
-                        {[stampRazaoSocial ? `Razão social: ${stampRazaoSocial}` : null, stampResponsavel ? `Responsável: ${stampResponsavel}` : null]
-                          .filter(Boolean)
-                          .join(" • ")}
-                      </div>
-                      <div style={{ marginTop: 0, wordBreak: "break-word", fontSize: 5.9 }}>
-                        {stampCpf ? `CPF: ${stampCpf}` : ""}
-                      </div>
-                      <div style={{ marginTop: 0, fontSize: 5.9 }}>Dados: {when}</div>
+                      {stampCpf && <div style={{ fontSize: 5.9 }}>CPF: {stampCpf}</div>}
+                      <div style={{ fontSize: 5.9 }}>Dados: {when}</div>
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 0, alignItems: "center", justifyContent: "space-between", flex: "0 0 auto" }}>
-                      {qrDataUrl ? (
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between", flex: "0 0 auto" }}>
+                      {qrDataUrl
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={qrDataUrl}
-                          alt="QR Code de validação"
-                          style={{ width: 48, height: 48, display: "block", flex: "0 0 auto" }}
-                        />
-                      ) : (
-                        <div style={{ width: 53, height: 53, border: "1px solid #94a3b8", background: "#f8fafc", flex: "0 0 auto" }} />
-                      )}
-                      <div style={{ minWidth: 0, textAlign: "center", fontSize: 4.4, lineHeight: 1.0 }}>
+                        ? <img src={qrDataUrl} alt="QR" style={{ width: 48, height: 48, display: "block" }} />
+                        : <div style={{ width: 53, height: 53, border: "1px solid #94a3b8", background: "#f8fafc" }} />
+                      }
+                      <div style={{ textAlign: "center", fontSize: 4.4 }}>
                         <div style={{ fontWeight: 700 }}>VALIDAR ITI</div>
                         <div>verifique em validar.iti.gov.br</div>
                       </div>
@@ -769,17 +663,28 @@ export default function AssinarComCertificadoModal({
   const [selectedProfileId, setSelectedProfileId] = useState("");
   const [selectedProfilePassword, setSelectedProfilePassword] = useState("");
   const [previewDocId, setPreviewDocId] = useState<string | null>(null);
-  const [placements, setPlacements] = useState<Record<string, Placement>>({});
-  const [documentPageCounts, setDocumentPageCounts] = useState<Record<string, number>>({});
+  const [placements, setPlacements] = useState<Record<string, DocStamps>>({});
 
-  function getPlacement(docId: string | null | undefined): Placement {
-    if (!docId) return { page: 1, xPct: 96, yPct: 96, extraPages: [] };
-    return placements[docId] ?? { page: 1, xPct: 96, yPct: 96, extraPages: [] };
+  function getDocStamps(docId: string | null | undefined): DocStamps {
+    if (!docId) return {};
+    return placements[docId] ?? {};
   }
 
-  function setDocPlacement(docId: string | null | undefined, p: Placement) {
+  function setPageStamp(docId: string | null | undefined, page: number, xPct: number, yPct: number) {
     if (!docId) return;
-    setPlacements((prev) => ({ ...prev, [docId]: p }));
+    setPlacements((prev) => ({
+      ...prev,
+      [docId]: { ...(prev[docId] ?? {}), [page]: { xPct, yPct } },
+    }));
+  }
+
+  function removePageStamp(docId: string | null | undefined, page: number) {
+    if (!docId) return;
+    setPlacements((prev) => {
+      const next = { ...(prev[docId] ?? {}) };
+      delete next[page];
+      return { ...prev, [docId]: next };
+    });
   }
 
   function docLabel(id: string) {
@@ -1055,7 +960,19 @@ export default function AssinarComCertificadoModal({
 
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        const docPlacement = getPlacement(item.documentId);
+        const docStamps = getDocStamps(item.documentId);
+        const stampEntries = Object.entries(docStamps).map(([pg, s]) => ({
+          page: Number(pg),
+          xPct: s.xPct,
+          yPct: s.yPct,
+          width: CERT_STAMP_BOX.w,
+          height: CERT_STAMP_BOX.h,
+          signerLabel: getCertificateHolderLabel(cert),
+        }));
+        if (stampEntries.length === 0) {
+          // Fallback: carimbo no canto inferior-direito da página 1
+          stampEntries.push({ page: 1, xPct: 96, yPct: 96, width: CERT_STAMP_BOX.w, height: CERT_STAMP_BOX.h, signerLabel: getCertificateHolderLabel(cert) });
+        }
         setProgress(
           `Assinando ${i + 1}/${items.length}: ${docLabel(item.documentId)}`
         );
@@ -1080,15 +997,7 @@ export default function AssinarComCertificadoModal({
             expectedHashSha256: item.documentHashSha256,
             cert,
             validationCode: item.validationCode,
-            appearance: {
-              page: docPlacement.page,
-              xPct: docPlacement.xPct,
-              yPct: docPlacement.yPct,
-              width: CERT_STAMP_BOX.w,
-              height: CERT_STAMP_BOX.h,
-              signerLabel: getCertificateHolderLabel(cert),
-            },
-            extraStampPages: docPlacement.extraPages,
+            stamps: stampEntries,
           });
 
           const fileName = documentNames?.[item.documentId]
@@ -1129,9 +1038,9 @@ export default function AssinarComCertificadoModal({
           form.append(
             "appearance",
             JSON.stringify({
-              page: docPlacement.page,
-              x: docPlacement.xPct,
-              y: docPlacement.yPct,
+              page: stampEntries[0].page,
+              x: stampEntries[0].xPct,
+              y: stampEntries[0].yPct,
               width: CERT_STAMP_BOX.w,
               height: CERT_STAMP_BOX.h,
             })
@@ -1452,8 +1361,8 @@ export default function AssinarComCertificadoModal({
               : 0;
             const isFirst = currentIdx === 0;
             const isLast = currentIdx === documentIds.length - 1;
-            const posicionados = Object.keys(placements).filter((id) =>
-              documentIds.includes(id)
+            const posicionados = documentIds.filter((id) =>
+              Object.keys(placements[id] ?? {}).length > 0
             ).length;
             const allPositioned = posicionados >= documentIds.length;
 
@@ -1492,175 +1401,26 @@ export default function AssinarComCertificadoModal({
                   ) : null}
                   <div style={{ fontWeight: 600, fontSize: 14, color: "#e2e8f0", wordBreak: "break-all" }}>
                     {docLabel(previewDocId || documentIds[0] || "")}
-                    {placements[previewDocId || ""] ? (
-                      <span style={{ marginLeft: 8, color: "#6ee7b7", fontSize: 12 }}>✓ posicionado</span>
+                    {Object.keys(placements[previewDocId || ""] ?? {}).length > 0 ? (
+                      <span style={{ marginLeft: 8, color: "#6ee7b7", fontSize: 12 }}>✓ {Object.keys(placements[previewDocId || ""] ?? {}).length} carimbo(s)</span>
                     ) : (
-                      <span style={{ marginLeft: 8, color: "#f59e0b", fontSize: 12 }}>▼ arraste o carimbo</span>
+                      <span style={{ marginLeft: 8, color: "#f59e0b", fontSize: 12 }}>▼ clique nas páginas</span>
                     )}
                   </div>
                 </div>
 
                 <CertStampPositionPreview
                   documentId={previewDocId}
-                  placement={getPlacement(previewDocId)}
-                  onChange={(p) => setDocPlacement(previewDocId, p)}
+                  pageStamps={getDocStamps(previewDocId)}
+                  onStampChange={(page, xPct, yPct) => setPageStamp(previewDocId, page, xPct, yPct)}
+                  onStampRemove={(page) => removePageStamp(previewDocId, page)}
                   signerLabel={certRef.current ? getCertificateHolderLabel(certRef.current) : ""}
                   stampSubject={certLabel || certPreview?.subject || null}
                   stampCnpj={certPreview ? getCertificateHolderCnpj(certPreview) : null}
                   stampCpf={formatCpf(certPreview?.icpBrasil.cpf)}
                   stampRazaoSocial={certPreview?.icpBrasil.razaoSocial || null}
                   stampResponsavel={certPreview?.icpBrasil.responsavel || null}
-                  onPageCountKnown={(count) => {
-                    if (!previewDocId) return;
-                    setDocumentPageCounts((prev) => ({ ...prev, [previewDocId]: count }));
-                  }}
                 />
-
-                {/* Seleção de páginas para carimbar */}
-                {(() => {
-                  const docId = previewDocId || documentIds[0] || "";
-                  const totalPages = documentPageCounts[docId] || 0;
-                  const placement = getPlacement(docId);
-                  const allPages = Array.from({ length: totalPages }, (_, i) => i + 1);
-                  const allSelected = totalPages > 0 && allPages.every(p => p === placement.page || placement.extraPages.includes(p));
-
-                  function togglePage(p: number) {
-                    const inExtra = placement.extraPages.includes(p);
-                    const isPrimary = p === placement.page;
-                    if (isPrimary) return; // página principal não pode ser desmarcada aqui
-                    const next = inExtra
-                      ? placement.extraPages.filter(x => x !== p)
-                      : [...placement.extraPages, p].sort((a, b) => a - b);
-                    setDocPlacement(docId, { ...placement, extraPages: next });
-                  }
-
-                  function marcarTodas() {
-                    if (totalPages < 1) return;
-                    const extra = allPages.filter(p => p !== placement.page);
-                    setDocPlacement(docId, { ...placement, extraPages: extra });
-                  }
-
-                  function desmarcarTodas() {
-                    setDocPlacement(docId, { ...placement, extraPages: [] });
-                  }
-
-                  return (
-                    <div style={{ background: "#0f2540", border: "1px solid #1e4070", borderRadius: 8, padding: "12px 14px", marginTop: 8 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: "#7dd3fc", marginBottom: 10 }}>
-                        Em quais páginas o carimbo deve aparecer?
-                      </div>
-
-                      {/* Campo: total de páginas */}
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
-                        <label style={{ fontSize: 12, color: "#94a3b8", display: "flex", alignItems: "center", gap: 6 }}>
-                          Total de páginas do documento:
-                          <input
-                            type="number"
-                            min={1}
-                            max={999}
-                            value={totalPages || ""}
-                            placeholder="Auto"
-                            onChange={(e) => {
-                              const v = parseInt(e.target.value, 10);
-                              if (v > 0) setDocumentPageCounts(prev => ({ ...prev, [docId]: v }));
-                            }}
-                            style={{
-                              width: 64, padding: "4px 8px", borderRadius: 6, border: "1px solid #334155",
-                              background: "#1e293b", color: "#f8fafc", fontSize: 13, textAlign: "center",
-                            }}
-                          />
-                        </label>
-                        {totalPages > 0 && (
-                          <span style={{ fontSize: 11, color: "#64748b" }}>
-                            {totalPages === 1 ? "1 página detectada" : `${totalPages} páginas detectadas`}
-                          </span>
-                        )}
-                      </div>
-
-                      {totalPages > 1 ? (
-                        <>
-                          {/* Botões rápidos */}
-                          <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
-                            <button
-                              type="button"
-                              onClick={marcarTodas}
-                              disabled={allSelected}
-                              style={{
-                                background: allSelected ? "#064e3b" : "#0f766e", color: "#6ee7b7",
-                                border: "none", borderRadius: 6, padding: "5px 12px", fontSize: 12,
-                                fontWeight: 600, cursor: allSelected ? "default" : "pointer", opacity: allSelected ? 0.7 : 1,
-                              }}
-                            >
-                              ✓ Todas as páginas
-                            </button>
-                            <button
-                              type="button"
-                              onClick={desmarcarTodas}
-                              disabled={placement.extraPages.length === 0}
-                              style={{
-                                background: "transparent", color: "#94a3b8",
-                                border: "1px solid #334155", borderRadius: 6, padding: "5px 12px", fontSize: 12,
-                                cursor: placement.extraPages.length === 0 ? "default" : "pointer",
-                                opacity: placement.extraPages.length === 0 ? 0.4 : 1,
-                              }}
-                            >
-                              Somente pág. {placement.page}
-                            </button>
-                          </div>
-
-                          {/* Checkboxes por página */}
-                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                            {allPages.map(p => {
-                              const isPrimary = p === placement.page;
-                              const isChecked = isPrimary || placement.extraPages.includes(p);
-                              return (
-                                <label
-                                  key={p}
-                                  style={{
-                                    display: "flex", alignItems: "center", gap: 5,
-                                    cursor: isPrimary ? "default" : "pointer",
-                                    fontSize: 13, userSelect: "none",
-                                    background: isChecked ? "rgba(16,185,129,0.12)" : "rgba(255,255,255,0.04)",
-                                    border: `1px solid ${isChecked ? "#059669" : "#334155"}`,
-                                    borderRadius: 6, padding: "4px 10px",
-                                  }}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={isChecked}
-                                    disabled={isPrimary}
-                                    onChange={() => togglePage(p)}
-                                    style={{ cursor: isPrimary ? "default" : "pointer", width: 14, height: 14 }}
-                                  />
-                                  <span style={{ color: isChecked ? "#6ee7b7" : "#94a3b8", fontWeight: isPrimary ? 700 : 400 }}>
-                                    Pág. {p}{isPrimary ? " ★" : ""}
-                                  </span>
-                                </label>
-                              );
-                            })}
-                          </div>
-
-                          {/* Resumo */}
-                          <div style={{ fontSize: 11, color: "#6ee7b7", marginTop: 8 }}>
-                            {allSelected
-                              ? `Carimbo em todas as ${totalPages} páginas`
-                              : placement.extraPages.length > 0
-                                ? `Carimbo nas páginas: ${[placement.page, ...placement.extraPages].sort((a,b)=>a-b).join(", ")}`
-                                : `Carimbo apenas na página ${placement.page}`}
-                          </div>
-                        </>
-                      ) : totalPages === 1 ? (
-                        <div style={{ fontSize: 12, color: "#64748b" }}>
-                          Documento com 1 página — carimbo na página 1.
-                        </div>
-                      ) : (
-                        <div style={{ fontSize: 12, color: "#64748b" }}>
-                          Informe o total de páginas acima para selecionar em quais o carimbo aparecerá.
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
 
                 {/* Navegação entre documentos */}
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10, alignItems: "center" }}>
@@ -1684,9 +1444,9 @@ export default function AssinarComCertificadoModal({
                             onClick={() => goTo(i)}
                             title={docLabel(id)}
                             style={{
-                              background: id === previewDocId ? "#1d4ed8" : placements[id] ? "#064e3b" : "#1e293b",
-                              border: `1px solid ${id === previewDocId ? "#3b82f6" : placements[id] ? "#059669" : "#475569"}`,
-                              color: id === previewDocId ? "#fff" : placements[id] ? "#6ee7b7" : "#94a3b8",
+                              background: id === previewDocId ? "#1d4ed8" : Object.keys(placements[id] ?? {}).length > 0 ? "#064e3b" : "#1e293b",
+                              border: `1px solid ${id === previewDocId ? "#3b82f6" : Object.keys(placements[id] ?? {}).length > 0 ? "#059669" : "#475569"}`,
+                              color: id === previewDocId ? "#fff" : Object.keys(placements[id] ?? {}).length > 0 ? "#6ee7b7" : "#94a3b8",
                               borderRadius: 6,
                               padding: "4px 10px",
                               fontSize: 11,
@@ -1694,7 +1454,7 @@ export default function AssinarComCertificadoModal({
                               fontWeight: id === previewDocId ? 700 : 400,
                             }}
                           >
-                            {i + 1}{placements[id] ? " ✓" : ""}
+                            {i + 1}{Object.keys(placements[id] ?? {}).length > 0 ? " ✓" : ""}
                           </button>
                         ))}
                       </div>
@@ -1754,8 +1514,9 @@ export default function AssinarComCertificadoModal({
               <SignatureAppearancePreview cert={certPreview} />
               <CertStampPositionPreview
                 documentId={previewDocId}
-                placement={getPlacement(previewDocId)}
-                onChange={(p) => setDocPlacement(previewDocId, p)}
+                pageStamps={getDocStamps(previewDocId)}
+                onStampChange={(page, xPct, yPct) => setPageStamp(previewDocId, page, xPct, yPct)}
+                onStampRemove={(page) => removePageStamp(previewDocId, page)}
                 signerLabel={
                   certRef.current ? getCertificateHolderLabel(certRef.current) : ""
                 }

@@ -970,9 +970,8 @@ export async function signPdfWithLocalCertificate(opts: {
   expectedHashSha256: string;
   cert: LoadedCertificate;
   validationCode?: string;
-  appearance: AppearanceOptions;
-  /** Páginas adicionais (1-based) onde o carimbo visual também é desenhado. */
-  extraStampPages?: number[];
+  /** Carimbos independentes por página. Cada item tem sua própria posição. */
+  stamps: AppearanceOptions[];
 }): Promise<{
   signedPdfBytes: Uint8Array;
   pkcs7Bytes: Uint8Array;
@@ -1018,23 +1017,11 @@ export async function signPdfWithLocalCertificate(opts: {
     throw new Error("PDF sem páginas.");
   }
 
-  const primaryIndex = Math.min(
-    Math.max((opts.appearance.page || pageCount) - 1, 0),
-    pageCount - 1
-  );
-  const boxW = opts.appearance.width ?? CERT_STAMP_BOX.w;
-  const boxH = opts.appearance.height ?? CERT_STAMP_BOX.h;
-
   // Recursos compartilhados por todas as páginas
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-  const label =
-    opts.appearance.signerLabel?.trim() ||
-    getCertificateHolderLabel(opts.cert) ||
-    opts.cert.displayName ||
-    "";
-  const subject = getCertificateHolderLabel(opts.cert) || opts.cert.displayName || label;
+  const subject = getCertificateHolderLabel(opts.cert) || opts.cert.displayName || "";
   const responsavel = opts.cert.icpBrasil.responsavel?.trim() || null;
   const cnpj = formatCnpjDigits(opts.cert.icpBrasil.cnpj) || getCertificateHolderCnpj(opts.cert);
   const cpf = formatCpfDigits(opts.cert.icpBrasil.cpf);
@@ -1054,31 +1041,28 @@ export async function signPdfWithLocalCertificate(opts: {
   const ink = rgb(0, 0, 0);
   const qr = await pdfDoc.embedPng(validationQr);
 
-  // Páginas onde o carimbo será desenhado (sem duplicatas)
-  const seenIdx = new Set<number>();
-  const stampIndices: number[] = [];
-  for (const n of [primaryIndex, ...(opts.extraStampPages || []).map(p => Math.min(Math.max(p - 1, 0), pageCount - 1))]) {
-    if (!seenIdx.has(n)) { seenIdx.add(n); stampIndices.push(n); }
-  }
-
-  for (const pageIdx of stampIndices) {
+  // Desenha carimbo em cada página independentemente
+  for (const stamp of opts.stamps) {
+    const pageIdx = Math.min(Math.max((stamp.page || 1) - 1, 0), pageCount - 1);
     const page = pdfDoc.getPage(pageIdx);
     const { width: pw, height: ph } = page.getSize();
+    const boxW = stamp.width ?? CERT_STAMP_BOX.w;
+    const boxH = stamp.height ?? CERT_STAMP_BOX.h;
 
     let x: number;
     let y: number;
     if (
-      opts.appearance.xPct != null &&
-      opts.appearance.yPct != null &&
-      Number.isFinite(opts.appearance.xPct) &&
-      Number.isFinite(opts.appearance.yPct)
+      stamp.xPct != null &&
+      stamp.yPct != null &&
+      Number.isFinite(stamp.xPct) &&
+      Number.isFinite(stamp.yPct)
     ) {
-      const o = certStampOrigin(pw, ph, boxW, boxH, opts.appearance.xPct, opts.appearance.yPct);
+      const o = certStampOrigin(pw, ph, boxW, boxH, stamp.xPct, stamp.yPct);
       x = o.x;
       y = o.y;
     } else {
-      x = opts.appearance.x ?? Math.max(36, pw - boxW - 36);
-      y = opts.appearance.y ?? 36;
+      x = stamp.x ?? Math.max(36, pw - boxW - 36);
+      y = stamp.y ?? 36;
     }
 
     const contentX = x + 6;
