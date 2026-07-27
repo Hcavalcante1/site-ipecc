@@ -527,6 +527,7 @@ function CertStampPositionPreview({
       page: meta.index,
       xPct: Math.round(x),
       yPct: Math.round(y),
+      extraPages: placement.extraPages,
     });
   }
 
