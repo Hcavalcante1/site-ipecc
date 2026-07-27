@@ -1512,46 +1512,146 @@ export default function AssinarComCertificadoModal({
                   }}
                 />
 
-                {/* Seleção de páginas extras para o carimbo */}
+                {/* Seleção de páginas para carimbar */}
                 {(() => {
                   const docId = previewDocId || documentIds[0] || "";
                   const totalPages = documentPageCounts[docId] || 0;
                   const placement = getPlacement(docId);
-                  if (totalPages <= 1) return null;
-                  const otherPages = Array.from({ length: totalPages }, (_, i) => i + 1).filter(p => p !== placement.page);
+                  const allPages = Array.from({ length: totalPages }, (_, i) => i + 1);
+                  const allSelected = totalPages > 0 && allPages.every(p => p === placement.page || placement.extraPages.includes(p));
+
+                  function togglePage(p: number) {
+                    const inExtra = placement.extraPages.includes(p);
+                    const isPrimary = p === placement.page;
+                    if (isPrimary) return; // página principal não pode ser desmarcada aqui
+                    const next = inExtra
+                      ? placement.extraPages.filter(x => x !== p)
+                      : [...placement.extraPages, p].sort((a, b) => a - b);
+                    setDocPlacement(docId, { ...placement, extraPages: next });
+                  }
+
+                  function marcarTodas() {
+                    if (totalPages < 1) return;
+                    const extra = allPages.filter(p => p !== placement.page);
+                    setDocPlacement(docId, { ...placement, extraPages: extra });
+                  }
+
+                  function desmarcarTodas() {
+                    setDocPlacement(docId, { ...placement, extraPages: [] });
+                  }
+
                   return (
-                    <div style={{ background: "#1e293b", borderRadius: 8, padding: "10px 14px", marginTop: 8 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: "#94a3b8", marginBottom: 8 }}>
-                        Também carimbar nas páginas:
-                        <span style={{ fontWeight: 400, marginLeft: 6 }}>(a assinatura criptográfica cobre o documento inteiro)</span>
+                    <div style={{ background: "#0f2540", border: "1px solid #1e4070", borderRadius: 8, padding: "12px 14px", marginTop: 8 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#7dd3fc", marginBottom: 10 }}>
+                        Em quais páginas o carimbo deve aparecer?
                       </div>
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        {otherPages.map(p => {
-                          const checked = placement.extraPages.includes(p);
-                          return (
-                            <label
-                              key={p}
-                              style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer", fontSize: 13, userSelect: "none" }}
+
+                      {/* Campo: total de páginas */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
+                        <label style={{ fontSize: 12, color: "#94a3b8", display: "flex", alignItems: "center", gap: 6 }}>
+                          Total de páginas do documento:
+                          <input
+                            type="number"
+                            min={1}
+                            max={999}
+                            value={totalPages || ""}
+                            placeholder="Auto"
+                            onChange={(e) => {
+                              const v = parseInt(e.target.value, 10);
+                              if (v > 0) setDocumentPageCounts(prev => ({ ...prev, [docId]: v }));
+                            }}
+                            style={{
+                              width: 64, padding: "4px 8px", borderRadius: 6, border: "1px solid #334155",
+                              background: "#1e293b", color: "#f8fafc", fontSize: 13, textAlign: "center",
+                            }}
+                          />
+                        </label>
+                        {totalPages > 0 && (
+                          <span style={{ fontSize: 11, color: "#64748b" }}>
+                            {totalPages === 1 ? "1 página detectada" : `${totalPages} páginas detectadas`}
+                          </span>
+                        )}
+                      </div>
+
+                      {totalPages > 1 ? (
+                        <>
+                          {/* Botões rápidos */}
+                          <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
+                            <button
+                              type="button"
+                              onClick={marcarTodas}
+                              disabled={allSelected}
+                              style={{
+                                background: allSelected ? "#064e3b" : "#0f766e", color: "#6ee7b7",
+                                border: "none", borderRadius: 6, padding: "5px 12px", fontSize: 12,
+                                fontWeight: 600, cursor: allSelected ? "default" : "pointer", opacity: allSelected ? 0.7 : 1,
+                              }}
                             >
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                onChange={() => {
-                                  const next = checked
-                                    ? placement.extraPages.filter(x => x !== p)
-                                    : [...placement.extraPages, p].sort((a, b) => a - b);
-                                  setDocPlacement(docId, { ...placement, extraPages: next });
-                                }}
-                                style={{ cursor: "pointer", width: 15, height: 15 }}
-                              />
-                              <span style={{ color: checked ? "#6ee7b7" : "#cbd5e1" }}>Pág. {p}</span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                      {placement.extraPages.length > 0 && (
-                        <div style={{ fontSize: 11, color: "#6ee7b7", marginTop: 6 }}>
-                          Carimbo na pág. {placement.page} + {placement.extraPages.join(", ")}
+                              ✓ Todas as páginas
+                            </button>
+                            <button
+                              type="button"
+                              onClick={desmarcarTodas}
+                              disabled={placement.extraPages.length === 0}
+                              style={{
+                                background: "transparent", color: "#94a3b8",
+                                border: "1px solid #334155", borderRadius: 6, padding: "5px 12px", fontSize: 12,
+                                cursor: placement.extraPages.length === 0 ? "default" : "pointer",
+                                opacity: placement.extraPages.length === 0 ? 0.4 : 1,
+                              }}
+                            >
+                              Somente pág. {placement.page}
+                            </button>
+                          </div>
+
+                          {/* Checkboxes por página */}
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                            {allPages.map(p => {
+                              const isPrimary = p === placement.page;
+                              const isChecked = isPrimary || placement.extraPages.includes(p);
+                              return (
+                                <label
+                                  key={p}
+                                  style={{
+                                    display: "flex", alignItems: "center", gap: 5,
+                                    cursor: isPrimary ? "default" : "pointer",
+                                    fontSize: 13, userSelect: "none",
+                                    background: isChecked ? "rgba(16,185,129,0.12)" : "rgba(255,255,255,0.04)",
+                                    border: `1px solid ${isChecked ? "#059669" : "#334155"}`,
+                                    borderRadius: 6, padding: "4px 10px",
+                                  }}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    disabled={isPrimary}
+                                    onChange={() => togglePage(p)}
+                                    style={{ cursor: isPrimary ? "default" : "pointer", width: 14, height: 14 }}
+                                  />
+                                  <span style={{ color: isChecked ? "#6ee7b7" : "#94a3b8", fontWeight: isPrimary ? 700 : 400 }}>
+                                    Pág. {p}{isPrimary ? " ★" : ""}
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+
+                          {/* Resumo */}
+                          <div style={{ fontSize: 11, color: "#6ee7b7", marginTop: 8 }}>
+                            {allSelected
+                              ? `Carimbo em todas as ${totalPages} páginas`
+                              : placement.extraPages.length > 0
+                                ? `Carimbo nas páginas: ${[placement.page, ...placement.extraPages].sort((a,b)=>a-b).join(", ")}`
+                                : `Carimbo apenas na página ${placement.page}`}
+                          </div>
+                        </>
+                      ) : totalPages === 1 ? (
+                        <div style={{ fontSize: 12, color: "#64748b" }}>
+                          Documento com 1 página — carimbo na página 1.
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: 12, color: "#64748b" }}>
+                          Informe o total de páginas acima para selecionar em quais o carimbo aparecerá.
                         </div>
                       )}
                     </div>
