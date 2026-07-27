@@ -1,11 +1,12 @@
 "use client";
 
 import {
+  forwardRef,
   useEffect,
+  useImperativeHandle,
   useRef,
   useState,
   type CSSProperties,
-  type PointerEvent as ReactPointerEvent,
 } from "react";
 import { CERT_DISCLAIMER } from "@/lib/documentos/assinaturas/certificate/constants";
 import {
@@ -55,6 +56,12 @@ type Step = "cert" | "review" | "pages" | "preview" | "signing" | "done";
 
 type PageStamp = { xPct: number; yPct: number };
 type DocStamps = Record<number, PageStamp>; // chave = número da página (1-based)
+
+type StampPreviewHandle = {
+  getAllDocStamps: () => Record<string, DocStamps>;
+  getDocStamps: (docId: string) => DocStamps;
+  resetAll: () => void;
+};
 
 function stampLeftTopPct(
   pageW: number,
@@ -290,23 +297,8 @@ function SignatureAppearancePreview({ cert }: { cert: LoadedCertificate }) {
   );
 }
 
-function CertStampPositionPreview({
-  documentId,
-  pageStamps,
-  onStampChange,
-  onStampRemove,
-  signerLabel,
-  stampSubject,
-  stampCnpj,
-  stampCpf,
-  stampRazaoSocial,
-  stampResponsavel,
-  onPageCountKnown,
-}: {
+const CertStampPositionPreview = forwardRef<StampPreviewHandle, {
   documentId?: string | null;
-  pageStamps: DocStamps;
-  onStampChange: (page: number, xPct: number, yPct: number) => void;
-  onStampRemove: (page: number) => void;
   signerLabel: string;
   stampSubject?: string | null;
   stampCnpj?: string | null;
@@ -314,15 +306,29 @@ function CertStampPositionPreview({
   stampRazaoSocial?: string | null;
   stampResponsavel?: string | null;
   onPageCountKnown?: (count: number) => void;
-}) {
+  onStampsChanged?: (allStamps: Record<string, DocStamps>) => void;
+}>(function CertStampPositionPreview({
+  documentId,
+  signerLabel,
+  stampSubject,
+  stampCnpj,
+  stampCpf,
+  stampRazaoSocial,
+  stampResponsavel,
+  onPageCountKnown,
+  onStampsChanged,
+}, ref) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const pageRefs = useRef<Array<HTMLDivElement | null>>([]);
-  const draggingPage = useRef<number | null>(null);
-  const [grabbing, setGrabbing] = useState(false);
+  const pageElsRef = useRef<Map<number, HTMLDivElement>>(new Map());
+  // docId tracked in drag so the [] mousemove effect always reads the right document
+  const dragRef = useRef<{ pageIndex: number; docId: string; meta: { w: number; h: number } } | null>(null);
+
+  // SOURCE OF TRUTH: stamps keyed by docId → page number
+  // Functional updaters guarantee no stale reads even under React batching
+  const [allDocStamps, setAllDocStamps] = useState<Record<string, DocStamps>>({});
+
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
-  const [pages, setPages] = useState<
-    Array<{ index: number; w: number; h: number; dataUrl: string }>
-  >([]);
+  const [pages, setPages] = useState<Array<{ index: number; w: number; h: number; dataUrl: string }>>([]);
   const [loadErro, setLoadErro] = useState<string | null>(null);
   const [loadingPdf, setLoadingPdf] = useState(false);
 
@@ -330,152 +336,117 @@ function CertStampPositionPreview({
     ? `/api/admin/documentos/${encodeURIComponent(documentId)}/arquivo`
     : null;
 
+  useImperativeHandle(ref, () => ({
+    getAllDocStamps: () => allDocStamps,
+    getDocStamps: (docId: string) => allDocStamps[docId] ?? {},
+    resetAll: () => setAllDocStamps({}),
+  }), [allDocStamps]);
+
+  const onStampsChangedRef = useRef(onStampsChanged);
+  useEffect(() => { onStampsChangedRef.current = onStampsChanged; });
+  useEffect(() => { onStampsChangedRef.current?.(allDocStamps); }, [allDocStamps]);
+
+  // setAllDocStamps setter is stable across renders — safe to capture in [] effect
   useEffect(() => {
-    let active = true;
-    void QRCode.toDataURL("https://validar.iti.gov.br", {
-      margin: 0,
-      width: 96,
-      errorCorrectionLevel: "M",
-    })
-      .then((url) => {
-        if (active) setQrDataUrl(url);
-      })
-      .catch(() => {
-        if (active) setQrDataUrl(null);
-      });
+    function calcPos(clientX: number, clientY: number, pageIndex: number, meta: { w: number; h: number }) {
+      const el = pageElsRef.current.get(pageIndex);
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0) return null;
+      const { margin, w: boxW, h: boxH } = CERT_STAMP_BOX;
+      const spanX = Math.max(0, meta.w - boxW - 2 * margin);
+      const spanY = Math.max(0, meta.h - boxH - 2 * margin);
+      const relX = ((clientX - r.left) / r.width) * meta.w;
+      const relY = ((clientY - r.top) / r.height) * meta.h;
+      return {
+        xPct: Math.round(Math.min(100, Math.max(0, ((relX - boxW / 2 - margin) / Math.max(spanX, 1)) * 100))),
+        yPct: Math.round(Math.min(100, Math.max(0, ((relY - boxH / 2 - margin) / Math.max(spanY, 1)) * 100))),
+      };
+    }
+    function onMouseMove(e: MouseEvent) {
+      const drag = dragRef.current;
+      if (!drag) return;
+      const pos = calcPos(e.clientX, e.clientY, drag.pageIndex, drag.meta);
+      if (!pos) return;
+      setAllDocStamps(prev => ({
+        ...prev,
+        [drag.docId]: { ...(prev[drag.docId] ?? {}), [drag.pageIndex]: { xPct: pos.xPct, yPct: pos.yPct } },
+      }));
+    }
+    function onMouseUp() { dragRef.current = null; }
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
     return () => {
-      active = false;
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
     };
   }, []);
 
   useEffect(() => {
-    if (!pdfUrl) {
-      setLoadErro("Documento não informado.");
-      return;
-    }
+    let active = true;
+    void QRCode.toDataURL("https://validar.iti.gov.br", {
+      margin: 0, width: 96, errorCorrectionLevel: "M",
+    }).then((url) => { if (active) setQrDataUrl(url); }).catch(() => { if (active) setQrDataUrl(null); });
+    return () => { active = false; };
+  }, []);
 
+  useEffect(() => {
+    if (!pdfUrl) { setLoadErro("Documento não informado."); setPages([]); return; }
     let cancelled = false;
     (async () => {
       setLoadingPdf(true);
       setLoadErro(null);
+      setPages([]);
       try {
         const pdfjs = await import("pdfjs-dist");
         pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
-
         const res = await fetch(pdfUrl, { credentials: "include" });
         if (!res.ok) {
           let detail = "";
-          try {
-            const j = (await res.json()) as { error?: string };
-            if (j.error) detail = ` ${j.error}`;
-          } catch {
-            /* ignore */
-          }
-          throw new Error(
-            `Não foi possível carregar o PDF (HTTP ${res.status}).${detail}`
-          );
+          try { const j = (await res.json()) as { error?: string }; if (j.error) detail = ` ${j.error}`; } catch { /**/ }
+          throw new Error(`Não foi possível carregar o PDF (HTTP ${res.status}).${detail}`);
         }
         const data = new Uint8Array(await res.arrayBuffer());
         const doc = await pdfjs.getDocument({ data }).promise;
         if (cancelled) return;
-
-        const targetW = Math.min(
-          860,
-          scrollRef.current?.clientWidth || 720
-        );
-        const rendered: Array<{
-          index: number;
-          w: number;
-          h: number;
-          dataUrl: string;
-        }> = [];
-
+        const targetW = Math.min(860, scrollRef.current?.clientWidth || 720);
+        const rendered: Array<{ index: number; w: number; h: number; dataUrl: string }> = [];
         for (let i = 1; i <= doc.numPages; i++) {
-          const page = await doc.getPage(i);
-          const base = page.getViewport({ scale: 1 });
-          const scale = targetW / base.width;
-          const viewport = page.getViewport({ scale });
+          const pg = await doc.getPage(i);
+          const base = pg.getViewport({ scale: 1 });
+          const vp = pg.getViewport({ scale: targetW / base.width });
           const canvas = document.createElement("canvas");
-          canvas.width = Math.floor(viewport.width);
-          canvas.height = Math.floor(viewport.height);
+          canvas.width = Math.floor(vp.width);
+          canvas.height = Math.floor(vp.height);
           const ctx = canvas.getContext("2d");
           if (!ctx) continue;
-          await page.render({ canvasContext: ctx, viewport }).promise;
-          rendered.push({
-            index: i,
-            w: base.width,
-            h: base.height,
-            dataUrl: canvas.toDataURL("image/jpeg", 0.82),
-          });
+          await pg.render({ canvasContext: ctx, viewport: vp }).promise;
+          rendered.push({ index: i, w: base.width, h: base.height, dataUrl: canvas.toDataURL("image/jpeg", 0.82) });
         }
         if (cancelled) return;
+        pageElsRef.current = new Map();
         setPages(rendered);
-        pageRefs.current = rendered.map(() => null);
         onPageCountKnown?.(rendered.length);
       } catch (e) {
         if (!cancelled) {
-          // Fallback: página A4 em branco para ainda posicionar a aparência
           const blank = document.createElement("canvas");
-          blank.width = 595;
-          blank.height = 842;
+          blank.width = 595; blank.height = 842;
           const ctx = blank.getContext("2d");
           if (ctx) {
-            ctx.fillStyle = "#ffffff";
-            ctx.fillRect(0, 0, blank.width, blank.height);
-            ctx.fillStyle = "#999999";
-            ctx.font = "14px Helvetica, Arial, sans-serif";
-            ctx.fillText(
-              "Pré-visualização sem PDF (arquivo indisponível)",
-              40,
-              60
-            );
-            setPages([
-              {
-                index: 1,
-                w: 595.28,
-                h: 841.89,
-                dataUrl: blank.toDataURL("image/jpeg", 0.9),
-              },
-            ]);
-            pageRefs.current = [null];
+            ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, 595, 842);
+            ctx.fillStyle = "#999"; ctx.font = "14px Helvetica,Arial,sans-serif";
+            ctx.fillText("Pré-visualização sem PDF (arquivo indisponível)", 40, 60);
           }
-          setLoadErro(
-            e instanceof Error
-              ? `${e.message} — usando página em branco para posicionar.`
-              : "Falha ao renderizar o PDF."
-          );
+          pageElsRef.current = new Map();
+          setPages([{ index: 1, w: 595.28, h: 841.89, dataUrl: blank.toDataURL("image/jpeg", 0.9) }]);
+          setLoadErro(e instanceof Error ? `${e.message} — usando página em branco.` : "Falha ao renderizar o PDF.");
         }
       } finally {
         if (!cancelled) setLoadingPdf(false);
       }
     })();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [pdfUrl]);
-
-  function positionOnPage(
-    clientX: number,
-    clientY: number,
-    pageEl: HTMLDivElement | null,
-    meta: { w: number; h: number }
-  ): { xPct: number; yPct: number } | null {
-    if (!pageEl) return null;
-    const r = pageEl.getBoundingClientRect();
-    if (r.width <= 0 || r.height <= 0) return null;
-    const margin = CERT_STAMP_BOX.margin;
-    const boxW = CERT_STAMP_BOX.w;
-    const boxH = CERT_STAMP_BOX.h;
-    const spanX = Math.max(0, meta.w - boxW - 2 * margin);
-    const spanY = Math.max(0, meta.h - boxH - 2 * margin);
-    const relX = ((clientX - r.left) / r.width) * meta.w;
-    const relY = ((clientY - r.top) / r.height) * meta.h;
-    return {
-      xPct: Math.round(Math.min(100, Math.max(0, ((relX - boxW / 2 - margin) / Math.max(spanX, 1)) * 100))),
-      yPct: Math.round(Math.min(100, Math.max(0, ((relY - boxH / 2 - margin) / Math.max(spanY, 1)) * 100))),
-    };
-  }
 
   const when = (() => {
     const now = new Date();
@@ -483,162 +454,126 @@ function CertStampPositionPreview({
     const tzMin = -now.getTimezoneOffset();
     const tzSign = tzMin >= 0 ? "+" : "-";
     const tzAbs = Math.abs(tzMin);
-    const tz = `${tzSign}${pad(Math.floor(tzAbs / 60))}:${pad(tzAbs % 60)}`;
-    return `${now.getFullYear()}.${pad(now.getMonth() + 1)}.${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())} ${tz}`;
+    return `${now.getFullYear()}.${pad(now.getMonth()+1)}.${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())} ${tzSign}${pad(Math.floor(tzAbs/60))}:${pad(tzAbs%60)}`;
   })();
 
-  const stampCount = Object.keys(pageStamps).length;
+  const currentPageStamps = documentId ? (allDocStamps[documentId] ?? {}) : {};
+  const stampCount = Object.keys(currentPageStamps).length;
 
   return (
     <div style={{ marginBottom: 12 }}>
-      <p style={{ fontSize: 12, color: "#94a3b8", margin: "0 0 6px", lineHeight: 1.35 }}>
-        Clique em qualquer página para adicionar o carimbo naquele local. Arraste para reposicionar. Botão ✕ remove.
-        {stampCount > 0
-          ? ` · ${stampCount} página${stampCount > 1 ? "s" : ""} com carimbo`
-          : " · Nenhum carimbo posicionado ainda"}
-      </p>
-      {loadErro ? <p style={{ color: "#fca5a5", fontSize: 13 }}>{loadErro}</p> : null}
-      <div
-        ref={scrollRef}
-        style={{ borderRadius: 8, overflow: "auto", maxHeight: "min(62vh, 680px)", border: "1px solid #334155", background: "#334155", padding: 8 }}
-      >
-        {loadingPdf ? <p style={{ color: "#f8fafc", fontSize: 13, padding: 16 }}>Carregando documento…</p> : null}
-        {pages.map((p, idx) => {
-          const stamp = pageStamps[p.index];
-          const g = stamp
-            ? stampLeftTopPct(p.w, p.h, CERT_STAMP_BOX.w, CERT_STAMP_BOX.h, stamp.xPct, stamp.yPct)
-            : null;
-          const isDragging = draggingPage.current === p.index;
+      {loadErro && <p style={{ color: "#fca5a5", fontSize: 13 }}>{loadErro}</p>}
+      <div ref={scrollRef} style={{ borderRadius: 8, overflow: "auto", maxHeight: "min(62vh, 680px)", border: "1px solid #334155", background: "#334155", padding: 8 }}>
+        {loadingPdf && <p style={{ color: "#f8fafc", fontSize: 13, padding: 16 }}>Carregando documento…</p>}
+        {pages.map((p) => {
+          const stamp = currentPageStamps[p.index];
+          const g = stamp ? stampLeftTopPct(p.w, p.h, CERT_STAMP_BOX.w, CERT_STAMP_BOX.h, stamp.xPct, stamp.yPct) : null;
           return (
             <div
               key={p.index}
-              ref={(el) => { pageRefs.current[idx] = el; }}
+              ref={(el) => { if (el) pageElsRef.current.set(p.index, el); }}
               style={{
-                position: "relative",
-                width: "100%",
-                lineHeight: 0,
-                background: "#fff",
-                marginBottom: 10,
-                boxShadow: stamp
-                  ? "0 0 0 2px #3b82f6, 0 1px 4px rgba(0,0,0,0.25)"
-                  : "0 1px 4px rgba(0,0,0,0.25)",
-                cursor: stamp ? "default" : "crosshair",
+                position: "relative", width: "100%", lineHeight: 0,
+                background: "#fff", marginBottom: 10, userSelect: "none",
+                cursor: "crosshair",
+                boxShadow: stamp ? "0 0 0 2px #3b82f6, 0 1px 4px rgba(0,0,0,0.25)" : "0 1px 4px rgba(0,0,0,0.25)",
               }}
-              onPointerDown={(e) => {
-                if ((e.target as HTMLElement).closest("[data-stamp]")) return;
-                const pos = positionOnPage(e.clientX, e.clientY, pageRefs.current[idx], p);
-                if (pos) onStampChange(p.index, pos.xPct, pos.yPct);
+              onMouseDown={(e) => {
+                if ((e.target as HTMLElement).closest("[data-remove-stamp]")) return;
+                e.preventDefault();
+                if (!documentId) return;
+                const el = pageElsRef.current.get(p.index);
+                if (!el) return;
+                const r = el.getBoundingClientRect();
+                if (r.width <= 0 || r.height <= 0) return;
+                const { margin, w: boxW, h: boxH } = CERT_STAMP_BOX;
+                const spanX = Math.max(0, p.w - boxW - 2 * margin);
+                const spanY = Math.max(0, p.h - boxH - 2 * margin);
+                const relX = ((e.clientX - r.left) / r.width) * p.w;
+                const relY = ((e.clientY - r.top) / r.height) * p.h;
+                const xPct = Math.round(Math.min(100, Math.max(0, ((relX - boxW/2 - margin) / Math.max(spanX, 1)) * 100)));
+                const yPct = Math.round(Math.min(100, Math.max(0, ((relY - boxH/2 - margin) / Math.max(spanY, 1)) * 100)));
+                dragRef.current = { pageIndex: p.index, docId: documentId, meta: { w: p.w, h: p.h } };
+                setAllDocStamps(prev => ({
+                  ...prev,
+                  [documentId]: { ...(prev[documentId] ?? {}), [p.index]: { xPct, yPct } },
+                }));
               }}
             >
-              <div style={{
-                position: "absolute", top: 4, left: 4, fontSize: 9, fontWeight: 700, zIndex: 4,
-                background: stamp ? "#3b82f6" : "rgba(0,0,0,0.3)",
-                color: "#fff", borderRadius: 4, padding: "1px 6px", lineHeight: 1.5,
-              }}>
-                Pág. {p.index}
-              </div>
-              {!stamp && (
-                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
-                  <div style={{ border: "2px dashed #475569", borderRadius: 8, padding: "6px 16px", color: "#64748b", fontSize: 11, background: "rgba(255,255,255,0.6)" }}>
-                    Clique para adicionar carimbo
-                  </div>
-                </div>
-              )}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p.dataUrl} alt={`Página ${p.index}`} draggable={false} style={{ width: "100%", height: "auto", display: "block" }} />
-              {stamp && g ? (
-                <div
-                  data-stamp="1"
-                  role="button"
-                  aria-label="Arrastar carimbo"
-                  title="Arraste para reposicionar"
-                  onPointerDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    draggingPage.current = p.index;
-                    setGrabbing(true);
-                    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-                  }}
-                  onPointerMove={(e) => {
-                    if (draggingPage.current !== p.index) return;
-                    const pos = positionOnPage(e.clientX, e.clientY, pageRefs.current[idx], p);
-                    if (pos) onStampChange(p.index, pos.xPct, pos.yPct);
-                  }}
-                  onPointerUp={(e) => {
-                    draggingPage.current = null;
-                    setGrabbing(false);
-                    try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch { /* ignore */ }
-                  }}
-                  onPointerCancel={(e) => {
-                    draggingPage.current = null;
-                    setGrabbing(false);
-                    try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch { /* ignore */ }
-                  }}
-                  style={{
-                    position: "absolute",
-                    left: `${g.leftPct}%`,
-                    top: `${g.topPct}%`,
-                    width: `${g.wPct}%`,
-                    height: `${g.hPct}%`,
-                    background: "#ffffff",
-                    boxSizing: "border-box",
-                    cursor: isDragging ? "grabbing" : "grab",
-                    outline: isDragging ? "1px dashed #999" : "1px dashed transparent",
-                    zIndex: 3,
-                    touchAction: "none",
-                    padding: "4px 6px",
-                    display: "flex",
-                    overflow: "hidden",
-                    alignItems: "stretch",
-                  }}
-                >
-                  {/* Botão remover */}
+              <img src={p.dataUrl} alt={`Página ${p.index}`} draggable={false} style={{ width: "100%", height: "auto", display: "block", pointerEvents: "none" }} />
+
+              {stamp && g && (
+                <>
                   <button
                     type="button"
-                    data-stamp="1"
-                    onClick={(e) => { e.stopPropagation(); onStampRemove(p.index); }}
+                    data-remove-stamp="1"
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!documentId) return;
+                      setAllDocStamps(prev => {
+                        const ds = { ...(prev[documentId] ?? {}) };
+                        delete ds[p.index];
+                        return { ...prev, [documentId]: ds };
+                      });
+                    }}
                     title="Remover carimbo desta página"
                     style={{
-                      position: "absolute", top: 1, right: 1, width: 13, height: 13,
-                      background: "#7f1d1d", color: "#fecaca", border: "none", borderRadius: 2,
-                      cursor: "pointer", fontSize: 8, lineHeight: 1, zIndex: 5,
+                      position: "absolute",
+                      left: `${g.leftPct + g.wPct - 2}%`,
+                      top: `${Math.max(0, g.topPct - 0.5)}%`,
+                      width: 18, height: 18,
+                      background: "#dc2626", color: "#fff", border: "none", borderRadius: "50%",
+                      cursor: "pointer", fontSize: 10, fontWeight: 700,
                       display: "flex", alignItems: "center", justifyContent: "center",
+                      zIndex: 6, padding: 0,
                     }}
                   >✕</button>
-                  <div style={{ width: "100%", minWidth: 0, display: "flex", flexDirection: "row", gap: 4, fontSize: 6.4, lineHeight: 1.02, fontFamily: "Helvetica, Arial, sans-serif", color: "#000" }}>
-                    <div style={{ minWidth: 0, flex: "0 1 auto", maxWidth: 170 }}>
-                      <div style={{ fontSize: 6.8, fontWeight: 700 }}>Assinado digitalmente por</div>
-                      <div style={{ marginTop: 1, fontSize: 7, fontWeight: 700, wordBreak: "break-word" }}>
-                        {String(stampSubject || signerLabel).toUpperCase() || "TITULAR DO CERTIFICADO"}
+
+                  <div style={{
+                    position: "absolute",
+                    left: `${g.leftPct}%`, top: `${g.topPct}%`,
+                    width: `${g.wPct}%`, height: `${g.hPct}%`,
+                    background: "#fff", boxSizing: "border-box",
+                    cursor: "grab", zIndex: 3, pointerEvents: "none",
+                    padding: "4px 6px", display: "flex", overflow: "hidden", alignItems: "stretch",
+                  }}>
+                    <div style={{ width: "100%", minWidth: 0, display: "flex", flexDirection: "row", gap: 4, fontSize: 6.4, lineHeight: 1.02, fontFamily: "Helvetica,Arial,sans-serif", color: "#000" }}>
+                      <div style={{ minWidth: 0, flex: "0 1 auto", maxWidth: 170 }}>
+                        <div style={{ fontSize: 6.8, fontWeight: 700 }}>Assinado digitalmente por</div>
+                        <div style={{ marginTop: 1, fontSize: 7, fontWeight: 700, wordBreak: "break-word" }}>
+                          {String(stampSubject || signerLabel).toUpperCase() || "TITULAR DO CERTIFICADO"}
+                        </div>
+                        <div style={{ fontSize: 6.1 }}>CNPJ: {stampCnpj || ""}</div>
+                        <div style={{ fontSize: 5.9, wordBreak: "break-word" }}>
+                          {[stampRazaoSocial ? `Razão social: ${stampRazaoSocial}` : null, stampResponsavel ? `Responsável: ${stampResponsavel}` : null].filter(Boolean).join(" • ")}
+                        </div>
+                        {stampCpf && <div style={{ fontSize: 5.9 }}>CPF: {stampCpf}</div>}
+                        <div style={{ fontSize: 5.9 }}>Dados: {when}</div>
                       </div>
-                      <div style={{ fontSize: 6.1 }}>CNPJ: {stampCnpj || ""}</div>
-                      <div style={{ fontSize: 5.9, wordBreak: "break-word" }}>
-                        {[stampRazaoSocial ? `Razão social: ${stampRazaoSocial}` : null, stampResponsavel ? `Responsável: ${stampResponsavel}` : null].filter(Boolean).join(" • ")}
-                      </div>
-                      {stampCpf && <div style={{ fontSize: 5.9 }}>CPF: {stampCpf}</div>}
-                      <div style={{ fontSize: 5.9 }}>Dados: {when}</div>
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between", flex: "0 0 auto" }}>
-                      {qrDataUrl
-                        // eslint-disable-next-line @next/next/no-img-element
-                        ? <img src={qrDataUrl} alt="QR" style={{ width: 48, height: 48, display: "block" }} />
-                        : <div style={{ width: 53, height: 53, border: "1px solid #94a3b8", background: "#f8fafc" }} />
-                      }
-                      <div style={{ textAlign: "center", fontSize: 4.4 }}>
-                        <div style={{ fontWeight: 700 }}>VALIDAR ITI</div>
-                        <div>verifique em validar.iti.gov.br</div>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between", flex: "0 0 auto" }}>
+                        {qrDataUrl
+                          // eslint-disable-next-line @next/next/no-img-element
+                          ? <img src={qrDataUrl} alt="QR" style={{ width: 48, height: 48, display: "block" }} />
+                          : <div style={{ width: 53, height: 53, border: "1px solid #94a3b8", background: "#f8fafc" }} />
+                        }
+                        <div style={{ textAlign: "center", fontSize: 4.4 }}>
+                          <div style={{ fontWeight: 700 }}>VALIDAR ITI</div>
+                          <div>verifique em validar.iti.gov.br</div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ) : null}
+                </>
+              )}
             </div>
           );
         })}
       </div>
     </div>
   );
-}
+});
 
 export default function AssinarComCertificadoModal({
   open,
@@ -663,47 +598,17 @@ export default function AssinarComCertificadoModal({
   const [selectedProfileId, setSelectedProfileId] = useState("");
   const [selectedProfilePassword, setSelectedProfilePassword] = useState("");
   const [previewDocId, setPreviewDocId] = useState<string | null>(null);
-  const [placements, setPlacements] = useState<Record<string, DocStamps>>({});
+  const previewDocIdRef = useRef<string | null>(null);
+  function changePreviewDocId(id: string | null) {
+    previewDocIdRef.current = id;
+    setPreviewDocId(id);
+  }
+
+  // stampPreviewRef = source of truth for all stamp positions (lives inside the component)
+  const stampPreviewRef = useRef<StampPreviewHandle | null>(null);
+  // displayStamps = lightweight copy for UI badges only, updated via onStampsChanged callback
+  const [displayStamps, setDisplayStamps] = useState<Record<string, DocStamps>>({});
   const [docPageCounts, setDocPageCounts] = useState<Record<string, number>>({});
-
-  function getDocStamps(docId: string | null | undefined): DocStamps {
-    if (!docId) return {};
-    return placements[docId] ?? {};
-  }
-
-  function setPageStamp(docId: string | null | undefined, page: number, xPct: number, yPct: number) {
-    if (!docId) return;
-    setPlacements((prev) => ({
-      ...prev,
-      [docId]: { ...(prev[docId] ?? {}), [page]: { xPct, yPct } },
-    }));
-  }
-
-  function removePageStamp(docId: string | null | undefined, page: number) {
-    if (!docId) return;
-    setPlacements((prev) => {
-      const next = { ...(prev[docId] ?? {}) };
-      delete next[page];
-      return { ...prev, [docId]: next };
-    });
-  }
-
-  function stampAllPages(docId: string | null | undefined, count: number) {
-    if (!docId || count < 1) return;
-    setPlacements((prev) => {
-      const existing = prev[docId] ?? {};
-      const next: DocStamps = {};
-      for (let pg = 1; pg <= count; pg++) {
-        next[pg] = existing[pg] ?? { xPct: 96, yPct: 96 };
-      }
-      return { ...prev, [docId]: next };
-    });
-  }
-
-  function removeAllPageStamps(docId: string | null | undefined) {
-    if (!docId) return;
-    setPlacements((prev) => ({ ...prev, [docId]: {} }));
-  }
 
   function docLabel(id: string) {
     return documentNames?.[id] || `${id.slice(0, 8)}…`;
@@ -721,9 +626,16 @@ export default function AssinarComCertificadoModal({
     }>
   >([]);
   const certRef = useRef<LoadedCertificate | null>(null);
+  const prevOpenRef = useRef(false);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      prevOpenRef.current = false;
+      return;
+    }
+    // só reseta quando o modal ABRE (false → true), não quando documentIds muda de referência
+    if (prevOpenRef.current) return;
+    prevOpenRef.current = true;
     setStep("cert");
     setErro(null);
     setPfxFile(null);
@@ -732,8 +644,9 @@ export default function AssinarComCertificadoModal({
     setCertPreview(null);
     setSelectedProfileId("");
     setSelectedProfilePassword("");
-    setPreviewDocId(documentIds[0] || null);
-    setPlacements({});
+    changePreviewDocId(documentIds[0] || null);
+    stampPreviewRef.current?.resetAll();
+    setDisplayStamps({});
     setDocPageCounts({});
     setSessionItems([]);
     setBatchId(null);
@@ -801,7 +714,7 @@ export default function AssinarComCertificadoModal({
       certRef.current = loaded;
       setCertPreview(loaded);
       setCertLabel(getCertificateHolderLabel(loaded));
-      if (!previewDocId && documentIds[0]) setPreviewDocId(documentIds[0]);
+      if (!previewDocIdRef.current && documentIds[0]) changePreviewDocId(documentIds[0]);
       setStep("review");
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Falha ao ler o certificado.");
@@ -904,7 +817,7 @@ export default function AssinarComCertificadoModal({
       certRef.current = loaded;
       setCertPreview(loaded);
       setCertLabel(getCertificateHolderLabel(loaded));
-      if (!previewDocId && documentIds[0]) setPreviewDocId(documentIds[0]);
+      if (!previewDocIdRef.current && documentIds[0]) changePreviewDocId(documentIds[0]);
       setStep("review");
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Falha ao carregar certificado salvo.");
@@ -979,7 +892,7 @@ export default function AssinarComCertificadoModal({
 
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        const docStamps = getDocStamps(item.documentId);
+        const docStamps = stampPreviewRef.current?.getDocStamps(item.documentId) ?? {};
         const stampEntries = Object.entries(docStamps).map(([pg, s]) => ({
           page: Number(pg),
           xPct: s.xPct,
@@ -1374,189 +1287,69 @@ export default function AssinarComCertificadoModal({
             </>
           ) : null}
 
+          {/* Always-mounted stamp preview — shown during "pages" and "preview" steps */}
+          {certPreview && (
+            <div style={{ display: step === "pages" || step === "preview" ? "block" : "none" }}>
+              <CertStampPositionPreview
+                ref={stampPreviewRef}
+                documentId={previewDocId}
+                signerLabel={certRef.current ? getCertificateHolderLabel(certRef.current) : ""}
+                stampSubject={certLabel || certPreview.subject || null}
+                stampCnpj={getCertificateHolderCnpj(certPreview)}
+                stampCpf={formatCpf(certPreview.icpBrasil.cpf)}
+                stampRazaoSocial={certPreview.icpBrasil.razaoSocial || null}
+                stampResponsavel={certPreview.icpBrasil.responsavel || null}
+                onPageCountKnown={(count) => {
+                  if (!previewDocId) return;
+                  setDocPageCounts((prev) => ({ ...prev, [previewDocId]: count }));
+                }}
+                onStampsChanged={(all) => setDisplayStamps({ ...all })}
+              />
+            </div>
+          )}
+
           {step === "pages" ? (() => {
             const currentIdx = previewDocId
               ? Math.max(0, documentIds.indexOf(previewDocId))
               : 0;
             const isFirst = currentIdx === 0;
             const isLast = currentIdx === documentIds.length - 1;
-            const posicionados = documentIds.filter((id) =>
-              Object.keys(placements[id] ?? {}).length > 0
-            ).length;
-            const allPositioned = posicionados >= documentIds.length;
 
             function goTo(idx: number) {
-              setPreviewDocId(documentIds[idx] || null);
+              changePreviewDocId(documentIds[idx] || null);
             }
 
             return (
-              <>
-                {certLabel ? (
-                  <div style={{ color: "#6ee7b7", fontSize: 13, marginBottom: 8, lineHeight: 1.35 }}>
-                    <div>Assinando como: <strong>{certLabel}</strong></div>
-                    {certPreview?.icpBrasil.cnpj ? (
-                      <div>CNPJ: {getCertificateHolderCnpj(certPreview) || ""}</div>
-                    ) : null}
-                    <button
-                      type="button"
-                      onClick={() => setStep("review")}
-                      style={{ background: "none", border: "none", color: "#7dd3fc", cursor: "pointer", padding: 0, fontSize: 13, textDecoration: "underline" }}
-                    >
-                      ver certificado
-                    </button>
-                  </div>
-                ) : null}
-
-                {/* Cabeçalho do documento atual */}
-                <div style={{ background: "#1e293b", borderRadius: 8, padding: "10px 14px", marginBottom: 8 }}>
-                  {documentIds.length > 1 ? (
-                    <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>
-                      Documento {currentIdx + 1} de {documentIds.length}
-                      {" — "}
-                      <span style={{ color: allPositioned ? "#6ee7b7" : "#fbbf24" }}>
-                        {posicionados}/{documentIds.length} posicionados
-                      </span>
-                    </div>
-                  ) : null}
-                  <div style={{ fontWeight: 600, fontSize: 14, color: "#e2e8f0", wordBreak: "break-all" }}>
-                    {docLabel(previewDocId || documentIds[0] || "")}
-                    {Object.keys(placements[previewDocId || ""] ?? {}).length > 0 ? (
-                      <span style={{ marginLeft: 8, color: "#6ee7b7", fontSize: 12 }}>✓ {Object.keys(placements[previewDocId || ""] ?? {}).length} carimbo(s)</span>
-                    ) : (
-                      <span style={{ marginLeft: 8, color: "#f59e0b", fontSize: 12 }}>▼ clique nas páginas</span>
-                    )}
-                  </div>
-                </div>
-
-                <CertStampPositionPreview
-                  documentId={previewDocId}
-                  pageStamps={getDocStamps(previewDocId)}
-                  onStampChange={(page, xPct, yPct) => setPageStamp(previewDocId, page, xPct, yPct)}
-                  onStampRemove={(page) => removePageStamp(previewDocId, page)}
-                  signerLabel={certRef.current ? getCertificateHolderLabel(certRef.current) : ""}
-                  stampSubject={certLabel || certPreview?.subject || null}
-                  stampCnpj={certPreview ? getCertificateHolderCnpj(certPreview) : null}
-                  stampCpf={formatCpf(certPreview?.icpBrasil.cpf)}
-                  stampRazaoSocial={certPreview?.icpBrasil.razaoSocial || null}
-                  stampResponsavel={certPreview?.icpBrasil.responsavel || null}
-                  onPageCountKnown={(count) => {
-                    if (!previewDocId) return;
-                    setDocPageCounts((prev) => ({ ...prev, [previewDocId]: count }));
-                  }}
-                />
-
-                {/* Ações rápidas de carimbo */}
-                {(() => {
-                  const docId = previewDocId || documentIds[0] || "";
-                  const count = docPageCounts[docId] || 0;
-                  const stamped = Object.keys(getDocStamps(docId)).length;
-                  return (
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6, alignItems: "center" }}>
-                      <span style={{ fontSize: 12, color: stamped > 0 ? "#6ee7b7" : "#94a3b8" }}>
-                        {stamped > 0 ? `${stamped} página${stamped > 1 ? "s" : ""} com carimbo` : "Nenhuma página carimbada"}
-                        {count > 0 ? ` de ${count}` : ""}
-                      </span>
-                      {count > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => stampAllPages(docId, count)}
-                          style={{ background: "#0f766e", color: "#6ee7b7", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
-                        >
-                          Carimbar todas as {count} páginas
-                        </button>
-                      )}
-                      {stamped > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => removeAllPageStamps(docId)}
-                          style={{ background: "transparent", color: "#94a3b8", border: "1px solid #334155", borderRadius: 6, padding: "4px 12px", fontSize: 12, cursor: "pointer" }}
-                        >
-                          Remover todos
-                        </button>
-                      )}
-                    </div>
-                  );
-                })()}
-
-                {/* Navegação entre documentos */}
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10, alignItems: "center" }}>
-                  {documentIds.length > 1 ? (
-                    <>
-                      <button
-                        type="button"
-                        disabled={isFirst}
-                        onClick={() => goTo(currentIdx - 1)}
-                        style={{ background: "transparent", color: "#cbd5e1", border: "1px solid #475569", borderRadius: 8, padding: "8px 14px", fontWeight: 600, cursor: isFirst ? "not-allowed" : "pointer", opacity: isFirst ? 0.4 : 1 }}
-                      >
-                        ← Anterior
-                      </button>
-
-                      {/* Mini-lista de todos os documentos */}
-                      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", flex: 1 }}>
-                        {documentIds.map((id, i) => (
-                          <button
-                            key={id}
-                            type="button"
-                            onClick={() => goTo(i)}
-                            title={docLabel(id)}
-                            style={{
-                              background: id === previewDocId ? "#1d4ed8" : Object.keys(placements[id] ?? {}).length > 0 ? "#064e3b" : "#1e293b",
-                              border: `1px solid ${id === previewDocId ? "#3b82f6" : Object.keys(placements[id] ?? {}).length > 0 ? "#059669" : "#475569"}`,
-                              color: id === previewDocId ? "#fff" : Object.keys(placements[id] ?? {}).length > 0 ? "#6ee7b7" : "#94a3b8",
-                              borderRadius: 6,
-                              padding: "4px 10px",
-                              fontSize: 11,
-                              cursor: "pointer",
-                              fontWeight: id === previewDocId ? 700 : 400,
-                            }}
-                          >
-                            {i + 1}{Object.keys(placements[id] ?? {}).length > 0 ? " ✓" : ""}
-                          </button>
-                        ))}
-                      </div>
-
-                      {!isLast ? (
-                        <button
-                          type="button"
-                          onClick={() => goTo(currentIdx + 1)}
-                          style={{ background: "#0f766e", color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontWeight: 600, cursor: "pointer" }}
-                        >
-                          Próximo →
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => setStep("preview")}
-                          style={{ background: "#1d4ed8", color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontWeight: 600, cursor: "pointer" }}
-                        >
-                          Ver prévia final →
-                        </button>
-                      )}
-                    </>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => setStep("preview")}
-                      style={{ background: "#1d4ed8", color: "#fff", border: "none", borderRadius: 8, padding: "10px 14px", fontWeight: 600, cursor: "pointer" }}
-                    >
-                      Ver prévia final
-                    </button>
-                  )}
-                </div>
-
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8, alignItems: "center" }}>
+                {documentIds.length > 1 && (
+                  <button
+                    type="button"
+                    disabled={isFirst}
+                    onClick={() => goTo(currentIdx - 1)}
+                    style={{ background: "transparent", color: "#cbd5e1", border: "1px solid #475569", borderRadius: 8, padding: "8px 14px", fontWeight: 600, cursor: isFirst ? "not-allowed" : "pointer", opacity: isFirst ? 0.4 : 1 }}
+                  >
+                    ← Anterior
+                  </button>
+                )}
                 {documentIds.length > 1 && !isLast ? (
                   <button
                     type="button"
-                    disabled={busy}
-                    onClick={() => setStep("preview")}
-                    style={{ marginTop: 8, background: "transparent", color: "#94a3b8", border: "1px solid #334155", borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer" }}
+                    onClick={() => goTo(currentIdx + 1)}
+                    style={{ background: "#0f766e", color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontWeight: 600, cursor: "pointer" }}
                   >
-                    Pular para prévia final ({posicionados}/{documentIds.length} posicionados)
+                    Próximo →
                   </button>
-                ) : null}
-              </>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void iniciarEAssinar()}
+                    style={{ background: "#0f766e", color: "#fff", border: "none", borderRadius: 8, padding: "10px 14px", fontWeight: 600, cursor: "pointer" }}
+                  >
+                    Assinar {documentIds.length > 1 ? "lote" : "documento"}
+                  </button>
+                )}
+              </div>
             );
           })() : null}
 
@@ -1568,20 +1361,6 @@ export default function AssinarComCertificadoModal({
               </p>
               <CertificateReviewCard cert={certPreview} />
               <SignatureAppearancePreview cert={certPreview} />
-              <CertStampPositionPreview
-                documentId={previewDocId}
-                pageStamps={getDocStamps(previewDocId)}
-                onStampChange={(page, xPct, yPct) => setPageStamp(previewDocId, page, xPct, yPct)}
-                onStampRemove={(page) => removePageStamp(previewDocId, page)}
-                signerLabel={
-                  certRef.current ? getCertificateHolderLabel(certRef.current) : ""
-                }
-                stampSubject={certLabel || certPreview.subject || null}
-                stampCnpj={getCertificateHolderCnpj(certPreview)}
-                stampCpf={formatCpf(certPreview.icpBrasil.cpf)}
-                stampRazaoSocial={certPreview.icpBrasil.razaoSocial || null}
-                stampResponsavel={certPreview.icpBrasil.responsavel || null}
-              />
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 <button
                   type="button"
