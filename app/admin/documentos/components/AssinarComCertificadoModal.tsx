@@ -1320,36 +1320,62 @@ export default function AssinarComCertificadoModal({
             }
 
             return (
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8, alignItems: "center" }}>
+              <>
                 {documentIds.length > 1 && (
-                  <button
-                    type="button"
-                    disabled={isFirst}
-                    onClick={() => goTo(currentIdx - 1)}
-                    style={{ background: "transparent", color: "#cbd5e1", border: "1px solid #475569", borderRadius: 8, padding: "8px 14px", fontWeight: 600, cursor: isFirst ? "not-allowed" : "pointer", opacity: isFirst ? 0.4 : 1 }}
-                  >
-                    ← Anterior
-                  </button>
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 8 }}>
+                    {documentIds.map((id, i) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => goTo(i)}
+                        title={docLabel(id)}
+                        style={{
+                          background: id === previewDocId ? "#1d4ed8" : "#1e293b",
+                          border: `1px solid ${id === previewDocId ? "#3b82f6" : "#475569"}`,
+                          color: id === previewDocId ? "#fff" : "#94a3b8",
+                          borderRadius: 6,
+                          padding: "4px 10px",
+                          fontSize: 11,
+                          cursor: "pointer",
+                          fontWeight: id === previewDocId ? 700 : 400,
+                        }}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+                  </div>
                 )}
-                {documentIds.length > 1 && !isLast ? (
-                  <button
-                    type="button"
-                    onClick={() => goTo(currentIdx + 1)}
-                    style={{ background: "#0f766e", color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontWeight: 600, cursor: "pointer" }}
-                  >
-                    Próximo →
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => void iniciarEAssinar()}
-                    style={{ background: "#0f766e", color: "#fff", border: "none", borderRadius: 8, padding: "10px 14px", fontWeight: 600, cursor: "pointer" }}
-                  >
-                    Assinar {documentIds.length > 1 ? "lote" : "documento"}
-                  </button>
-                )}
-              </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8, alignItems: "center" }}>
+                  {documentIds.length > 1 && (
+                    <button
+                      type="button"
+                      disabled={isFirst}
+                      onClick={() => goTo(currentIdx - 1)}
+                      style={{ background: "transparent", color: "#cbd5e1", border: "1px solid #475569", borderRadius: 8, padding: "8px 14px", fontWeight: 600, cursor: isFirst ? "not-allowed" : "pointer", opacity: isFirst ? 0.4 : 1 }}
+                    >
+                      ← Anterior
+                    </button>
+                  )}
+                  {documentIds.length > 1 && !isLast ? (
+                    <button
+                      type="button"
+                      onClick={() => goTo(currentIdx + 1)}
+                      style={{ background: "#0f766e", color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontWeight: 600, cursor: "pointer" }}
+                    >
+                      Próximo →
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => setStep("preview")}
+                      style={{ background: "#1d4ed8", color: "#fff", border: "none", borderRadius: 8, padding: "10px 14px", fontWeight: 600, cursor: "pointer" }}
+                    >
+                      Ver prévia final
+                    </button>
+                  )}
+                </div>
+              </>
             );
           })() : null}
 
