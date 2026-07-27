@@ -602,16 +602,16 @@ function CertStampPositionPreview({
         ) : null}
         {pages.map((p, idx) => {
           const isActive = p.index === placement.page;
-          const g = isActive
-            ? geom
-            : stampLeftTopPct(
-                p.w,
-                p.h,
-                CERT_STAMP_BOX.w,
-                CERT_STAMP_BOX.h,
-                placement.xPct,
-                placement.yPct
-              );
+          const isExtra = placement.extraPages.includes(p.index);
+          const showStamp = isActive || isExtra;
+          const g = stampLeftTopPct(
+            p.w,
+            p.h,
+            CERT_STAMP_BOX.w,
+            CERT_STAMP_BOX.h,
+            placement.xPct,
+            placement.yPct
+          );
           return (
             <div
               key={p.index}
@@ -624,10 +624,13 @@ function CertStampPositionPreview({
                 lineHeight: 0,
                 background: "#fff",
                 marginBottom: 10,
-                boxShadow: "0 1px 4px rgba(0,0,0,0.25)",
+                boxShadow: isActive
+                  ? "0 0 0 2px #3b82f6, 0 1px 4px rgba(0,0,0,0.25)"
+                  : isExtra
+                  ? "0 0 0 2px #059669, 0 1px 4px rgba(0,0,0,0.25)"
+                  : "0 1px 4px rgba(0,0,0,0.25)",
               }}
               onPointerDown={(e) => {
-                // Clique na página também posiciona o carimbo
                 if ((e.target as HTMLElement).closest("[data-stamp]")) return;
                 placementFromClient(e.clientX, e.clientY);
               }}
@@ -639,16 +642,24 @@ function CertStampPositionPreview({
                 draggable={false}
                 style={{ width: "100%", height: "auto", display: "block" }}
               />
-              {isActive ? (
+              {/* Label de página */}
+              <div style={{
+                position: "absolute", top: 4, left: 4, fontSize: 9, fontWeight: 700,
+                background: isActive ? "#3b82f6" : isExtra ? "#059669" : "rgba(0,0,0,0.35)",
+                color: "#fff", borderRadius: 4, padding: "1px 5px", lineHeight: 1.4, zIndex: 4,
+              }}>
+                {isActive ? `Pág. ${p.index} ★` : `Pág. ${p.index}`}
+              </div>
+              {showStamp ? (
                 <div
                   data-stamp="1"
-                  role="button"
-                  aria-label="Arrastar carimbo de assinatura"
-                  title="Arraste livremente pelo documento"
-                  onPointerDown={onPointerDown}
-                  onPointerMove={onPointerMove}
-                  onPointerUp={onPointerUp}
-                  onPointerCancel={onPointerUp}
+                  role={isActive ? "button" : undefined}
+                  aria-label={isActive ? "Arrastar carimbo de assinatura" : undefined}
+                  title={isActive ? "Arraste livremente pelo documento" : `Carimbo na página ${p.index}`}
+                  onPointerDown={isActive ? onPointerDown : undefined}
+                  onPointerMove={isActive ? onPointerMove : undefined}
+                  onPointerUp={isActive ? onPointerUp : undefined}
+                  onPointerCancel={isActive ? onPointerUp : undefined}
                   style={{
                     position: "absolute",
                     left: `${g.leftPct}%`,
@@ -659,16 +670,17 @@ function CertStampPositionPreview({
                     border: "none",
                     borderRadius: 0,
                     boxSizing: "border-box",
-                    cursor: grabbing ? "grabbing" : "grab",
+                    cursor: isActive ? (grabbing ? "grabbing" : "grab") : "default",
                     boxShadow: "none",
-                    outline: grabbing ? "1px dashed #999" : "1px dashed transparent",
+                    outline: isActive && grabbing ? "1px dashed #999" : "1px dashed transparent",
                     zIndex: 3,
-                    touchAction: "none",
+                    touchAction: isActive ? "none" : undefined,
                     padding: "4px 6px",
                     display: "flex",
                     gap: 4,
                     overflow: "hidden",
                     alignItems: "stretch",
+                    opacity: isExtra ? 0.85 : 1,
                   }}
                 >
                   <div
@@ -716,15 +728,7 @@ function CertStampPositionPreview({
                           style={{ width: 48, height: 48, display: "block", flex: "0 0 auto" }}
                         />
                       ) : (
-                        <div
-                          style={{
-                            width: 53,
-                            height: 53,
-                            border: "1px solid #94a3b8",
-                            background: "#f8fafc",
-                            flex: "0 0 auto",
-                          }}
-                        />
+                        <div style={{ width: 53, height: 53, border: "1px solid #94a3b8", background: "#f8fafc", flex: "0 0 auto" }} />
                       )}
                       <div style={{ minWidth: 0, textAlign: "center", fontSize: 4.4, lineHeight: 1.0 }}>
                         <div style={{ fontWeight: 700 }}>VALIDAR ITI</div>
