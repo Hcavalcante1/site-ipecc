@@ -664,6 +664,7 @@ export default function AssinarComCertificadoModal({
   const [selectedProfilePassword, setSelectedProfilePassword] = useState("");
   const [previewDocId, setPreviewDocId] = useState<string | null>(null);
   const [placements, setPlacements] = useState<Record<string, DocStamps>>({});
+  const [docPageCounts, setDocPageCounts] = useState<Record<string, number>>({});
 
   function getDocStamps(docId: string | null | undefined): DocStamps {
     if (!docId) return {};
@@ -685,6 +686,23 @@ export default function AssinarComCertificadoModal({
       delete next[page];
       return { ...prev, [docId]: next };
     });
+  }
+
+  function stampAllPages(docId: string | null | undefined, count: number) {
+    if (!docId || count < 1) return;
+    setPlacements((prev) => {
+      const existing = prev[docId] ?? {};
+      const next: DocStamps = {};
+      for (let pg = 1; pg <= count; pg++) {
+        next[pg] = existing[pg] ?? { xPct: 96, yPct: 96 };
+      }
+      return { ...prev, [docId]: next };
+    });
+  }
+
+  function removeAllPageStamps(docId: string | null | undefined) {
+    if (!docId) return;
+    setPlacements((prev) => ({ ...prev, [docId]: {} }));
   }
 
   function docLabel(id: string) {
@@ -716,6 +734,7 @@ export default function AssinarComCertificadoModal({
     setSelectedProfilePassword("");
     setPreviewDocId(documentIds[0] || null);
     setPlacements({});
+    setDocPageCounts({});
     setSessionItems([]);
     setBatchId(null);
     setProgress("");
@@ -1420,7 +1439,44 @@ export default function AssinarComCertificadoModal({
                   stampCpf={formatCpf(certPreview?.icpBrasil.cpf)}
                   stampRazaoSocial={certPreview?.icpBrasil.razaoSocial || null}
                   stampResponsavel={certPreview?.icpBrasil.responsavel || null}
+                  onPageCountKnown={(count) => {
+                    if (!previewDocId) return;
+                    setDocPageCounts((prev) => ({ ...prev, [previewDocId]: count }));
+                  }}
                 />
+
+                {/* Ações rápidas de carimbo */}
+                {(() => {
+                  const docId = previewDocId || documentIds[0] || "";
+                  const count = docPageCounts[docId] || 0;
+                  const stamped = Object.keys(getDocStamps(docId)).length;
+                  return (
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6, alignItems: "center" }}>
+                      <span style={{ fontSize: 12, color: stamped > 0 ? "#6ee7b7" : "#94a3b8" }}>
+                        {stamped > 0 ? `${stamped} página${stamped > 1 ? "s" : ""} com carimbo` : "Nenhuma página carimbada"}
+                        {count > 0 ? ` de ${count}` : ""}
+                      </span>
+                      {count > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => stampAllPages(docId, count)}
+                          style={{ background: "#0f766e", color: "#6ee7b7", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                        >
+                          Carimbar todas as {count} páginas
+                        </button>
+                      )}
+                      {stamped > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => removeAllPageStamps(docId)}
+                          style={{ background: "transparent", color: "#94a3b8", border: "1px solid #334155", borderRadius: 6, padding: "4px 12px", fontSize: 12, cursor: "pointer" }}
+                        >
+                          Remover todos
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Navegação entre documentos */}
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10, alignItems: "center" }}>
