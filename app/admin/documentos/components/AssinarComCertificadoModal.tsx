@@ -463,6 +463,31 @@ const CertStampPositionPreview = forwardRef<StampPreviewHandle, {
   return (
     <div style={{ marginBottom: 12 }}>
       {loadErro && <p style={{ color: "#fca5a5", fontSize: 13 }}>{loadErro}</p>}
+      {pages.length > 1 && (
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 6 }}>
+          {pages.map((p) => (
+            <button
+              key={p.index}
+              type="button"
+              onClick={() => {
+                const el = pageElsRef.current.get(p.index);
+                if (el && scrollRef.current) {
+                  scrollRef.current.scrollTo({ top: el.offsetTop - 8, behavior: "smooth" });
+                }
+              }}
+              style={{
+                background: currentPageStamps[p.index] ? "#1d4ed8" : "#1e293b",
+                border: `1px solid ${currentPageStamps[p.index] ? "#3b82f6" : "#475569"}`,
+                color: currentPageStamps[p.index] ? "#fff" : "#94a3b8",
+                borderRadius: 6, padding: "3px 9px", fontSize: 11,
+                cursor: "pointer", fontWeight: currentPageStamps[p.index] ? 700 : 400,
+              }}
+            >
+              {p.index}
+            </button>
+          ))}
+        </div>
+      )}
       <div ref={scrollRef} style={{ borderRadius: 8, overflow: "auto", maxHeight: "min(62vh, 680px)", border: "1px solid #334155", background: "#334155", padding: 8 }}>
         {loadingPdf && <p style={{ color: "#f8fafc", fontSize: 13, padding: 16 }}>Carregando documento…</p>}
         {pages.map((p) => {
