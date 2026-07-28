@@ -646,6 +646,27 @@ export default function DigitalAdminPage() {
     return list.filter((x) => x !== id);
   }
 
+  async function renovarUrlMidia(id: string) {
+    setBusy(true);
+    const res = await fetch(`/api/admin/digital/media/${id}`, { method: "PATCH" });
+    const json = await res.json();
+    if (!res.ok || !json.ok) {
+      flash(json.error ?? "Falha ao renovar URL", "erro");
+    } else {
+      const novaUrl: string = json.media?.public_url ?? "";
+      setMediaList((prev) =>
+        prev.map((m) => (m.id === id ? { ...m, public_url: novaUrl } : m))
+      );
+      if (novaUrl) {
+        await navigator.clipboard.writeText(novaUrl).catch(() => null);
+        flash("URL renovada (7 dias) e copiada.", "ok");
+      } else {
+        flash("URL renovada mas não foi possível copiar.", "info");
+      }
+    }
+    setBusy(false);
+  }
+
   async function deletarMidia(id: string) {
     if (!confirm("Excluir este arquivo? A ação não pode ser desfeita.")) return;
     setBusy(true);
@@ -1024,9 +1045,16 @@ export default function DigitalAdminPage() {
                       >
                         Copiar URL
                       </button>
-                    ) : (
-                      <span style={{ ...metaStyle, color: "#f59e0b", flex: 1 }}>URL expirada</span>
-                    )}
+                    ) : null}
+                    <button
+                      type="button"
+                      style={{ ...btnGhost, fontSize: 11, padding: "4px 10px", ...(m.public_url ? {} : { flex: 1 }) }}
+                      disabled={busy}
+                      title="Gera nova URL assinada (7 dias) e copia"
+                      onClick={() => void renovarUrlMidia(m.id)}
+                    >
+                      Renovar
+                    </button>
                     <button
                       type="button"
                       style={{ ...btnGhost, fontSize: 11, padding: "4px 10px", color: "#f87171", borderColor: "rgba(127,29,29,0.6)" }}
