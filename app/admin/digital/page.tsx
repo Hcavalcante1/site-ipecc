@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { adminTokens } from "@/components/admin";
 import type {
   DigitalAccount,
@@ -171,6 +171,11 @@ export default function DigitalAdminPage() {
   const [agentAviso, setAgentAviso] = useState<string | null>(null);
   const [queueWaiting, setQueueWaiting] = useState(0);
 
+  const [avisoTipo, setAvisoTipo] = useState<"ok" | "erro" | "info">("info");
+  const [uploading, setUploading] = useState(false);
+  const manualFileRef = useRef<HTMLInputElement>(null);
+  const editFileRef = useRef<HTMLInputElement>(null);
+
   const contasDestino = accounts.filter((a) => a.ativo);
 
   const carregarAgente = useCallback(async () => {
@@ -189,14 +194,43 @@ export default function DigitalAdminPage() {
     }
   }, []);
 
+  function flash(texto: string, tipo: "ok" | "erro" | "info" = "info") {
+    setAviso(texto);
+    setAvisoTipo(tipo);
+  }
+
+  async function uploadMidia(file: File, setUrl: (u: string) => void) {
+    setUploading(true);
+    setAviso(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/admin/digital/media/upload", {
+        method: "POST",
+        body: form,
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        flash(json.error ?? "Falha no upload", "erro");
+      } else {
+        setUrl(json.media.public_url ?? "");
+        flash(`Arquivo enviado: ${json.media.file_name}`, "ok");
+      }
+    } catch {
+      flash("Falha de rede no upload", "erro");
+    }
+    setUploading(false);
+  }
+
   async function copiarComandoInstalar() {
     try {
       await navigator.clipboard.writeText(COMANDO_INSTALAR_AGENTE);
-      setAviso(
-        "Comando de instalação copiado. Cole no PowerShell na pasta do projeto (uma única vez)."
+      flash(
+        "Comando de instalação copiado. Cole no PowerShell na pasta do projeto (uma única vez).",
+        "ok"
       );
     } catch {
-      setAviso(`Copie manualmente: ${COMANDO_INSTALAR_AGENTE}`);
+      flash(`Copie manualmente: ${COMANDO_INSTALAR_AGENTE}`, "info");
     }
   }
 
@@ -262,11 +296,12 @@ export default function DigitalAdminPage() {
     const res = await fetch("/api/admin/digital/generate", { method: "POST" });
     const json = await res.json();
     if (!res.ok || !json.ok) {
-      setAviso(json.error ?? "Falha ao gerar rascunhos");
+      flash(json.error ?? "Falha ao gerar rascunhos", "erro");
     } else {
-      setAviso(
+      flash(
         `Agente: ${json.generated} gerado(s), ${json.skipped} ignorado(s).` +
-          (json.errors?.length ? ` Avisos: ${json.errors.length}` : "")
+          (json.errors?.length ? ` Avisos: ${json.errors.length}` : ""),
+        "ok"
       );
       setTab("fila");
       await carregar();
@@ -290,7 +325,7 @@ export default function DigitalAdminPage() {
     });
     const json = await res.json();
     if (!res.ok || !json.ok) {
-      setAviso(json.error ?? "Falha ao criar perfil");
+      flash(json.error ?? "Falha ao criar perfil", "erro");
     } else {
       setNewLabel("");
       setNewHref("");
@@ -309,7 +344,7 @@ export default function DigitalAdminPage() {
       body: JSON.stringify({ id: account.id, ativo: !account.ativo }),
     });
     const json = await res.json();
-    if (!res.ok || !json.ok) setAviso(json.error ?? "Falha ao atualizar");
+    if (!res.ok || !json.ok) flash(json.error ?? "Falha ao atualizar", "erro");
     else await carregar();
     setBusy(false);
   }
@@ -340,9 +375,9 @@ export default function DigitalAdminPage() {
     });
     const json = await res.json();
     if (!res.ok || !json.ok) {
-      setAviso(json.error ?? "Falha ao atualizar automação");
+      flash(json.error ?? "Falha ao atualizar automação", "erro");
     } else {
-      setAviso(json.aviso ?? "Automação da conta atualizada.");
+      flash(json.aviso ?? "Automação da conta atualizada.", "ok");
       await carregar();
     }
     setBusy(false);
@@ -359,11 +394,11 @@ export default function DigitalAdminPage() {
 
   async function salvarEdicaoPerfil(account: DigitalAccount) {
     if (!editAccLabel.trim() || !editAccHref.trim()) {
-      setAviso("Rótulo e endereço (URL) são obrigatórios.");
+      flash("Rótulo e endereço (URL) são obrigatórios.", "erro");
       return;
     }
     if (account.scope === "projeto" && !editAccProjetoRef.trim()) {
-      setAviso("Referência do projeto é obrigatória neste perfil.");
+      flash("Referência do projeto é obrigatória neste perfil.", "erro");
       return;
     }
     setBusy(true);
@@ -381,10 +416,10 @@ export default function DigitalAdminPage() {
     });
     const json = await res.json();
     if (!res.ok || !json.ok) {
-      setAviso(json.error ?? "Falha ao salvar perfil");
+      flash(json.error ?? "Falha ao salvar perfil", "erro");
     } else {
       setEditingAccountId(null);
-      setAviso("Perfil atualizado.");
+      flash("Perfil atualizado.", "ok");
       await carregar();
     }
     setBusy(false);
@@ -392,7 +427,7 @@ export default function DigitalAdminPage() {
 
   async function criarPostManual() {
     if (selectedAccountIds.length === 0) {
-      setAviso("Selecione ao menos um perfil de destino.");
+      flash("Selecione ao menos um perfil de destino.", "erro");
       return;
     }
     setBusy(true);
@@ -409,7 +444,7 @@ export default function DigitalAdminPage() {
     });
     const json = await res.json();
     if (!res.ok || !json.ok) {
-      setAviso(json.error ?? "Falha ao criar post");
+      flash(json.error ?? "Falha ao criar post", "erro");
     } else {
       setManualTitle("");
       setManualBody("");
@@ -439,12 +474,12 @@ export default function DigitalAdminPage() {
       }),
     });
     const json = await res.json();
-    if (!res.ok || !json.ok) setAviso(json.error ?? "Falha ao atualizar post");
+    if (!res.ok || !json.ok) flash(json.error ?? "Falha ao atualizar post", "erro");
     else {
       if (status === "published_manual") {
-        setAviso("Marcado como publicado manualmente nas redes.");
+        flash("Marcado como publicado manualmente nas redes.", "ok");
       } else if (status === "scheduled") {
-        setAviso("Post agendado na fila (lembrete editorial — sem envio automático).");
+        flash("Post agendado na fila (lembrete editorial — sem envio automático).", "ok");
         setScheduleForId(null);
       }
       if (editingId === post.id) setEditingId(null);
@@ -464,12 +499,12 @@ export default function DigitalAdminPage() {
 
   async function confirmarAgendamento(post: DigitalPost) {
     if (!scheduleValue) {
-      setAviso("Informe data e hora do agendamento.");
+      flash("Informe data e hora do agendamento.", "erro");
       return;
     }
     const iso = new Date(scheduleValue).toISOString();
     if (Number.isNaN(new Date(scheduleValue).getTime())) {
-      setAviso("Data/hora inválida.");
+      flash("Data/hora inválida.", "erro");
       return;
     }
     await setPostStatus(post, "scheduled", { scheduled_at: iso });
@@ -487,7 +522,7 @@ export default function DigitalAdminPage() {
 
   async function salvarEdicao(postId: string) {
     if (editAccountIds.length === 0) {
-      setAviso("Selecione ao menos um perfil de destino.");
+      flash("Selecione ao menos um perfil de destino.", "erro");
       return;
     }
     setBusy(true);
@@ -505,10 +540,10 @@ export default function DigitalAdminPage() {
     });
     const json = await res.json();
     if (!res.ok || !json.ok) {
-      setAviso(json.error ?? "Falha ao salvar edição");
+      flash(json.error ?? "Falha ao salvar edição", "erro");
     } else {
       setEditingId(null);
-      setAviso("Texto e destinos atualizados.");
+      flash("Texto e destinos atualizados.", "ok");
       await carregar();
     }
     setBusy(false);
@@ -523,36 +558,37 @@ export default function DigitalAdminPage() {
     const texto = textoPublicavel(post);
     try {
       await navigator.clipboard.writeText(texto);
-      setAviso("Texto copiado. Cole na rede e, em seguida, marque como publicado.");
+      flash("Texto copiado. Cole na rede e, em seguida, marque como publicado.", "ok");
     } catch {
-      setAviso("Não foi possível copiar. Selecione o texto manualmente.");
+      flash("Não foi possível copiar. Selecione o texto manualmente.", "erro");
     }
   }
 
   async function copiarLink(post: DigitalPost) {
     const link = primeiroLink(post);
     if (!link) {
-      setAviso("Este post não tem link para copiar.");
+      flash("Este post não tem link para copiar.", "info");
       return;
     }
     try {
       await navigator.clipboard.writeText(link);
-      setAviso("Link copiado.");
+      flash("Link copiado.", "ok");
     } catch {
-      setAviso("Não foi possível copiar o link.");
+      flash("Não foi possível copiar o link.", "erro");
     }
   }
 
   async function publicarNoInstagram(post: DigitalPost) {
     if (!post.media_url || !/^https?:\/\//i.test(post.media_url)) {
-      setAviso(
-        "Informe uma URL pública de imagem no post antes de publicar no Instagram."
+      flash(
+        "Informe uma URL pública de imagem no post antes de publicar no Instagram.",
+        "erro"
       );
       return;
     }
     const temIg = (post.targets ?? []).some((t) => t.platform === "instagram");
     if (!temIg) {
-      setAviso("Inclua o perfil Instagram nos destinos deste post.");
+      flash("Inclua o perfil Instagram nos destinos deste post.", "erro");
       return;
     }
     setBusy(true);
@@ -564,11 +600,12 @@ export default function DigitalAdminPage() {
     });
     const json = await res.json();
     if (!res.ok || !json.ok) {
-      setAviso(json.error ?? "Falha ao publicar no Instagram");
+      flash(json.error ?? "Falha ao publicar no Instagram", "erro");
     } else {
-      setAviso(
+      flash(
         json.aviso ??
-          `Publicado no Instagram${json.media_id ? ` (id ${json.media_id})` : ""}.`
+          `Publicado no Instagram${json.media_id ? ` (id ${json.media_id})` : ""}.`,
+        "ok"
       );
       await carregar();
     }
@@ -586,11 +623,12 @@ export default function DigitalAdminPage() {
     });
     const json = await res.json();
     if (!res.ok || !json.ok) {
-      setAviso(json.error ?? "Falha ao enfileirar");
+      flash(json.error ?? "Falha ao enfileirar", "erro");
     } else {
-      setAviso(
+      flash(
         json.message ??
-          "Enfileirado. Se o agente estiver online, publica em seguida; se offline, fica na fila."
+          "Enfileirado. Se o agente estiver online, publica em seguida; se offline, fica na fila.",
+        "ok"
       );
       await carregar();
     }
@@ -610,9 +648,9 @@ export default function DigitalAdminPage() {
     });
     const json = await res.json();
     if (!res.ok || !json.ok) {
-      setAviso(json.error ?? "Falha ao repetir");
+      flash(json.error ?? "Falha ao repetir", "erro");
     } else {
-      setAviso(json.message ?? "Retentativa enfileirada.");
+      flash(json.message ?? "Retentativa enfileirada.", "ok");
       await carregar();
     }
     setBusy(false);
@@ -652,8 +690,27 @@ export default function DigitalAdminPage() {
       </div>
 
       {aviso && (
-        <p style={{ ...metaStyle, marginTop: adminTokens.spacing.base, color: "#b45309" }}>
-          {aviso}
+        <p
+          style={{
+            ...metaStyle,
+            marginTop: adminTokens.spacing.base,
+            color:
+              avisoTipo === "erro"
+                ? "#f87171"
+                : avisoTipo === "ok"
+                  ? "#86efac"
+                  : "#f59e0b",
+            padding: `${adminTokens.spacing.xs}px ${adminTokens.spacing.sm}px`,
+            borderRadius: adminTokens.borderRadius.sm,
+            background:
+              avisoTipo === "erro"
+                ? "rgba(239,68,68,0.08)"
+                : avisoTipo === "ok"
+                  ? "rgba(134,239,172,0.08)"
+                  : "rgba(245,158,11,0.08)",
+          }}
+        >
+          {avisoTipo === "ok" ? "✓ " : avisoTipo === "erro" ? "✕ " : ""}{aviso}
         </p>
       )}
 
@@ -986,12 +1043,33 @@ export default function DigitalAdminPage() {
                 value={manualTags}
                 onChange={(e) => setManualTags(e.target.value)}
               />
-              <input
-                style={inputStyle}
-                placeholder="URL de mídia ou link (opcional)"
-                value={manualMedia}
-                onChange={(e) => setManualMedia(e.target.value)}
-              />
+              <div style={{ display: "flex", gap: adminTokens.spacing.sm, alignItems: "center" }}>
+                <input
+                  style={{ ...inputStyle, flex: 1 }}
+                  placeholder="URL de mídia ou link (opcional)"
+                  value={manualMedia}
+                  onChange={(e) => setManualMedia(e.target.value)}
+                />
+                <button
+                  type="button"
+                  style={btnGhost}
+                  disabled={busy || uploading}
+                  onClick={() => manualFileRef.current?.click()}
+                >
+                  {uploading ? "Enviando…" : "Upload"}
+                </button>
+                <input
+                  ref={manualFileRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,video/mp4"
+                  style={{ display: "none" }}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void uploadMidia(f, setManualMedia);
+                    e.target.value = "";
+                  }}
+                />
+              </div>
               <div>
                 <div style={{ ...metaStyle, marginBottom: 6 }}>Destinos</div>
                 {contasDestino.length === 0 ? (
@@ -1151,13 +1229,34 @@ export default function DigitalAdminPage() {
                           placeholder="Marcadores (#)"
                           aria-label="Marcadores"
                         />
-                        <input
-                          style={inputStyle}
-                          value={editMedia}
-                          onChange={(e) => setEditMedia(e.target.value)}
-                          placeholder="URL de mídia ou link (opcional)"
-                          aria-label="URL de mídia"
-                        />
+                        <div style={{ display: "flex", gap: adminTokens.spacing.sm, alignItems: "center" }}>
+                          <input
+                            style={{ ...inputStyle, flex: 1 }}
+                            value={editMedia}
+                            onChange={(e) => setEditMedia(e.target.value)}
+                            placeholder="URL de mídia ou link (opcional)"
+                            aria-label="URL de mídia"
+                          />
+                          <button
+                            type="button"
+                            style={btnGhost}
+                            disabled={busy || uploading}
+                            onClick={() => editFileRef.current?.click()}
+                          >
+                            {uploading ? "Enviando…" : "Upload"}
+                          </button>
+                          <input
+                            ref={editFileRef}
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,video/mp4"
+                            style={{ display: "none" }}
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) void uploadMidia(f, setEditMedia);
+                              e.target.value = "";
+                            }}
+                          />
+                        </div>
                         <div>
                           <div style={{ ...metaStyle, marginBottom: 6 }}>
                             Destinos

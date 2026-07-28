@@ -25,45 +25,9 @@ export async function GET(req: NextRequest) {
     query = query.eq("status", status);
   }
 
-  let { data, error } = await query;
-
-  if (
-    error &&
-    /automation_status|media_id|content_variants|dry_run|column .* does not exist/i.test(
-      error.message || ""
-    )
-  ) {
-    const fallback = await supabaseAdmin
-      .from("digital_posts")
-      .select(
-        "id, title, body, hashtags, media_url, source_type, source_id, status, scheduled_at, published_at, created_by, created_at, updated_at, external_post_id, publish_error, published_via"
-      )
-      .order("created_at", { ascending: false })
-      .limit(100);
-    data = (fallback.data || []) as typeof data;
-    error = fallback.error;
-  }
-
-  if (
-    error &&
-    /external_post_id|publish_error|published_via|column .* does not exist/i.test(
-      error.message || ""
-    )
-  ) {
-    const base = await supabaseAdmin
-      .from("digital_posts")
-      .select(
-        "id, title, body, hashtags, media_url, source_type, source_id, status, scheduled_at, published_at, created_by, created_at, updated_at"
-      )
-      .order("created_at", { ascending: false })
-      .limit(100);
-    data = (base.data || []) as typeof data;
-    error = base.error;
-  }
+  const { data, error } = await query;
 
   if (error) {
-    const tableMissing = error.code === "42P01";
-    const columnMissing = /column .* does not exist/i.test(error.message || "");
     return NextResponse.json({
       ok: true,
       posts: [],
@@ -75,11 +39,9 @@ export async function GET(req: NextRequest) {
         published_manual: 0,
         archived: 0,
       },
-      aviso: tableMissing
+      aviso: error.code === "42P01"
         ? "Tabela digital_posts ausente. Aplique docs/sql/digital-redes-fase1.sql no Supabase."
-        : columnMissing
-          ? "Colunas de digital_posts incompletas. Aplique docs/sql/digital-redes-instagram-publish.sql e docs/sql/digital-redes-automation-phase1.sql."
-          : error.message,
+        : error.message,
     });
   }
 
@@ -396,16 +358,36 @@ export async function PATCH(req: NextRequest) {
     const accountIds = Array.isArray(body.account_ids)
       ? body.account_ids.filter(Boolean)
       : [];
-    await supabaseAdmin.from("digital_post_targets").delete().eq("post_id", id);
-    if (accountIds.length > 0) {
+
+    // Remove apenas targets ainda pendentes que foram desmarcados (preserva histórico de publicados)
+    const { data: existing } = await supabaseAdmin
+      .from("digital_post_targets")
+      .select("account_id, publish_status")
+      .eq("post_id", id);
+
+    const toRemove = (existing ?? [])
+      .filter(
+        (t) =>
+          !accountIds.includes(t.account_id as string) &&
+          (t.publish_status === "pending" || t.publish_status === null)
+      )
+      .map((t) => t.account_id as string);
+
+    if (toRemove.length > 0) {
+      await supabaseAdmin
+        .from("digital_post_targets")
+        .delete()
+        .eq("post_id", id)
+        .in("account_id", toRemove);
+    }
+
+    // Insere novos destinos que ainda não existem
+    const existingIds = new Set((existing ?? []).map((t) => t.account_id as string));
+    const toInsert = accountIds.filter((aid) => !existingIds.has(aid));
+    if (toInsert.length > 0) {
       const { error: targetError } = await supabaseAdmin
         .from("digital_post_targets")
-        .insert(
-          accountIds.map((account_id) => ({
-            post_id: id,
-            account_id,
-          }))
-        );
+        .insert(toInsert.map((account_id) => ({ post_id: id, account_id })));
       if (targetError) {
         return NextResponse.json(
           { ok: false, error: targetError.message },
