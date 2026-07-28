@@ -27,11 +27,12 @@ export async function GET() {
       });
     }
 
-    const links = data.map((row) => ({
-      id: String(row.platform),
-      href: String(row.href),
-      label: String(row.label),
-    }));
+    // Mescla: banco é autoritativo para plataformas que existem com ativo=true;
+    // para as ausentes, mantém o fallback estático (evita sumiço silencioso).
+    const dbById = new Map(
+      data.map((row) => [String(row.platform), { id: String(row.platform), href: String(row.href), label: String(row.label) }])
+    );
+    const links = PUBLIC_SOCIAL_LINKS.map((fb) => dbById.get(fb.id) ?? fb);
 
     return NextResponse.json({ ok: true, source: "digital_accounts", links });
   } catch {
