@@ -109,6 +109,32 @@ export default function WhatsAppAdminPage() {
     carregarConversas();
   }
 
+  function exportarLeadsCSV() {
+    if (leads.length === 0) return;
+    const cabecalho = ["Data", "Nome", "Organização", "Telefone", "Email", "Assunto", "Mensagem", "Página de origem"];
+    const linhas = leads.map((l) => [
+      new Date(l.created_at).toLocaleString("pt-BR"),
+      l.nome,
+      l.organizacao ?? "",
+      l.telefone,
+      l.email ?? "",
+      getWhatsAppSubjectLabel(l.assunto),
+      l.mensagem ?? "",
+      l.pagina_origem ?? "",
+    ]);
+    const csv =
+      "﻿" +
+      [cabecalho, ...linhas]
+        .map((row) => row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
+        .join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `leads-whatsapp-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function encerrar(waId: string) {
     if (!confirm("Encerrar esta conversa no painel?")) return;
 
@@ -204,6 +230,23 @@ export default function WhatsAppAdminPage() {
             <code>WHATSAPP_LEADS_PERSIST_SUPABASE=1</code> na Vercel e aplique o
             SQL da tabela.
           </p>
+
+          {leads.length > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <button
+                type="button"
+                onClick={exportarLeadsCSV}
+                style={{
+                  ...btnBase,
+                  background: "#166534",
+                  color: "#fff",
+                  fontSize: 13,
+                }}
+              >
+                Exportar CSV ({leads.length})
+              </button>
+            </div>
+          )}
 
           {loading ? (
             <p style={{ marginTop: 24 }}>Carregando…</p>
