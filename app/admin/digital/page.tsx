@@ -199,6 +199,9 @@ export default function DigitalAdminPage() {
   const [logsData, setLogsData] = useState<Record<string, LogEntry[]>>({});
   const [logsLoading, setLogsLoading] = useState(false);
 
+  // Visibilidade do formulário de novo post
+  const [mostrarFormNovoPost, setMostrarFormNovoPost] = useState(false);
+
   const contasDestino = accounts.filter((a) => a.ativo);
 
   const carregarAgente = useCallback(async () => {
@@ -479,6 +482,7 @@ export default function DigitalAdminPage() {
       setManualTitle("");
       setManualBody("");
       setManualMedia("");
+      setMostrarFormNovoPost(false);
       await carregar();
     }
     setBusy(false);
@@ -771,13 +775,22 @@ export default function DigitalAdminPage() {
         >
           Perfis
         </button>
+        {tab === "fila" && (
+          <button
+            type="button"
+            style={mostrarFormNovoPost ? btnGhost : btnStyle}
+            onClick={() => setMostrarFormNovoPost((v) => !v)}
+          >
+            {mostrarFormNovoPost ? "✕ Fechar" : "+ Novo post"}
+          </button>
+        )}
         <button
           type="button"
-          style={btnStyle}
+          style={btnGhost}
           disabled={busy}
           onClick={() => void gerarRascunhos()}
         >
-          {busy ? "Aguarde…" : "Gerar rascunhos (agente)"}
+          {busy ? "Aguarde…" : "Gerar rascunhos (IA)"}
         </button>
       </div>
 
@@ -1114,6 +1127,7 @@ export default function DigitalAdminPage() {
         </>
       ) : (
         <>
+          {mostrarFormNovoPost && (
           <div style={cardStyle}>
             <h2 style={{ marginTop: 0, fontSize: 18 }}>Novo post manual</h2>
             <div style={{ display: "grid", gap: adminTokens.spacing.sm }}>
@@ -1123,12 +1137,23 @@ export default function DigitalAdminPage() {
                 value={manualTitle}
                 onChange={(e) => setManualTitle(e.target.value)}
               />
-              <textarea
-                style={{ ...inputStyle, minHeight: 100 }}
-                placeholder="Texto do post"
-                value={manualBody}
-                onChange={(e) => setManualBody(e.target.value)}
-              />
+              <div>
+                <textarea
+                  style={{ ...inputStyle, minHeight: 100 }}
+                  placeholder="Texto do post"
+                  value={manualBody}
+                  onChange={(e) => setManualBody(e.target.value)}
+                />
+                <div style={{ ...metaStyle, textAlign: "right", marginTop: 2 }}>
+                  <span style={{ color: manualBody.length > 2200 ? "#f87171" : manualBody.length > 1800 ? "#f59e0b" : "#64748b" }}>
+                    {manualBody.length}
+                  </span>
+                  {" "}/ 2 200 chars (Instagram)
+                  {manualBody.length > 280 && (
+                    <span style={{ marginLeft: 8, color: "#f87171" }}>· excede Twitter (280)</span>
+                  )}
+                </div>
+              </div>
               <input
                 style={inputStyle}
                 placeholder="Marcadores (#)"
@@ -1162,6 +1187,13 @@ export default function DigitalAdminPage() {
                   }}
                 />
               </div>
+              {manualMedia && /\.(jpe?g|png|webp|gif)($|\?)/i.test(manualMedia) && (
+                <img
+                  src={manualMedia}
+                  alt="Prévia da mídia"
+                  style={{ maxHeight: 140, maxWidth: "100%", borderRadius: 8, objectFit: "contain", background: "#0f172a" }}
+                />
+              )}
               <div>
                 <div style={{ ...metaStyle, marginBottom: 6 }}>Destinos</div>
                 {contasDestino.length === 0 ? (
@@ -1213,6 +1245,7 @@ export default function DigitalAdminPage() {
               </button>
             </div>
           </div>
+          )}
 
           <div style={{ ...rowStyle, marginTop: adminTokens.spacing.base }}>
             <label style={metaStyle}>Filtrar status:</label>
@@ -1235,6 +1268,7 @@ export default function DigitalAdminPage() {
                 ["approved", `Aprovados (${resumo.approved})`],
                 ["scheduled", `Agendados (${resumo.scheduled})`],
                 ["published_manual", `Publicados (${resumo.published_manual})`],
+                ["archived", `Arquivados (${resumo.archived})`],
               ] as const
             ).map(([value, label]) => (
               <button
@@ -1372,12 +1406,23 @@ export default function DigitalAdminPage() {
                           onChange={(e) => setEditTitle(e.target.value)}
                           aria-label="Título do post"
                         />
-                        <textarea
-                          style={{ ...inputStyle, minHeight: 120 }}
-                          value={editBody}
-                          onChange={(e) => setEditBody(e.target.value)}
-                          aria-label="Texto do post"
-                        />
+                        <div>
+                          <textarea
+                            style={{ ...inputStyle, minHeight: 120 }}
+                            value={editBody}
+                            onChange={(e) => setEditBody(e.target.value)}
+                            aria-label="Texto do post"
+                          />
+                          <div style={{ ...metaStyle, textAlign: "right", marginTop: 2 }}>
+                            <span style={{ color: editBody.length > 2200 ? "#f87171" : editBody.length > 1800 ? "#f59e0b" : "#64748b" }}>
+                              {editBody.length}
+                            </span>
+                            {" "}/ 2 200 chars (Instagram)
+                            {editBody.length > 280 && (
+                              <span style={{ marginLeft: 8, color: "#f87171" }}>· excede Twitter (280)</span>
+                            )}
+                          </div>
+                        </div>
                         <input
                           style={inputStyle}
                           value={editTags}
@@ -1413,6 +1458,13 @@ export default function DigitalAdminPage() {
                             }}
                           />
                         </div>
+                        {editMedia && /\.(jpe?g|png|webp|gif)($|\?)/i.test(editMedia) && (
+                          <img
+                            src={editMedia}
+                            alt="Prévia da mídia"
+                            style={{ maxHeight: 140, maxWidth: "100%", borderRadius: 8, objectFit: "contain", background: "#0f172a" }}
+                          />
+                        )}
                         <div>
                           <div style={{ ...metaStyle, marginBottom: 6 }}>
                             Destinos
