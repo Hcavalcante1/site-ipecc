@@ -471,7 +471,7 @@ a.admin-button {
   resize: vertical;
 }
 
-.admin-content-shell input,
+.admin-content-shell input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
 .admin-content-shell textarea,
 .admin-content-shell select {
   width: 100%;

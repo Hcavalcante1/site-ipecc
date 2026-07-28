@@ -1181,6 +1181,7 @@ export default function DigitalAdminPage() {
                       >
                         <input
                           type="checkbox"
+                          style={{ width: "auto", flexShrink: 0 }}
                           checked={selectedAccountIds.includes(a.id)}
                           onChange={(e) =>
                             setSelectedAccountIds((prev) =>
@@ -1188,7 +1189,7 @@ export default function DigitalAdminPage() {
                             )
                           }
                         />
-                        {rotuloPlataforma(a.platform)} · {a.label}
+                        {a.label}
                         {a.scope === "projeto" && a.projeto_ref
                           ? ` (${a.projeto_ref})`
                           : ""}
@@ -1430,6 +1431,7 @@ export default function DigitalAdminPage() {
                               >
                                 <input
                                   type="checkbox"
+                                  style={{ width: "auto", flexShrink: 0 }}
                                   checked={editAccountIds.includes(a.id)}
                                   onChange={(e) =>
                                     setEditAccountIds((prev) =>
@@ -1437,7 +1439,7 @@ export default function DigitalAdminPage() {
                                     )
                                   }
                                 />
-                                {rotuloPlataforma(a.platform)} · {a.label}
+                                {a.label}
                               </label>
                             ))}
                           </div>
