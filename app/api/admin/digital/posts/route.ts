@@ -171,6 +171,7 @@ export async function POST(req: NextRequest) {
     hashtags?: string | null;
     media_url?: string | null;
     account_ids?: string[];
+    content_variants?: Record<string, string> | null;
   };
 
   try {
@@ -197,6 +198,7 @@ export async function POST(req: NextRequest) {
       body: text,
       hashtags: body.hashtags?.trim() || null,
       media_url: body.media_url?.trim() || null,
+      content_variants: body.content_variants ?? null,
       source_type: "manual",
       status: "draft",
       created_by: createdBy,
@@ -240,6 +242,7 @@ export async function PATCH(req: NextRequest) {
     status?: string;
     scheduled_at?: string | null;
     account_ids?: string[];
+    content_variants?: Record<string, string> | null;
   };
 
   try {
@@ -329,6 +332,9 @@ export async function PATCH(req: NextRequest) {
       body.media_url === null || body.media_url === ""
         ? null
         : String(body.media_url).trim();
+  }
+  if (body.content_variants !== undefined) {
+    patch.content_variants = body.content_variants ?? null;
   }
   if (body.status !== undefined) {
     if (!isDigitalPostStatus(body.status)) {

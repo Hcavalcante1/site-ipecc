@@ -202,6 +202,12 @@ export default function DigitalAdminPage() {
   // Visibilidade do formulário de novo post
   const [mostrarFormNovoPost, setMostrarFormNovoPost] = useState(false);
 
+  // Variações de texto por plataforma
+  const [manualVariants, setManualVariants] = useState<Record<string, string>>({});
+  const [editVariants, setEditVariants] = useState<Record<string, string>>({});
+  const [mostrarVariantes, setMostrarVariantes] = useState(false);
+  const [mostrarVariantesEdit, setMostrarVariantesEdit] = useState(false);
+
   const contasDestino = accounts.filter((a) => a.ativo);
 
   const carregarAgente = useCallback(async () => {
@@ -473,6 +479,9 @@ export default function DigitalAdminPage() {
         hashtags: manualTags,
         media_url: manualMedia.trim() || null,
         account_ids: selectedAccountIds,
+        content_variants: Object.keys(manualVariants).length > 0
+          ? Object.fromEntries(Object.entries(manualVariants).filter(([, v]) => v.trim()))
+          : null,
       }),
     });
     const json = await res.json();
@@ -482,6 +491,8 @@ export default function DigitalAdminPage() {
       setManualTitle("");
       setManualBody("");
       setManualMedia("");
+      setManualVariants({});
+      setMostrarVariantes(false);
       setMostrarFormNovoPost(false);
       await carregar();
     }
@@ -551,6 +562,14 @@ export default function DigitalAdminPage() {
     setEditTags(post.hashtags ?? "");
     setEditMedia(post.media_url ?? "");
     setEditAccountIds((post.targets ?? []).map((t) => t.account_id));
+    const variants: Record<string, string> = {};
+    if (post.content_variants && typeof post.content_variants === "object") {
+      for (const [k, v] of Object.entries(post.content_variants)) {
+        if (typeof v === "string" && v.trim()) variants[k] = v;
+      }
+    }
+    setEditVariants(variants);
+    setMostrarVariantesEdit(Object.keys(variants).length > 0);
     setAviso(null);
   }
 
@@ -570,6 +589,9 @@ export default function DigitalAdminPage() {
         hashtags: editTags,
         media_url: editMedia.trim() || null,
         account_ids: editAccountIds,
+        content_variants: Object.keys(editVariants).length > 0
+          ? Object.fromEntries(Object.entries(editVariants).filter(([, v]) => v.trim()))
+          : null,
       }),
     });
     const json = await res.json();
@@ -1230,6 +1252,44 @@ export default function DigitalAdminPage() {
                   </div>
                 )}
               </div>
+              {selectedAccountIds.length > 0 && (
+                <div>
+                  <button
+                    type="button"
+                    style={{ ...btnGhost, fontSize: 12, padding: "4px 12px" }}
+                    onClick={() => setMostrarVariantes((v) => !v)}
+                  >
+                    {mostrarVariantes ? "▲ Ocultar variações por plataforma" : "▼ Texto específico por plataforma (opcional)"}
+                  </button>
+                  {mostrarVariantes && (
+                    <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+                      <p style={{ ...metaStyle, margin: 0 }}>
+                        Substitui o texto principal nessa rede. Vazio = usa o texto principal.
+                      </p>
+                      {contasDestino
+                        .filter((a) => selectedAccountIds.includes(a.id))
+                        .map((a) => (
+                          <div key={a.id}>
+                            <div style={{ ...metaStyle, marginBottom: 4, color: "#cbd5f5" }}>
+                              {a.label}
+                            </div>
+                            <textarea
+                              style={{ ...inputStyle, minHeight: 60 }}
+                              placeholder={`Vazio = texto principal`}
+                              value={manualVariants[a.platform] ?? ""}
+                              onChange={(e) =>
+                                setManualVariants((prev) => ({
+                                  ...prev,
+                                  [a.platform]: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              )}
               <button
                 type="button"
                 style={btnStyle}
@@ -1496,6 +1556,46 @@ export default function DigitalAdminPage() {
                             ))}
                           </div>
                         </div>
+                        {editAccountIds.length > 0 && (
+                          <div>
+                            <button
+                              type="button"
+                              style={{ ...btnGhost, fontSize: 12, padding: "4px 12px" }}
+                              onClick={() => setMostrarVariantesEdit((v) => !v)}
+                            >
+                              {mostrarVariantesEdit
+                                ? "▲ Ocultar variações por plataforma"
+                                : "▼ Texto específico por plataforma (opcional)"}
+                            </button>
+                            {mostrarVariantesEdit && (
+                              <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+                                <p style={{ ...metaStyle, margin: 0 }}>
+                                  Substitui o texto principal nessa rede. Vazio = usa o texto principal.
+                                </p>
+                                {contasDestino
+                                  .filter((a) => editAccountIds.includes(a.id))
+                                  .map((a) => (
+                                    <div key={a.id}>
+                                      <div style={{ ...metaStyle, marginBottom: 4, color: "#cbd5f5" }}>
+                                        {a.label}
+                                      </div>
+                                      <textarea
+                                        style={{ ...inputStyle, minHeight: 60 }}
+                                        placeholder="Vazio = texto principal"
+                                        value={editVariants[a.platform] ?? ""}
+                                        onChange={(e) =>
+                                          setEditVariants((prev) => ({
+                                            ...prev,
+                                            [a.platform]: e.target.value,
+                                          }))
+                                        }
+                                      />
+                                    </div>
+                                  ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <>
@@ -1585,6 +1685,13 @@ export default function DigitalAdminPage() {
                             ))}
                           </div>
                         )}
+                        {p.content_variants &&
+                          typeof p.content_variants === "object" &&
+                          Object.keys(p.content_variants).length > 0 && (
+                            <div style={{ ...metaStyle, marginTop: 4, color: "#818cf8" }}>
+                              Variações: {Object.keys(p.content_variants).map((k) => rotuloPlataforma(k as DigitalPlatform)).join(", ")}
+                            </div>
+                          )}
                         {p.automation_status ? (
                           <div style={{ ...metaStyle, marginTop: 4 }}>
                             Automação:{" "}
