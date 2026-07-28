@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
   if (denied) return denied;
 
   const status = req.nextUrl.searchParams.get("status")?.trim();
+  const q = req.nextUrl.searchParams.get("q")?.trim();
   const PAGE_SIZE = 20;
   const page = Math.max(1, parseInt(req.nextUrl.searchParams.get("page") ?? "1", 10));
   const from = (page - 1) * PAGE_SIZE;
@@ -27,6 +28,9 @@ export async function GET(req: NextRequest) {
 
   if (status && isDigitalPostStatus(status)) {
     query = query.eq("status", status);
+  }
+  if (q) {
+    query = query.or(`title.ilike.%${q}%,body.ilike.%${q}%`);
   }
 
   const { data, error, count } = await query;

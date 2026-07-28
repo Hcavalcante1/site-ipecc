@@ -208,6 +208,9 @@ export default function DigitalAdminPage() {
   const [mostrarVariantes, setMostrarVariantes] = useState(false);
   const [mostrarVariantesEdit, setMostrarVariantesEdit] = useState(false);
 
+  // Busca de posts
+  const [searchQuery, setSearchQuery] = useState("");
+
   const contasDestino = accounts.filter((a) => a.ativo);
 
   const carregarAgente = useCallback(async () => {
@@ -272,6 +275,7 @@ export default function DigitalAdminPage() {
 
     const qs = new URLSearchParams();
     if (statusFilter) qs.set("status", statusFilter);
+    if (searchQuery.trim()) qs.set("q", searchQuery.trim());
     qs.set("page", String(page));
     const [accRes, postRes] = await Promise.all([
       fetch("/api/admin/digital/accounts"),
@@ -305,7 +309,7 @@ export default function DigitalAdminPage() {
 
     setLoading(false);
     void carregarAgente();
-  }, [statusFilter, page, carregarAgente]);
+  }, [statusFilter, searchQuery, page, carregarAgente]);
 
   useEffect(() => {
     void carregar();
@@ -608,6 +612,30 @@ export default function DigitalAdminPage() {
   function toggleId(list: string[], id: string, on: boolean): string[] {
     if (on) return list.includes(id) ? list : [...list, id];
     return list.filter((x) => x !== id);
+  }
+
+  async function duplicarPost(post: DigitalPost) {
+    setBusy(true);
+    const res = await fetch("/api/admin/digital/posts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: `${post.title} (cópia)`,
+        body: post.body,
+        hashtags: post.hashtags ?? null,
+        media_url: post.media_url ?? null,
+        account_ids: (post.targets ?? []).map((t) => t.account_id),
+        content_variants: post.content_variants ?? null,
+      }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.ok) {
+      flash(json.error ?? "Falha ao duplicar post", "erro");
+    } else {
+      flash("Post duplicado como rascunho.", "ok");
+      await carregar();
+    }
+    setBusy(false);
   }
 
   async function copiarTexto(post: DigitalPost) {
@@ -1308,19 +1336,12 @@ export default function DigitalAdminPage() {
           )}
 
           <div style={{ ...rowStyle, marginTop: adminTokens.spacing.base }}>
-            <label style={metaStyle}>Filtrar status:</label>
-            <select
-              style={inputStyle}
-              value={statusFilter}
-              onChange={(e) => { setPage(1); setStatusFilter(e.target.value); }}
-            >
-              <option value="">Todos</option>
-              {(Object.keys(LABEL_STATUS) as DigitalPostStatus[]).map((s) => (
-                <option key={s} value={s}>
-                  {LABEL_STATUS[s]}
-                </option>
-              ))}
-            </select>
+            <input
+              style={{ ...inputStyle, maxWidth: 240 }}
+              placeholder="Buscar por título ou texto…"
+              value={searchQuery}
+              onChange={(e) => { setPage(1); setSearchQuery(e.target.value); }}
+            />
             {(
               [
                 ["", "Todos"],
@@ -1947,6 +1968,15 @@ export default function DigitalAdminPage() {
                               Marcar publicado nas redes
                             </button>
                           )}
+                          <button
+                            type="button"
+                            style={btnGhost}
+                            disabled={busy}
+                            onClick={() => void duplicarPost(p)}
+                            title="Cria um rascunho com o mesmo conteúdo"
+                          >
+                            Duplicar
+                          </button>
                           {p.status !== "archived" && (
                             <button
                               type="button"
