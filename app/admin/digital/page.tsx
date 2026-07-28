@@ -22,7 +22,7 @@ import {
   rotuloStatus,
 } from "@/lib/digital/labels";
 
-type Tab = "perfis" | "fila";
+type Tab = "perfis" | "fila" | "midia";
 
 type LogEntry = {
   id: string;
@@ -31,6 +31,17 @@ type LogEntry = {
   message: string;
   details: Record<string, unknown> | null;
   platform: string | null;
+  created_at: string;
+};
+
+type MediaItem = {
+  id: string;
+  file_name: string;
+  storage_path: string;
+  public_url: string | null;
+  mime_type: string;
+  file_size: number;
+  alt_text: string | null;
   created_at: string;
 };
 
@@ -211,6 +222,10 @@ export default function DigitalAdminPage() {
   // Busca de posts
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Galeria de mídia
+  const [mediaList, setMediaList] = useState<MediaItem[]>([]);
+  const [mediaLoading, setMediaLoading] = useState(false);
+
   const contasDestino = accounts.filter((a) => a.ativo);
 
   const carregarAgente = useCallback(async () => {
@@ -319,6 +334,23 @@ export default function DigitalAdminPage() {
     const t = setInterval(() => void carregarAgente(), 30000);
     return () => clearInterval(t);
   }, [carregarAgente]);
+
+  const carregarMidia = useCallback(async () => {
+    setMediaLoading(true);
+    try {
+      const res = await fetch("/api/admin/digital/media");
+      const json = await res.json();
+      if (json.ok) setMediaList(json.media ?? []);
+      else flash(json.aviso ?? json.error ?? "Erro ao carregar mídia", "info");
+    } catch {
+      flash("Falha de rede ao carregar mídia", "erro");
+    }
+    setMediaLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (tab === "midia") void carregarMidia();
+  }, [tab, carregarMidia]);
 
   useEffect(() => {
     const siteAtivos = accounts
@@ -614,6 +646,29 @@ export default function DigitalAdminPage() {
     return list.filter((x) => x !== id);
   }
 
+  async function deletarMidia(id: string) {
+    if (!confirm("Excluir este arquivo? A ação não pode ser desfeita.")) return;
+    setBusy(true);
+    const res = await fetch(`/api/admin/digital/media/${id}`, { method: "DELETE" });
+    const json = await res.json();
+    if (!res.ok || !json.ok) {
+      flash(json.error ?? "Falha ao excluir mídia", "erro");
+    } else {
+      flash("Arquivo removido.", "ok");
+      void carregarMidia();
+    }
+    setBusy(false);
+  }
+
+  async function copiarUrlMidia(url: string) {
+    try {
+      await navigator.clipboard.writeText(url);
+      flash("URL copiada. Cole no campo de mídia do post.", "ok");
+    } catch {
+      flash("Não foi possível copiar automaticamente.", "erro");
+    }
+  }
+
   async function duplicarPost(post: DigitalPost) {
     setBusy(true);
     const res = await fetch("/api/admin/digital/posts", {
@@ -825,6 +880,13 @@ export default function DigitalAdminPage() {
         >
           Perfis
         </button>
+        <button
+          type="button"
+          style={tab === "midia" ? btnStyle : btnGhost}
+          onClick={() => setTab("midia")}
+        >
+          Mídia
+        </button>
         {tab === "fila" && (
           <button
             type="button"
@@ -917,6 +979,68 @@ export default function DigitalAdminPage() {
 
       {loading ? (
         <p style={{ marginTop: adminTokens.spacing.base }}>Carregando…</p>
+      ) : tab === "midia" ? (
+        <div style={cardStyle}>
+          <div style={{ ...rowStyle, justifyContent: "space-between", marginBottom: adminTokens.spacing.sm }}>
+            <h2 style={{ margin: 0, fontSize: 18 }}>Mídia enviada</h2>
+            <button type="button" style={btnGhost} disabled={mediaLoading} onClick={() => void carregarMidia()}>
+              Atualizar
+            </button>
+          </div>
+          <p style={{ ...metaStyle, marginTop: 0 }}>
+            URLs geradas têm validade de 7 dias. Renove copiando novamente se necessário.
+          </p>
+          {mediaLoading ? (
+            <p style={metaStyle}>Carregando…</p>
+          ) : mediaList.length === 0 ? (
+            <p style={metaStyle}>Nenhum arquivo enviado ainda. Use o botão Upload nos formulários de post.</p>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12, marginTop: adminTokens.spacing.sm }}>
+              {mediaList.map((m) => (
+                <div key={m.id} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid #334155", borderRadius: adminTokens.borderRadius.md, padding: adminTokens.spacing.sm, display: "flex", flexDirection: "column", gap: 6 }}>
+                  {m.mime_type.startsWith("image/") && m.public_url ? (
+                    <img
+                      src={m.public_url}
+                      alt={m.alt_text ?? m.file_name}
+                      style={{ width: "100%", height: 110, objectFit: "cover", borderRadius: 6, background: "#0f172a" }}
+                    />
+                  ) : (
+                    <div style={{ width: "100%", height: 110, display: "flex", alignItems: "center", justifyContent: "center", background: "#1e293b", borderRadius: 6, fontSize: 36 }}>
+                      {m.mime_type.startsWith("video/") ? "▶" : "📄"}
+                    </div>
+                  )}
+                  <div style={{ ...metaStyle, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#e5e7eb" }} title={m.file_name}>
+                    {m.file_name}
+                  </div>
+                  <div style={{ ...metaStyle, color: "#64748b" }}>
+                    {(m.file_size / 1024).toFixed(0)} KB · {new Date(m.created_at).toLocaleDateString("pt-BR")}
+                  </div>
+                  <div style={{ ...rowStyle, gap: 6 }}>
+                    {m.public_url ? (
+                      <button
+                        type="button"
+                        style={{ ...btnGhost, fontSize: 11, padding: "4px 10px", flex: 1 }}
+                        onClick={() => void copiarUrlMidia(m.public_url!)}
+                      >
+                        Copiar URL
+                      </button>
+                    ) : (
+                      <span style={{ ...metaStyle, color: "#f59e0b", flex: 1 }}>URL expirada</span>
+                    )}
+                    <button
+                      type="button"
+                      style={{ ...btnGhost, fontSize: 11, padding: "4px 10px", color: "#f87171", borderColor: "rgba(127,29,29,0.6)" }}
+                      disabled={busy}
+                      onClick={() => void deletarMidia(m.id)}
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       ) : tab === "perfis" ? (
         <>
           <div style={cardStyle}>
