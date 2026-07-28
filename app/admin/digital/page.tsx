@@ -24,6 +24,16 @@ import {
 
 type Tab = "perfis" | "fila";
 
+type LogEntry = {
+  id: string;
+  event_type: string;
+  severity: string;
+  message: string;
+  details: Record<string, unknown> | null;
+  platform: string | null;
+  created_at: string;
+};
+
 type AgentPrimary = {
   label: string;
   online: boolean;
@@ -176,6 +186,19 @@ export default function DigitalAdminPage() {
   const manualFileRef = useRef<HTMLInputElement>(null);
   const editFileRef = useRef<HTMLInputElement>(null);
 
+  // Paginação
+  const [page, setPage] = useState(1);
+  const [totalPosts, setTotalPosts] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+
+  // Seleção em lote
+  const [selectedPostIds, setSelectedPostIds] = useState<string[]>([]);
+
+  // Histórico de logs por post
+  const [logsOpen, setLogsOpen] = useState<string | null>(null);
+  const [logsData, setLogsData] = useState<Record<string, LogEntry[]>>({});
+  const [logsLoading, setLogsLoading] = useState(false);
+
   const contasDestino = accounts.filter((a) => a.ativo);
 
   const carregarAgente = useCallback(async () => {
@@ -238,10 +261,12 @@ export default function DigitalAdminPage() {
     setLoading(true);
     setAviso(null);
 
-    const qs = statusFilter ? `?status=${encodeURIComponent(statusFilter)}` : "";
+    const qs = new URLSearchParams();
+    if (statusFilter) qs.set("status", statusFilter);
+    qs.set("page", String(page));
     const [accRes, postRes] = await Promise.all([
       fetch("/api/admin/digital/accounts"),
-      fetch(`/api/admin/digital/posts${qs}`),
+      fetch(`/api/admin/digital/posts?${qs}`),
     ]);
     const accJson = await accRes.json();
     const postJson = await postRes.json();
@@ -256,17 +281,22 @@ export default function DigitalAdminPage() {
 
     if (!postRes.ok || !postJson.ok) {
       setAviso((prev) => prev ?? postJson.error ?? "Erro ao carregar fila");
+      setAvisoTipo("erro");
       setPosts([]);
       setResumo(RESUMO_VAZIO);
+      setTotalPosts(0);
+      setHasMore(false);
     } else {
       setPosts(postJson.posts ?? []);
       setResumo(postJson.resumo ?? RESUMO_VAZIO);
+      setTotalPosts(postJson.total ?? 0);
+      setHasMore(postJson.hasMore ?? false);
       if (postJson.aviso) setAviso((prev) => prev ?? postJson.aviso);
     }
 
     setLoading(false);
     void carregarAgente();
-  }, [statusFilter, carregarAgente]);
+  }, [statusFilter, page, carregarAgente]);
 
   useEffect(() => {
     void carregar();
@@ -651,6 +681,68 @@ export default function DigitalAdminPage() {
       flash(json.error ?? "Falha ao repetir", "erro");
     } else {
       flash(json.message ?? "Retentativa enfileirada.", "ok");
+      await carregar();
+    }
+    setBusy(false);
+  }
+
+  async function carregarLogs(postId: string) {
+    if (logsOpen === postId) {
+      setLogsOpen(null);
+      return;
+    }
+    if (logsData[postId]) {
+      setLogsOpen(postId);
+      return;
+    }
+    setLogsLoading(true);
+    try {
+      const res = await fetch(`/api/admin/digital/posts/${postId}/logs`);
+      const json = await res.json();
+      if (json.ok) {
+        setLogsData((prev) => ({ ...prev, [postId]: json.logs }));
+        setLogsOpen(postId);
+      } else {
+        flash(json.error ?? "Falha ao carregar histórico", "erro");
+      }
+    } catch {
+      flash("Falha de rede ao carregar histórico", "erro");
+    }
+    setLogsLoading(false);
+  }
+
+  function toggleSelectPost(id: string, on: boolean) {
+    setSelectedPostIds((prev) =>
+      on ? (prev.includes(id) ? prev : [...prev, id]) : prev.filter((x) => x !== id)
+    );
+  }
+
+  function selecionarTodosVisiveis() {
+    const selectables = posts
+      .filter((p) => p.status === "draft" || p.status === "approved" || p.status === "scheduled" || p.status === "published_manual")
+      .map((p) => p.id);
+    setSelectedPostIds((prev) =>
+      prev.length === selectables.length ? [] : selectables
+    );
+  }
+
+  async function acaoBulk(action: "approve" | "archive") {
+    if (selectedPostIds.length === 0) return;
+    setBusy(true);
+    const res = await fetch("/api/admin/digital/posts/batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, post_ids: selectedPostIds }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.ok) {
+      flash(json.error ?? "Falha na ação em lote", "erro");
+    } else {
+      flash(
+        `${json.updated} post(s) ${action === "approve" ? "aprovado(s)" : "arquivado(s)"}.`,
+        "ok"
+      );
+      setSelectedPostIds([]);
       await carregar();
     }
     setBusy(false);
@@ -1126,7 +1218,7 @@ export default function DigitalAdminPage() {
             <select
               style={inputStyle}
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => { setPage(1); setStatusFilter(e.target.value); }}
             >
               <option value="">Todos</option>
               {(Object.keys(LABEL_STATUS) as DigitalPostStatus[]).map((s) => (
@@ -1148,7 +1240,7 @@ export default function DigitalAdminPage() {
                 key={label}
                 type="button"
                 style={statusFilter === value ? btnStyle : btnGhost}
-                onClick={() => setStatusFilter(value)}
+                onClick={() => { setPage(1); setStatusFilter(value); }}
               >
                 {label}
               </button>
@@ -1168,8 +1260,59 @@ export default function DigitalAdminPage() {
             </p>
           )}
 
+          {selectedPostIds.length > 0 && (
+            <div
+              style={{
+                ...rowStyle,
+                marginTop: adminTokens.spacing.base,
+                padding: `${adminTokens.spacing.sm}px ${adminTokens.spacing.base}px`,
+                background: "rgba(59,130,246,0.12)",
+                border: "1px solid #3b82f6",
+                borderRadius: adminTokens.borderRadius.md,
+              }}
+            >
+              <span style={{ ...metaStyle, color: "#93c5fd" }}>
+                {selectedPostIds.length} selecionado(s)
+              </span>
+              <button
+                type="button"
+                style={btnStyle}
+                disabled={busy}
+                onClick={() => void acaoBulk("approve")}
+              >
+                Aprovar selecionados
+              </button>
+              <button
+                type="button"
+                style={btnGhost}
+                disabled={busy}
+                onClick={() => void acaoBulk("archive")}
+              >
+                Arquivar selecionados
+              </button>
+              <button
+                type="button"
+                style={btnGhost}
+                disabled={busy}
+                onClick={() => setSelectedPostIds([])}
+              >
+                Limpar seleção
+              </button>
+            </div>
+          )}
+
           <div style={cardStyle}>
-            <h2 style={{ marginTop: 0, fontSize: 18 }}>Fila editorial</h2>
+            <div style={{ ...rowStyle, justifyContent: "space-between", marginBottom: adminTokens.spacing.sm }}>
+              <h2 style={{ marginTop: 0, fontSize: 18 }}>Fila editorial</h2>
+              <button
+                type="button"
+                style={btnGhost}
+                onClick={selecionarTodosVisiveis}
+                disabled={posts.length === 0}
+              >
+                {selectedPostIds.length > 0 ? "Desmarcar todos" : "Selecionar todos"}
+              </button>
+            </div>
             <p style={{ ...metaStyle, marginTop: 0 }}>
               Resumo: {resumo.draft} rascunho(s) · {resumo.approved} aprovado(s)
               · {resumo.scheduled} agendado(s)
@@ -1177,6 +1320,7 @@ export default function DigitalAdminPage() {
                 ? ` (${resumo.scheduled_vencidos} vencido(s))`
                 : ""}{" "}
               · {resumo.published_manual} publicado(s)
+              {totalPosts > 0 ? ` · página ${page} · ${totalPosts} total` : ""}
             </p>
             {posts.length === 0 ? (
               <p style={metaStyle}>
@@ -1208,6 +1352,17 @@ export default function DigitalAdminPage() {
                       paddingLeft: vencido ? adminTokens.spacing.sm : undefined,
                     }}
                   >
+                    <div style={{ ...rowStyle, marginBottom: 4 }}>
+                      {p.status !== "archived" && (
+                        <input
+                          type="checkbox"
+                          checked={selectedPostIds.includes(p.id)}
+                          onChange={(e) => toggleSelectPost(p.id, e.target.checked)}
+                          aria-label={`Selecionar post ${p.title}`}
+                        />
+                      )}
+                    </div>
+
                     {editando ? (
                       <div style={{ display: "grid", gap: adminTokens.spacing.sm }}>
                         <input
@@ -1430,6 +1585,64 @@ export default function DigitalAdminPage() {
                         </button>
                       </div>
                     )}
+                    <div style={{ ...rowStyle, marginTop: adminTokens.spacing.sm }}>
+                      <button
+                        type="button"
+                        style={btnGhost}
+                        disabled={logsLoading}
+                        onClick={() => void carregarLogs(p.id)}
+                      >
+                        {logsOpen === p.id ? "Ocultar histórico" : "Ver histórico"}
+                      </button>
+                    </div>
+
+                    {logsOpen === p.id && (
+                      <div
+                        style={{
+                          ...cardStyle,
+                          marginTop: adminTokens.spacing.sm,
+                          padding: adminTokens.spacing.sm,
+                        }}
+                      >
+                        <p style={{ ...metaStyle, marginBottom: 6, fontWeight: 600 }}>
+                          Histórico de publicação
+                        </p>
+                        {(logsData[p.id] ?? []).length === 0 ? (
+                          <p style={metaStyle}>Nenhum evento registrado.</p>
+                        ) : (
+                          (logsData[p.id] ?? []).map((log) => (
+                            <div
+                              key={log.id}
+                              style={{
+                                borderLeft: `3px solid ${
+                                  log.severity === "error"
+                                    ? "#ef4444"
+                                    : log.severity === "warn"
+                                      ? "#f59e0b"
+                                      : "#3b82f6"
+                                }`,
+                                paddingLeft: 8,
+                                marginBottom: 6,
+                              }}
+                            >
+                              <div style={{ ...metaStyle, color: "#e5e7eb", fontSize: 11 }}>
+                                <strong>{log.event_type}</strong>
+                                {log.platform ? ` · ${log.platform}` : ""}
+                                {" · "}
+                                {new Date(log.created_at).toLocaleString("pt-BR")}
+                              </div>
+                              <div style={metaStyle}>{log.message}</div>
+                              {log.details && Object.keys(log.details).length > 0 && (
+                                <div style={{ ...metaStyle, color: "#64748b", fontSize: 10 }}>
+                                  {JSON.stringify(log.details)}
+                                </div>
+                              )}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+
                     <div style={rowStyle}>
                       {editando ? (
                         <>
@@ -1589,6 +1802,29 @@ export default function DigitalAdminPage() {
                   </div>
                 );
               })
+            )}
+            {totalPosts > 0 && (
+              <div style={{ ...rowStyle, marginTop: adminTokens.spacing.base, justifyContent: "center" }}>
+                <button
+                  type="button"
+                  style={btnGhost}
+                  disabled={page <= 1 || busy}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  ← Anterior
+                </button>
+                <span style={metaStyle}>
+                  Página {page} · {totalPosts} post(s) no total
+                </span>
+                <button
+                  type="button"
+                  style={btnGhost}
+                  disabled={!hasMore || busy}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Próxima →
+                </button>
+              </div>
             )}
           </div>
         </>

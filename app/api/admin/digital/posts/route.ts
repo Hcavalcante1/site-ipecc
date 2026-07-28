@@ -12,20 +12,24 @@ export async function GET(req: NextRequest) {
   if (denied) return denied;
 
   const status = req.nextUrl.searchParams.get("status")?.trim();
+  const PAGE_SIZE = 20;
+  const page = Math.max(1, parseInt(req.nextUrl.searchParams.get("page") ?? "1", 10));
+  const from = (page - 1) * PAGE_SIZE;
 
   let query = supabaseAdmin
     .from("digital_posts")
     .select(
-      "id, title, body, hashtags, media_url, media_id, source_type, source_id, status, scheduled_at, published_at, created_by, created_at, updated_at, external_post_id, publish_error, published_via, automation_status, content_variants, dry_run, last_publish_error"
+      "id, title, body, hashtags, media_url, media_id, source_type, source_id, status, scheduled_at, published_at, created_by, created_at, updated_at, external_post_id, publish_error, published_via, automation_status, content_variants, dry_run, last_publish_error",
+      { count: "exact" }
     )
     .order("created_at", { ascending: false })
-    .limit(100);
+    .range(from, from + PAGE_SIZE - 1);
 
   if (status && isDigitalPostStatus(status)) {
     query = query.eq("status", status);
   }
 
-  const { data, error } = await query;
+  const { data, error, count } = await query;
 
   if (error) {
     return NextResponse.json({
@@ -142,9 +146,14 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  const total = count ?? 0;
   return NextResponse.json({
     ok: true,
     resumo,
+    page,
+    pageSize: PAGE_SIZE,
+    total,
+    hasMore: from + PAGE_SIZE < total,
     posts: posts.map((p) => ({
       ...p,
       targets: targetsByPost.get(p.id as string) ?? [],
