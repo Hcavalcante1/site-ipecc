@@ -97,6 +97,10 @@ export default function AdminDashboardClient({ userEmail }: Props) {
   const [ultimasMensagens, setUltimasMensagens] = useState<MensagemContato[]>([]);
   const [toast, setToast] = useState<{ msg: string; tipo: "lead" | "mensagem" } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [exportandoLeads, setExportandoLeads] = useState(false);
+  const [exportandoMensagens, setExportandoMensagens] = useState(false);
+  const [periodoLeads, setPeriodoLeads] = useState<"hoje" | "7d" | "30d" | "tudo">("30d");
+  const [periodoMensagens, setPeriodoMensagens] = useState<"hoje" | "7d" | "30d" | "tudo">("30d");
 
   const pode = useCallback(
     (modulo: AdminModulo) =>
@@ -114,6 +118,89 @@ export default function AdminDashboardClient({ userEmail }: Props) {
     },
     []
   );
+
+  const calcInicio = useCallback(
+    (periodo: "hoje" | "7d" | "30d" | "tudo"): string | null => {
+      const agora = new Date();
+      const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+      if (periodo === "hoje") return hoje.toISOString();
+      if (periodo === "7d") return new Date(hoje.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString();
+      if (periodo === "30d") return new Date(hoje.getTime() - 29 * 24 * 60 * 60 * 1000).toISOString();
+      return null;
+    },
+    []
+  );
+
+  const baixarCSV = useCallback(
+    (linhas: string[][], cabecalho: string[], nomeArquivo: string) => {
+      const csv = [
+        cabecalho.join(","),
+        ...linhas.map((row) =>
+          row.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")
+        ),
+      ].join("\n");
+      const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = nomeArquivo;
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+    []
+  );
+
+  const exportarLeadsCSV = useCallback(async () => {
+    setExportandoLeads(true);
+    try {
+      let query = supabase
+        .from("whatsapp_leads")
+        .select("nome,telefone,assunto,created_at")
+        .order("created_at", { ascending: false });
+      const inicio = calcInicio(periodoLeads);
+      if (inicio) query = query.gte("created_at", inicio);
+      const { data } = await query;
+      const rows = (data ?? []) as LeadWhatsApp[];
+      baixarCSV(
+        rows.map((r) => [
+          r.nome ?? "",
+          r.telefone ?? "",
+          r.assunto ?? "",
+          r.created_at ? new Date(r.created_at).toLocaleString("pt-BR") : "",
+        ]),
+        ["Nome", "Telefone", "Assunto", "Data"],
+        `leads_${periodoLeads}_${new Date().toISOString().slice(0, 10)}.csv`
+      );
+    } finally {
+      setExportandoLeads(false);
+    }
+  }, [periodoLeads, calcInicio, baixarCSV]);
+
+  const exportarMensagensCSV = useCallback(async () => {
+    setExportandoMensagens(true);
+    try {
+      let query = supabase
+        .from("contato_mensagens")
+        .select("nome,email,mensagem,created_at")
+        .order("created_at", { ascending: false });
+      const inicio = calcInicio(periodoMensagens);
+      if (inicio) query = query.gte("created_at", inicio);
+      const { data } = await query;
+      const rows = (data ?? []) as MensagemContato[];
+      baixarCSV(
+        rows.map((r) => [
+          r.nome ?? "",
+          r.email ?? "",
+          r.mensagem ?? "",
+          r.created_at ? new Date(r.created_at).toLocaleString("pt-BR") : "",
+        ]),
+        ["Nome", "E-mail", "Mensagem", "Data"],
+        `mensagens_${periodoMensagens}_${new Date().toISOString().slice(0, 10)}.csv`
+      );
+    } finally {
+      setExportandoMensagens(false);
+    }
+  }, [periodoMensagens, calcInicio, baixarCSV]);
 
   const rotuloEscopo = useMemo(() => {
     if (escopo.loading) return "Carregando escopo...";
@@ -757,9 +844,32 @@ export default function AdminDashboardClient({ userEmail }: Props) {
                   <strong>{leads30d}</strong>
                 </p>
               </div>
-              <span style={{ ...styles.lightBadge, background: "#ede9fe", color: "#7c3aed" }}>
-                {leadsHoje} hoje
-              </span>
+              <div style={styles.exportControls}>
+                <div style={styles.periodGroup}>
+                  {(["hoje", "7d", "30d", "tudo"] as const).map((p) => (
+                    <button
+                      key={p}
+                      style={{
+                        ...styles.periodBtn,
+                        ...(periodoLeads === p ? styles.periodBtnActive : {}),
+                      }}
+                      onClick={() => setPeriodoLeads(p)}
+                    >
+                      {p === "hoje" ? "Hoje" : p === "tudo" ? "Tudo" : p}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  style={{
+                    ...styles.exportBtn,
+                    ...(exportandoLeads ? styles.exportBtnDisabled : {}),
+                  }}
+                  onClick={exportarLeadsCSV}
+                  disabled={exportandoLeads}
+                >
+                  {exportandoLeads ? "Exportando..." : "Exportar CSV"}
+                </button>
+              </div>
             </div>
             <div style={styles.tableWrap}>
               <table style={styles.table}>
@@ -805,9 +915,33 @@ export default function AdminDashboardClient({ userEmail }: Props) {
                   Ultimas mensagens enviadas pelo formulario de contato.
                 </p>
               </div>
-              <span style={{ ...styles.lightBadge, background: "#fef3c7", color: "#b45309" }}>
-                {mensagensContato30d} em 30d
-              </span>
+              <div style={styles.exportControls}>
+                <div style={styles.periodGroup}>
+                  {(["hoje", "7d", "30d", "tudo"] as const).map((p) => (
+                    <button
+                      key={p}
+                      style={{
+                        ...styles.periodBtn,
+                        ...(periodoMensagens === p ? styles.periodBtnActive : {}),
+                      }}
+                      onClick={() => setPeriodoMensagens(p)}
+                    >
+                      {p === "hoje" ? "Hoje" : p === "tudo" ? "Tudo" : p}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  style={{
+                    ...styles.exportBtn,
+                    ...(exportandoMensagens ? styles.exportBtnDisabled : {}),
+                    background: "#b45309",
+                  }}
+                  onClick={exportarMensagensCSV}
+                  disabled={exportandoMensagens}
+                >
+                  {exportandoMensagens ? "Exportando..." : "Exportar CSV"}
+                </button>
+              </div>
             </div>
             <div style={styles.tableWrap}>
               <table style={styles.table}>
@@ -1359,5 +1493,51 @@ const styles: any = {
     opacity: 0.7,
     padding: "0 2px",
     flexShrink: 0,
+  },
+
+  exportControls: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-end",
+    gap: 6,
+  },
+
+  periodGroup: {
+    display: "flex",
+    gap: 4,
+  },
+
+  periodBtn: {
+    padding: "5px 10px",
+    borderRadius: 8,
+    border: "1px solid #cbd5e1",
+    background: "#f1f5f9",
+    color: "#475569",
+    fontSize: 11,
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+
+  periodBtnActive: {
+    background: "#1d4ed8",
+    color: "#ffffff",
+    borderColor: "#1d4ed8",
+  },
+
+  exportBtn: {
+    padding: "7px 14px",
+    borderRadius: 10,
+    border: "none",
+    background: "#7c3aed",
+    color: "#ffffff",
+    fontSize: 12,
+    fontWeight: 800,
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+  },
+
+  exportBtnDisabled: {
+    opacity: 0.55,
+    cursor: "not-allowed",
   },
 };
