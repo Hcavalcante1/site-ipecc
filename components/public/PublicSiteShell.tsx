@@ -15,6 +15,7 @@ import WhatsAppSiteBotFab from "@/components/public/WhatsAppSiteBotFab";
 import PublicSiteFooter from "@/components/public/PublicSiteFooter";
 import PublicBreadcrumbs from "@/components/public/PublicBreadcrumbs";
 import PublicSocialLinks from "@/components/public/PublicSocialLinks";
+import CookieConsent from "@/components/public/CookieConsent";
 
 function navLinkClass(pathname: string, href: string): string {
   const active =
@@ -193,6 +194,7 @@ export default function PublicSiteShell({ children }: { children: ReactNode }) {
 
       <WhatsAppFloatingChat />
       <WhatsAppSiteBotFab />
+      <CookieConsent />
     </WhatsAppChatProvider>
   );
 }

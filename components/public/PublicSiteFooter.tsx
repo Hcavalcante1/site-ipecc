@@ -49,6 +49,8 @@ export default function PublicSiteFooter() {
         <p>
           © {year} IPECC. Todos os direitos reservados.{" "}
           <Link href="/transparencia">Transparência</Link>
+          {" · "}
+          <Link href="/politica-privacidade">Política de Privacidade</Link>
         </p>
       </div>
     </footer>
