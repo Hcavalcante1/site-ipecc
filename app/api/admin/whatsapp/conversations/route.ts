@@ -14,8 +14,11 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const state = req.nextUrl.searchParams.get("state")?.trim();
-  const handoffOnly = req.nextUrl.searchParams.get("handoff") === "1";
+  const params = req.nextUrl.searchParams;
+  const state       = params.get("state")?.trim();
+  const handoffOnly = params.get("handoff") === "1";
+  const limit  = Math.min(Number(params.get("limit") ?? 50), 200);
+  const offset = Math.max(Number(params.get("offset") ?? 0), 0);
 
   let query = supabaseAdmin
     .from("whatsapp_conversations")
@@ -23,7 +26,7 @@ export async function GET(req: NextRequest) {
       "wa_id, state, unknown_count, from_site_hint, human_assigned_to, last_message_at, updated_at"
     )
     .order("last_message_at", { ascending: false })
-    .limit(100);
+    .range(offset, offset + limit - 1);
 
   if (state) {
     query = query.eq("state", state);
