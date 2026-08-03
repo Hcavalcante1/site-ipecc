@@ -101,6 +101,8 @@ export default function AdminEditais() {
   const [resumoPropostasPorEdital, setResumoPropostasPorEdital] = useState<
     Record<string, ResumoPropostasEdital>
   >({});
+  const [buscaEditais, setBuscaEditais] = useState("");
+  const [filtroFase, setFiltroFase] = useState<"todas" | "rascunho" | "andamento" | "encerrado">("todas");
 
   useEffect(() => {
     if (escopo.loading) return;
@@ -414,6 +416,19 @@ export default function AdminEditais() {
     }
   }
 
+  const editaisFiltrados = editais.filter((e) => {
+    if (buscaEditais && !e.titulo?.toLowerCase().includes(buscaEditais.toLowerCase())) return false;
+    if (filtroFase === "rascunho" && e.fase_atual !== "rascunho") return false;
+    if (filtroFase === "andamento" && (e.fase_atual === "rascunho" || e.fase_atual === "encerrado")) return false;
+    if (filtroFase === "encerrado" && e.fase_atual !== "encerrado") return false;
+    return true;
+  });
+
+  const stTotal    = editais.length;
+  const stRascunho = editais.filter((e) => e.fase_atual === "rascunho").length;
+  const stAndamento= editais.filter((e) => e.fase_atual !== "rascunho" && e.fase_atual !== "encerrado").length;
+  const stEncerrado= editais.filter((e) => e.fase_atual === "encerrado").length;
+
   return (
     <div className="admin-box">
       <h1 className="admin-h1">Editais e Chamadas Públicas</h1>
@@ -537,7 +552,52 @@ export default function AdminEditais() {
         Editais cadastrados
       </h2>
 
-      {editais.map((e) => (
+      {editais.length > 0 && (
+        <>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", margin: "14px 0 12px" }}>
+            {([
+              { label: "Total",       valor: stTotal,     cor: "#94a3b8", key: "todas" as const },
+              { label: "Rascunhos",   valor: stRascunho,  cor: "#fbbf24", key: "rascunho" as const },
+              { label: "Em andamento",valor: stAndamento, cor: "#86efac", key: "andamento" as const },
+              { label: "Encerrados",  valor: stEncerrado, cor: "#fca5a5", key: "encerrado" as const },
+            ] as const).map((st) => (
+              <div
+                key={st.key}
+                onClick={() => setFiltroFase(filtroFase === st.key ? "todas" : st.key)}
+                style={{
+                  flex: "1 1 120px", cursor: "pointer",
+                  background: filtroFase === st.key ? "rgba(30,64,175,0.28)" : "rgba(15,23,42,0.85)",
+                  border: `1px solid ${filtroFase === st.key ? "#3b82f6" : "rgba(148,163,184,0.12)"}`,
+                  borderRadius: 14, padding: "12px 16px",
+                }}
+              >
+                <div style={{ fontSize: 24, fontWeight: 900, lineHeight: 1, marginBottom: 4, color: st.cor }}>{st.valor}</div>
+                <div style={{ fontSize: 11, color: "#475569", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>{st.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
+            <input
+              type="search"
+              placeholder="Buscar por título..."
+              value={buscaEditais}
+              onChange={(e) => setBuscaEditais(e.target.value)}
+              style={{
+                flex: "1 1 200px", padding: "8px 12px", borderRadius: 8,
+                border: "1px solid rgba(148,163,184,0.4)", background: "rgba(2,6,23,0.7)",
+                color: "#e5e7eb", fontSize: 13,
+              }}
+            />
+          </div>
+        </>
+      )}
+
+      {editais.length > 0 && editaisFiltrados.length === 0 && (
+        <p style={{ color: "#64748b", textAlign: "center", marginTop: 16 }}>Nenhum edital corresponde ao filtro.</p>
+      )}
+
+      {editaisFiltrados.map((e: any) => (
         <div key={e.id} className="admin-card" style={cardListaStyle}>
           <strong>{e.titulo}</strong>
 
