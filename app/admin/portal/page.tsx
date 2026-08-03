@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { triggerToast } from "@/components/AdminToast";
+import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
 
 type Token = {
   id: string;
@@ -86,8 +88,14 @@ export default function PortalAdminPage() {
   }
 
   async function excluir(id: string, label: string) {
-    if (!confirm(`Revogar e excluir o token de "${label}"?`)) return;
-    await supabase.from("portal_tokens").delete().eq("id", id);
+    const ok = await confirmAction(`Revogar e excluir o token de "${label}"? O parceiro perderá o acesso imediatamente.`);
+    if (!ok) {
+      if (!isConfirmModalReady() && !window.confirm(`Revogar e excluir o token de "${label}"?`)) return;
+      else if (isConfirmModalReady()) return;
+    }
+    const { error } = await supabase.from("portal_tokens").delete().eq("id", id);
+    if (error) { triggerToast(`Erro ao excluir: ${error.message}`, "error"); return; }
+    triggerToast(`Token de "${label}" revogado.`, "success");
     void carregar();
   }
 
@@ -138,6 +146,23 @@ export default function PortalAdminPage() {
 
       {!mostrarForm && msg && (
         <p style={{ ...s.msgFeedback, marginBottom: 12 }}>{msg}</p>
+      )}
+
+      {/* Stats */}
+      {!loading && lista.length > 0 && (
+        <div style={s.statsRow}>
+          {[
+            { label: "Total de links",     valor: lista.length,                                          cor: "#94a3b8" },
+            { label: "Ativos",             valor: lista.filter((t) => t.ativo).length,                  cor: "#86efac" },
+            { label: "Inativos",           valor: lista.filter((t) => !t.ativo).length,                 cor: "#fca5a5" },
+            { label: "Total de acessos",   valor: lista.reduce((s, t) => s + (t.acessos ?? 0), 0),     cor: "#93c5fd" },
+          ].map((st) => (
+            <div key={st.label} style={s.statCard}>
+              <div style={{ ...s.statNum, color: st.cor }}>{st.valor}</div>
+              <div style={s.statLabel}>{st.label}</div>
+            </div>
+          ))}
+        </div>
       )}
 
       {loading ? (
@@ -251,4 +276,8 @@ const s: Record<string, React.CSSProperties> = {
   badgeAtivo: { background: "rgba(22,101,52,0.28)", color: "#86efac", border: "1px solid #166534" },
   badgeInativo: { background: "rgba(100,116,139,0.2)", color: "#64748b", border: "1px solid #334155" },
   empty: { color: "#64748b", marginTop: 24, textAlign: "center" },
+  statsRow: { display: "flex", gap: 10, flexWrap: "wrap" as const, marginBottom: 20 },
+  statCard: { flex: "1 1 130px", background: "rgba(15,23,42,0.85)", border: "1px solid rgba(148,163,184,0.12)", borderRadius: 14, padding: "14px 18px" },
+  statNum:  { fontSize: 26, fontWeight: 900, lineHeight: 1, marginBottom: 4 },
+  statLabel:{ fontSize: 11, color: "#475569", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em" },
 };
