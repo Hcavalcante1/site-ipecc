@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { triggerToast } from "@/components/AdminToast";
+import { supabase } from "@/lib/supabaseClient";
 import type { AdminPapel } from "@/lib/auth/adminEscopo";
 import {
   ORDEM_TIPO_PROCESSO,
@@ -53,12 +54,27 @@ const chipStyle: CSSProperties = {
   marginTop: 4,
 };
 
+type Convite = {
+  id: string;
+  email: string;
+  papel: string;
+  aceito_em: string | null;
+  expires_at: string;
+  created_at: string;
+};
+
 export default function AdminAcessosPage() {
   const [perfis, setPerfis] = useState<Perfil[]>([]);
   const [escopos, setEscopos] = useState<Escopo[]>([]);
   const [processos, setProcessos] = useState<Processo[]>([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
+
+  const [convites, setConvites] = useState<Convite[]>([]);
+  const [conviteEmail, setConviteEmail] = useState("");
+  const [convitePapel, setConvitePapel] = useState("operador");
+  const [enviandoConvite, setEnviandoConvite] = useState(false);
+  const [linkCopiado, setLinkCopiado] = useState<string | null>(null);
 
   const [email, setEmail] = useState("");
   const [papel, setPapel] = useState<AdminPapel>("externo");
@@ -223,6 +239,65 @@ export default function AdminAcessosPage() {
     }
     triggerToast("Escopo removido.", "success");
     carregar(userIdEscopo);
+  }
+
+  async function getAuthHeader() {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
+  }
+
+  async function carregarConvites() {
+    const headers = await getAuthHeader();
+    const res = await fetch("/api/admin/convites", { headers });
+    if (!res.ok) return;
+    const json = (await res.json()) as { ok: boolean; data?: Convite[] };
+    if (json.ok) setConvites(json.data ?? []);
+  }
+
+  useEffect(() => { void carregarConvites(); }, []);
+
+  async function enviarConvite() {
+    if (!conviteEmail.trim()) { triggerToast("Informe o e-mail.", "error"); return; }
+    setEnviandoConvite(true);
+    const headers = { ...(await getAuthHeader()), "Content-Type": "application/json" };
+    const res = await fetch("/api/admin/convites", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ email: conviteEmail.trim(), papel: convitePapel }),
+    });
+    const json = (await res.json()) as { ok: boolean; link?: string; email_enviado?: boolean; error?: string };
+    setEnviandoConvite(false);
+    if (!json.ok) {
+      const msgs: Record<string, string> = {
+        convite_ja_pendente: "Já existe um convite pendente para este e-mail.",
+        email_invalido: "E-mail inválido.",
+      };
+      triggerToast(msgs[json.error ?? ""] ?? `Erro: ${json.error}`, "error");
+      return;
+    }
+    setConviteEmail("");
+    if (json.link) {
+      await navigator.clipboard.writeText(json.link).catch(() => null);
+      setLinkCopiado(json.link);
+      setTimeout(() => setLinkCopiado(null), 4000);
+    }
+    triggerToast(
+      json.email_enviado ? "Convite enviado por e-mail!" : "Convite criado. Link copiado (e-mail não configurado).",
+      "success"
+    );
+    void carregarConvites();
+  }
+
+  async function revogarConvite(id: string) {
+    const headers = { ...(await getAuthHeader()), "Content-Type": "application/json" };
+    const res = await fetch("/api/admin/convites", {
+      method: "DELETE",
+      headers,
+      body: JSON.stringify({ id }),
+    });
+    if (!res.ok) { triggerToast("Erro ao revogar.", "error"); return; }
+    triggerToast("Convite revogado.", "success");
+    void carregarConvites();
   }
 
   return (
@@ -407,6 +482,93 @@ export default function AdminAcessosPage() {
                 </p>
               </div>
             ))}
+          </div>
+        )}
+      </section>
+
+      <section className="admin-card" style={{ marginTop: 20 }}>
+        <h2 className="admin-h2">Convites de colaboração</h2>
+        <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 16px" }}>
+          Convide pessoas por e-mail. Elas receberão um link para aceitar e entrarão como membros da organização.
+        </p>
+
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
+          <input
+            value={conviteEmail}
+            onChange={(e) => setConviteEmail(e.target.value)}
+            placeholder="email@exemplo.com"
+            style={{ flex: "1 1 220px" }}
+            onKeyDown={(e) => { if (e.key === "Enter") void enviarConvite(); }}
+          />
+          <select
+            value={convitePapel}
+            onChange={(e) => setConvitePapel(e.target.value)}
+            style={{ minWidth: 120 }}
+          >
+            <option value="operador">Operador</option>
+            <option value="coordenador">Coordenador</option>
+            <option value="externo">Externo</option>
+          </select>
+          <button
+            type="button"
+            className="admin-button"
+            onClick={() => void enviarConvite()}
+            disabled={enviandoConvite}
+          >
+            {enviandoConvite ? "Enviando..." : "Convidar"}
+          </button>
+        </div>
+
+        {linkCopiado && (
+          <div style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(22,101,52,0.2)", border: "1px solid #166534", fontSize: 12, color: "#86efac", marginBottom: 12, wordBreak: "break-all" as const }}>
+            Link copiado: {linkCopiado}
+          </div>
+        )}
+
+        {convites.length === 0 ? (
+          <p style={{ fontSize: 13, color: "#475569" }}>Nenhum convite enviado ainda.</p>
+        ) : (
+          <div style={{ overflowX: "auto", borderRadius: 10, border: "1px solid rgba(148,163,184,0.15)" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr>
+                  {["E-mail", "Papel", "Status", "Expira em", ""].map((h) => (
+                    <th key={h} style={{ padding: "8px 12px", textAlign: "left" as const, fontSize: 11, fontWeight: 800, color: "#64748b", textTransform: "uppercase" as const, borderBottom: "1px solid rgba(148,163,184,0.12)" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {convites.map((c, i) => {
+                  const expirado = new Date(c.expires_at) < new Date();
+                  const status = c.aceito_em ? "aceito" : expirado ? "expirado" : "pendente";
+                  const statusCor: CSSProperties = status === "aceito"
+                    ? { color: "#86efac" }
+                    : status === "expirado"
+                    ? { color: "#f87171" }
+                    : { color: "#fde047" };
+                  return (
+                    <tr key={c.id} style={{ background: i % 2 ? "rgba(148,163,184,0.04)" : "transparent" }}>
+                      <td style={{ padding: "9px 12px", color: "#cbd5e1", borderTop: "1px solid rgba(148,163,184,0.08)" }}>{c.email}</td>
+                      <td style={{ padding: "9px 12px", color: "#94a3b8", borderTop: "1px solid rgba(148,163,184,0.08)" }}>{c.papel}</td>
+                      <td style={{ padding: "9px 12px", borderTop: "1px solid rgba(148,163,184,0.08)", fontWeight: 700, ...statusCor }}>{status}</td>
+                      <td style={{ padding: "9px 12px", color: "#64748b", borderTop: "1px solid rgba(148,163,184,0.08)" }}>{new Date(c.expires_at).toLocaleDateString("pt-BR")}</td>
+                      <td style={{ padding: "9px 12px", borderTop: "1px solid rgba(148,163,184,0.08)" }}>
+                        {!c.aceito_em && (
+                          <button
+                            type="button"
+                            className="admin-button"
+                            style={{ background: "#7f1d1d", padding: "3px 10px", fontSize: 11 }}
+                            onClick={() => void revogarConvite(c.id)}
+                          >
+                            Revogar
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </section>
