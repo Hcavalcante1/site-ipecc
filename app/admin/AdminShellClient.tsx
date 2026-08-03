@@ -15,6 +15,7 @@ import { MODULOS_MESTRE } from "@/lib/auth/adminEscopo";
 import LogoutButton from "./components/LogoutButton";
 import AdminNavIcon, { type AdminNavIconName } from "./components/AdminNavIcon";
 import { caminhoEhCmsSite } from "./components/RequireAdminModulo";
+import AdminNotificacoes from "@/components/AdminNotificacoes";
 
 const ADMIN_ACTIVE_KEY = "ipecc_admin_active";
 const ADMIN_CLOSED_KEY = "ipecc_admin_closed";
@@ -409,7 +410,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </nav>
 
             <div className="admin-sidebar-footer">
-              <LogoutButton />
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <LogoutButton />
+                <AdminNotificacoes />
+              </div>
 
               <div className="admin-sidebar-footer-brand">
                 <span
