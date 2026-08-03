@@ -21,6 +21,8 @@ export default async function ApresentacaoLanding() {
     { data: eixosData },
     { data: numerosBlock },
     { count: editaisAbertos },
+    { count: totalBeneficiarios },
+    { count: totalPropostas },
   ] = await Promise.all([
     supabase
       .from("paginas_conteudo")
@@ -43,13 +45,19 @@ export default async function ApresentacaoLanding() {
     supabase
       .from("paginas_conteudo")
       .select("extra")
-      .eq("pagina_slug", "projetos")
+      .eq("pagina_slug", "home")
       .eq("bloco", "numeros")
       .maybeSingle(),
     supabase
       .from("editais")
       .select("*", { count: "exact", head: true })
       .eq("status", "aberto"),
+    supabase
+      .from("beneficiarios")
+      .select("id", { count: "exact", head: true }),
+    supabase
+      .from("propostas")
+      .select("id", { count: "exact", head: true }),
   ]);
 
   const heroTexto =
@@ -68,12 +76,33 @@ export default async function ApresentacaoLanding() {
       typeof numerosBlock.extra === "string"
         ? JSON.parse(numerosBlock.extra)
         : numerosBlock.extra;
-    if (Array.isArray(raw) && raw.length >= 4) {
-      numeros = raw.slice(0, 4).map((n: Numero) => ({
-        valor: String(n.valor ?? ""),
-        descricao: String(n.descricao ?? ""),
+    // suporta array plano ou formato {numeros: [...]} gravado pelo admin
+    const arr: unknown[] | null = Array.isArray(raw)
+      ? raw
+      : Array.isArray((raw as Record<string, unknown>)?.numeros)
+        ? (raw as { numeros: unknown[] }).numeros
+        : null;
+    if (arr && arr.length > 0) {
+      numeros = arr.slice(0, 4).map((n) => ({
+        valor: String((n as Numero).valor ?? ""),
+        descricao: String((n as Numero).descricao ?? ""),
       }));
     }
+  }
+
+  // Estatísticas ao vivo do banco (complementam os números manuais)
+  const statsAoVivo: Numero[] = [];
+  if ((totalBeneficiarios ?? 0) > 0) {
+    statsAoVivo.push({
+      valor: (totalBeneficiarios ?? 0).toLocaleString("pt-BR"),
+      descricao: "Beneficiários cadastrados",
+    });
+  }
+  if ((totalPropostas ?? 0) > 0) {
+    statsAoVivo.push({
+      valor: (totalPropostas ?? 0).toLocaleString("pt-BR"),
+      descricao: "Propostas recebidas",
+    });
   }
 
   const qtdEditais = editaisAbertos ?? 0;
@@ -288,6 +317,12 @@ export default async function ApresentacaoLanding() {
           <h2 className={styles.statsTitle}>Impacto que sustenta novas parcerias</h2>
           <div className={styles.statsGrid}>
             {numeros.map((n) => (
+              <div key={n.descricao} className={styles.stat}>
+                <strong>{n.valor}</strong>
+                <span>{n.descricao}</span>
+              </div>
+            ))}
+            {statsAoVivo.map((n) => (
               <div key={n.descricao} className={styles.stat}>
                 <strong>{n.valor}</strong>
                 <span>{n.descricao}</span>
