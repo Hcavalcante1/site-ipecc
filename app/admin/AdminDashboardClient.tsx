@@ -78,6 +78,28 @@ function podeModuloCliente(
   return modulos.includes(modulo);
 }
 
+const admCSS = `
+@keyframes admSlideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@media (max-width: 640px) {
+  .adm-kpi   { grid-template-columns: 1fr 1fr !important; }
+  .adm-quick { grid-template-columns: 1fr 1fr !important; }
+  .adm-mgrid { grid-template-columns: 1fr !important; }
+  .adm-hdr   { flex-direction: column !important; align-items: flex-start !important; gap: 10px !important; }
+  .adm-exp   { flex-direction: row !important; flex-wrap: wrap !important; width: 100% !important; }
+  .adm-pgrp  { flex-wrap: wrap !important; }
+  .adm-sgrid { grid-template-columns: 1fr 1fr 1fr !important; }
+  .adm-tw    { left: 12px !important; right: 12px !important; }
+  .adm-tb    { min-width: unset !important; width: 100% !important; }
+}
+@media (max-width: 380px) {
+  .adm-kpi   { grid-template-columns: 1fr !important; }
+  .adm-quick { grid-template-columns: 1fr !important; }
+}
+`;
+
 export default function AdminDashboardClient({ userEmail }: Props) {
   const escopo = useAdminEscopoCliente();
   const [totalPropostas, setTotalPropostas] = useState(0);
@@ -638,6 +660,8 @@ export default function AdminDashboardClient({ userEmail }: Props) {
   }
 
   return (
+    <>
+    <style>{admCSS}</style>
     <div style={styles.wrapper}>
       <div style={styles.escopoBanner}>
         <span style={styles.escopoLabel}>Escopo</span>
@@ -645,7 +669,7 @@ export default function AdminDashboardClient({ userEmail }: Props) {
       </div>
 
       {quickLinks.length > 0 && (
-        <div style={styles.quickGrid}>
+        <div style={styles.quickGrid} className="adm-quick">
           {quickLinks.map((link) => (
             <QuickLink
               key={link.href}
@@ -661,7 +685,7 @@ export default function AdminDashboardClient({ userEmail }: Props) {
         Dados ao vivo do banco · sincronizado em {sincronizadoEm}
       </p>
 
-      <div style={styles.kpiGrid}>
+      <div style={styles.kpiGrid} className="adm-kpi">
         {pode("propostas") && (
           <MetricCard
             title="Propostas recebidas"
@@ -718,9 +742,9 @@ export default function AdminDashboardClient({ userEmail }: Props) {
 
       {podeVerLogs ? (
         <>
-          <div style={styles.mainGrid}>
+          <div style={styles.mainGrid} className="adm-mgrid">
             <section style={styles.chartCard}>
-              <div style={styles.cardHeader}>
+              <div style={styles.cardHeader} className="adm-hdr">
                 <div>
                   <h3 style={styles.darkTitle}>Atividade recente</h3>
                   <p style={styles.darkSub}>
@@ -750,7 +774,7 @@ export default function AdminDashboardClient({ userEmail }: Props) {
                 Resumo rapido por tipo de alteracao.
               </p>
 
-              <div style={styles.smallGrid}>
+              <div style={styles.smallGrid} className="adm-sgrid">
                 <SmallCard title="Inclusao" value={insert} color="#22c55e" />
                 <SmallCard title="Atualizacao" value={update} color="#38bdf8" />
                 <SmallCard title="Exclusao" value={del} color="#ef4444" />
@@ -764,7 +788,7 @@ export default function AdminDashboardClient({ userEmail }: Props) {
           </div>
 
           <section style={styles.tableCard}>
-            <div style={{ ...styles.cardHeader, ...styles.tableHeader }}>
+            <div style={{ ...styles.cardHeader, ...styles.tableHeader }} className="adm-hdr">
               <div>
                 <h3 style={styles.tableTitle}>Ultimas acoes administrativas</h3>
                 <p style={styles.tableSub}>
@@ -836,7 +860,7 @@ export default function AdminDashboardClient({ userEmail }: Props) {
       {escopo.mestre && (
         <>
           <section style={styles.tableCard}>
-            <div style={{ ...styles.cardHeader, ...styles.tableHeader }}>
+            <div style={{ ...styles.cardHeader, ...styles.tableHeader }} className="adm-hdr">
               <div>
                 <h3 style={styles.tableTitle}>Leads WhatsApp recentes</h3>
                 <p style={styles.tableSub}>
@@ -844,8 +868,8 @@ export default function AdminDashboardClient({ userEmail }: Props) {
                   <strong>{leads30d}</strong>
                 </p>
               </div>
-              <div style={styles.exportControls}>
-                <div style={styles.periodGroup}>
+              <div style={styles.exportControls} className="adm-exp">
+                <div style={styles.periodGroup} className="adm-pgrp">
                   {(["hoje", "7d", "30d", "tudo"] as const).map((p) => (
                     <button
                       key={p}
@@ -908,15 +932,15 @@ export default function AdminDashboardClient({ userEmail }: Props) {
           </section>
 
           <section style={styles.tableCard}>
-            <div style={{ ...styles.cardHeader, ...styles.tableHeader }}>
+            <div style={{ ...styles.cardHeader, ...styles.tableHeader }} className="adm-hdr">
               <div>
                 <h3 style={styles.tableTitle}>Mensagens de contato recentes</h3>
                 <p style={styles.tableSub}>
                   Ultimas mensagens enviadas pelo formulario de contato.
                 </p>
               </div>
-              <div style={styles.exportControls}>
-                <div style={styles.periodGroup}>
+              <div style={styles.exportControls} className="adm-exp">
+                <div style={styles.periodGroup} className="adm-pgrp">
                   {(["hoje", "7d", "30d", "tudo"] as const).map((p) => (
                     <button
                       key={p}
@@ -984,8 +1008,9 @@ export default function AdminDashboardClient({ userEmail }: Props) {
       )}
 
       {toast && (
-        <div style={styles.toastWrap}>
+        <div style={styles.toastWrap} className="adm-tw">
           <div
+            className="adm-tb"
             style={{
               ...styles.toast,
               ...(toast.tipo === "lead" ? styles.toastLead : styles.toastMensagem),
@@ -1004,6 +1029,7 @@ export default function AdminDashboardClient({ userEmail }: Props) {
         </div>
       )}
     </div>
+    </>
   );
 }
 
@@ -1447,7 +1473,7 @@ const styles: any = {
     pointerEvents: "auto",
     minWidth: 260,
     maxWidth: 360,
-    animation: "slideIn 0.22s ease",
+    animation: "admSlideIn 0.22s ease",
   },
 
   toastLead: {
