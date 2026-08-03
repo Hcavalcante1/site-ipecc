@@ -31,6 +31,12 @@ const CONFIG_CAMPOS = [
   { key: "descricao",      label: "Descrição curta",  placeholder: "Missão ou propósito da organização" },
 ] as const;
 
+const TEMA_CAMPOS = [
+  { key: "theme_cor_primaria",  label: "Cor primária",       default: "#1d4ed8" },
+  { key: "theme_cor_acento",    label: "Cor de destaque",    default: "#38bdf8" },
+  { key: "theme_bg_header",     label: "Fundo do cabeçalho", default: "#0f172a" },
+] as const;
+
 export default function OrganizacaoPage() {
   const [org, setOrg] = useState<Org | null>(null);
   const [form, setForm] = useState({ nome: "", logo_url: "", config: {} as Record<string, string> });
@@ -161,6 +167,69 @@ export default function OrganizacaoPage() {
         </div>
       </div>
 
+      {/* White-label: tema visual */}
+      <div style={s.card}>
+        <h2 style={s.cardTitulo}>White-label — Tema visual</h2>
+        <p style={s.cardDesc}>
+          Personalize as cores do portal público da sua organização em{" "}
+          <code style={s.codeLink}>/org/{org.slug}</code>
+        </p>
+        <div style={s.temaGrid}>
+          {TEMA_CAMPOS.map((campo) => {
+            const valor = (form.config[campo.key] as string | undefined) ?? campo.default;
+            return (
+              <label key={campo.key} style={s.label}>
+                {campo.label}
+                <div style={s.colorRow}>
+                  <input
+                    type="color"
+                    value={valor}
+                    onChange={(e) => setConfig(campo.key, e.target.value)}
+                    style={s.colorPicker}
+                  />
+                  <input
+                    type="text"
+                    value={valor}
+                    onChange={(e) => setConfig(campo.key, e.target.value)}
+                    style={{ ...s.input, flex: 1 }}
+                  />
+                </div>
+              </label>
+            );
+          })}
+        </div>
+        {/* Preview */}
+        <div style={s.previewLabel}>Pré-visualização do cabeçalho</div>
+        <div style={{
+          background: (form.config.theme_bg_header as string | undefined) ?? "#0f172a",
+          borderRadius: 10,
+          padding: "14px 20px",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          marginTop: 10,
+        }}>
+          {form.logo_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={form.logo_url} alt="logo" style={{ height: 32, objectFit: "contain" }} />
+          )}
+          <span style={{ fontWeight: 900, fontSize: 18, color: (form.config.theme_cor_acento as string | undefined) ?? "#38bdf8" }}>
+            {form.nome || "Nome da org"}
+          </span>
+          <span style={{ fontSize: 13, color: "#94a3b8", marginLeft: "auto" }}>
+            Portal público
+          </span>
+        </div>
+        <div style={s.acoes}>
+          <button style={{
+            ...s.btnPrimario,
+            background: (form.config.theme_cor_primaria as string | undefined) ?? "#1d4ed8",
+          }} onClick={salvar} disabled={salvando}>
+            {salvando ? "Salvando..." : "Salvar tema"}
+          </button>
+        </div>
+      </div>
+
       {/* Planos disponíveis */}
       <div style={s.card}>
         <h2 style={s.cardTitulo}>Planos disponíveis</h2>
@@ -250,4 +319,10 @@ const s: Record<string, React.CSSProperties> = {
   planoAtualBadge: { marginTop: 10, fontSize: 11, fontWeight: 800, color: "#93c5fd", textAlign: "center" as const },
   planoNota: { fontSize: 12, color: "#475569", margin: 0 },
   empty: { color: "#64748b", textAlign: "center", marginTop: 24 },
+  cardDesc: { margin: "0 0 16px", fontSize: 13, color: "#64748b" },
+  codeLink: { fontFamily: "monospace", color: "#38bdf8", fontSize: 12 },
+  temaGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 16 },
+  colorRow: { display: "flex", gap: 8, alignItems: "center", marginTop: 2 },
+  colorPicker: { width: 36, height: 36, borderRadius: 8, border: "1px solid rgba(148,163,184,0.4)", cursor: "pointer", padding: 2, background: "transparent" },
+  previewLabel: { fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase" as const, letterSpacing: "0.06em" },
 };
