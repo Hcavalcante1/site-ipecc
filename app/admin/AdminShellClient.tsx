@@ -375,6 +375,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 <Link href="/admin/lgpd" className={navClass(pathname, "/admin/lgpd")} onClick={(event) => handleMobileNav(event, "/admin/lgpd")}>
                   <NavLabel icon="logs">LGPD / Privacidade</NavLabel>
                 </Link>
+                <Link href="/admin/api-tokens" className={navClass(pathname, "/admin/api-tokens")} onClick={(event) => handleMobileNav(event, "/admin/api-tokens")}>
+                  <NavLabel icon="digital">API Tokens</NavLabel>
+                </Link>
                 {pode("processos") && (
                   <Link href="/admin/processos" className={navClass(pathname, "/admin/processos")} onClick={(event) => handleMobileNav(event, "/admin/processos")}>
                     <NavLabel icon="processos">Processos</NavLabel>
