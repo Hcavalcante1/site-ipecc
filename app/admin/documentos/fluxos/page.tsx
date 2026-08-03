@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { GdWorkflow, GdWorkflowStep } from "@/lib/documentos/types";
 import { rotuloStatus } from "@/lib/documentos/labels";
+import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
 import GestaoDocumentalShell, {
   gdBtnStyle,
   gdCardStyle,
@@ -102,7 +103,11 @@ export default function FluxosPage() {
   }
 
   async function removerFluxo(id: string) {
-    if (!confirm("Remover este fluxo?")) return;
+    const ok = await confirmAction("Remover este fluxo?");
+    if (!ok) {
+      if (!isConfirmModalReady() && !window.confirm("Remover este fluxo?")) return;
+      else if (isConfirmModalReady()) return;
+    }
     const res = await fetch(`/api/admin/documentos/fluxos?id=${id}`, {
       method: "DELETE",
       credentials: "include",

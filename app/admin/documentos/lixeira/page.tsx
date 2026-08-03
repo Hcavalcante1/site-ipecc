@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import type { GdDocument } from "@/lib/documentos/types";
 import { rotuloStatus } from "@/lib/documentos/labels";
+import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
+import { triggerToast } from "@/components/AdminToast";
 import GestaoDocumentalShell, {
   gdBtnStyle,
   gdCardStyle,
@@ -34,25 +36,25 @@ export default function LixeiraPage() {
   }, [carregar]);
 
   async function esvaziar() {
-    if (
-      !confirm(
-        "Excluir permanentemente TODOS os documentos da lixeira? Esta ação não pode ser desfeita."
-      )
-    )
-      return;
+    const ok = await confirmAction("Excluir permanentemente TODOS os documentos da lixeira? Esta ação não pode ser desfeita.");
+    if (!ok) {
+      if (!isConfirmModalReady() && !window.confirm("Excluir permanentemente TODOS os documentos da lixeira? Esta ação não pode ser desfeita.")) return;
+      else if (isConfirmModalReady()) return;
+    }
     const res = await fetch("/api/admin/documentos?esvaziar=1", {
       method: "DELETE",
       credentials: "include",
     });
     const json = await res.json();
     if (!res.ok) {
-      alert(json.error || "Erro ao esvaziar lixeira.");
+      triggerToast(json.error || "Erro ao esvaziar lixeira.", "error");
       return;
     }
-    alert(
+    triggerToast(
       json.deleted
         ? `${json.deleted} documento(s) excluído(s) permanentemente.`
-        : "Lixeira já estava vazia."
+        : "Lixeira já estava vazia.",
+      "success"
     );
     carregar();
   }
@@ -64,7 +66,7 @@ export default function LixeiraPage() {
     });
     const json = await res.json();
     if (!res.ok) {
-      alert(json.error || "Erro ao restaurar.");
+      triggerToast(json.error || "Erro ao restaurar.", "error");
       return;
     }
     carregar();

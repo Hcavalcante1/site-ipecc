@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
 import GestaoDocumentalShell, {
   gdBtnStyle,
   gdCardStyle,
@@ -95,7 +96,11 @@ export default function AuditoriaPage() {
   }
 
   async function limparLogs() {
-    if (!confirm(`Excluir ${logs.length} log(s) permanentemente? Faça o download antes se quiser guardar.`)) return;
+    const ok = await confirmAction(`Excluir ${logs.length} log(s) permanentemente? Faça o download antes se quiser guardar.`);
+    if (!ok) {
+      if (!isConfirmModalReady() && !window.confirm(`Excluir ${logs.length} log(s) permanentemente? Faça o download antes se quiser guardar.`)) return;
+      else if (isConfirmModalReady()) return;
+    }
     setLimpando(true);
     const res = await fetch("/api/admin/documentos/auditoria", {
       method: "DELETE",

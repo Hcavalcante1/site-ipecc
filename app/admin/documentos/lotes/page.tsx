@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
 import GestaoDocumentalShell, {
   gdBtnStyle,
   gdCardStyle,
@@ -333,7 +334,11 @@ export default function LotesPage() {
   }
 
   async function excluir(id: string) {
-    if (!confirm("Cancelar e arquivar este lote?")) return;
+    const ok = await confirmAction("Cancelar e arquivar este lote?");
+    if (!ok) {
+      if (!isConfirmModalReady() && !window.confirm("Cancelar e arquivar este lote?")) return;
+      else if (isConfirmModalReady()) return;
+    }
     const res = await fetch(`/api/admin/documentos/lotes?id=${id}`, {
       method: "DELETE",
       credentials: "include",

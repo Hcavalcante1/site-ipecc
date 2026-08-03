@@ -25,6 +25,7 @@ import {
   rotuloStatus,
   rotuloTipoSujeito,
 } from "@/lib/documentos/labels";
+import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
 import GestaoDocumentalShell, {
   gdBtnStyle,
   gdCardStyle,
@@ -264,7 +265,11 @@ export default function DocumentoDetalhePage() {
   }
 
   async function excluirDocumento() {
-    if (!confirm("Mover este documento para a lixeira?")) return;
+    const ok = await confirmAction("Mover este documento para a lixeira?");
+    if (!ok) {
+      if (!isConfirmModalReady() && !window.confirm("Mover este documento para a lixeira?")) return;
+      else if (isConfirmModalReady()) return;
+    }
     const res = await fetch(`/api/admin/documentos/${id}`, {
       method: "DELETE",
       credentials: "include",

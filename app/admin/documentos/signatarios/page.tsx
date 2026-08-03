@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
 import GestaoDocumentalShell, {
   gdBtnStyle,
   gdCardStyle,
@@ -101,7 +102,11 @@ export default function SignatariosPage() {
   }
 
   async function remover(id: string) {
-    if (!confirm("Remover este signatário?")) return;
+    const ok = await confirmAction("Remover este signatário?");
+    if (!ok) {
+      if (!isConfirmModalReady() && !window.confirm("Remover este signatário?")) return;
+      else if (isConfirmModalReady()) return;
+    }
     const res = await fetch(`/api/admin/documentos/signatarios?id=${id}`, {
       method: "DELETE",
       credentials: "include",

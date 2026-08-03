@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
 import GestaoDocumentalShell, {
   gdBtnStyle,
   gdCardStyle,
@@ -42,7 +43,11 @@ export default function NotificacoesPage() {
   }, [carregar]);
 
   async function limparTudo() {
-    if (!confirm("Marcar todas as notificações como lidas?")) return;
+    const ok = await confirmAction("Marcar todas as notificações como lidas?");
+    if (!ok) {
+      if (!isConfirmModalReady() && !window.confirm("Marcar todas as notificações como lidas?")) return;
+      else if (isConfirmModalReady()) return;
+    }
     const res = await fetch("/api/admin/documentos/notificacoes", {
       method: "DELETE",
       credentials: "include",

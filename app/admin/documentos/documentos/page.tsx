@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import type { GdCategory, GdDocument, GdFolder } from "@/lib/documentos/types";
+import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
+import { triggerToast } from "@/components/AdminToast";
 import { GD_DOCUMENT_STATUSES } from "@/lib/documentos/types";
 import { rotuloStatus } from "@/lib/documentos/labels";
 import GestaoDocumentalShell, {
@@ -67,14 +69,18 @@ export default function DocumentosListaPage() {
   }, []);
 
   async function excluir(id: string) {
-    if (!confirm("Mover este documento para a lixeira?")) return;
+    const ok = await confirmAction("Mover este documento para a lixeira?");
+    if (!ok) {
+      if (!isConfirmModalReady() && !window.confirm("Mover este documento para a lixeira?")) return;
+      else if (isConfirmModalReady()) return;
+    }
     const res = await fetch(`/api/admin/documentos/${id}`, {
       method: "DELETE",
       credentials: "include",
     });
     const json = await res.json();
     if (!res.ok) {
-      alert(json.error || "Erro ao excluir.");
+      triggerToast(json.error || "Erro ao excluir.", "error");
       return;
     }
     carregar();
@@ -82,7 +88,11 @@ export default function DocumentosListaPage() {
 
   async function excluirSelecionados() {
     if (selected.size === 0) return;
-    if (!confirm(`Mover ${selected.size} documento(s) para a lixeira?`)) return;
+    const okLote = await confirmAction(`Mover ${selected.size} documento(s) para a lixeira?`);
+    if (!okLote) {
+      if (!isConfirmModalReady() && !window.confirm(`Mover ${selected.size} documento(s) para a lixeira?`)) return;
+      else if (isConfirmModalReady()) return;
+    }
     setExcluindoLote(true);
     const ids = Array.from(selected);
     await Promise.all(
@@ -124,7 +134,7 @@ export default function DocumentosListaPage() {
     });
     if (!res.ok) {
       const json = await res.json();
-      alert(json.error || "Erro ao favoritar.");
+      triggerToast(json.error || "Erro ao favoritar.", "error");
       return;
     }
     carregar();
@@ -139,7 +149,7 @@ export default function DocumentosListaPage() {
     });
     if (!res.ok) {
       const json = await res.json();
-      alert(json.error || "Erro ao arquivar.");
+      triggerToast(json.error || "Erro ao arquivar.", "error");
       return;
     }
     carregar();
@@ -152,7 +162,7 @@ export default function DocumentosListaPage() {
     });
     const json = await res.json();
     if (!res.ok) {
-      alert(json.error || "Erro ao duplicar.");
+      triggerToast(json.error || "Erro ao duplicar.", "error");
       return;
     }
     window.location.href = `/admin/documentos/documentos/${json.document.id}`;

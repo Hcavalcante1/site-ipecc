@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { adminTokens } from "@/components/admin";
+import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
 import type {
   DigitalAccount,
   DigitalPlatform,
@@ -668,7 +669,11 @@ export default function DigitalAdminPage() {
   }
 
   async function deletarMidia(id: string) {
-    if (!confirm("Excluir este arquivo? A ação não pode ser desfeita.")) return;
+    const ok = await confirmAction("Excluir este arquivo? A ação não pode ser desfeita.");
+    if (!ok) {
+      if (!isConfirmModalReady() && !window.confirm("Excluir este arquivo? A ação não pode ser desfeita.")) return;
+      else if (isConfirmModalReady()) return;
+    }
     setBusy(true);
     const res = await fetch(`/api/admin/digital/media/${id}`, { method: "DELETE" });
     const json = await res.json();

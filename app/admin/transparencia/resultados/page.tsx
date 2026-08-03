@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
 
 type Edital = {
   id?: string;
@@ -405,9 +406,10 @@ export default function TransparenciaEditaisAdmin() {
 
   async function excluirBloco(id?: string, index?: number) {
     const idx = index ?? 0;
-    const confirmado = window.confirm("Tem certeza que deseja excluir este edital? Esta ação não pode ser desfeita.");
+    const confirmado = await confirmAction("Tem certeza que deseja excluir este edital? Esta ação não pode ser desfeita.");
+    const cancelou = !confirmado && (isConfirmModalReady() || !window.confirm("Tem certeza que deseja excluir este edital? Esta ação não pode ser desfeita."));
 
-    if (!confirmado) {
+    if (cancelou || (!confirmado && isConfirmModalReady())) {
       setBlockMsg(idx, "Exclusão cancelada.");
       setMsg("Exclusão cancelada.");
       return;

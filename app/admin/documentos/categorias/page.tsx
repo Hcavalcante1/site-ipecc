@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { GdCategory } from "@/lib/documentos/types";
+import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
 import GestaoDocumentalShell, {
   gdBtnStyle,
   gdCardStyle,
@@ -50,7 +51,11 @@ export default function CategoriasPage() {
   }
 
   async function remover(id: string) {
-    if (!confirm("Mover categoria para a lixeira?")) return;
+    const ok = await confirmAction("Mover categoria para a lixeira?");
+    if (!ok) {
+      if (!isConfirmModalReady() && !window.confirm("Mover categoria para a lixeira?")) return;
+      else if (isConfirmModalReady()) return;
+    }
     const res = await fetch(`/api/admin/documentos/categorias?id=${id}`, {
       method: "DELETE",
       credentials: "include",

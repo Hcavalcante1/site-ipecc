@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { GdFolder } from "@/lib/documentos/types";
+import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
 import GestaoDocumentalShell, {
   gdBtnStyle,
   gdCardStyle,
@@ -50,7 +51,11 @@ export default function PastasPage() {
   }
 
   async function remover(id: string) {
-    if (!confirm("Mover pasta para a lixeira?")) return;
+    const ok = await confirmAction("Mover pasta para a lixeira?");
+    if (!ok) {
+      if (!isConfirmModalReady() && !window.confirm("Mover pasta para a lixeira?")) return;
+      else if (isConfirmModalReady()) return;
+    }
     const res = await fetch(`/api/admin/documentos/pastas?id=${id}`, {
       method: "DELETE",
       credentials: "include",
