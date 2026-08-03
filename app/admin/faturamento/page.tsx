@@ -1,30 +1,72 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 
 type UsageMetric = { label: string; valor: number; limite: number | null; cor: string };
-type FaturaSimulada = { mes: string; valor: string; status: "pago" | "pendente" | "futuro" };
+
+type Assinatura = {
+  stripe_subscription_id: string | null;
+  stripe_customer_id: string | null;
+  plano: string;
+  status: string;
+  periodo_inicio: string | null;
+  periodo_fim: string | null;
+  cancelar_no_fim: boolean;
+};
 
 const PLANOS_LIMITES: Record<string, Record<string, number | null>> = {
-  gratuito:     { editais: 3, propostas: 50, beneficiarios: 0, api_tokens: 0, portal_tokens: 1, usuarios: 1 },
-  starter:      { editais: 20, propostas: 500, beneficiarios: 500, api_tokens: 0, portal_tokens: 10, usuarios: 5 },
-  profissional: { editais: null, propostas: null, beneficiarios: null, api_tokens: 5, portal_tokens: 50, usuarios: 20 },
-  enterprise:   { editais: null, propostas: null, beneficiarios: null, api_tokens: null, portal_tokens: null, usuarios: null },
+  gratuito:     { editais: 3, propostas: 50, beneficiarios: 0, api_tokens: 0, portal_tokens: 1 },
+  starter:      { editais: 20, propostas: 500, beneficiarios: 500, api_tokens: 0, portal_tokens: 10 },
+  profissional: { editais: null, propostas: null, beneficiarios: null, api_tokens: 5, portal_tokens: 50 },
+  enterprise:   { editais: null, propostas: null, beneficiarios: null, api_tokens: null, portal_tokens: null },
 };
 
 const PRECO_PLANOS: Record<string, string> = {
-  gratuito: "R$ 0,00",
-  starter: "R$ 190,00",
+  gratuito:     "R$ 0,00",
+  starter:      "R$ 190,00",
   profissional: "R$ 490,00",
-  enterprise: "Sob consulta",
+  enterprise:   "Sob consulta",
 };
 
+const PLANOS_UPGRADE = [
+  { id: "starter",      nome: "Starter",      preco: "R$ 190/mês" },
+  { id: "profissional", nome: "Profissional",  preco: "R$ 490/mês" },
+  { id: "enterprise",   nome: "Enterprise",    preco: "Sob consulta" },
+];
+
 export default function FaturamentoPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   const [org, setOrg] = useState<{ id: string; nome: string; plano: string; created_at: string } | null>(null);
+  const [assinatura, setAssinatura] = useState<Assinatura | null>(null);
   const [metricas, setMetricas] = useState<UsageMetric[]>([]);
   const [loading, setLoading] = useState(true);
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [billingAtivo, setBillingAtivo] = useState(true);
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+
+  const checkout = searchParams.get("checkout");
+
+  useEffect(() => {
+    if (checkout === "success") {
+      setToast({ msg: "Assinatura ativada com sucesso!", ok: true });
+      router.replace("/admin/faturamento");
+    } else if (checkout === "cancelled") {
+      setToast({ msg: "Checkout cancelado.", ok: false });
+      router.replace("/admin/faturamento");
+    }
+  }, [checkout, router]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -38,6 +80,14 @@ export default function FaturamentoPage() {
 
     if (!orgData) { setLoading(false); return; }
     setOrg(orgData as typeof org);
+
+    const { data: assData } = await supabase
+      .from("assinaturas")
+      .select("stripe_subscription_id, stripe_customer_id, plano, status, periodo_inicio, periodo_fim, cancelar_no_fim")
+      .eq("org_id", orgData.id)
+      .maybeSingle();
+
+    setAssinatura(assData as Assinatura | null);
 
     const limites = PLANOS_LIMITES[orgData.plano] ?? PLANOS_LIMITES.gratuito;
 
@@ -56,11 +106,11 @@ export default function FaturamentoPage() {
     ]);
 
     setMetricas([
-      { label: "Editais publicados",     valor: editais ?? 0,       limite: limites.editais,       cor: "#38bdf8" },
-      { label: "Propostas recebidas",    valor: propostas ?? 0,     limite: limites.propostas,     cor: "#a78bfa" },
-      { label: "Beneficiários",          valor: beneficiarios ?? 0, limite: limites.beneficiarios, cor: "#86efac" },
-      { label: "Portal tokens",          valor: portalTokens ?? 0,  limite: limites.portal_tokens, cor: "#fde047" },
-      { label: "API tokens",             valor: apiTokens ?? 0,     limite: limites.api_tokens,    cor: "#fb923c" },
+      { label: "Editais publicados",  valor: editais ?? 0,       limite: limites.editais,       cor: "#38bdf8" },
+      { label: "Propostas recebidas", valor: propostas ?? 0,     limite: limites.propostas,     cor: "#a78bfa" },
+      { label: "Beneficiários",       valor: beneficiarios ?? 0, limite: limites.beneficiarios, cor: "#86efac" },
+      { label: "Portal tokens",       valor: portalTokens ?? 0,  limite: limites.portal_tokens, cor: "#fde047" },
+      { label: "API tokens",          valor: apiTokens ?? 0,     limite: limites.api_tokens,    cor: "#fb923c" },
     ]);
 
     setLoading(false);
@@ -68,18 +118,64 @@ export default function FaturamentoPage() {
 
   useEffect(() => { void carregar(); }, [carregar]);
 
-  // Simula histórico de faturas baseado na data de criação
-  const faturas: FaturaSimulada[] = org ? gerarFaturas(org.created_at, org.plano) : [];
+  async function iniciarCheckout(plano: string) {
+    setCheckoutLoading(plano);
+    try {
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plano }),
+      });
+      const json = (await res.json()) as { ok: boolean; url?: string; error?: string };
+      if (json.ok && json.url) {
+        window.location.href = json.url;
+      } else if (json.error === "billing_not_configured") {
+        setBillingAtivo(false);
+        setToast({ msg: "Integração Stripe não configurada ainda. Configure STRIPE_SECRET_KEY no ambiente.", ok: false });
+      } else {
+        setToast({ msg: `Erro: ${json.error ?? "desconhecido"}`, ok: false });
+      }
+    } catch {
+      setToast({ msg: "Falha de rede ao iniciar checkout.", ok: false });
+    } finally {
+      setCheckoutLoading(null);
+    }
+  }
+
+  async function abrirPortal() {
+    setPortalLoading(true);
+    try {
+      const res = await fetch("/api/billing/portal", { method: "POST" });
+      const json = (await res.json()) as { ok: boolean; url?: string; error?: string };
+      if (json.ok && json.url) {
+        window.location.href = json.url;
+      } else {
+        setToast({ msg: `Erro ao abrir portal: ${json.error ?? "desconhecido"}`, ok: false });
+      }
+    } catch {
+      setToast({ msg: "Falha de rede ao abrir portal.", ok: false });
+    } finally {
+      setPortalLoading(false);
+    }
+  }
 
   if (loading) return <div style={s.wrap}><p style={s.empty}>Carregando...</p></div>;
   if (!org) return <div style={s.wrap}><p style={s.empty}>Organização não encontrada.</p></div>;
 
-  const proximaRenovacao = new Date();
-  proximaRenovacao.setMonth(proximaRenovacao.getMonth() + 1);
-  proximaRenovacao.setDate(1);
+  const planoEfetivo = org.plano;
+  const temAssinatura = !!assinatura?.stripe_subscription_id;
+  const proximaRenovacao = assinatura?.periodo_fim
+    ? new Date(assinatura.periodo_fim)
+    : (() => { const d = new Date(); d.setMonth(d.getMonth() + 1); d.setDate(1); return d; })();
 
   return (
     <div style={s.wrap}>
+      {toast && (
+        <div style={{ ...s.toastBar, background: toast.ok ? "rgba(22,101,52,0.9)" : "rgba(127,29,29,0.9)", borderColor: toast.ok ? "#166534" : "#7f1d1d" }}>
+          {toast.msg}
+        </div>
+      )}
+
       <div style={s.pageHeader}>
         <div>
           <h1 style={s.titulo}>Faturamento e Uso</h1>
@@ -90,21 +186,61 @@ export default function FaturamentoPage() {
         </Link>
       </div>
 
+      {!billingAtivo && (
+        <div style={s.alertBox}>
+          <strong>Billing não configurado.</strong> Para ativar assinaturas reais, adicione as variáveis de ambiente no Vercel:
+          {" "}<code style={s.code}>STRIPE_SECRET_KEY</code>, <code style={s.code}>STRIPE_WEBHOOK_SECRET</code>,{" "}
+          <code style={s.code}>STRIPE_PRICE_STARTER</code>, <code style={s.code}>STRIPE_PRICE_PROFISSIONAL</code>,{" "}
+          <code style={s.code}>STRIPE_PRICE_ENTERPRISE</code>.
+        </div>
+      )}
+
       {/* Plano atual */}
       <div style={s.planoBanner}>
         <div>
           <p style={s.planoBannerLabel}>Plano atual</p>
-          <p style={s.planoBannerNome}>{org.plano.charAt(0).toUpperCase() + org.plano.slice(1)}</p>
-          <p style={s.planoBannerPreco}>{PRECO_PLANOS[org.plano] ?? "—"}/mês</p>
+          <p style={s.planoBannerNome}>{planoEfetivo.charAt(0).toUpperCase() + planoEfetivo.slice(1)}</p>
+          <p style={s.planoBannerPreco}>{PRECO_PLANOS[planoEfetivo] ?? "—"}/mês</p>
+          {assinatura && (
+            <p style={s.statusBadgeRow}>
+              <span style={{ ...s.statusChip, ...statusCor(assinatura.status) }}>
+                {assinatura.status.toUpperCase()}
+              </span>
+              {assinatura.cancelar_no_fim && (
+                <span style={{ ...s.statusChip, background: "rgba(127,29,29,0.3)", color: "#fca5a5", border: "1px solid #7f1d1d", marginLeft: 6 }}>
+                  Cancela no fim do período
+                </span>
+              )}
+            </p>
+          )}
         </div>
         <div style={s.planoBannerRight}>
-          <p style={s.planoBannerLabel}>Próxima renovação</p>
+          <p style={s.planoBannerLabel}>
+            {assinatura?.cancelar_no_fim ? "Acesso até" : "Próxima renovação"}
+          </p>
           <p style={s.planoBannerData}>{proximaRenovacao.toLocaleDateString("pt-BR")}</p>
-          {org.plano !== "enterprise" && (
-            <Link href="/admin/organizacao" style={s.btnUpgrade}>
-              Fazer upgrade
-            </Link>
-          )}
+          {temAssinatura ? (
+            <button
+              style={s.btnPortal}
+              onClick={abrirPortal}
+              disabled={portalLoading}
+            >
+              {portalLoading ? "Abrindo..." : "Gerenciar assinatura →"}
+            </button>
+          ) : planoEfetivo !== "enterprise" ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
+              {PLANOS_UPGRADE.filter((p) => p.id !== planoEfetivo).map((p) => (
+                <button
+                  key={p.id}
+                  style={{ ...s.btnUpgrade, opacity: checkoutLoading === p.id ? 0.7 : 1 }}
+                  onClick={() => void iniciarCheckout(p.id)}
+                  disabled={!!checkoutLoading}
+                >
+                  {checkoutLoading === p.id ? "Aguarde..." : `Assinar ${p.nome} — ${p.preco}`}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -124,11 +260,7 @@ export default function FaturamentoPage() {
                 {m.limite !== null ? (
                   <>
                     <div style={s.barBg}>
-                      <div style={{
-                        ...s.barFill,
-                        width: `${pct}%`,
-                        background: alerta ? "#f59e0b" : m.cor,
-                      }} />
+                      <div style={{ ...s.barFill, width: `${pct}%`, background: alerta ? "#f59e0b" : m.cor }} />
                     </div>
                     <div style={s.barLabel}>
                       {m.valor} / {m.limite} {alerta && <span style={s.alertaTag}>⚠ Próximo do limite</span>}
@@ -143,98 +275,102 @@ export default function FaturamentoPage() {
         </div>
       </div>
 
-      {/* Histórico de faturas */}
-      <div style={s.card}>
-        <h2 style={s.cardTitulo}>Histórico de faturas</h2>
-        {faturas.length === 0 || org.plano === "gratuito" ? (
-          <p style={s.faturaVazio}>
-            {org.plano === "gratuito"
-              ? "Plano gratuito não gera faturas."
-              : "Nenhuma fatura disponível ainda."}
-          </p>
-        ) : (
-          <div style={s.tableWrap}>
-            <table style={s.table}>
-              <thead>
-                <tr>
-                  {["Período", "Valor", "Status", ""].map((h) => (
-                    <th key={h} style={s.th}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {faturas.map((f, i) => (
-                  <tr key={f.mes} style={i % 2 ? s.trAlt : s.tr}>
-                    <td style={s.td}>{f.mes}</td>
-                    <td style={s.td}>{f.valor}</td>
-                    <td style={s.td}>
-                      <span style={{ ...s.statusBadge, ...statusCor(f.status) }}>
-                        {f.status === "pago" ? "Pago" : f.status === "pendente" ? "Pendente" : "Futuro"}
-                      </span>
-                    </td>
-                    <td style={s.td}>
-                      {f.status !== "futuro" && (
-                        <button style={s.btnDownload} disabled title="Em breve: download do recibo">
-                          Recibo
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {/* Assinatura Stripe */}
+      {assinatura && (
+        <div style={s.card}>
+          <h2 style={s.cardTitulo}>Dados da assinatura</h2>
+          <div style={s.assGrid}>
+            {[
+              { label: "ID assinatura", valor: assinatura.stripe_subscription_id ?? "—" },
+              { label: "Status",        valor: assinatura.status },
+              { label: "Período início",valor: assinatura.periodo_inicio ? new Date(assinatura.periodo_inicio).toLocaleDateString("pt-BR") : "—" },
+              { label: "Período fim",   valor: assinatura.periodo_fim    ? new Date(assinatura.periodo_fim).toLocaleDateString("pt-BR")    : "—" },
+            ].map((row) => (
+              <div key={row.label} style={s.assRow}>
+                <span style={s.assLabel}>{row.label}</span>
+                <span style={s.assValor}>{row.valor}</span>
+              </div>
+            ))}
           </div>
-        )}
-        <p style={s.faturaNota}>
-          Integração com gateway de pagamento em breve. Faturas serão geradas automaticamente após a ativação do billing.
-        </p>
-      </div>
+          <button style={s.btnPortal} onClick={abrirPortal} disabled={portalLoading}>
+            {portalLoading ? "Abrindo..." : "Abrir portal do cliente Stripe →"}
+          </button>
+        </div>
+      )}
+
+      {/* Planos disponíveis (quando sem assinatura ativa) */}
+      {!temAssinatura && (
+        <div style={s.card}>
+          <h2 style={s.cardTitulo}>Upgrade de plano</h2>
+          <p style={{ ...s.sub, marginBottom: 20 }}>
+            Escolha um plano e clique para assinar via Stripe Checkout.
+          </p>
+          <div style={s.planosGrid}>
+            {PLANOS_UPGRADE.map((p) => {
+              const ativo = planoEfetivo === p.id;
+              return (
+                <div key={p.id} style={{ ...s.planoCard, ...(ativo ? s.planoAtivo : {}) }}>
+                  <div style={{ fontWeight: 800, fontSize: 15, color: "#e2e8f0", marginBottom: 4 }}>{p.nome}</div>
+                  <div style={{ fontSize: 13, color: "#64748b", marginBottom: 14 }}>{p.preco}</div>
+                  {ativo ? (
+                    <div style={s.planoAtualBadge}>Plano atual</div>
+                  ) : p.id !== "enterprise" ? (
+                    <button
+                      style={{ ...s.btnUpgrade, width: "100%", opacity: checkoutLoading === p.id ? 0.7 : 1 }}
+                      onClick={() => void iniciarCheckout(p.id)}
+                      disabled={!!checkoutLoading}
+                    >
+                      {checkoutLoading === p.id ? "Aguarde..." : "Assinar agora"}
+                    </button>
+                  ) : (
+                    <a href="mailto:contato@ipecc.org.br" style={{ ...s.btnUpgrade, textDecoration: "none", textAlign: "center" as const, display: "block" }}>
+                      Entrar em contato
+                    </a>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <p style={s.faturaNota}>
+        Pagamentos processados com segurança via Stripe. Dados sincronizados automaticamente via webhook.
+        {!billingAtivo && " — Billing em modo scaffold: configure as variáveis de ambiente Stripe para ativar."}
+      </p>
     </div>
   );
 }
 
-function gerarFaturas(createdAt: string, plano: string): FaturaSimulada[] {
-  if (plano === "gratuito") return [];
-  const preco = PRECO_PLANOS[plano] ?? "R$ 0,00";
-  const inicio = new Date(createdAt);
-  const hoje = new Date();
-  const faturas: FaturaSimulada[] = [];
-  const cur = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
-  while (cur <= hoje && faturas.length < 12) {
-    const mes = cur.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
-    const passado = cur < hoje;
-    faturas.push({ mes, valor: preco, status: passado ? "pago" : "pendente" });
-    cur.setMonth(cur.getMonth() + 1);
-  }
-  // próximo mês como futuro
-  const proximo = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 1);
-  faturas.push({
-    mes: proximo.toLocaleDateString("pt-BR", { month: "long", year: "numeric" }),
-    valor: preco,
-    status: "futuro",
-  });
-  return faturas.reverse();
-}
-
 function statusCor(status: string): React.CSSProperties {
-  if (status === "pago") return { background: "rgba(22,101,52,0.28)", color: "#86efac", border: "1px solid #166534" };
-  if (status === "pendente") return { background: "rgba(234,179,8,0.18)", color: "#fde047", border: "1px solid #a16207" };
-  return { background: "rgba(100,116,139,0.15)", color: "#64748b", border: "1px solid #334155" };
+  switch (status) {
+    case "ativo":       return { background: "rgba(22,101,52,0.28)",  color: "#86efac", border: "1px solid #166534" };
+    case "trial":       return { background: "rgba(29,78,216,0.22)",  color: "#93c5fd", border: "1px solid #1e40af" };
+    case "inadimplente":return { background: "rgba(234,179,8,0.18)",  color: "#fde047", border: "1px solid #a16207" };
+    case "cancelado":   return { background: "rgba(127,29,29,0.2)",   color: "#fca5a5", border: "1px solid #7f1d1d" };
+    default:            return { background: "rgba(100,116,139,0.15)", color: "#64748b", border: "1px solid #334155" };
+  }
 }
 
 const s: Record<string, React.CSSProperties> = {
-  wrap: { padding: 24, color: "#e5e7eb", maxWidth: 1000 },
+  wrap: { padding: 24, color: "#e5e7eb", maxWidth: 1000, position: "relative" },
   pageHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 24 },
   titulo: { margin: 0, fontSize: 22, fontWeight: 900, color: "#f1f5f9" },
   sub: { margin: "6px 0 0", color: "#94a3b8", fontSize: 13 },
   btnGhost: { padding: "9px 16px", borderRadius: 10, border: "1px solid rgba(148,163,184,0.3)", background: "transparent", color: "#94a3b8", fontWeight: 600, fontSize: 13, textDecoration: "none", display: "inline-block" },
+  toastBar: { position: "fixed" as const, top: 20, right: 20, zIndex: 9999, padding: "12px 20px", borderRadius: 12, border: "1px solid", color: "#fff", fontWeight: 700, fontSize: 13, maxWidth: 380, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" },
+  alertBox: { background: "rgba(234,179,8,0.1)", border: "1px solid #a16207", borderRadius: 12, padding: "14px 18px", marginBottom: 20, fontSize: 13, color: "#fde047", lineHeight: 1.6 },
+  code: { fontFamily: "monospace", background: "rgba(0,0,0,0.3)", padding: "1px 5px", borderRadius: 4 },
   planoBanner: { background: "rgba(29,78,216,0.12)", border: "1px solid rgba(29,78,216,0.3)", borderRadius: 16, padding: "20px 28px", marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 },
   planoBannerLabel: { margin: 0, fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase" as const, letterSpacing: "0.07em" },
   planoBannerNome: { margin: "4px 0 2px", fontSize: 24, fontWeight: 900, color: "#93c5fd" },
   planoBannerPreco: { margin: 0, fontSize: 14, color: "#64748b" },
+  statusBadgeRow: { margin: "10px 0 0", display: "flex", alignItems: "center", flexWrap: "wrap" as const, gap: 6 },
+  statusChip: { display: "inline-flex", padding: "3px 8px", borderRadius: 999, fontSize: 11, fontWeight: 800 },
   planoBannerRight: { textAlign: "right" as const },
   planoBannerData: { margin: "4px 0 10px", fontSize: 16, fontWeight: 700, color: "#e2e8f0" },
-  btnUpgrade: { display: "inline-block", padding: "8px 16px", borderRadius: 10, border: "none", background: "#1d4ed8", color: "#fff", fontWeight: 700, fontSize: 13, textDecoration: "none" },
+  btnUpgrade: { display: "inline-block", padding: "8px 16px", borderRadius: 10, border: "none", background: "#1d4ed8", color: "#fff", fontWeight: 700, fontSize: 13, textDecoration: "none", cursor: "pointer" },
+  btnPortal: { marginTop: 8, padding: "8px 16px", borderRadius: 10, border: "1px solid rgba(148,163,184,0.35)", background: "transparent", color: "#94a3b8", fontWeight: 600, fontSize: 13, cursor: "pointer" },
   card: { background: "rgba(15,23,42,0.8)", border: "1px solid rgba(148,163,184,0.15)", borderRadius: 16, padding: "24px 28px", marginBottom: 20 },
   cardTitulo: { margin: "0 0 20px", fontSize: 16, fontWeight: 800, color: "#f1f5f9" },
   metricasGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 },
@@ -247,15 +383,14 @@ const s: Record<string, React.CSSProperties> = {
   barLabel: { fontSize: 11, color: "#475569" },
   ilimitadoTag: { fontSize: 11, color: "#86efac", fontWeight: 700, marginTop: 4 },
   alertaTag: { color: "#f59e0b", fontWeight: 700, marginLeft: 6 },
-  faturaVazio: { color: "#64748b", fontSize: 13, textAlign: "center" as const, margin: "16px 0" },
-  faturaNota: { fontSize: 12, color: "#475569", margin: "14px 0 0" },
-  tableWrap: { overflowX: "auto", borderRadius: 12, border: "1px solid rgba(148,163,184,0.18)", marginBottom: 4 },
-  table: { width: "100%", borderCollapse: "collapse", fontSize: 13 },
-  th: { background: "#1e293b", color: "#94a3b8", padding: "10px 12px", textAlign: "left", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" },
-  tr: { background: "#0f172a" },
-  trAlt: { background: "#0a0f1e" },
-  td: { padding: "11px 12px", borderTop: "1px solid rgba(148,163,184,0.10)", verticalAlign: "middle", color: "#cbd5e1" },
-  statusBadge: { display: "inline-flex", padding: "3px 8px", borderRadius: 999, fontSize: 11, fontWeight: 800 },
-  btnDownload: { padding: "4px 10px", borderRadius: 7, border: "1px solid #334155", background: "transparent", color: "#64748b", fontSize: 11, fontWeight: 600, cursor: "not-allowed", opacity: 0.5 },
+  assGrid: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 },
+  assRow: { display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid rgba(148,163,184,0.08)", fontSize: 13 },
+  assLabel: { color: "#64748b", fontWeight: 600 },
+  assValor: { color: "#e2e8f0", fontFamily: "monospace", fontSize: 12 },
+  planosGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 14 },
+  planoCard: { background: "rgba(148,163,184,0.05)", border: "1px solid rgba(148,163,184,0.12)", borderRadius: 12, padding: "16px 18px" },
+  planoAtivo: { border: "1px solid #1d4ed8", background: "rgba(29,78,216,0.1)" },
+  planoAtualBadge: { fontSize: 11, fontWeight: 800, color: "#93c5fd", textAlign: "center" as const },
+  faturaNota: { fontSize: 12, color: "#475569", margin: "4px 0 0" },
   empty: { color: "#64748b", textAlign: "center", marginTop: 24 },
 };
