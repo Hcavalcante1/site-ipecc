@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
+import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
+import { triggerToast } from "@/components/AdminToast";
 
 type ApiToken = {
   id: string;
@@ -77,8 +79,14 @@ export default function ApiTokensPage() {
   }
 
   async function excluir(id: string, nome: string) {
-    if (!confirm(`Revogar e excluir o token "${nome}"?`)) return;
-    await supabase.from("api_tokens").delete().eq("id", id);
+    const ok = await confirmAction(`Revogar e excluir o token "${nome}"? Sistemas que usam este token perderão acesso imediatamente.`);
+    if (!ok) {
+      if (!isConfirmModalReady() && !window.confirm(`Revogar e excluir o token "${nome}"?`)) return;
+      else if (isConfirmModalReady()) return;
+    }
+    const { error } = await supabase.from("api_tokens").delete().eq("id", id);
+    if (error) { triggerToast(`Erro ao excluir: ${error.message}`, "error"); return; }
+    triggerToast(`Token "${nome}" revogado.`, "success");
     void carregar();
   }
 

@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
+import { triggerToast } from "@/components/AdminToast";
 
 type Status = "ativo" | "inativo" | "suspenso";
 
@@ -198,9 +200,19 @@ export default function BeneficiariosPage() {
   }
 
   async function excluir(id: string, nome: string) {
-    if (!confirm(`Excluir "${nome}"? Esta ação não pode ser desfeita.`)) return;
+    const ok = await confirmAction(`Excluir "${nome}"? Esta ação não pode ser desfeita.`);
+    if (!ok) {
+      if (!isConfirmModalReady() && !window.confirm(`Excluir "${nome}"?`)) return;
+      else if (isConfirmModalReady()) return;
+    }
     const { error } = await supabase.from("beneficiarios").delete().eq("id", id);
-    if (!error) { void carregar(); void carregarStats(); }
+    if (error) {
+      triggerToast(`Erro ao excluir: ${error.message}`, "error");
+      return;
+    }
+    triggerToast(`"${nome}" excluído.`, "success");
+    void carregar();
+    void carregarStats();
   }
 
   function exportarCSV() {

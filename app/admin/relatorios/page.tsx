@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { triggerToast } from "@/components/AdminToast";
 
 type Tipo = "propostas" | "beneficiarios" | "editais" | "lgpd" | "resumo";
 type Formato = "csv" | "pdf";
@@ -76,7 +77,7 @@ export default function RelatoriosPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      alert("Erro ao gerar relatório. Tente novamente.");
+      triggerToast("Erro ao gerar relatório. Tente novamente.", "error");
     } finally {
       setBaixando(null);
     }
