@@ -1,22 +1,39 @@
-export const dynamic = "force-dynamic";
-export const runtime = "nodejs";
+"use client";
 
+import { useEffect, useState } from "react";
+import { supabasePublic as supabase } from "@/lib/supabasePublic";
+import { fetchPaginaConteudo, parsePaginaExtra } from "@/lib/cms/paginasConteudo";
 import { PublicProjectDetail } from "@/components/public";
 
 export default function ValerMais() {
+  const [titulo, setTitulo] = useState("Programa Valer Mais");
+  const [lead, setLead] = useState(
+    "Inclusão produtiva, geração de renda e fortalecimento comunitário em territórios vulneráveis do estado de São Paulo."
+  );
+  const [paragrafos, setParagrafos] = useState<string[]>([]);
+
+  useEffect(() => {
+    async function load() {
+      const data = await fetchPaginaConteudo(
+        supabase,
+        "projetos-valer-mais",
+        "corpo",
+        "titulo, texto, extra"
+      );
+      if (data) {
+        if (data.titulo) setTitulo(data.titulo);
+        if (data.texto) setLead(data.texto);
+        setParagrafos(parsePaginaExtra<string[]>(data.extra, []));
+      }
+    }
+    load();
+  }, []);
+
   return (
-    <PublicProjectDetail
-      title="Programa Valer Mais"
-      lead="Inclusão produtiva, geração de renda e fortalecimento comunitário."
-    >
-      <p className="public-page-lead">
-        O Programa Valer Mais articula ações de valorização da educação pública,
-        apoio pedagógico e mobilização da comunidade escolar.
-      </p>
-      <p>
-        A iniciativa combina formação, protagonismo juvenil e parcerias locais
-        para ampliar oportunidades e impacto social duradouro.
-      </p>
+    <PublicProjectDetail title={titulo} lead={lead}>
+      {paragrafos.map((p, i) => (
+        <p key={i}>{p}</p>
+      ))}
     </PublicProjectDetail>
   );
 }

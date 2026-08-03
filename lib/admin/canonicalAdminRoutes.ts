@@ -32,6 +32,12 @@ export const adminCanonicalRoutes = {
     numeros: "/admin/paginas/projetos/numeros",
     cta: "/admin/paginas/projetos/cta",
   },
+  projetosFilhos: {
+    valerMais: "/admin/paginas/projetos/valer-mais",
+    oficinasEducacaoCidada: "/admin/paginas/projetos/oficinas-educacao-cidada",
+    culturaInclusaoSocial: "/admin/paginas/projetos/cultura-inclusao-social",
+    parceriasInstitucionais: "/admin/paginas/projetos/parcerias-institucionais",
+  },
   contato: {
     hub: "/admin/paginas/contato",
     hero: "/admin/paginas/contato/hero",

@@ -6,6 +6,7 @@ import { adminCanonicalRoutes } from "@/lib/admin/canonicalAdminRoutes";
 
 export default function ProjetosAdminIndex() {
   const r = adminCanonicalRoutes.projetos;
+  const rf = adminCanonicalRoutes.projetosFilhos;
 
   return (
     <AdminPaginasHubLayout
@@ -53,6 +54,30 @@ export default function ProjetosAdminIndex() {
           titulo="Chamada final"
           descricao="Chamada final da página /projetos, com texto e ação."
           href={r.cta}
+        />
+      </div>
+
+      <h2 className="admin-section-title" style={{ marginTop: 32 }}>Páginas dos projetos</h2>
+      <div className="admin-grid admin-grid--wide">
+        <AdminHubCard
+          titulo="Programa Valer Mais"
+          descricao="Conteúdo da página pública /projetos/valer-mais."
+          href={rf.valerMais}
+        />
+        <AdminHubCard
+          titulo="Oficinas de Educação Cidadã"
+          descricao="Conteúdo da página pública /projetos/oficinas-educacao-cidada."
+          href={rf.oficinasEducacaoCidada}
+        />
+        <AdminHubCard
+          titulo="Cultura e Inclusão Social"
+          descricao="Conteúdo da página pública /projetos/cultura-inclusao-social."
+          href={rf.culturaInclusaoSocial}
+        />
+        <AdminHubCard
+          titulo="Parcerias Institucionais"
+          descricao="Conteúdo da página pública /projetos/parcerias-institucionais."
+          href={rf.parceriasInstitucionais}
         />
       </div>
     </AdminPaginasHubLayout>

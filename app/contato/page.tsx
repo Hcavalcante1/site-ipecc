@@ -176,13 +176,13 @@ export default function ContatoPage() {
     setFormMsg("");
     setFormMsgType("");
 
+    const nome = safeText(form.nome);
+    const email = safeText(form.email);
+    const telefone = safeText(form.telefone);
+    const mensagem = safeText(form.mensagem);
+
     const { error } = await supabase.from("contato_mensagens").insert([
-      {
-        nome: safeText(form.nome),
-        email: safeText(form.email),
-        telefone: safeText(form.telefone) || null,
-        mensagem: safeText(form.mensagem),
-      },
+      { nome, email, telefone: telefone || null, mensagem },
     ]);
 
     if (error) {
@@ -191,6 +191,19 @@ export default function ContatoPage() {
       setFormMsg("Não foi possível enviar sua mensagem agora. Tente novamente.");
       return;
     }
+
+    // Notificação por e-mail para a equipe (fire-and-forget — não bloqueia sucesso)
+    fetch("/api/email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tipo: "contato",
+        nome,
+        email,
+        assunto: "Contato via site",
+        mensagem: telefone ? `Telefone: ${telefone}\n\n${mensagem}` : mensagem,
+      }),
+    }).catch(() => {});
 
     setForm(EMPTY_FORM);
     setSending(false);
