@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import type { CSSProperties } from "react";
-import { adminTokens } from "@/components/admin";
+import { supabase } from "@/lib/supabaseClient";
+import { triggerToast } from "@/components/AdminToast";
 import { formatarCategoria, formatarTipoPessoa } from "@/lib/documental";
 import { useResumoAnexosListagem } from "@/components/admin/propostas/useResumoAnexosListagem";
-import { supabase } from "@/lib/supabaseClient";
 import {
   getRotuloVinculoProposta,
   getUrlConsultaEditalAdmin,
@@ -14,6 +13,10 @@ import {
 } from "@/lib/editais/governancaRules";
 import { registroNoEscopoProcesso } from "@/lib/auth/adminEscopo";
 import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+type StatusProposta = "pendente" | "aprovado" | "rejeitado" | "em_analise";
 
 type Proposta = {
   id: string;
@@ -25,96 +28,64 @@ type Proposta = {
   tipo?: string;
   status?: string;
   categoria?: string | null;
+  criado_em?: string | null;
   edital_id?: string | null;
   editais?:
-    | {
-        titulo?: string | null;
-        fase_atual?: string | null;
-        tipo?: string | null;
-        processo_id?: string | null;
-      }
-    | {
-        titulo?: string | null;
-        fase_atual?: string | null;
-        tipo?: string | null;
-        processo_id?: string | null;
-      }[]
+    | { titulo?: string | null; fase_atual?: string | null; tipo?: string | null; processo_id?: string | null }
+    | { titulo?: string | null; fase_atual?: string | null; tipo?: string | null; processo_id?: string | null }[]
     | null;
   [key: string]: unknown;
 };
 
-const loadingStyle: CSSProperties = {
-  padding: adminTokens.spacing.xxxl,
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const STATUS_ESTILO: Record<string, { label: string; cor: string; bg: string; borda: string }> = {
+  pendente:   { label: "Pendente",    cor: "#fde047", bg: "rgba(161,98,7,0.15)",  borda: "#a16207" },
+  em_analise: { label: "Em análise",  cor: "#93c5fd", bg: "rgba(29,78,216,0.15)", borda: "#1d4ed8" },
+  aprovado:   { label: "Aprovado",    cor: "#86efac", bg: "rgba(22,101,52,0.15)", borda: "#166534" },
+  rejeitado:  { label: "Rejeitado",   cor: "#fca5a5", bg: "rgba(127,29,29,0.15)", borda: "#7f1d1d" },
 };
 
-const shellStyle: CSSProperties = {
-  padding: adminTokens.spacing.base + adminTokens.spacing.xl,
-};
+function statusEstilo(status?: string) {
+  return STATUS_ESTILO[status ?? "pendente"] ?? STATUS_ESTILO.pendente;
+}
 
-const cardStyle: CSSProperties = {
-  background: "#0f172a",
-  padding: adminTokens.spacing.base + adminTokens.spacing.sm,
-  borderRadius: 10,
-  border: "1px solid #1e293b",
-  color: "#fff",
-  height: "100%",
-  boxSizing: "border-box",
-};
+function dataRelativa(iso?: string | null): string {
+  if (!iso) return "—";
+  const d    = new Date(iso);
+  const diff = Date.now() - d.getTime();
+  const dias = Math.floor(diff / 86400000);
+  if (dias === 0) return "hoje";
+  if (dias === 1) return "ontem";
+  if (dias < 30)  return `${dias}d atrás`;
+  return d.toLocaleDateString("pt-BR");
+}
 
-const listGridStyle: CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))",
-  gap: adminTokens.spacing.md,
-  marginTop: adminTokens.spacing.md,
-  alignItems: "stretch",
-};
+// ─── Component ───────────────────────────────────────────────────────────────
 
-const blockParaStyle: CSSProperties = {
-  marginTop: adminTokens.spacing.md,
-  marginBottom: 0,
-};
-
-const tightParaStyle: CSSProperties = {
-  marginTop: adminTokens.spacing.xs,
-  marginBottom: 0,
-};
-
-const acoesRowStyle: CSSProperties = {
-  display: "flex",
-  flexWrap: "wrap",
-  gap: adminTokens.spacing.md,
-  marginTop: adminTokens.spacing.lg,
-};
-
-const btnPad: Pick<CSSProperties, "padding"> = {
-  padding: `${adminTokens.spacing.xs}px ${adminTokens.spacing.base}px`,
-};
-
-const linkBtnBase: CSSProperties = {
-  ...btnPad,
-  borderRadius: 6,
-  border: "none",
-  cursor: "pointer",
-  fontWeight: 600,
-  textDecoration: "none",
-  display: "inline-flex",
-  alignItems: "center",
-};
-
-export default function Page() {
+export default function PropostasPage() {
   const escopo = useAdminEscopoCliente();
-  const [propostas, setPropostas] = useState<Proposta[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { resumo: resumoAnexos, carregando: carregandoResumoAnexos } =
-    useResumoAnexosListagem(propostas);
 
-  useEffect(() => {
+  const [todas, setTodas]       = useState<Proposta[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [atualizando, setAtual] = useState<string | null>(null);
+
+  // Confirmação inline (substitui alert/confirm)
+  const [confirmacao, setConfirmacao] = useState<{ id: string; acao: "aprovado" | "rejeitado" } | null>(null);
+
+  // Filtros
+  const [busca, setBusca]               = useState("");
+  const buscaReal                       = useRef("");
+  const buscaTimer                      = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [filtroStatus, setFiltroStatus] = useState<StatusProposta | "">("");
+
+  const { resumo: resumoAnexos, carregando: carregandoAnexos } =
+    useResumoAnexosListagem(todas);
+
+  // ── Loader ──────────────────────────────────────────────────────────────
+
+  const carregar = useCallback(async () => {
     if (escopo.loading) return;
-    void carregar();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [escopo.loading, escopo.processoIds]);
-
-  async function carregar() {
     setLoading(true);
 
     const { data } = await supabase
@@ -122,266 +93,330 @@ export default function Page() {
       .select("*, editais(titulo, fase_atual, tipo, processo_id)")
       .order("criado_em", { ascending: false });
 
-    const lista = ((data || []) as Proposta[]).filter((proposta) => {
-      const edital = Array.isArray(proposta.editais)
-        ? proposta.editais[0]
-        : proposta.editais;
+    const lista = ((data ?? []) as Proposta[]).filter((p) => {
+      const edital = Array.isArray(p.editais) ? p.editais[0] : p.editais;
       return registroNoEscopoProcesso(edital?.processo_id, escopo.processoIds);
     });
 
-    setPropostas(lista);
+    setTodas(lista);
     setLoading(false);
+  }, [escopo.loading, escopo.processoIds]);
+
+  useEffect(() => {
+    void carregar();
+  }, [carregar]);
+
+  // ── Filtro client-side ──────────────────────────────────────────────────
+
+  const exibidas = todas.filter((p) => {
+    if (filtroStatus && (p.status ?? "pendente") !== filtroStatus) return false;
+    const q = buscaReal.current.toLowerCase();
+    if (!q) return true;
+    return (
+      p.nome?.toLowerCase().includes(q) ||
+      p.email?.toLowerCase().includes(q) ||
+      p.cnpj?.toLowerCase().includes(q) ||
+      p.telefone?.toLowerCase().includes(q)
+    );
+  });
+
+  // ── Stats ───────────────────────────────────────────────────────────────
+
+  const total      = todas.length;
+  const pendentes  = todas.filter((p) => !p.status || p.status === "pendente" || p.status === "em_analise").length;
+  const aprovadas  = todas.filter((p) => p.status === "aprovado").length;
+  const rejeitadas = todas.filter((p) => p.status === "rejeitado").length;
+
+  // ── Busca debounced ─────────────────────────────────────────────────────
+
+  function onBuscaChange(v: string) {
+    setBusca(v);
+    if (buscaTimer.current) clearTimeout(buscaTimer.current);
+    buscaTimer.current = setTimeout(() => { buscaReal.current = v; setBusca(v); }, 300);
   }
 
-  async function atualizarStatus(id: string, status: string) {
-    const { error } = await supabase
-      .from("propostas")
-      .update({ status })
-      .eq("id", id);
+  // ── Atualizar status ────────────────────────────────────────────────────
 
+  async function confirmarAcao() {
+    if (!confirmacao) return;
+    const { id, acao } = confirmacao;
+    setConfirmacao(null);
+    setAtual(id);
+
+    const { error } = await supabase.from("propostas").update({ status: acao }).eq("id", id);
     if (error) {
-      alert("Erro ao atualizar status");
+      triggerToast(`Erro ao ${acao === "aprovado" ? "aprovar" : "rejeitar"} proposta: ${error.message}`, "error");
+      setAtual(null);
       return;
     }
 
-    if (status === "aprovado") {
+    if (acao === "aprovado") {
       const ponte = await fetch("/api/admin/transparencia/ponte", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          acao: "convenio_de_proposta",
-          propostaId: id,
-        }),
-      })
-        .then((r) => r.json())
-        .catch(() => null);
+        body: JSON.stringify({ acao: "convenio_de_proposta", propostaId: id }),
+      }).then((r) => r.json()).catch(() => null) as { ok?: boolean; message?: string; error?: string } | null;
 
       if (ponte?.ok) {
-        alert(ponte.message || "Rascunho de convenio criado na Transparencia.");
+        triggerToast(ponte.message ?? "Rascunho de convênio criado na Transparência.", "success");
       } else if (ponte?.error) {
-        alert(`Proposta aprovada, mas a ponte falhou: ${ponte.error}`);
+        triggerToast(`Proposta aprovada, mas ponte falhou: ${ponte.error}`, "error");
+      } else {
+        triggerToast("Proposta aprovada.", "success");
       }
+    } else {
+      triggerToast("Proposta rejeitada.", "success");
     }
 
-    carregar();
+    setAtual(null);
+    void carregar();
   }
 
-  if (loading) return <p style={loadingStyle}>Carregando...</p>;
+  // ─────────────────────────────────────────────────────────────────────────
+
+  if (escopo.loading || loading) {
+    return <p style={s.empty}>Carregando propostas…</p>;
+  }
 
   return (
-    <div style={shellStyle}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: adminTokens.spacing.md,
-        }}
-      >
-        <h1 style={{ margin: 0 }}>Propostas Recebidas</h1>
-        <a
-          href="/admin/propostas/auditoria"
-          style={{
-            color: "#93c5fd",
-            fontSize: 14,
-            textDecoration: "none",
-            fontWeight: adminTokens.typography.fontWeight.bold,
-          }}
-        >
-          Auditoria de anexos (somente leitura)
-        </a>
-      </div>
-      <p
-        style={{
-          color: adminTokens.colors.text.muted,
-          marginTop: adminTokens.spacing.sm,
-          maxWidth: 860,
-        }}
-      >
-        Acompanhe aqui as propostas enviadas pelo site, confira documentos e
-        registre a decisão humana de aprovar ou rejeitar. Use{" "}
-        <strong>Governança</strong> para fases e documentos oficiais do edital; use{" "}
-        <strong>Ver edital</strong> para a página pública. Aprovação registra vínculo
-        oficial; rejeição mantém histórico.
-      </p>
-
-      {propostas.length === 0 ? (
-        <div style={{ ...cardStyle, marginTop: adminTokens.spacing.md }}>
-          Nenhuma proposta recebida até o momento.
-        </div>
-      ) : (
-        <div style={listGridStyle}>
-        {propostas.map((p) => {
-          const editalRelacionado = Array.isArray(p.editais) ? p.editais[0] : p.editais;
-          const urlEdital =
-            p.edital_id && getUrlConsultaEditalAdmin(p.edital_id, editalRelacionado);
-          const abreNovaAba = urlEdital?.startsWith("/editais/");
-
-          return (
-          <div key={p.id} style={cardStyle}>
-            <strong style={{ fontSize: 18 }}>{p.nome}</strong>
-
-            <p style={blockParaStyle}>
-              <strong>E-mail:</strong> {p.email || "—"}
+    <div style={s.wrap}>
+      {/* Confirmação inline */}
+      {confirmacao && (
+        <div style={s.confirmOverlay}>
+          <div style={s.confirmBox}>
+            <p style={s.confirmMsg}>
+              {confirmacao.acao === "aprovado"
+                ? "Confirmar aprovação desta proposta? Um rascunho de convênio será criado na Transparência."
+                : "Confirmar rejeição desta proposta?"}
             </p>
-
-            <p style={tightParaStyle}>
-              <strong>Telefone:</strong> {p.telefone || "—"}
-            </p>
-
-            <p style={tightParaStyle}>
-              <strong>CPF/CNPJ:</strong> {p.cnpj || "—"}
-            </p>
-
-            <p style={tightParaStyle}>
-              <strong>Tipo de Pessoa:</strong> {formatarTipoPessoa(p.tipo)}
-            </p>
-
-            <p style={tightParaStyle}>
-              <strong>Categoria:</strong> {formatarCategoria(p.categoria, p.mensagem)}
-            </p>
-
-            <p style={tightParaStyle}>
-              <strong>Edital:</strong>{" "}
-              {editalRelacionado?.titulo || "sem vínculo"}
-            </p>
-
-            <p style={tightParaStyle}>
-              <strong>Modalidade:</strong>{" "}
-              {editalRelacionado?.tipo?.trim() || "—"}
-            </p>
-
-            <p style={tightParaStyle}>
-              <strong>Vinculo:</strong>{" "}
-              <span
-                style={{
-                  color: propostaTemVinculoOficial(p.status)
-                    ? adminTokens.colors.success.background
-                    : adminTokens.colors.text.muted,
-                  fontWeight: adminTokens.typography.fontWeight.bold,
-                }}
-              >
-                {getRotuloVinculoProposta(p.status)}
-              </span>
-            </p>
-
-            <p style={tightParaStyle}>
-              <strong>Status:</strong>{" "}
-              <span
-                style={{
-                  color:
-                    p.status === "aprovado"
-                      ? adminTokens.colors.success.background
-                      : p.status === "rejeitado"
-                      ? adminTokens.colors.error.background
-                      : "#facc15",
-                  fontWeight: adminTokens.typography.fontWeight.bold,
-                }}
-              >
-                {p.status || "pendente"}
-              </span>
-            </p>
-
-            {carregandoResumoAnexos ? (
-              <p style={{ ...tightParaStyle, color: adminTokens.colors.text.muted, fontSize: 13 }}>
-                <strong>Anexos:</strong> verificando storage…
-              </p>
-            ) : resumoAnexos[p.id]?.orfaos ? (
-              <p style={{ ...tightParaStyle, fontSize: 13 }}>
-                <strong>Anexos:</strong>{" "}
-                <span style={{ color: "#f97316", fontWeight: adminTokens.typography.fontWeight.bold }}>
-                  {resumoAnexos[p.id].orfaos} sem arquivo no storage
-                </span>
-                <span style={{ color: adminTokens.colors.text.muted }}>
-                  {" "}
-                  ({resumoAnexos[p.id].disponiveis}/{resumoAnexos[p.id].total} disponíveis)
-                </span>
-              </p>
-            ) : resumoAnexos[p.id]?.total ? (
-              <p style={{ ...tightParaStyle, color: "#22c55e", fontSize: 13 }}>
-                <strong>Anexos:</strong> todos disponíveis no storage ({resumoAnexos[p.id].total})
-              </p>
-            ) : null}
-
-            <div style={acoesRowStyle}>
-              {p.edital_id ? (
-                <Link
-                  href={`/admin/editais/${p.edital_id}/governanca`}
-                  style={{
-                    ...linkBtnBase,
-                    background: "#0f766e",
-                    color: "#fff",
-                  }}
-                >
-                  Governança
-                </Link>
-              ) : null}
-
-              {p.edital_id && urlEdital ? (
-                <Link
-                  href={urlEdital}
-                  target={abreNovaAba ? "_blank" : undefined}
-                  rel={abreNovaAba ? "noopener noreferrer" : undefined}
-                  style={{
-                    ...linkBtnBase,
-                    background: "#0ea5e9",
-                    color: "#fff",
-                  }}
-                >
-                  {abreNovaAba ? "Ver edital" : "Ver edital (painel)"}
-                </Link>
-              ) : null}
-
-              <Link
-                href={`/admin/propostas/${p.id}`}
-                style={{
-                  ...linkBtnBase,
-                  background: "#2563eb",
-                  color: "#fff",
-                }}
-              >
-                Ver proposta
-              </Link>
-
+            <div style={s.confirmBtns}>
               <button
-                type="button"
-                onClick={() => atualizarStatus(p.id, "aprovado")}
-                style={{
-                  background: adminTokens.colors.success.background,
-                  color: "#022c22",
-                  ...btnPad,
-                  borderRadius: 6,
-                  border: "none",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
+                style={{ ...s.btnConfirm, background: confirmacao.acao === "aprovado" ? "#166534" : "#7f1d1d" }}
+                onClick={() => void confirmarAcao()}
               >
-                Aprovar
+                {confirmacao.acao === "aprovado" ? "Aprovar" : "Rejeitar"}
               </button>
-
-              <button
-                type="button"
-                onClick={() => atualizarStatus(p.id, "rejeitado")}
-                style={{
-                  background: adminTokens.colors.error.background,
-                  color: adminTokens.colors.error.text,
-                  ...btnPad,
-                  borderRadius: 6,
-                  border: "none",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
-              >
-                Rejeitar
-              </button>
+              <button style={s.btnCancelar} onClick={() => setConfirmacao(null)}>Cancelar</button>
             </div>
           </div>
-          );
-        })}
+        </div>
+      )}
+
+      {/* Cabeçalho */}
+      <div style={s.pageHeader}>
+        <div>
+          <h1 style={s.titulo}>Propostas Recebidas</h1>
+          <p style={s.sub}>
+            Acompanhe propostas enviadas pelo site. Aprovação cria vínculo oficial e rascunho de convênio na Transparência.
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" as const }}>
+          <a href="/admin/propostas/auditoria" style={s.linkAuditoria}>Auditoria de anexos →</a>
+          <button style={s.btnRefresh} onClick={() => void carregar()} disabled={loading}>
+            {loading ? "⟳ Atualizando…" : "⟳ Atualizar"}
+          </button>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div style={s.statsRow}>
+        {[
+          { label: "Total",     valor: total,      cor: "#94a3b8" },
+          { label: "Pendentes", valor: pendentes,   cor: "#fde047" },
+          { label: "Aprovadas", valor: aprovadas,   cor: "#86efac" },
+          { label: "Rejeitadas",valor: rejeitadas,  cor: "#fca5a5" },
+        ].map((st) => (
+          <div key={st.label} style={s.statCard}>
+            <div style={{ ...s.statNum, color: st.cor }}>{st.valor}</div>
+            <div style={s.statLabel}>{st.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Filtros */}
+      <div style={s.filtrosWrap}>
+        <input
+          placeholder="Buscar nome, e-mail, CPF/CNPJ ou telefone…"
+          value={busca}
+          onChange={(e) => onBuscaChange(e.target.value)}
+          style={s.inputFiltro}
+        />
+        <select value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value as StatusProposta | "")} style={s.selectFiltro}>
+          <option value="">Todos os status</option>
+          <option value="pendente">Pendente</option>
+          <option value="em_analise">Em análise</option>
+          <option value="aprovado">Aprovado</option>
+          <option value="rejeitado">Rejeitado</option>
+        </select>
+        {(busca || filtroStatus) && (
+          <button style={s.btnLimpar} onClick={() => { setBusca(""); buscaReal.current = ""; setFiltroStatus(""); }}>
+            ✕ Limpar
+          </button>
+        )}
+        <span style={s.contagem}>{exibidas.length} de {total}</span>
+      </div>
+
+      {/* Lista */}
+      {exibidas.length === 0 ? (
+        <p style={s.empty}>
+          {total === 0 ? "Nenhuma proposta recebida até o momento." : "Nenhuma proposta encontrada com os filtros aplicados."}
+        </p>
+      ) : (
+        <div style={s.grid}>
+          {exibidas.map((p) => {
+            const edital    = Array.isArray(p.editais) ? p.editais[0] : p.editais;
+            const urlEdital = p.edital_id ? getUrlConsultaEditalAdmin(p.edital_id, edital) : null;
+            const novaAba   = urlEdital?.startsWith("/editais/");
+            const st        = statusEstilo(p.status);
+            const isAtual   = atualizando === p.id;
+            const statusStr = p.status ?? "pendente";
+            const anexo     = resumoAnexos[p.id];
+
+            return (
+              <div key={p.id} style={{ ...s.card, borderColor: `${st.borda}44` }}>
+                {/* Topo */}
+                <div style={s.cardTop}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={s.cardNome}>{p.nome}</div>
+                    <div style={s.cardSub}>
+                      {p.email && <span>{p.email}</span>}
+                      {p.telefone && <span>{p.telefone}</span>}
+                    </div>
+                  </div>
+                  <span style={{ ...s.statusChip, color: st.cor, background: st.bg, border: `1px solid ${st.borda}55` }}>
+                    {st.label}
+                  </span>
+                </div>
+
+                {/* Detalhes */}
+                <div style={s.detalhes}>
+                  <Campo label="CPF/CNPJ"  valor={p.cnpj || "—"} />
+                  <Campo label="Tipo"       valor={formatarTipoPessoa(p.tipo)} />
+                  <Campo label="Categoria"  valor={formatarCategoria(p.categoria, p.mensagem)} />
+                  <Campo label="Edital"     valor={edital?.titulo ?? "sem vínculo"} />
+                  {edital?.tipo && <Campo label="Modalidade" valor={edital.tipo.trim()} />}
+                  <Campo label="Recebida"   valor={dataRelativa(p.criado_em)} />
+                  <Campo
+                    label="Vínculo"
+                    valor={getRotuloVinculoProposta(p.status)}
+                    cor={propostaTemVinculoOficial(p.status) ? "#86efac" : "#64748b"}
+                  />
+                </div>
+
+                {/* Anexos */}
+                {carregandoAnexos ? (
+                  <div style={s.anexoRow}>Verificando anexos…</div>
+                ) : anexo ? (
+                  <div style={{ ...s.anexoRow, color: anexo.orfaos > 0 ? "#f97316" : "#86efac" }}>
+                    {anexo.orfaos > 0
+                      ? `⚠ ${anexo.orfaos} anexo(s) sem arquivo (${anexo.disponiveis}/${anexo.total} disponíveis)`
+                      : `✓ Todos os ${anexo.total} anexo(s) disponíveis`}
+                  </div>
+                ) : null}
+
+                {/* Ações */}
+                <div style={s.acoes}>
+                  {p.edital_id && (
+                    <Link href={`/admin/editais/${p.edital_id}/governanca`} style={s.btnGovernanca}>
+                      Governança
+                    </Link>
+                  )}
+                  {p.edital_id && urlEdital && (
+                    <Link href={urlEdital} target={novaAba ? "_blank" : undefined} rel={novaAba ? "noopener noreferrer" : undefined} style={s.btnEdital}>
+                      Ver edital
+                    </Link>
+                  )}
+                  <Link href={`/admin/propostas/${p.id}`} style={s.btnVer}>
+                    Ver proposta
+                  </Link>
+
+                  {statusStr !== "aprovado" && (
+                    <button
+                      type="button"
+                      disabled={isAtual}
+                      onClick={() => setConfirmacao({ id: p.id, acao: "aprovado" })}
+                      style={{ ...s.btnAprovar, opacity: isAtual ? 0.6 : 1 }}
+                    >
+                      {isAtual ? "…" : "Aprovar"}
+                    </button>
+                  )}
+                  {statusStr !== "rejeitado" && (
+                    <button
+                      type="button"
+                      disabled={isAtual}
+                      onClick={() => setConfirmacao({ id: p.id, acao: "rejeitado" })}
+                      style={{ ...s.btnRejeitar, opacity: isAtual ? 0.6 : 1 }}
+                    >
+                      {isAtual ? "…" : "Rejeitar"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
+
+// ─── Campo helper ─────────────────────────────────────────────────────────────
+
+function Campo({ label, valor, cor }: { label: string; valor: string; cor?: string }) {
+  return (
+    <div style={{ display: "flex", gap: 6, fontSize: 12, lineHeight: 1.5 }}>
+      <span style={{ color: "#475569", flexShrink: 0, minWidth: 80 }}>{label}:</span>
+      <span style={{ color: cor ?? "#94a3b8" }}>{valor}</span>
+    </div>
+  );
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const s: Record<string, React.CSSProperties> = {
+  wrap:         { padding: 24, color: "#e5e7eb", maxWidth: 1100 },
+  pageHeader:   { display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 20 },
+  titulo:       { margin: 0, fontSize: 22, fontWeight: 900, color: "#f1f5f9" },
+  sub:          { margin: "6px 0 0", color: "#64748b", fontSize: 13, maxWidth: 680 },
+  linkAuditoria:{ fontSize: 12, color: "#93c5fd", fontWeight: 700, textDecoration: "none", padding: "8px 14px", borderRadius: 9, border: "1px solid rgba(147,197,253,0.2)", alignSelf: "flex-start" as const },
+  btnRefresh:   { padding: "8px 16px", borderRadius: 10, border: "1px solid rgba(148,163,184,0.3)", background: "transparent", color: "#64748b", fontSize: 12, fontWeight: 600, cursor: "pointer" },
+
+  statsRow: { display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 },
+  statCard: { flex: "1 1 140px", background: "rgba(15,23,42,0.85)", border: "1px solid rgba(148,163,184,0.12)", borderRadius: 14, padding: "14px 18px" },
+  statNum:  { fontSize: 28, fontWeight: 900, lineHeight: 1, marginBottom: 4 },
+  statLabel:{ fontSize: 11, color: "#475569", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em" },
+
+  filtrosWrap: { display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16, alignItems: "center" },
+  inputFiltro: { flex: "1 1 260px", padding: "8px 12px", borderRadius: 9, border: "1px solid rgba(148,163,184,0.25)", background: "rgba(2,6,23,0.7)", color: "#e2e8f0", fontSize: 13 },
+  selectFiltro:{ flex: "0 0 auto", padding: "8px 12px", borderRadius: 9, border: "1px solid rgba(148,163,184,0.25)", background: "rgba(2,6,23,0.9)", color: "#e2e8f0", fontSize: 13 },
+  btnLimpar:   { padding: "8px 12px", borderRadius: 9, border: "1px solid rgba(148,163,184,0.2)", background: "transparent", color: "#64748b", fontSize: 12, fontWeight: 600, cursor: "pointer" },
+  contagem:    { fontSize: 12, color: "#334155", alignSelf: "center" as const },
+
+  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: 14 },
+  card: { background: "rgba(15,23,42,0.85)", border: "1px solid", borderRadius: 16, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 },
+
+  cardTop:  { display: "flex", gap: 10, alignItems: "flex-start" },
+  cardNome: { fontSize: 15, fontWeight: 800, color: "#f1f5f9", marginBottom: 4 },
+  cardSub:  { display: "flex", flexDirection: "column", gap: 2, fontSize: 12, color: "#64748b" },
+  statusChip:{ fontSize: 10, fontWeight: 800, padding: "2px 9px", borderRadius: 999, textTransform: "uppercase" as const, letterSpacing: "0.06em", flexShrink: 0, alignSelf: "flex-start" as const },
+
+  detalhes: { display: "flex", flexDirection: "column", gap: 3 },
+  anexoRow: { fontSize: 12, padding: "6px 10px", borderRadius: 8, background: "rgba(2,6,23,0.5)" },
+
+  acoes:       { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 },
+  btnGovernanca:{ padding: "6px 12px", borderRadius: 8, background: "#0f766e22", border: "1px solid #0f766e55", color: "#5eead4", fontWeight: 600, fontSize: 12, textDecoration: "none", display: "inline-flex" },
+  btnEdital:   { padding: "6px 12px", borderRadius: 8, background: "#0ea5e922", border: "1px solid #0ea5e955", color: "#7dd3fc", fontWeight: 600, fontSize: 12, textDecoration: "none", display: "inline-flex" },
+  btnVer:      { padding: "6px 12px", borderRadius: 8, background: "#1d4ed822", border: "1px solid #1d4ed855", color: "#93c5fd", fontWeight: 600, fontSize: 12, textDecoration: "none", display: "inline-flex" },
+  btnAprovar:  { padding: "6px 12px", borderRadius: 8, border: "none", background: "#166534", color: "#86efac", fontWeight: 700, fontSize: 12, cursor: "pointer" },
+  btnRejeitar: { padding: "6px 12px", borderRadius: 8, border: "none", background: "#7f1d1d", color: "#fca5a5", fontWeight: 700, fontSize: 12, cursor: "pointer" },
+
+  empty: { color: "#475569", textAlign: "center" as const, padding: "40px 0" },
+
+  confirmOverlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999 },
+  confirmBox:     { background: "#0f172a", border: "1px solid rgba(148,163,184,0.25)", borderRadius: 16, padding: "28px 32px", maxWidth: 420, width: "90%" },
+  confirmMsg:     { margin: "0 0 20px", fontSize: 15, color: "#e2e8f0", lineHeight: 1.6 },
+  confirmBtns:    { display: "flex", gap: 10 },
+  btnConfirm:     { padding: "10px 22px", borderRadius: 10, border: "none", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer" },
+  btnCancelar:    { padding: "10px 22px", borderRadius: 10, border: "1px solid rgba(148,163,184,0.25)", background: "transparent", color: "#64748b", fontWeight: 600, fontSize: 14, cursor: "pointer" },
+};
