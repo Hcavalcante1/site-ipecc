@@ -117,6 +117,7 @@ export default function AdminDashboardClient({ userEmail }: Props) {
   const [mensagensContato30d, setMensagensContato30d] = useState(0);
   const [ultimosLeads, setUltimosLeads] = useState<LeadWhatsApp[]>([]);
   const [ultimasMensagens, setUltimasMensagens] = useState<MensagemContato[]>([]);
+  const [totalBeneficiarios, setTotalBeneficiarios] = useState(0);
   const [toast, setToast] = useState<{ msg: string; tipo: "lead" | "mensagem" } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [exportandoLeads, setExportandoLeads] = useState(false);
@@ -453,6 +454,11 @@ export default function AdminDashboardClient({ userEmail }: Props) {
         mensData.filter((m) => m.created_at && new Date(m.created_at) >= d30).length
       );
       setUltimasMensagens(mensData.slice(0, 5));
+
+      const { count: bCount } = await supabase
+        .from("beneficiarios")
+        .select("id", { count: "exact", head: true });
+      setTotalBeneficiarios(bCount ?? 0);
     } else {
       setLeadsHoje(0);
       setLeads7d(0);
@@ -460,6 +466,7 @@ export default function AdminDashboardClient({ userEmail }: Props) {
       setMensagensContato30d(0);
       setUltimosLeads([]);
       setUltimasMensagens([]);
+      setTotalBeneficiarios(0);
     }
 
     setSincronizadoEm(new Date().toLocaleString("pt-BR"));
@@ -658,6 +665,13 @@ export default function AdminDashboardClient({ userEmail }: Props) {
       text: "Documentos, fluxos e assinaturas",
     });
   }
+  if (escopo.mestre) {
+    quickLinks.push({
+      href: "/admin/beneficiarios",
+      title: "Beneficiários",
+      text: "Pessoas atendidas pelos programas",
+    });
+  }
 
   return (
     <>
@@ -737,6 +751,9 @@ export default function AdminDashboardClient({ userEmail }: Props) {
         )}
         {escopo.mestre && (
           <MetricCard title="Mensagens (30d)" value={mensagensContato30d} tone="amber" />
+        )}
+        {escopo.mestre && (
+          <MetricCard title="Beneficiários" value={totalBeneficiarios} tone="green" />
         )}
       </div>
 
