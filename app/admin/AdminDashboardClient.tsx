@@ -12,6 +12,7 @@ import type { AdminModulo } from "@/lib/auth/adminEscopo";
 import { registroNoEscopoProcesso } from "@/lib/auth/adminEscopo";
 import { carregarProcessosDoEscopo } from "@/lib/auth/processosEscopoCliente";
 import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
+import AdminOnboarding from "@/components/admin/AdminOnboarding";
 
 import {
   Chart as ChartJS,
@@ -677,6 +678,8 @@ export default function AdminDashboardClient({ userEmail }: Props) {
     <>
     <style>{admCSS}</style>
     <div style={styles.wrapper}>
+      {escopo.mestre && <AdminOnboarding />}
+
       <div style={styles.escopoBanner}>
         <span style={styles.escopoLabel}>Escopo</span>
         <strong style={styles.escopoTitle}>{rotuloEscopo}</strong>
