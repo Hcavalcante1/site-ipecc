@@ -53,6 +53,22 @@ type EditalResumo = {
   fase_atual?: string | null;
 };
 
+type LeadWhatsApp = {
+  id?: string;
+  nome?: string | null;
+  telefone?: string | null;
+  assunto?: string | null;
+  created_at?: string | null;
+};
+
+type MensagemContato = {
+  id?: string;
+  nome?: string | null;
+  email?: string | null;
+  mensagem?: string | null;
+  created_at?: string | null;
+};
+
 function podeModuloCliente(
   mestre: boolean,
   modulos: AdminModulo[],
@@ -73,6 +89,12 @@ export default function AdminDashboardClient({ userEmail }: Props) {
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState("-");
   const [sincronizadoEm, setSincronizadoEm] = useState("-");
   const [titulosProcesso, setTitulosProcesso] = useState<string[]>([]);
+  const [leadsHoje, setLeadsHoje] = useState(0);
+  const [leads7d, setLeads7d] = useState(0);
+  const [leads30d, setLeads30d] = useState(0);
+  const [mensagensContato30d, setMensagensContato30d] = useState(0);
+  const [ultimosLeads, setUltimosLeads] = useState<LeadWhatsApp[]>([]);
+  const [ultimasMensagens, setUltimasMensagens] = useState<MensagemContato[]>([]);
 
   const pode = useCallback(
     (modulo: AdminModulo) =>
@@ -275,6 +297,51 @@ export default function AdminDashboardClient({ userEmail }: Props) {
       setUltimaAtualizacao("-");
     }
 
+    if (escopo.mestre) {
+      const agora = new Date();
+      const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+      const d7 = new Date(hoje.getTime() - 6 * 24 * 60 * 60 * 1000);
+      const d30 = new Date(hoje.getTime() - 29 * 24 * 60 * 60 * 1000);
+
+      const [leadsR, mensR] = await Promise.all([
+        supabase
+          .from("whatsapp_leads")
+          .select("id,nome,telefone,assunto,created_at")
+          .order("created_at", { ascending: false })
+          .limit(50),
+        supabase
+          .from("contato_mensagens")
+          .select("id,nome,email,mensagem,created_at")
+          .order("created_at", { ascending: false })
+          .limit(50),
+      ]);
+
+      const leadsData = (leadsR.data ?? []) as LeadWhatsApp[];
+      setLeadsHoje(
+        leadsData.filter((l) => l.created_at && new Date(l.created_at) >= hoje).length
+      );
+      setLeads7d(
+        leadsData.filter((l) => l.created_at && new Date(l.created_at) >= d7).length
+      );
+      setLeads30d(
+        leadsData.filter((l) => l.created_at && new Date(l.created_at) >= d30).length
+      );
+      setUltimosLeads(leadsData.slice(0, 5));
+
+      const mensData = (mensR.data ?? []) as MensagemContato[];
+      setMensagensContato30d(
+        mensData.filter((m) => m.created_at && new Date(m.created_at) >= d30).length
+      );
+      setUltimasMensagens(mensData.slice(0, 5));
+    } else {
+      setLeadsHoje(0);
+      setLeads7d(0);
+      setLeads30d(0);
+      setMensagensContato30d(0);
+      setUltimosLeads([]);
+      setUltimasMensagens([]);
+    }
+
     setSincronizadoEm(new Date().toLocaleString("pt-BR"));
   }, [escopo.loading, escopo.mestre, escopo.modulos, escopo.processoIds]);
 
@@ -327,6 +394,20 @@ export default function AdminDashboardClient({ userEmail }: Props) {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "admin_logs" },
+        () => {
+          loadData();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "whatsapp_leads" },
+        () => {
+          loadData();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "contato_mensagens" },
         () => {
           loadData();
         }
@@ -516,6 +597,15 @@ export default function AdminDashboardClient({ userEmail }: Props) {
             compact
           />
         )}
+        {escopo.mestre && (
+          <MetricCard title="Leads hoje" value={leadsHoje} tone="violet" />
+        )}
+        {escopo.mestre && (
+          <MetricCard title="Leads 7 dias" value={leads7d} tone="violet" />
+        )}
+        {escopo.mestre && (
+          <MetricCard title="Mensagens (30d)" value={mensagensContato30d} tone="amber" />
+        )}
       </div>
 
       {podeVerLogs ? (
@@ -634,6 +724,109 @@ export default function AdminDashboardClient({ userEmail }: Props) {
           </div>
         </section>
       )}
+
+      {escopo.mestre && (
+        <>
+          <section style={styles.tableCard}>
+            <div style={{ ...styles.cardHeader, ...styles.tableHeader }}>
+              <div>
+                <h3 style={styles.tableTitle}>Leads WhatsApp recentes</h3>
+                <p style={styles.tableSub}>
+                  Ultimos contatos recebidos via WhatsApp. Total 30 dias:{" "}
+                  <strong>{leads30d}</strong>
+                </p>
+              </div>
+              <span style={{ ...styles.lightBadge, background: "#ede9fe", color: "#7c3aed" }}>
+                {leadsHoje} hoje
+              </span>
+            </div>
+            <div style={styles.tableWrap}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Nome</th>
+                    <th style={styles.th}>Telefone</th>
+                    <th style={styles.th}>Assunto</th>
+                    <th style={styles.th}>Data</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ultimosLeads.length === 0 ? (
+                    <tr>
+                      <td style={styles.emptyCell} colSpan={4}>
+                        Nenhum lead registrado.
+                      </td>
+                    </tr>
+                  ) : (
+                    ultimosLeads.map((lead, index) => (
+                      <tr key={lead.id ?? index} style={index % 2 ? styles.trAlt : styles.tr}>
+                        <td style={styles.td}>{lead.nome || "-"}</td>
+                        <td style={styles.td}>{lead.telefone || "-"}</td>
+                        <td style={styles.td}>{lead.assunto || "-"}</td>
+                        <td style={styles.td}>
+                          {lead.created_at
+                            ? new Date(lead.created_at).toLocaleString("pt-BR")
+                            : "-"}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section style={styles.tableCard}>
+            <div style={{ ...styles.cardHeader, ...styles.tableHeader }}>
+              <div>
+                <h3 style={styles.tableTitle}>Mensagens de contato recentes</h3>
+                <p style={styles.tableSub}>
+                  Ultimas mensagens enviadas pelo formulario de contato.
+                </p>
+              </div>
+              <span style={{ ...styles.lightBadge, background: "#fef3c7", color: "#b45309" }}>
+                {mensagensContato30d} em 30d
+              </span>
+            </div>
+            <div style={styles.tableWrap}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Nome</th>
+                    <th style={styles.th}>E-mail</th>
+                    <th style={styles.th}>Mensagem</th>
+                    <th style={styles.th}>Data</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ultimasMensagens.length === 0 ? (
+                    <tr>
+                      <td style={styles.emptyCell} colSpan={4}>
+                        Nenhuma mensagem registrada.
+                      </td>
+                    </tr>
+                  ) : (
+                    ultimasMensagens.map((msg, index) => (
+                      <tr key={msg.id ?? index} style={index % 2 ? styles.trAlt : styles.tr}>
+                        <td style={styles.td}>{msg.nome || "-"}</td>
+                        <td style={styles.td}>{msg.email || "-"}</td>
+                        <td style={{ ...styles.td, maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {msg.mensagem || "-"}
+                        </td>
+                        <td style={styles.td}>
+                          {msg.created_at
+                            ? new Date(msg.created_at).toLocaleString("pt-BR")
+                            : "-"}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </>
+      )}
     </div>
   );
 }
@@ -646,7 +839,7 @@ function MetricCard({
 }: {
   title: string;
   value: string | number;
-  tone: "green" | "blue" | "slate" | "cyan";
+  tone: "green" | "blue" | "slate" | "cyan" | "violet" | "amber";
   compact?: boolean;
 }) {
   return (
@@ -727,6 +920,14 @@ const metricTone = {
   cyan: {
     background: "linear-gradient(135deg, #155e75, #0891b2)",
     borderColor: "rgba(103, 232, 249, 0.42)",
+  },
+  violet: {
+    background: "linear-gradient(135deg, #5b21b6, #7c3aed)",
+    borderColor: "rgba(196, 181, 253, 0.44)",
+  },
+  amber: {
+    background: "linear-gradient(135deg, #92400e, #b45309)",
+    borderColor: "rgba(252, 211, 77, 0.44)",
   },
 };
 
