@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { labelAcaoAdmin } from "@/lib/admin/acaoLabel";
@@ -95,6 +95,8 @@ export default function AdminDashboardClient({ userEmail }: Props) {
   const [mensagensContato30d, setMensagensContato30d] = useState(0);
   const [ultimosLeads, setUltimosLeads] = useState<LeadWhatsApp[]>([]);
   const [ultimasMensagens, setUltimasMensagens] = useState<MensagemContato[]>([]);
+  const [toast, setToast] = useState<{ msg: string; tipo: "lead" | "mensagem" } | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const pode = useCallback(
     (modulo: AdminModulo) =>
@@ -103,6 +105,15 @@ export default function AdminDashboardClient({ userEmail }: Props) {
   );
 
   const podeVerLogs = escopo.mestre || pode("logs");
+
+  const showToast = useCallback(
+    (msg: string, tipo: "lead" | "mensagem") => {
+      setToast({ msg, tipo });
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+      toastTimer.current = setTimeout(() => setToast(null), 5000);
+    },
+    []
+  );
 
   const rotuloEscopo = useMemo(() => {
     if (escopo.loading) return "Carregando escopo...";
@@ -401,14 +412,24 @@ export default function AdminDashboardClient({ userEmail }: Props) {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "whatsapp_leads" },
-        () => {
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            const row = payload.new as { nome?: string; telefone?: string };
+            const label = row.nome || row.telefone || "novo contato";
+            showToast(`Novo lead: ${label}`, "lead");
+          }
           loadData();
         }
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "contato_mensagens" },
-        () => {
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            const row = payload.new as { nome?: string; email?: string };
+            const label = row.nome || row.email || "novo contato";
+            showToast(`Nova mensagem: ${label}`, "mensagem");
+          }
           loadData();
         }
       )
@@ -826,6 +847,27 @@ export default function AdminDashboardClient({ userEmail }: Props) {
             </div>
           </section>
         </>
+      )}
+
+      {toast && (
+        <div style={styles.toastWrap}>
+          <div
+            style={{
+              ...styles.toast,
+              ...(toast.tipo === "lead" ? styles.toastLead : styles.toastMensagem),
+            }}
+          >
+            <div style={styles.toastBody}>
+              <span style={styles.toastTag}>
+                {toast.tipo === "lead" ? "Lead" : "Mensagem"}
+              </span>
+              <span style={styles.toastMsg}>{toast.msg}</span>
+            </div>
+            <button style={styles.toastClose} onClick={() => setToast(null)}>
+              &times;
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -1251,5 +1293,71 @@ const styles: any = {
     border: "1px solid",
     fontSize: 11,
     fontWeight: 900,
+  },
+
+  toastWrap: {
+    position: "fixed",
+    bottom: 28,
+    right: 24,
+    zIndex: 9999,
+    pointerEvents: "none",
+  },
+
+  toast: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    padding: "14px 16px",
+    borderRadius: 16,
+    boxShadow: "0 12px 32px rgba(2, 6, 23, 0.48)",
+    pointerEvents: "auto",
+    minWidth: 260,
+    maxWidth: 360,
+    animation: "slideIn 0.22s ease",
+  },
+
+  toastLead: {
+    background: "linear-gradient(135deg, #4c1d95, #6d28d9)",
+    border: "1px solid rgba(196, 181, 253, 0.44)",
+    color: "#ede9fe",
+  },
+
+  toastMensagem: {
+    background: "linear-gradient(135deg, #78350f, #b45309)",
+    border: "1px solid rgba(252, 211, 77, 0.38)",
+    color: "#fef3c7",
+  },
+
+  toastBody: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    gap: 2,
+  },
+
+  toastTag: {
+    fontSize: 10,
+    fontWeight: 900,
+    letterSpacing: "0.10em",
+    textTransform: "uppercase",
+    opacity: 0.78,
+  },
+
+  toastMsg: {
+    fontSize: 13,
+    fontWeight: 700,
+    lineHeight: 1.4,
+  },
+
+  toastClose: {
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    color: "inherit",
+    fontSize: 18,
+    lineHeight: 1,
+    opacity: 0.7,
+    padding: "0 2px",
+    flexShrink: 0,
   },
 };
