@@ -360,6 +360,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             >
               <NavLabel icon="documentos">Gestão Documental</NavLabel>
             </Link>
+            <Link
+              href="/admin/diagnostico"
+              className={navClass(pathname, "/admin/diagnostico")}
+              onClick={(event) => handleMobileNav(event, "/admin/diagnostico")}
+            >
+              <NavLabel icon="digital">Diagnóstico</NavLabel>
+            </Link>
             {pode("logs") && (
               <Link href="/admin/logs" className={navClass(pathname, "/admin/logs")} onClick={(event) => handleMobileNav(event, "/admin/logs")}>
                 <NavLabel icon="logs">Registros</NavLabel>
