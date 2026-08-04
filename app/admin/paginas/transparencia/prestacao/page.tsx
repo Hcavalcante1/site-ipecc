@@ -14,6 +14,7 @@ import classes from "./page.module.css";
 import { AdminButton, AdminMessage, AdminSectionHeader, spacing, borderRadius, shadows, sizes, typography } from "@/components/admin";
 import { Convenio, PrestacaoConta, LoadingOperationType, FASE_OPTIONS, STATUS_OPTIONS, TIPO_DOCUMENTO_OPTIONS } from "./index";
 import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
+import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
 
 import { useEffect, useState } from "react";
 
@@ -663,12 +664,10 @@ await logAction({
     return;
   }
 
-  const confirmado = window.confirm(
-    "Tem certeza que deseja excluir esta prestação de contas?"
-  );
-
+  const confirmado = await confirmAction("Tem certeza que deseja excluir esta prestação de contas?");
   if (!confirmado) {
-    return;
+    if (!isConfirmModalReady() && !window.confirm("Tem certeza que deseja excluir esta prestação de contas?")) return;
+    else if (isConfirmModalReady()) return;
   }
 
   setLoadingIndex(index);

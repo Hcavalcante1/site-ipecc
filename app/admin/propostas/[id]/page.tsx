@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { adminTokens } from "@/components/admin";
 import { supabase } from "@/lib/supabaseClient";
 import { triggerToast } from "@/components/AdminToast";
+import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
 import {
   getRotuloVinculoProposta,
   getUrlConsultaEditalAdmin,
@@ -199,7 +200,11 @@ export default function Page() {
 
   async function excluirProposta() {
     if (!id) return;
-    if (!confirm("Deseja excluir esta proposta?")) return;
+    const okExcluir = await confirmAction("Deseja excluir esta proposta?");
+    if (!okExcluir) {
+      if (!isConfirmModalReady() && !window.confirm("Deseja excluir esta proposta?")) return;
+      else if (isConfirmModalReady()) return;
+    }
 
     // Exclusao real via service role (client RLS pode "suceder" sem apagar nenhuma linha).
     const res = await fetch("/api/admin/mutate", {

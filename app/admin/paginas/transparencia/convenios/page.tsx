@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Convenio } from "./types";
+import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
 import { TIPO_INSTRUMENTO_OPTIONS, CATEGORIA_OPTIONS, STATUS_CONVENIO_OPTIONS } from "./constants";
 import { getConvenios, saveConvenio, deleteConvenio } from "./conveniosService";
 import classes from "./page.module.css";
@@ -392,12 +393,14 @@ export default function TransparenciaConveniosAdmin() {
 
   async function excluirBloco(id?: string, index?: number) {
     const idx = index ?? 0;
-    const confirmado = window.confirm("Tem certeza que deseja excluir este convênio? Esta ação não pode ser desfeita.");
-
+    const confirmado = await confirmAction("Tem certeza que deseja excluir este convênio? Esta ação não pode ser desfeita.");
     if (!confirmado) {
-      setBlockMsg(idx, "Exclusão cancelada.");
-      setMsg("Exclusão cancelada.");
-      return;
+      const rejeicao = isConfirmModalReady() || !window.confirm("Tem certeza que deseja excluir este convênio? Esta ação não pode ser desfeita.");
+      if (rejeicao) {
+        setBlockMsg(idx, "Exclusão cancelada.");
+        setMsg("Exclusão cancelada.");
+        return;
+      }
     }
 
     if (!id) {

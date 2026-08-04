@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
 
 type TipoPessoa = "pessoa_juridica" | "osc" | "pessoa_fisica";
 type CategoriaDocumento =
@@ -584,8 +585,11 @@ export default function EditaisDocumentosAdminPage() {
   async function excluirItem(id?: string) {
     if (!id) return;
 
-    const ok = window.confirm("Deseja realmente excluir este documento?");
-    if (!ok) return;
+    const ok = await confirmAction("Deseja realmente excluir este documento?");
+    if (!ok) {
+      if (!isConfirmModalReady() && !window.confirm("Deseja realmente excluir este documento?")) return;
+      else if (isConfirmModalReady()) return;
+    }
 
     const { error } = await supabase
       .from("editais_documentos")

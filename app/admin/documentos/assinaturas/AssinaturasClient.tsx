@@ -17,6 +17,7 @@ import {
   rotuloProviderAssinatura,
   rotuloStatusAssinatura,
 } from "@/lib/documentos/labels";
+import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
 
 type SignatureRow = {
   id: string;
@@ -437,7 +438,11 @@ export default function AssinaturasClient() {
       setAviso("Selecione um documento antes de mover para a lixeira.");
       return;
     }
-    if (!confirm("Mover este documento para a lixeira?")) return;
+    const okLixeira = await confirmAction("Mover este documento para a lixeira?");
+    if (!okLixeira) {
+      if (!isConfirmModalReady() && !window.confirm("Mover este documento para a lixeira?")) return;
+      else if (isConfirmModalReady()) return;
+    }
     const res = await fetch(`/api/admin/documentos/${docId}`, {
       method: "DELETE",
       credentials: "include",
@@ -530,7 +535,11 @@ export default function AssinaturasClient() {
 
   async function excluirPedidosSelecionados() {
     if (selectedPedidos.size === 0) return;
-    if (!confirm(`Excluir ${selectedPedidos.size} registro(s) de assinatura e mover os documentos para a lixeira?`)) return;
+    const okLote = await confirmAction(`Excluir ${selectedPedidos.size} registro(s) de assinatura e mover os documentos para a lixeira?`);
+    if (!okLote) {
+      if (!isConfirmModalReady() && !window.confirm(`Excluir ${selectedPedidos.size} registro(s) de assinatura e mover os documentos para a lixeira?`)) return;
+      else if (isConfirmModalReady()) return;
+    }
     setExcluindoLote(true);
     const selecionados = rows.filter((r) => selectedPedidos.has(r.id));
     await Promise.all(
@@ -551,12 +560,11 @@ export default function AssinaturasClient() {
   }
 
   async function excluirPedido(id: string, kind?: string | null) {
-    if (
-      !confirm(
-        "Excluir este registro de assinatura do histórico? O documento original permanece."
-      )
-    )
-      return;
+    const okPedido = await confirmAction("Excluir este registro de assinatura do histórico? O documento original permanece.");
+    if (!okPedido) {
+      if (!isConfirmModalReady() && !window.confirm("Excluir este registro de assinatura do histórico? O documento original permanece.")) return;
+      else if (isConfirmModalReady()) return;
+    }
     const qs = new URLSearchParams({ id });
     if (kind === "certificate" || kind === "certificado") {
       qs.set("kind", "certificate");

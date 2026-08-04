@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
 
 /* ============================
    TIPOS
@@ -71,8 +72,11 @@ export default function ContatoMensagensAdminPage() {
      DELETE
   ============================ */
   async function apagar(id: string) {
-    const ok = confirm("Deseja realmente apagar esta mensagem?");
-    if (!ok) return;
+    const ok = await confirmAction("Deseja realmente apagar esta mensagem?");
+    if (!ok) {
+      if (!isConfirmModalReady() && !window.confirm("Deseja realmente apagar esta mensagem?")) return;
+      else if (isConfirmModalReady()) return;
+    }
 
     const { error } = await supabase
       .from("contato_mensagens")

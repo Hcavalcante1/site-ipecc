@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { adminCanonicalRoutes } from "@/lib/admin/canonicalAdminRoutes";
+import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
 
 type Edital = {
   id: string;
@@ -33,7 +34,11 @@ export default function MuralEditaisAdmin() {
   }
 
   async function excluir(id: string) {
-    if (!confirm("Deseja excluir este edital?")) return;
+    const ok = await confirmAction("Deseja excluir este edital?");
+    if (!ok) {
+      if (!isConfirmModalReady() && !window.confirm("Deseja excluir este edital?")) return;
+      else if (isConfirmModalReady()) return;
+    }
 
     await supabase.from("editais").delete().eq("id", id);
     carregarEditais();

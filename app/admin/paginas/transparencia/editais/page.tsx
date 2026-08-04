@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { AdminButton, AdminLoadingButton, AdminInput, AdminTextarea, AdminSelect, AdminFileInput, AdminSectionHeader, spacing, borderRadius, shadows, sizes, typography } from "@/components/admin";
+import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
 import { registroNoEscopoProcesso } from "@/lib/auth/adminEscopo";
 import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
 
@@ -445,14 +446,14 @@ async function handleUpload(e: React.ChangeEvent<HTMLInputElement>, index: numbe
  async function excluirBloco(id?: string, index?: number) {
   const idx = index ?? 0;
 
-  const confirmado = window.confirm(
-    "Tem certeza que deseja excluir este edital? Esta ação não pode ser desfeita."
-  );
-
+  const confirmado = await confirmAction("Tem certeza que deseja excluir este edital? Esta ação não pode ser desfeita.");
   if (!confirmado) {
-    setBlockMsg(idx, "Exclusão cancelada.");
-    setMsg("Exclusão cancelada.");
-    return;
+    const rejeicao = isConfirmModalReady() || !window.confirm("Tem certeza que deseja excluir este edital? Esta ação não pode ser desfeita.");
+    if (rejeicao) {
+      setBlockMsg(idx, "Exclusão cancelada.");
+      setMsg("Exclusão cancelada.");
+      return;
+    }
   }
 
   if (!id) {
