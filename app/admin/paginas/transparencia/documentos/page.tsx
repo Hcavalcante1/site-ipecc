@@ -7,6 +7,7 @@ import {
   upsertPaginaConteudo,
   parsePaginaExtra,
 } from "@/lib/supabaseClient";
+import { triggerToast } from "@/components/AdminToast";
 
 type Documento = {
   label: string;
@@ -74,7 +75,7 @@ export default function TransparenciaDocumentosAdmin() {
       .upload(path, file);
 
     if (error) {
-      alert("Erro ao enviar arquivo");
+      triggerToast("Erro ao enviar arquivo", "error");
       return;
     }
 

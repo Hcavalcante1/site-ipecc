@@ -7,6 +7,7 @@ import {
   upsertPaginaConteudo,
   parsePaginaExtra,
 } from "@/lib/supabaseClient";
+import { triggerToast } from "@/components/AdminToast";
 
 const PAGINA = "contato";
 const BLOCO = "cta";
@@ -75,14 +76,14 @@ export default function AdminContatoCTA() {
 
     if (error) {
       console.error(error);
-      alert("Erro ao salvar");
+      triggerToast("Erro ao salvar", "error");
       setSaving(false);
       return;
     }
 
     await load();
     setSaving(false);
-    alert("Salvo com sucesso");
+    triggerToast("Salvo com sucesso", "success");
   }
 
   if (loading) return <p>Carregando...</p>;

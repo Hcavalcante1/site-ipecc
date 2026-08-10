@@ -1,5 +1,6 @@
 import type { ChangeEvent, CSSProperties } from "react";
 import classes from "../page.module.css";
+import { triggerToast } from "@/components/AdminToast";
 import { AdminButton, AdminCard, AdminMessage, AdminInput, AdminTextarea, AdminSelect, AdminFileInput } from "@/components/admin";
 import { Convenio, PrestacaoConta, LoadingOperationType, FASE_OPTIONS, STATUS_OPTIONS } from "../index";
 import TipoDocumentoField from "@/components/admin/TipoDocumentoField";
@@ -142,7 +143,7 @@ export default function PrestacaoCard({
             className={classes.redBtn}
             onClick={async () => {
               if (!item.id) {
-                alert("Salve antes de excluir.");
+                triggerToast("Salve antes de excluir.", "error");
                 return;
               }
 

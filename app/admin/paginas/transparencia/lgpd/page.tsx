@@ -7,6 +7,7 @@ import {
   upsertPaginaConteudo,
   parsePaginaExtra,
 } from "@/lib/supabaseClient";
+import { triggerToast } from "@/components/AdminToast";
 
 type LinkItem = { label: string; url: string };
 
@@ -72,7 +73,7 @@ export default function TransparenciaLgpdAdmin() {
       .upload(path, file);
 
     if (error) {
-      alert("Erro ao enviar arquivo");
+      triggerToast("Erro ao enviar arquivo", "error");
       return;
     }
 
