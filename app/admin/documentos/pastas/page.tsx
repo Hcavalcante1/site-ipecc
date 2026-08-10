@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { GdFolder } from "@/lib/documentos/types";
 import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
+import { triggerToast } from "@/components/AdminToast";
 import GestaoDocumentalShell, {
   gdBtnStyle,
   gdCardStyle,
@@ -43,10 +44,11 @@ export default function PastasPage() {
     });
     const json = await res.json();
     if (!res.ok) {
-      setAviso(json.error || "Erro ao criar pasta.");
+      triggerToast(json.error || "Erro ao criar pasta.", "error");
       return;
     }
     setName("");
+    triggerToast("Pasta criada.", "success");
     carregar();
   }
 
@@ -62,9 +64,10 @@ export default function PastasPage() {
     });
     const json = await res.json();
     if (!res.ok) {
-      setAviso(json.error || "Erro ao remover.");
+      triggerToast(json.error || "Erro ao remover.", "error");
       return;
     }
+    triggerToast("Pasta removida.", "success");
     carregar();
   }
 

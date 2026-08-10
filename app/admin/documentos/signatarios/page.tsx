@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
+import { triggerToast } from "@/components/AdminToast";
 import GestaoDocumentalShell, {
   gdBtnStyle,
   gdCardStyle,
@@ -77,12 +78,12 @@ export default function SignatariosPage() {
     });
     const json = await res.json();
     if (!res.ok) {
-      setAviso(json.error || "Erro ao adicionar signatário.");
+      triggerToast(json.error || "Erro ao adicionar signatário.", "error");
       return;
     }
     setName("");
     setEmail("");
-    setAviso("Signatário adicionado.");
+    triggerToast("Signatário adicionado.", "success");
     carregar();
   }
 
@@ -95,9 +96,10 @@ export default function SignatariosPage() {
     });
     const json = await res.json();
     if (!res.ok) {
-      setAviso(json.error || "Erro ao atualizar.");
+      triggerToast(json.error || "Erro ao atualizar.", "error");
       return;
     }
+    triggerToast("Status atualizado.", "success");
     carregar();
   }
 
@@ -113,9 +115,10 @@ export default function SignatariosPage() {
     });
     const json = await res.json();
     if (!res.ok) {
-      setAviso(json.error || "Erro ao remover.");
+      triggerToast(json.error || "Erro ao remover.", "error");
       return;
     }
+    triggerToast("Signatário removido.", "success");
     carregar();
   }
 

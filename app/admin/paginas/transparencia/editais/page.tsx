@@ -6,6 +6,7 @@ import { AdminButton, AdminLoadingButton, AdminInput, AdminTextarea, AdminSelect
 import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
 import { registroNoEscopoProcesso } from "@/lib/auth/adminEscopo";
 import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
+import { triggerToast } from "@/components/AdminToast";
 
 type Edital = {
   id?: string;
@@ -383,6 +384,7 @@ async function handleUpload(e: React.ChangeEvent<HTMLInputElement>, index: numbe
         console.error("Erro real ao salvar edital:", response.error);
         setMsg(`Erro ao salvar editais: ${response.error.message}`);
         setBlockMsg(i, `Erro ao salvar este bloco: ${response.error.message}`);
+        triggerToast(`Erro ao salvar: ${response.error.message}`, "error");
         return;
       }
 
@@ -391,6 +393,7 @@ async function handleUpload(e: React.ChangeEvent<HTMLInputElement>, index: numbe
 
     await carregar();
     setMsg("Editais salvos com sucesso.");
+    triggerToast("Editais salvos com sucesso.", "success");
   }
 
   async function salvarBloco(index: number) {
@@ -435,12 +438,14 @@ async function handleUpload(e: React.ChangeEvent<HTMLInputElement>, index: numbe
       console.error(response.error);
       setBlockMsg(index, `Erro ao salvar este bloco: ${response.error.message}`);
       setMsg(`Erro ao salvar editais: ${response.error.message}`);
+      triggerToast(`Erro ao salvar: ${response.error.message}`, "error");
       return;
     }
 
     await carregar();
     setBlockMsg(index, "Bloco salvo com sucesso.");
     setMsg("Edital salvo com sucesso.");
+    triggerToast("Edital salvo.", "success");
   }
 
  async function excluirBloco(id?: string, index?: number) {
@@ -476,10 +481,11 @@ async function handleUpload(e: React.ChangeEvent<HTMLInputElement>, index: numbe
     console.error(error);
     setBlockMsg(idx, `Erro ao excluir este bloco: ${error.message}`);
     setMsg(`Erro ao excluir edital: ${error.message}`);
+    triggerToast(`Erro ao excluir: ${error.message}`, "error");
     return;
   }
 
-  // 🔥 remove direto da tela sem recarregar
+  // remove direto da tela sem recarregar
   setEditais((prev) => {
     const nova = prev.filter((_, i) => i !== idx);
     return nova.length > 0 ? nova : [novoEdital(processoPadrao)];
@@ -487,6 +493,7 @@ async function handleUpload(e: React.ChangeEvent<HTMLInputElement>, index: numbe
 
   setBlockMsg(idx, "Bloco excluído com sucesso.");
   setMsg("Edital excluído com sucesso.");
+  triggerToast("Edital excluído.", "success");
 }
 
 if (loading) {

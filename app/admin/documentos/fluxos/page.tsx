@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { GdWorkflow, GdWorkflowStep } from "@/lib/documentos/types";
 import { rotuloStatus } from "@/lib/documentos/labels";
 import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
+import { triggerToast } from "@/components/AdminToast";
 import GestaoDocumentalShell, {
   gdBtnStyle,
   gdCardStyle,
@@ -72,11 +73,12 @@ export default function FluxosPage() {
     });
     const json = await res.json();
     if (!res.ok) {
-      setAviso(json.error || "Erro ao criar fluxo.");
+      triggerToast(json.error || "Erro ao criar fluxo.", "error");
       return;
     }
     setName("");
     setDescription("");
+    triggerToast("Fluxo criado.", "success");
     await carregarLista();
     if (json.workflow?.id) await carregarDetalhe(json.workflow.id);
   }
@@ -95,10 +97,10 @@ export default function FluxosPage() {
     });
     const json = await res.json();
     if (!res.ok) {
-      setAviso(json.error || "Erro ao salvar.");
+      triggerToast(json.error || "Erro ao salvar.", "error");
       return;
     }
-    setAviso("Fluxo atualizado.");
+    triggerToast("Fluxo atualizado.", "success");
     carregarLista();
   }
 
@@ -114,9 +116,10 @@ export default function FluxosPage() {
     });
     const json = await res.json();
     if (!res.ok) {
-      setAviso(json.error || "Erro ao remover.");
+      triggerToast(json.error || "Erro ao remover.", "error");
       return;
     }
+    triggerToast("Fluxo removido.", "success");
     if (selectedId === id) {
       setSelectedId(null);
       setSteps([]);
@@ -140,9 +143,10 @@ export default function FluxosPage() {
     });
     const json = await res.json();
     if (!res.ok) {
-      setAviso(json.error || "Erro ao adicionar passo.");
+      triggerToast(json.error || "Erro ao adicionar passo.", "error");
       return;
     }
+    triggerToast("Passo adicionado.", "success");
     setStepName("");
     carregarDetalhe(selectedId);
   }
@@ -155,9 +159,10 @@ export default function FluxosPage() {
     });
     const json = await res.json();
     if (!res.ok) {
-      setAviso(json.error || "Erro ao remover passo.");
+      triggerToast(json.error || "Erro ao remover passo.", "error");
       return;
     }
+    triggerToast("Passo removido.", "success");
     carregarDetalhe(selectedId);
   }
 

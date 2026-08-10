@@ -322,6 +322,31 @@ export default function AdminAcessosPage() {
         </Link>
       </div>
 
+      {!loading && (
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 16 }}>
+          {[
+            { label: "Total perfis", value: perfis.length, color: "#93c5fd" },
+            { label: "Ativos", value: perfis.filter((p) => p.ativo).length, color: "#86efac" },
+            { label: "Convites pendentes", value: convites.filter((c) => !c.aceito_em).length, color: "#fde047" },
+            { label: "Escopos vinculados", value: escopos.length, color: "#c4b5fd" },
+          ].map((card) => (
+            <div
+              key={card.label}
+              style={{
+                background: "rgba(15,23,42,0.6)",
+                border: `1px solid ${card.color}44`,
+                borderRadius: 12,
+                padding: "12px 18px",
+                minWidth: 120,
+              }}
+            >
+              <div style={{ fontSize: 24, fontWeight: 900, color: card.color }}>{card.value}</div>
+              <div style={{ fontSize: 11, color: "#64748b", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginTop: 2 }}>{card.label}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {msg && (
         <div className="admin-card" style={{ marginTop: 16, border: "1px solid #f59e0b" }}>
           <strong>Aviso:</strong> {msg}

@@ -91,6 +91,7 @@ export default function CertidoesAdminPage() {
   const [linhas, setLinhas] = useState<CertidaoLinha[]>([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [filtro, setFiltro] = useState<"todos" | "vencidas" | "vencendo7">("todos");
 
   useEffect(() => {
     carregar();
@@ -156,6 +157,12 @@ export default function CertidoesAdminPage() {
     return { total: linhas.length, vencidas, vencendo7 };
   }, [linhas]);
 
+  const linhasFiltradas = useMemo(() => {
+    if (filtro === "vencidas") return linhas.filter((item) => diasAteValidade(item.validade_ate) < 0);
+    if (filtro === "vencendo7") return linhas.filter((item) => { const d = diasAteValidade(item.validade_ate); return d >= 0 && d <= 7; });
+    return linhas;
+  }, [linhas, filtro]);
+
   return (
     <>
       <h1 className="admin-h1">Certidões e Regularidade Fiscal</h1>
@@ -172,10 +179,27 @@ export default function CertidoesAdminPage() {
       </div>
 
       {!loading && !erro && linhas.length > 0 && (
-        <div style={styles.resumo}>
-          <span>Total: {resumo.total}</span>
-          <span>Vencendo em 7 dias: {resumo.vencendo7}</span>
-          <span>Vencidas: {resumo.vencidas}</span>
+        <div style={styles.statsRow}>
+          {[
+            { key: "todos" as const, label: "Total", value: resumo.total, color: "#93c5fd" },
+            { key: "vencendo7" as const, label: "Vencendo em 7 dias", value: resumo.vencendo7, color: "#fde047" },
+            { key: "vencidas" as const, label: "Vencidas", value: resumo.vencidas, color: "#f97316" },
+          ].map((card) => (
+            <button
+              key={card.key}
+              type="button"
+              onClick={() => setFiltro(filtro === card.key && card.key !== "todos" ? "todos" : card.key)}
+              style={{
+                ...styles.statCard,
+                borderColor: filtro === card.key ? card.color : `${card.color}44`,
+                background: filtro === card.key ? `${card.color}18` : "rgba(15,23,42,0.6)",
+                cursor: "pointer",
+              }}
+            >
+              <span style={{ fontSize: 24, fontWeight: 900, color: card.color }}>{card.value}</span>
+              <span style={styles.statLabel}>{card.label}</span>
+            </button>
+          ))}
         </div>
       )}
 
@@ -205,7 +229,7 @@ export default function CertidoesAdminPage() {
               </tr>
             </thead>
             <tbody>
-              {linhas.map((item) => {
+              {linhasFiltradas.map((item) => {
                 const dias = diasAteValidade(item.validade_ate);
                 return (
                   <tr key={item.id} style={styles.tr}>
@@ -264,14 +288,30 @@ const styles: Record<string, CSSProperties> = {
     textDecoration: "none",
     textAlign: "center",
   },
-  resumo: {
+  statsRow: {
     display: "flex",
     flexWrap: "wrap",
-    gap: spacing.lg,
+    gap: 10,
     marginTop: spacing.md,
     marginBottom: spacing.lg,
-    fontSize: typography.fontSize.sm,
+  },
+  statCard: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 4,
+    padding: "12px 18px",
+    borderRadius: 12,
+    border: "1px solid",
+    minWidth: 120,
+    textAlign: "left",
+    background: "rgba(15,23,42,0.6)",
+  },
+  statLabel: {
+    fontSize: typography.fontSize.xs,
     color: colors.text.secondary,
+    fontWeight: 600,
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.05em",
   },
   loading: {
     marginTop: spacing.lg,

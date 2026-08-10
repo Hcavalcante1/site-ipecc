@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { GdCategory } from "@/lib/documentos/types";
 import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
+import { triggerToast } from "@/components/AdminToast";
 import GestaoDocumentalShell, {
   gdBtnStyle,
   gdCardStyle,
@@ -43,10 +44,11 @@ export default function CategoriasPage() {
     });
     const json = await res.json();
     if (!res.ok) {
-      setAviso(json.error || "Erro ao criar categoria.");
+      triggerToast(json.error || "Erro ao criar categoria.", "error");
       return;
     }
     setName("");
+    triggerToast("Categoria criada.", "success");
     carregar();
   }
 
@@ -62,9 +64,10 @@ export default function CategoriasPage() {
     });
     const json = await res.json();
     if (!res.ok) {
-      setAviso(json.error || "Erro ao remover.");
+      triggerToast(json.error || "Erro ao remover.", "error");
       return;
     }
+    triggerToast("Categoria removida.", "success");
     carregar();
   }
 

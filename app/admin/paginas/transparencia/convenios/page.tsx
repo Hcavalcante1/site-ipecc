@@ -9,6 +9,7 @@ import classes from "./page.module.css";
 import ConvenioCard from "./components/ConvenioCard";
 import { AdminButton, AdminLoadingButton, AdminMessage, AdminSectionHeader, spacing, borderRadius, shadows, sizes, typography } from "@/components/admin";
 import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
+import { triggerToast } from "@/components/AdminToast";
 
 function processoPadrao(processoIds: string[] | "todos"): string | null {
   if (processoIds === "todos") return null;
@@ -362,12 +363,15 @@ export default function TransparenciaConveniosAdmin() {
         console.error(error);
         setMsg(`Erro ao salvar convênios: ${error.message}`);
         setBlockMsg(i, `Erro ao salvar este bloco: ${error.message}`);
+        triggerToast(`Erro ao salvar: ${error.message}`, "error");
         return;
       }
     }
 
     await carregar();
     setMsg("Convênios salvos com sucesso.");
+    triggerToast("Convênios salvos com sucesso.", "success");
+    triggerToast("Convênios salvos com sucesso.", "success");
   }
 
   async function salvarBloco(index: number) {
@@ -384,10 +388,12 @@ export default function TransparenciaConveniosAdmin() {
       await carregar();
       setBlockMsg(index, "Bloco salvo com sucesso.");
       setMsg("Convênio salvo com sucesso.");
+      triggerToast("Convênio salvo.", "success");
     } catch (error: any) {
       console.error(error);
       setBlockMsg(index, `Erro ao salvar este bloco: ${error.message}`);
       setMsg(`Erro ao salvar convênios: ${error.message}`);
+      triggerToast(`Erro ao salvar: ${error.message}`, "error");
     }
   }
 
@@ -414,10 +420,12 @@ export default function TransparenciaConveniosAdmin() {
       await deleteConvenio(id);
       await carregar();
       setMsg("Convênio excluído com sucesso.");
+      triggerToast("Convênio excluído.", "success");
     } catch (error: any) {
       console.error(error);
       setBlockMsg(idx, `Erro ao excluir este bloco: ${error.message}`);
       setMsg(`Erro ao excluir convênio: ${error.message}`);
+      triggerToast(`Erro ao excluir: ${error.message}`, "error");
     }
   }
 
