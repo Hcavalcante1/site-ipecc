@@ -105,7 +105,7 @@ Tudo sob `app/admin/documentos/*` usa o wrapper `GestaoDocumentalShell`, importa
 
 ---
 
-## FASE 0 — Segurança do banco `[BLOQUEADA — aguarda aprovação]`
+## FASE 0 — Segurança do banco `[CONCLUÍDA — aprovada e aplicada em 11/08/2026]`
 
 **Esforço:** 1 dia · **Semana 1** · **Não execute sem o "ok" explícito do dono.**
 
@@ -244,7 +244,7 @@ Rodar o linter de segurança e confirmar:
 
 ---
 
-## FASE 1 — Página pública de propostas
+## FASE 1 — Página pública de propostas `[CONCLUÍDA — commit dbe8755]`
 
 **Esforço:** 2–3 dias · **Semanas 1–2** · Sem dependência da Fase 0, pode começar em paralelo.
 
@@ -270,9 +270,16 @@ Tarefas:
 
 ---
 
-## FASE 2 — Performance do banco
+## FASE 2 — Performance do banco `[AGUARDANDO APROVAÇÃO — mesma regra da Fase 0]`
 
-**Esforço:** 4–5 dias · **Semanas 3–4** · Depende da Fase 0 concluída.
+**Esforço:** 4–5 dias · **Semanas 3–4** · Depende da Fase 0 concluída (feito).
+
+Assim como a Fase 0, esta fase altera banco de produção — políticas RLS em dezenas de tabelas.
+A regra do dono ("eu é quem aprovo essas mudanças") vale para qualquer alteração de banco, não só
+a Fase 0. Diferente da Fase 0, aqui o blast radius é maior (70+ políticas) e cada correção precisa
+ser lida e verificada tabela por tabela antes de virar SQL — não é algo para aplicar em lote sem
+esse trabalho de inventário primeiro. Pulei direto para as Fases 3–5 (só código) enquanto isso não
+é aprovado.
 
 273 alertas no linter de performance, 142 relevantes. Nenhum quebra o sistema hoje — todos degradam
 de forma não-linear conforme as tabelas crescem.
@@ -292,41 +299,39 @@ na rota do portal e revisão da entropia do token.
 
 ---
 
-## FASE 3 — Paginação nas telas restantes
+## FASE 3 — Paginação nas telas restantes `[CONCLUÍDA — commit 961ee60]`
 
-**Esforço:** 3–4 dias · **Semanas 4–5**
+**Esforço real:** ~1 dia. O audit original (grep por `.select()` sem `.range()`/`.limit()`) gerou
+falsos positivos e itens de baixo valor — corrigidos abaixo depois de inspecionar cada página.
 
-14 das 28 telas com acesso a dados fazem `.select()` sem `range` nem `limit`. Aplicar o padrão já
-validado em `beneficiarios` (servidor) ou `editais` (cliente) — ver seção de convenções.
+### Implementado
 
-**Prioridade alta** (crescimento sem teto):
-```
-app/admin/propostas/page.tsx
-app/admin/noticias/page.tsx
-```
+| Página | Padrão | Motivo |
+|---|---|---|
+| `app/admin/propostas/page.tsx` | Cliente, 12/página | Prioridade alta — cresce a cada envio público. |
+| `app/admin/noticias/page.tsx` | Cliente, 12/página | Prioridade alta. `statsRow` também migrado de `<div onClick>` para `<button aria-pressed>` — mesmo problema já corrigido em `editais`, achado ao editar este bloco. |
+| `app/admin/certidoes/page.tsx` | Cliente, 50/página — **paginação só no render, não no fetch** | `filtrarVersoesCorrentes()` precisa ver **todas** as certidões para decidir qual versão é a vigente. Paginar a busca com `.range()` faria uma certidão superada reaparecer como vigente se a sucessora caísse numa página seguinte. O fetch continua trazendo tudo; só a tabela renderiza em fatias. |
+| `app/admin/paginas/contato/formulario/page.tsx` (`contato_mensagens`) | Cliente, 30/página | Única página da lista "baixa prioridade" que de fato cresce sem curadoria — todo envio do formulário público gera uma linha. |
 
-**Prioridade média:**
-```
-app/admin/certidoes/page.tsx
-app/admin/portal/page.tsx
-app/admin/transparencia/resultados/page.tsx
-app/admin/editais/[id]/page.tsx
-app/admin/propostas/[id]/page.tsx
-```
+### Correções ao escopo original (não implementadas — motivo verificado, não suposto)
 
-**Prioridade baixa** (volume naturalmente limitado, telas de CMS):
-```
-app/admin/paginas/editais/documentos/page.tsx
-app/admin/paginas/editais/textos/page.tsx
-app/admin/paginas/editais/mural/page.tsx
-app/admin/paginas/contato/formulario/page.tsx
-app/admin/paginas/contato/canais/page.tsx
-app/admin/paginas/projetos/eixos/page.tsx
-app/admin/paginas/transparencia/editais/page.tsx
-```
+- **`app/admin/editais/[id]/page.tsx` e `app/admin/propostas/[id]/page.tsx`** — são páginas de
+  **registro único** (`.eq("id", id).single()`), não listas. O grep do audit original não distinguia
+  `.select()` de lista de `.select()` de registro único. Paginação não se aplica.
 
-Nota sobre `propostas`: já tem filtro client-side (`exibidas`), busca com debounce e `statsRow`.
-Falta só o corte de paginação — não reescreva o resto.
+- **`app/admin/portal/page.tsx` (`portal_tokens`) e `app/admin/transparencia/resultados/page.tsx`
+  (`transparencia_editais`)** — confirmado por contagem real no banco: **0 linhas** em ambas,
+  contra **3** em `editais`. São listas curadas manualmente pelo admin (um token por parceiro, um
+  bloco de resultado por edital), crescem 1:1 com um processo lento e supervisionado — não com
+  submissão externa. Adicionar paginação aqui seria abstração prematura.
+
+- **`app/admin/paginas/editais/documentos`, `textos`, `mural`, `contato/canais`,
+  `projetos/eixos`** — blocos de conteúdo de CMS escopados a uma página específica
+  (`.eq("pagina_slug", ...)`), naturalmente pequenos pela própria natureza do dado. Mesma lógica
+  do item acima.
+
+Nenhuma dessas correções muda o padrão das convenções (seção 1) — só evita paginação onde os dados
+não crescem sem teto.
 
 ---
 
