@@ -335,9 +335,29 @@ não crescem sem teto.
 
 ---
 
-## FASE 4 — Responsividade móvel do painel
+## FASE 4 — Responsividade móvel do painel `[CONCLUÍDA — commit 268f99c]`
 
-**Esforço:** 5–8 dias · **Semanas 6–7** · Fase mais longa, toca 36 páginas.
+**Esforço real:** ~1 dia. O número de "36 páginas" do audit original contava qualquer
+`gridTemplateColumns`, mas a maioria já usa `repeat(auto-fit/auto-fill, minmax(...))`,
+que reflui sozinho sem precisar de nada. O problema real eram as ~19 grades de N
+colunas **fixas** (`"1fr 1fr"`, `"280px 1fr"`, `"repeat(2, minmax(0,1fr))"`) que não
+colapsam em tela estreita.
+
+Solução: três classes utilitárias novas em `app/admin/globals.css` — `.admin-grid-2`,
+`.admin-shell-split`/`--wide`, `.admin-table-grid-wrap` — ver seção 1 (Convenções)
+para o padrão de uso. Aplicadas em `beneficiarios`, `lgpd`, `documentos/fluxos`,
+`contato/formulario`, e nos 8 blocos de campo lado-a-lado de `transparencia`
+(resultados/editais/prestação/convênios) e dos formulários de
+destaques/cards/quem-somos. De caminho, 4 objetos de estilo `grid2` que nunca eram
+referenciados em JSX foram removidos (código morto).
+
+Verificação: `npm run build` limpo. Checagem via Playwright em viewport 375px na
+única página sem exigência de login (`/propostas`, pública) confirma ausência de
+scroll horizontal. Páginas admin autenticadas não puderam ser verificadas
+visualmente por exigirem login nesta sessão — validadas por build + revisão do
+CSS/media queries aplicados, não por clique real na interface.
+
+**Esforço estimado original (referência, não mais válido):** 5–8 dias · **Semanas 6–7**.
 
 Estado atual: **uma única** `@media query` em `app/admin/globals.css`. 36 páginas constroem layout
 com medidas fixas inline (`maxWidth: 1100`, `minWidth`, `minmax()` rígido).
@@ -358,31 +378,31 @@ Tarefas:
 
 ---
 
-## FASE 5 — Consolidação técnica
+## FASE 5 — Consolidação técnica `[CONCLUÍDA — commit 012c528]`
 
-**Esforço:** 2–3 dias · **Semana 8**
+**Esforço real:** ~1 dia.
 
-### 10 usos de `any` restantes
+### 10 usos de `any` — todos resolvidos
 
-```
-app/admin/propostas/[id]/page.tsx:88          useState<any>(null)          ← maior prioridade
-app/admin/AdminDashboardClient.tsx:1156       const styles: any
-app/admin/AdminDashboardClient.tsx:778        chartOptions as any
-app/admin/paginas/contato/canais/page.tsx:87  dbCards.map((card: any)
-app/admin/paginas/contato/canais/page.tsx:190 e.target.value as any
-app/admin/paginas/projetos/eixos/page.tsx:54  valor: any
-app/admin/paginas/transparencia/convenios/page.tsx:311,362,392,424   catch (error: any)
-```
+| Local | Fix |
+|---|---|
+| `propostas/[id]/page.tsx:88` | `useState<any>` → `useState<Proposta \| null>`, tipo espelhando o já usado na listagem, com índice de assinatura para os campos que `usePropostaDocumental` (fora de escopo) ainda acessa sem tipo. |
+| `AdminDashboardClient.tsx:1156` | `const styles: any` → `Record<string, React.CSSProperties>`. |
+| `AdminDashboardClient.tsx:778` | `chartOptions as any` → `ChartOptions<"line">` do próprio `chart.js`, já importado no arquivo. |
+| `contato/canais/page.tsx:87` | `card: any` → `Partial<Card>`. |
+| `contato/canais/page.tsx:190` | `as any` → `as Item["tipo"]` (só 3 valores possíveis no `<select>`). |
+| `projetos/eixos/page.tsx:54` | `updateEixo(campo, valor: any)` → genérico `<K extends keyof Eixo>(campo: K, valor: Eixo[K])`. |
+| `transparencia/convenios/page.tsx` (4 ocorrências) | `catch (error: any)` → `catch (error: unknown)` com narrowing (padrão já usado em `app/propostas/page.tsx`). De caminho, corrigido um toast de sucesso disparado duas vezes em `salvarTodos()`, achado ao editar a mesma função. |
 
-Os quatro `catch (error: any)` são o caso mais benigno — trocar por `catch (error: unknown)` com
-narrowing. `propostas/[id]:88` é o mais relevante: mantém o registro inteiro sem tipo.
+### `console.log` e `TODO/FIXME` — falsos positivos do audit original, nada a corrigir
+
+- O único `console.log` está dentro de uma **string de exemplo de código** em `app/api-docs/page.tsx` (snippet mostrado ao desenvolvedor visitante da documentação da API) — não é uma chamada real.
+- As 3 ocorrências de `TODO` eram a palavra "TODOS" dentro de mensagens de confirmação (`app/admin/documentos/lixeira/page.tsx`, 2x) e o comentário de seção `{/* METODOLOGIA */}` (`app/projetos/page.tsx`) — nenhuma é uma marcação real de pendência.
 
 ### Resto
 
-- 1 `console.log` a remover.
-- 3 marcações `TODO/FIXME` a resolver.
-- Documentar a escolha entre estilo inline e classes CSS (hoje misturada entre páginas novas e antigas).
-- Registrar em `CLAUDE.md` as convenções da seção 1 deste documento.
+- ✅ Estilo inline vs. classes CSS documentado na seção 1 deste arquivo.
+- ✅ `CLAUDE.md` criado na raiz do repositório com as convenções, para ficar disponível a qualquer sessão futura sem depender de encontrar este documento.
 
 ---
 
