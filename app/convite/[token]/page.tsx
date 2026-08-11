@@ -24,23 +24,21 @@ export default function ConvitePage() {
 
   useEffect(() => {
     async function checar() {
-      const { data } = await supabase
-        .from("convites_org")
-        .select("email, papel, expires_at, aceito_em, organizacoes(nome)")
-        .eq("token", token)
-        .maybeSingle();
+      const { data: rows } = await supabase
+        .rpc("validar_convite_token", { p_token: token });
+
+      const data = rows?.[0];
 
       if (!data) { setEstado("invalido"); return; }
       if (data.aceito_em) { setEstado("aceito"); return; }
       if (new Date(data.expires_at) < new Date()) { setEstado("expirado"); return; }
 
-      const org = (Array.isArray(data.organizacoes) ? data.organizacoes[0] : data.organizacoes) as { nome: string } | null;
       setConvite({
         email:      data.email,
         papel:      data.papel,
         expires_at: data.expires_at,
         aceito_em:  data.aceito_em,
-        org_nome:   org?.nome ?? "—",
+        org_nome:   data.org_nome ?? "—",
       });
 
       const { data: { user } } = await supabase.auth.getUser();
