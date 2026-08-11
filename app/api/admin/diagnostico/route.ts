@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { verifyAdminSession } from "@/lib/auth/adminSession";
+import { getOrgDoUsuario } from "@/lib/auth/getOrgUsuario";
 
 type CheckStatus = "ok" | "aviso" | "erro";
 
@@ -130,12 +131,9 @@ export async function GET() {
 
   // ── Organização ──────────────────────────────────────────────────
   if (existentes.has("organizacoes")) {
-    const { data: org } = await supabase
-      .from("organizacoes")
-      .select("id, nome, slug, logo_url, plano, ativo")
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
+    // Organizacao do usuario logado, nao a mais antiga do banco (bug real
+    // corrigido em 2026-08-11).
+    const org = await getOrgDoUsuario(supabase, auth.userId);
 
     checks.push({
       id: "org_existe",

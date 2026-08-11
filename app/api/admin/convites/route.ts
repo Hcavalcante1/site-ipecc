@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { Resend } from "resend";
+import { getOrgDoUsuario, usuarioPertenceOrg } from "@/lib/auth/getOrgUsuario";
 
 function remetente() {
   return (
@@ -24,13 +25,9 @@ export async function GET(req: NextRequest) {
   if (!user) return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
 
   const supabase = getSupabaseAdmin();
-  const { data: org } = await supabase
-    .from("organizacoes")
-    .select("id")
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
+  // Organizacao do usuario logado, nao a mais antiga do banco (bug real
+  // corrigido em 2026-08-11 -- ver docs/RELATORIO-COMPLETO-GAPS-OPERACIONAIS-2026-08-11.md).
+  const org = await getOrgDoUsuario(supabase, user.id);
   if (!org) return NextResponse.json({ ok: false, error: "org_not_found" }, { status: 404 });
 
   const { data: convites, error } = await supabase
@@ -55,13 +52,7 @@ export async function POST(req: NextRequest) {
 
   const supabase = getSupabaseAdmin();
 
-  const { data: org } = await supabase
-    .from("organizacoes")
-    .select("id, nome, slug")
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
+  const org = await getOrgDoUsuario(supabase, user.id);
   if (!org) return NextResponse.json({ ok: false, error: "org_not_found" }, { status: 404 });
 
   const { data: existente } = await supabase
@@ -141,6 +132,21 @@ export async function DELETE(req: NextRequest) {
   if (!id) return NextResponse.json({ ok: false, error: "id_required" }, { status: 400 });
 
   const supabase = getSupabaseAdmin();
+
+  // Antes: apagava qualquer convite por id sem checar se pertencia a
+  // organizacao do usuario -- qualquer logado podia apagar convite de
+  // qualquer organizacao. Corrigido em 2026-08-11.
+  const { data: convite } = await supabase
+    .from("convites_org")
+    .select("id, org_id")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (!convite) return NextResponse.json({ ok: false, error: "convite_nao_encontrado" }, { status: 404 });
+
+  const pertence = await usuarioPertenceOrg(supabase, user.id, convite.org_id);
+  if (!pertence) return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+
   const { error } = await supabase.from("convites_org").delete().eq("id", id);
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

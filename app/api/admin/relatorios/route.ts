@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { verifyAdminSession } from "@/lib/auth/adminSession";
+import { getOrgDoUsuario } from "@/lib/auth/getOrgUsuario";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -243,12 +244,9 @@ export async function GET(req: NextRequest) {
 
   const supabase = getSupabaseAdmin();
 
-  const { data: org } = await supabase
-    .from("organizacoes")
-    .select("nome")
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+  // Organizacao do usuario logado, nao a mais antiga do banco (bug real
+  // corrigido em 2026-08-11).
+  const org = await getOrgDoUsuario(supabase, auth.userId);
 
   const orgNome   = org?.nome ?? "IPECC";
   const periodoTxt = inicio || fim ? `${inicio ?? "início"} a ${fim ?? "hoje"}` : "todos os períodos";
