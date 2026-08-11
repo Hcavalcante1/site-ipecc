@@ -173,6 +173,16 @@ export default function PublicSiteShell({ children }: { children: ReactNode }) {
               >
                 Contato
               </a>
+              <a
+                href="/planos"
+                className={navLinkClass(pathname, "/planos")}
+                aria-current={
+                  pathname.startsWith("/planos") ? "page" : undefined
+                }
+                onClick={() => setMenuOpen(false)}
+              >
+                Planos
+              </a>
             </nav>
           </div>
         </div>

@@ -17,11 +17,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "billing_not_configured" }, { status: 503 });
   }
 
-  const { plano } = (await req.json()) as { plano?: string };
+  const { plano, retorno } = (await req.json()) as { plano?: string; retorno?: string };
   const priceId = plano ? PRICE_MAP[plano] : undefined;
   if (!priceId) {
     return NextResponse.json({ ok: false, error: "plano_invalido" }, { status: 400 });
   }
+
+  // Volta pra onde o checkout foi iniciado (/conta/faturamento pro cliente
+  // self-service, /admin/faturamento pra equipe IPECC). So aceita paths
+  // internos conhecidos -- nunca redireciona pra fora do proprio site.
+  const returnPath = retorno === "/conta/faturamento" ? retorno : "/admin/faturamento";
 
   const cookieStore = cookies();
   const supabase = createServerClient(
@@ -90,8 +95,8 @@ export async function POST(req: NextRequest) {
     customer: customerId,
     mode: "subscription",
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${baseUrl}/admin/faturamento?checkout=success`,
-    cancel_url:  `${baseUrl}/admin/faturamento?checkout=cancelled`,
+    success_url: `${baseUrl}${returnPath}?checkout=success`,
+    cancel_url:  `${baseUrl}${returnPath}?checkout=cancelled`,
     metadata: { org_id: org.id, plano },
     subscription_data: { metadata: { org_id: org.id, plano } },
   });

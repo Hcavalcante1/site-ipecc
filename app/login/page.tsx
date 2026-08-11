@@ -50,6 +50,15 @@ export default function LoginPage() {
       };
 
       if (!gate.ok) {
+        // Sem perfil admin (staff) -- pode ser cliente self-service.
+        // Manda pro painel do cliente em vez de negar acesso; /conta
+        // trata sozinho o caso de usuario sem organizacao ainda (oferece
+        // criar uma). So nega de verdade em erro de sessao (401).
+        if (gate.status === 403) {
+          window.location.assign("/conta");
+          return;
+        }
+
         await supabase.auth.signOut().catch(() => null);
         setMsg(
           mensagemErroLoginAdmin({
