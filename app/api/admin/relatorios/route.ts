@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { verifyAdminSession } from "@/lib/auth/adminSession";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -229,6 +230,11 @@ function fmtData(iso: string): string {
 // ─── Handler principal ───────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest) {
+  const auth = await verifyAdminSession();
+  if (auth.ok === false) {
+    return NextResponse.json({ ok: false, error: auth.message }, { status: auth.status });
+  }
+
   const { searchParams } = req.nextUrl;
   const tipo    = (searchParams.get("tipo")    ?? "propostas") as Tipo;
   const formato = (searchParams.get("formato") ?? "csv")       as Formato;
