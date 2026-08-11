@@ -6,9 +6,9 @@ acesso de rede ao domínio de produção e ao Supabase a partir do navegador loc
 Rode isto no navegador normal, direto em `https://www.ipecc.org.br` (ou no preview
 da Vercel do branch/PR), e me diga o que falhar — eu corrijo em seguida.
 
-Pré-requisito para o passo 6 em diante: `STRIPE_SECRET_KEY`, `STRIPE_PRICE_STARTER`,
-`STRIPE_PRICE_PROFISSIONAL`, `STRIPE_PRICE_ENTERPRISE` e `STRIPE_WEBHOOK_SECRET`
-configurados no Vercel. Sem isso, o botão de assinar deve responder com erro
+Pré-requisito para o passo 6 em diante: `ASAAS_API_KEY` e `ASAAS_WEBHOOK_TOKEN`
+configurados no Vercel (conta aberta no CNPJ da empresa comercial, não no do
+IPECC). Sem isso, o botão de assinar deve responder com erro
 `billing_not_configured` (comportamento esperado, não é bug).
 
 ## 1. Descoberta do plano (público, sem login)
@@ -31,7 +31,7 @@ configurados no Vercel. Sem isso, o botão de assinar deve responder com erro
 
 ## 4. Convite de membro
 - [ ] Em `/conta/membros`, enviar um convite para um segundo e-mail de teste.
-- [ ] A mensagem de retorno deve indicar se o convite foi enviado por e-mail (se `RESEND_API_KEY` estiver configurado) ou mostrar o link direto (se não estiver).
+- [ ] A mensagem de retorno deve indicar se o convite foi enviado por e-mail (SMTP Zoho configurado em `email_config`) ou mostrar o link direto (se não estiver).
 - [ ] Abrir o link do convite (`/convite/<token>`) em uma aba anônima (sem sessão) — deve mostrar os dados do convite via a função `validar_convite_token`, sem expor outros convites.
 - [ ] Aceitar o convite com uma segunda conta — o novo usuário deve aparecer na lista de "Membros ativos" da organização original, não criar uma organização nova.
 - [ ] Cancelar um convite pendente e confirmar que ele some da lista e que o link antigo deixa de funcionar.
@@ -39,13 +39,16 @@ configurados no Vercel. Sem isso, o botão de assinar deve responder com erro
 ## 5. Faturamento — visualização
 - [ ] Em `/conta/faturamento`, o plano atual (`gratuito` após a criação) deve aparecer corretamente.
 - [ ] Botões de upgrade (Starter/Profissional) devem estar visíveis para quem está no plano gratuito.
+- [ ] Sem CNPJ/CPF cadastrado, deve aparecer o formulário pedindo o documento antes de mostrar os planos pra assinar.
 
-## 6. Faturamento — checkout (depende das chaves Stripe no Vercel)
-- [ ] Clicar em "Assinar Starter" deve redirecionar para uma sessão de Checkout real da Stripe (não erro 503 `billing_not_configured`).
-- [ ] Completar um pagamento de teste (cartão de teste da Stripe, ex. `4242 4242 4242 4242`) e confirmar o redirecionamento de volta para `/conta/faturamento`.
-- [ ] Após o webhook `checkout.session.completed` processar, o plano da organização em `/conta/faturamento` deve atualizar para "Starter" (pode levar alguns segundos).
-- [ ] No Stripe Dashboard, cancelar a assinatura de teste e confirmar que o webhook `customer.subscription.deleted` volta o plano da organização para "gratuito".
-- [ ] Testar o botão de "portal do cliente" (Stripe Billing Portal) a partir de `/conta/faturamento` — deve abrir a página hospedada pela Stripe para gerenciar cartão/cancelamento.
+## 6. Faturamento — checkout (depende da chave Asaas no Vercel)
+- [ ] Preencher e salvar o CNPJ/CPF da organização.
+- [ ] Clicar em "Assinar Starter" deve redirecionar para uma fatura real hospedada pelo Asaas (não erro 503 `billing_not_configured`, não erro 422 `cnpj_cpf_obrigatorio`).
+- [ ] Completar um pagamento de teste (ambiente sandbox do Asaas, se `ASAAS_ENV=sandbox`) e voltar manualmente pra `/conta/faturamento`.
+- [ ] Após o webhook `PAYMENT_CONFIRMED`/`PAYMENT_RECEIVED` processar, o plano da organização em `/conta/faturamento` deve atualizar para "Starter" (pode levar alguns segundos — a página precisa ser recarregada, não há redirecionamento automático de volta como no Stripe).
+- [ ] Clicar em "Ver última fatura" deve abrir a página hospedada pelo Asaas com o status do pagamento.
+- [ ] Clicar em "Cancelar assinatura" deve cancelar no Asaas e voltar o plano da organização para "gratuito".
+- [ ] Clicar em "Assinar" duas vezes seguidas sem pagar não deve criar duas assinaturas duplicadas no painel do Asaas — a segunda tentativa deve reaproveitar a mesma fatura pendente.
 
 ## 7. Autorização (checagem negativa, importante)
 - [ ] Logado como membro comum (não-owner) de uma organização, tentar acessar `/api/admin/convites` com `DELETE` de um convite de **outra** organização — deve retornar erro de autorização, não sucesso.
