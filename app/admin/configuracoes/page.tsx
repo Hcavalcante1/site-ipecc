@@ -241,7 +241,7 @@ export default function ConfiguracoesPage() {
         <div style={s.linksGrid}>
           {[
             { href: "/admin/organizacao",  label: "Minha Organização", desc: "Nome, CNPJ, logo, tema de cores" },
-            { href: "/admin/faturamento",  label: "Faturamento",       desc: "Plano, assinatura, portal Stripe" },
+            { href: "/admin/faturamento",  label: "Faturamento",       desc: "Plano, assinatura, faturas Asaas" },
             { href: "/admin/acessos",      label: "Acessos",           desc: "Membros, papéis e convites" },
             { href: "/admin/diagnostico",  label: "Diagnóstico",       desc: "Verificação completa da plataforma" },
           ].map((l) => (

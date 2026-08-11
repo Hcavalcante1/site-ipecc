@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { triggerToast } from "@/components/AdminToast";
 import Link from "next/link";
@@ -9,8 +8,8 @@ import Link from "next/link";
 type UsageMetric = { label: string; valor: number; limite: number | null; cor: string };
 
 type Assinatura = {
-  stripe_subscription_id: string | null;
-  stripe_customer_id: string | null;
+  asaas_subscription_id: string | null;
+  asaas_customer_id: string | null;
   plano: string;
   status: string;
   periodo_inicio: string | null;
@@ -39,9 +38,6 @@ const PLANOS_UPGRADE = [
 ];
 
 export default function FaturamentoPage() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-
   const [org, setOrg] = useState<{ id: string; nome: string; plano: string; created_at: string } | null>(null);
   const [assinatura, setAssinatura] = useState<Assinatura | null>(null);
   const [metricas, setMetricas] = useState<UsageMetric[]>([]);
@@ -49,18 +45,6 @@ export default function FaturamentoPage() {
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [billingAtivo, setBillingAtivo] = useState(true);
-
-  const checkout = searchParams.get("checkout");
-
-  useEffect(() => {
-    if (checkout === "success") {
-      triggerToast("Assinatura ativada com sucesso!", "success");
-      router.replace("/admin/faturamento");
-    } else if (checkout === "cancelled") {
-      triggerToast("Checkout cancelado.", "error");
-      router.replace("/admin/faturamento");
-    }
-  }, [checkout, router]);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -77,7 +61,7 @@ export default function FaturamentoPage() {
 
     const { data: assData } = await supabase
       .from("assinaturas")
-      .select("stripe_subscription_id, stripe_customer_id, plano, status, periodo_inicio, periodo_fim, cancelar_no_fim")
+      .select("asaas_subscription_id, asaas_customer_id, plano, status, periodo_inicio, periodo_fim, cancelar_no_fim")
       .eq("org_id", orgData.id)
       .maybeSingle();
 
@@ -125,7 +109,9 @@ export default function FaturamentoPage() {
         window.location.href = json.url;
       } else if (json.error === "billing_not_configured") {
         setBillingAtivo(false);
-        triggerToast("Stripe não configurado — adicione STRIPE_SECRET_KEY no Vercel.", "error");
+        triggerToast("Asaas não configurado — adicione ASAAS_API_KEY no Vercel.", "error");
+      } else if (json.error === "cnpj_cpf_obrigatorio") {
+        triggerToast("Cadastre o CNPJ/CPF da organização em Organização antes de assinar.", "error");
       } else {
         triggerToast(`Erro: ${json.error ?? "desconhecido"}`, "error");
       }
@@ -136,7 +122,7 @@ export default function FaturamentoPage() {
     }
   }
 
-  async function abrirPortal() {
+  async function abrirFatura() {
     setPortalLoading(true);
     try {
       const res = await fetch("/api/billing/portal", { method: "POST" });
@@ -144,10 +130,10 @@ export default function FaturamentoPage() {
       if (json.ok && json.url) {
         window.location.href = json.url;
       } else {
-        triggerToast(`Erro ao abrir portal: ${json.error ?? "desconhecido"}`, "error");
+        triggerToast(`Erro ao abrir fatura: ${json.error ?? "desconhecido"}`, "error");
       }
     } catch {
-      triggerToast("Falha de rede ao abrir portal.", "error");
+      triggerToast("Falha de rede ao abrir fatura.", "error");
     } finally {
       setPortalLoading(false);
     }
@@ -157,7 +143,7 @@ export default function FaturamentoPage() {
   if (!org) return <div style={s.wrap}><p style={s.empty}>Organização não encontrada.</p></div>;
 
   const planoEfetivo = org.plano;
-  const temAssinatura = !!assinatura?.stripe_subscription_id;
+  const temAssinatura = !!assinatura?.asaas_subscription_id;
   const proximaRenovacao = assinatura?.periodo_fim
     ? new Date(assinatura.periodo_fim)
     : (() => { const d = new Date(); d.setMonth(d.getMonth() + 1); d.setDate(1); return d; })();
@@ -177,9 +163,8 @@ export default function FaturamentoPage() {
       {!billingAtivo && (
         <div style={s.alertBox}>
           <strong>Billing não configurado.</strong> Para ativar assinaturas reais, adicione as variáveis de ambiente no Vercel:
-          {" "}<code style={s.code}>STRIPE_SECRET_KEY</code>, <code style={s.code}>STRIPE_WEBHOOK_SECRET</code>,{" "}
-          <code style={s.code}>STRIPE_PRICE_STARTER</code>, <code style={s.code}>STRIPE_PRICE_PROFISSIONAL</code>,{" "}
-          <code style={s.code}>STRIPE_PRICE_ENTERPRISE</code>.
+          {" "}<code style={s.code}>ASAAS_API_KEY</code>, <code style={s.code}>ASAAS_WEBHOOK_TOKEN</code>,{" "}
+          <code style={s.code}>ASAAS_ENV</code>.
         </div>
       )}
 
@@ -210,10 +195,10 @@ export default function FaturamentoPage() {
           {temAssinatura ? (
             <button
               style={s.btnPortal}
-              onClick={abrirPortal}
+              onClick={abrirFatura}
               disabled={portalLoading}
             >
-              {portalLoading ? "Abrindo..." : "Gerenciar assinatura →"}
+              {portalLoading ? "Abrindo..." : "Ver última fatura →"}
             </button>
           ) : planoEfetivo !== "enterprise" ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
@@ -263,13 +248,13 @@ export default function FaturamentoPage() {
         </div>
       </div>
 
-      {/* Assinatura Stripe */}
+      {/* Assinatura Asaas */}
       {assinatura && (
         <div style={s.card}>
           <h2 style={s.cardTitulo}>Dados da assinatura</h2>
           <div style={s.assGrid}>
             {[
-              { label: "ID assinatura", valor: assinatura.stripe_subscription_id ?? "—" },
+              { label: "ID assinatura", valor: assinatura.asaas_subscription_id ?? "—" },
               { label: "Status",        valor: assinatura.status },
               { label: "Período início",valor: assinatura.periodo_inicio ? new Date(assinatura.periodo_inicio).toLocaleDateString("pt-BR") : "—" },
               { label: "Período fim",   valor: assinatura.periodo_fim    ? new Date(assinatura.periodo_fim).toLocaleDateString("pt-BR")    : "—" },
@@ -280,8 +265,8 @@ export default function FaturamentoPage() {
               </div>
             ))}
           </div>
-          <button style={s.btnPortal} onClick={abrirPortal} disabled={portalLoading}>
-            {portalLoading ? "Abrindo..." : "Abrir portal do cliente Stripe →"}
+          <button style={s.btnPortal} onClick={abrirFatura} disabled={portalLoading}>
+            {portalLoading ? "Abrindo..." : "Ver última fatura no Asaas →"}
           </button>
         </div>
       )}
@@ -291,7 +276,7 @@ export default function FaturamentoPage() {
         <div style={s.card}>
           <h2 style={s.cardTitulo}>Upgrade de plano</h2>
           <p style={{ ...s.sub, marginBottom: 20 }}>
-            Escolha um plano e clique para assinar via Stripe Checkout.
+            Escolha um plano e clique para assinar via Pix, boleto ou cartão.
           </p>
           <div style={s.planosGrid}>
             {PLANOS_UPGRADE.map((p) => {
@@ -323,8 +308,8 @@ export default function FaturamentoPage() {
       )}
 
       <p style={s.faturaNota}>
-        Pagamentos processados com segurança via Stripe. Dados sincronizados automaticamente via webhook.
-        {!billingAtivo && " — Billing em modo scaffold: configure as variáveis de ambiente Stripe para ativar."}
+        Pagamentos processados com segurança via Asaas (Pix, boleto ou cartão). Dados sincronizados automaticamente via webhook.
+        {!billingAtivo && " — Billing em modo scaffold: configure as variáveis de ambiente Asaas para ativar."}
       </p>
     </div>
   );

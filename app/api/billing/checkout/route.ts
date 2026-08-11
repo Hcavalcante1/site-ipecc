@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import {
+  asaasConfigurado,
+  criarClienteAsaas,
+  criarAssinaturaAsaas,
+  cancelarAssinaturaAsaas,
+  listarPagamentosDaAssinatura,
+} from "@/lib/billing/asaas";
 
-const PRICE_MAP: Record<string, string | undefined> = {
-  starter:      process.env.STRIPE_PRICE_STARTER,
-  profissional: process.env.STRIPE_PRICE_PROFISSIONAL,
-  enterprise:   process.env.STRIPE_PRICE_ENTERPRISE,
+const VALOR_PLANOS: Record<string, number> = {
+  starter: 190,
+  profissional: 490,
 };
 
 // Mesmo fallback usado em lib/auth/useOrgContexto.ts quando o usuário não tem
@@ -13,20 +19,15 @@ const PRICE_MAP: Record<string, string | undefined> = {
 const IPECC_ORG_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
 
 export async function POST(req: NextRequest) {
-  if (!process.env.STRIPE_SECRET_KEY) {
+  if (!asaasConfigurado()) {
     return NextResponse.json({ ok: false, error: "billing_not_configured" }, { status: 503 });
   }
 
-  const { plano, retorno } = (await req.json()) as { plano?: string; retorno?: string };
-  const priceId = plano ? PRICE_MAP[plano] : undefined;
-  if (!priceId) {
+  const { plano } = (await req.json()) as { plano?: string; retorno?: string };
+  const valor = plano ? VALOR_PLANOS[plano] : undefined;
+  if (!valor) {
     return NextResponse.json({ ok: false, error: "plano_invalido" }, { status: 400 });
   }
-
-  // Volta pra onde o checkout foi iniciado (/conta/faturamento pro cliente
-  // self-service, /admin/faturamento pra equipe IPECC). So aceita paths
-  // internos conhecidos -- nunca redireciona pra fora do proprio site.
-  const returnPath = retorno === "/conta/faturamento" ? retorno : "/admin/faturamento";
 
   const cookieStore = cookies();
   const supabase = createServerClient(
@@ -42,17 +43,15 @@ export async function POST(req: NextRequest) {
 
   // Organizacao do usuario logado (nao a mais antiga do banco -- bug corrigido
   // em 2026-08-11, ver docs/INCIDENTE-RLS-REPOS-DIVERGENTES-2026-08-11.md).
-  // Mesmo padrao de lib/auth/useOrgContexto.ts: busca via org_membros, com
-  // fallback pra org padrao do IPECC se o usuario nao tiver membership.
   const { data: membro } = await supabase
     .from("org_membros")
-    .select("org_id, organizacoes(id, nome)")
+    .select("org_id, organizacoes(id, nome, cnpj_cpf)")
     .eq("user_id", user.id)
     .eq("ativo", true)
     .limit(1)
     .maybeSingle();
 
-  type OrgRow = { id: string; nome: string };
+  type OrgRow = { id: string; nome: string; cnpj_cpf: string | null };
   let org: OrgRow | null = membro?.organizacoes
     ? ((Array.isArray(membro.organizacoes) ? membro.organizacoes[0] : membro.organizacoes) as OrgRow)
     : null;
@@ -60,7 +59,7 @@ export async function POST(req: NextRequest) {
   if (!org) {
     const { data: orgPadrao } = await supabase
       .from("organizacoes")
-      .select("id, nome")
+      .select("id, nome, cnpj_cpf")
       .eq("id", IPECC_ORG_ID)
       .maybeSingle();
     org = orgPadrao;
@@ -70,36 +69,86 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "org_not_found" }, { status: 404 });
   }
 
-  const { data: assinatura } = await supabase
+  if (!org.cnpj_cpf) {
+    return NextResponse.json({ ok: false, error: "cnpj_cpf_obrigatorio" }, { status: 422 });
+  }
+
+  const { data: assinaturaAtual } = await supabase
     .from("assinaturas")
-    .select("stripe_customer_id")
+    .select("asaas_customer_id, asaas_subscription_id, plano, status")
     .eq("org_id", org.id)
     .maybeSingle();
 
-  const { default: Stripe } = await import("stripe");
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2026-07-29.dahlia" });
+  try {
+    // Já existe assinatura pendente pro mesmo plano (usuário clicou de novo
+    // sem ter pago ainda) -- reaproveita em vez de criar duplicata no Asaas.
+    if (
+      assinaturaAtual?.status === "pendente" &&
+      assinaturaAtual.plano === plano &&
+      assinaturaAtual.asaas_subscription_id
+    ) {
+      const pagamentosExistentes = await listarPagamentosDaAssinatura(
+        assinaturaAtual.asaas_subscription_id
+      );
+      const faturaExistente = pagamentosExistentes.data?.[0];
+      if (faturaExistente?.invoiceUrl) {
+        return NextResponse.json({ ok: true, url: faturaExistente.invoiceUrl });
+      }
+    }
 
-  let customerId = assinatura?.stripe_customer_id;
-  if (!customerId) {
-    const customer = await stripe.customers.create({
-      email: user.email,
-      name: org.nome,
-      metadata: { org_id: org.id },
+    let customerId = assinaturaAtual?.asaas_customer_id ?? null;
+    if (!customerId) {
+      const customer = await criarClienteAsaas({
+        name: org.nome,
+        email: user.email!,
+        cpfCnpj: org.cnpj_cpf,
+        externalReference: org.id,
+      });
+      customerId = customer.id;
+    }
+
+    // Pendente de outro plano (trocou de ideia antes de pagar) -- cancela pra
+    // não deixar duas assinaturas concorrentes abertas no Asaas.
+    if (assinaturaAtual?.status === "pendente" && assinaturaAtual.asaas_subscription_id) {
+      await cancelarAssinaturaAsaas(assinaturaAtual.asaas_subscription_id).catch(() => {});
+    }
+
+    const hoje = new Date().toISOString().slice(0, 10);
+
+    const subscription = await criarAssinaturaAsaas({
+      customer: customerId,
+      value: valor,
+      description: `Plataforma IPECC — Plano ${plano}`,
+      externalReference: org.id,
+      nextDueDate: hoje,
     });
-    customerId = customer.id;
+
+    await supabase.from("assinaturas").upsert(
+      {
+        org_id: org.id,
+        asaas_customer_id: customerId,
+        asaas_subscription_id: subscription.id,
+        plano,
+        status: "pendente",
+        forma_pagamento: "UNDEFINED",
+        cancelar_no_fim: false,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "org_id" }
+    );
+
+    const pagamentos = await listarPagamentosDaAssinatura(subscription.id);
+    const primeiraFatura = pagamentos.data?.[0];
+
+    if (!primeiraFatura?.invoiceUrl) {
+      return NextResponse.json({ ok: false, error: "fatura_nao_gerada" }, { status: 500 });
+    }
+
+    return NextResponse.json({ ok: true, url: primeiraFatura.invoiceUrl });
+  } catch (e) {
+    return NextResponse.json(
+      { ok: false, error: e instanceof Error ? e.message : "falha_ao_criar_assinatura" },
+      { status: 502 }
+    );
   }
-
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? req.nextUrl.origin;
-
-  const session = await stripe.checkout.sessions.create({
-    customer: customerId,
-    mode: "subscription",
-    line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${baseUrl}${returnPath}?checkout=success`,
-    cancel_url:  `${baseUrl}${returnPath}?checkout=cancelled`,
-    metadata: { org_id: org.id, plano },
-    subscription_data: { metadata: { org_id: org.id, plano } },
-  });
-
-  return NextResponse.json({ ok: true, url: session.url });
 }

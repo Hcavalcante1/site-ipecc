@@ -1,52 +1,103 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { getOrgDoUsuario } from "@/lib/auth/getOrgUsuario";
+import {
+  asaasConfigurado,
+  cancelarAssinaturaAsaas,
+  listarPagamentosDaAssinatura,
+} from "@/lib/billing/asaas";
 
-export async function POST(req: NextRequest) {
-  if (!process.env.STRIPE_SECRET_KEY) {
-    return NextResponse.json({ ok: false, error: "billing_not_configured" }, { status: 503 });
-  }
-
+function supabaseDaRequisicao() {
   const cookieStore = cookies();
-  const supabase = createServerClient(
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { cookies: { get: (n) => cookieStore.get(n)?.value } }
   );
+}
 
+// Asaas não tem um portal hospedado equivalente ao Stripe Billing Portal.
+// Em vez disso, abrimos a última fatura gerada (página hospedada pelo
+// próprio Asaas, onde o cliente vê status e pode pagar via Pix/boleto/cartão).
+export async function POST() {
+  if (!asaasConfigurado()) {
+    return NextResponse.json({ ok: false, error: "billing_not_configured" }, { status: 503 });
+  }
+
+  const supabase = supabaseDaRequisicao();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
-  // Organizacao do usuario logado, nao a mais antiga do banco (mesmo bug
-  // corrigido em app/api/billing/checkout/route.ts em 2026-08-11).
   const org = await getOrgDoUsuario(supabase, user.id);
-
   if (!org) {
     return NextResponse.json({ ok: false, error: "org_not_found" }, { status: 404 });
   }
 
   const { data: assinatura } = await supabase
     .from("assinaturas")
-    .select("stripe_customer_id")
+    .select("asaas_subscription_id")
     .eq("org_id", org.id)
     .maybeSingle();
 
-  if (!assinatura?.stripe_customer_id) {
+  if (!assinatura?.asaas_subscription_id) {
     return NextResponse.json({ ok: false, error: "no_subscription" }, { status: 404 });
   }
 
-  const { default: Stripe } = await import("stripe");
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2026-07-29.dahlia" });
+  try {
+    const pagamentos = await listarPagamentosDaAssinatura(assinatura.asaas_subscription_id);
+    const ultimaFatura = pagamentos.data?.[0];
+    if (!ultimaFatura?.invoiceUrl) {
+      return NextResponse.json({ ok: false, error: "sem_fatura" }, { status: 404 });
+    }
+    return NextResponse.json({ ok: true, url: ultimaFatura.invoiceUrl });
+  } catch (e) {
+    return NextResponse.json(
+      { ok: false, error: e instanceof Error ? e.message : "falha_ao_buscar_fatura" },
+      { status: 502 }
+    );
+  }
+}
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? req.nextUrl.origin;
+export async function DELETE() {
+  if (!asaasConfigurado()) {
+    return NextResponse.json({ ok: false, error: "billing_not_configured" }, { status: 503 });
+  }
 
-  const session = await stripe.billingPortal.sessions.create({
-    customer: assinatura.stripe_customer_id,
-    return_url: `${baseUrl}/admin/faturamento`,
-  });
+  const supabase = supabaseDaRequisicao();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
 
-  return NextResponse.json({ ok: true, url: session.url });
+  const org = await getOrgDoUsuario(supabase, user.id);
+  if (!org) {
+    return NextResponse.json({ ok: false, error: "org_not_found" }, { status: 404 });
+  }
+
+  const { data: assinatura } = await supabase
+    .from("assinaturas")
+    .select("asaas_subscription_id")
+    .eq("org_id", org.id)
+    .maybeSingle();
+
+  if (!assinatura?.asaas_subscription_id) {
+    return NextResponse.json({ ok: false, error: "no_subscription" }, { status: 404 });
+  }
+
+  try {
+    await cancelarAssinaturaAsaas(assinatura.asaas_subscription_id);
+    await supabase
+      .from("assinaturas")
+      .update({ status: "cancelado", cancelar_no_fim: true, updated_at: new Date().toISOString() })
+      .eq("org_id", org.id);
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    return NextResponse.json(
+      { ok: false, error: e instanceof Error ? e.message : "falha_ao_cancelar" },
+      { status: 502 }
+    );
+  }
 }

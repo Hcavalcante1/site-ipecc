@@ -49,12 +49,8 @@ export async function GET() {
     { id: "supabase_anon",    key: "NEXT_PUBLIC_SUPABASE_ANON_KEY", titulo: "Supabase Anon Key",   descricao: "Chave pública do Supabase.",                 required: true },
     { id: "service_role",     key: "SUPABASE_SERVICE_ROLE_KEY",   titulo: "Service Role Key",      descricao: "Chave administrativa do Supabase (servidor).", required: true },
     { id: "site_url",         key: "NEXT_PUBLIC_SITE_URL",        titulo: "URL do site",           descricao: "Base URL pública usada em links e e-mails.", required: false },
-    { id: "stripe_key",       key: "STRIPE_SECRET_KEY",           titulo: "Stripe Secret Key",     descricao: "Habilita billing e checkout.",               required: false },
-    { id: "stripe_webhook",   key: "STRIPE_WEBHOOK_SECRET",       titulo: "Stripe Webhook Secret", descricao: "Valida eventos recebidos do Stripe.",        required: false },
-    { id: "stripe_starter",   key: "STRIPE_PRICE_STARTER",        titulo: "Stripe: Price Starter", descricao: "ID do preço Stripe para o plano Starter.",  required: false },
-    { id: "stripe_pro",       key: "STRIPE_PRICE_PROFISSIONAL",   titulo: "Stripe: Price Pro",     descricao: "ID do preço Stripe para Profissional.",     required: false },
-    { id: "resend_key",       key: "RESEND_API_KEY",              titulo: "Resend API Key",        descricao: "Habilita envio de e-mail (convites, OTP).", required: false },
-    { id: "resend_from",      key: "RESEND_FROM",                 titulo: "Resend: remetente",     descricao: "Endereço From para e-mails enviados.",       required: false },
+    { id: "asaas_key",        key: "ASAAS_API_KEY",               titulo: "Asaas API Key",         descricao: "Habilita billing e checkout via Pix/boleto/cartão.", required: false },
+    { id: "asaas_webhook",    key: "ASAAS_WEBHOOK_TOKEN",         titulo: "Asaas Webhook Token",   descricao: "Valida eventos recebidos do Asaas.",         required: false },
   ];
 
   for (const c of envChecks) {

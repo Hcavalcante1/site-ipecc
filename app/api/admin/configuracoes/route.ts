@@ -32,7 +32,7 @@ export async function GET() {
   // Verificar assinatura ativa
   const { data: assinatura } = await supabase
     .from("assinaturas")
-    .select("plano, status, stripe_customer_id")
+    .select("plano, status, asaas_customer_id")
     .maybeSingle();
 
   const { data: emailConfigRows } = await supabase
@@ -43,7 +43,7 @@ export async function GET() {
     emailCfg[row.chave] = row.valor;
   }
 
-  const ass = assinatura as { plano?: string; status?: string; stripe_customer_id?: string } | null;
+  const ass = assinatura as { plano?: string; status?: string; asaas_customer_id?: string } | null;
 
   const integracoes: Integracao[] = [
     // ── Supabase ─────────────────────────────────────────────────────
@@ -63,24 +63,21 @@ export async function GET() {
       };
     })(),
 
-    // ── Stripe ────────────────────────────────────────────────────────
+    // ── Asaas ─────────────────────────────────────────────────────────
     (() => {
       const campos = [
-        { chave: "STRIPE_SECRET_KEY",         label: "Chave secreta",       presente: envSet("STRIPE_SECRET_KEY") },
-        { chave: "STRIPE_WEBHOOK_SECRET",      label: "Webhook secret",      presente: envSet("STRIPE_WEBHOOK_SECRET") },
-        { chave: "STRIPE_PRICE_STARTER",       label: "Price ID Starter",    presente: envSet("STRIPE_PRICE_STARTER") },
-        { chave: "STRIPE_PRICE_PROFISSIONAL",  label: "Price ID Profissional",presente: envSet("STRIPE_PRICE_PROFISSIONAL") },
-        { chave: "STRIPE_PRICE_ENTERPRISE",    label: "Price ID Enterprise", presente: envSet("STRIPE_PRICE_ENTERPRISE") },
-        { chave: "NEXT_PUBLIC_SITE_URL",       label: "URL do site",         presente: envSet("NEXT_PUBLIC_SITE_URL") },
+        { chave: "ASAAS_API_KEY",       label: "Chave de API",   presente: envSet("ASAAS_API_KEY") },
+        { chave: "ASAAS_WEBHOOK_TOKEN", label: "Token de webhook", presente: envSet("ASAAS_WEBHOOK_TOKEN") },
+        { chave: "NEXT_PUBLIC_SITE_URL", label: "URL do site",   presente: envSet("NEXT_PUBLIC_SITE_URL") },
       ];
       const presentes = campos.filter((c) => c.presente).length;
       const status: StatusIntegracao = presentes === campos.length ? "ok" : presentes === 0 ? "nao_configurado" : "parcial";
       return {
-        id: "stripe", nome: "Stripe (Faturamento)", icone: "💳",
+        id: "asaas", nome: "Asaas (Faturamento)", icone: "💳",
         status,
         campos,
-        doc_url: "https://dashboard.stripe.com",
-        descricao: `Pagamentos e assinaturas. ${ass ? `Plano atual: ${ass.plano ?? "—"} (${ass.status ?? "—"})` : "Sem assinatura registrada."}`,
+        doc_url: "https://www.asaas.com/",
+        descricao: `Pagamentos via Pix, boleto e cartão. ${ass ? `Plano atual: ${ass.plano ?? "—"} (${ass.status ?? "—"})` : "Sem assinatura registrada."}`,
       };
     })(),
 

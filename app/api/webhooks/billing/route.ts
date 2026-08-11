@@ -8,131 +8,103 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const PLANO_POR_PRICE: Record<string, string> = {
-  [process.env.STRIPE_PRICE_STARTER      ?? ""]: "starter",
-  [process.env.STRIPE_PRICE_PROFISSIONAL ?? ""]: "profissional",
-  [process.env.STRIPE_PRICE_ENTERPRISE   ?? ""]: "enterprise",
+type AsaasWebhookPayload = {
+  event: string;
+  payment?: {
+    id: string;
+    subscription?: string;
+    billingType?: string;
+    status?: string;
+  };
 };
 
 export async function POST(req: NextRequest) {
-  if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
+  if (!process.env.ASAAS_API_KEY) {
     return NextResponse.json({ ok: false, error: "billing_not_configured" }, { status: 503 });
   }
 
-  const { default: Stripe } = await import("stripe");
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2026-07-29.dahlia" });
-
-  const body = await req.text();
-  const sig  = req.headers.get("stripe-signature") ?? "";
-
-  let event: ReturnType<typeof stripe.webhooks.constructEvent>;
-  try {
-    event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-  } catch {
-    return NextResponse.json({ ok: false, error: "invalid_signature" }, { status: 400 });
+  // Asaas autentica o webhook por um token fixo configurado no painel deles,
+  // enviado no header abaixo -- não é uma assinatura HMAC como a Stripe usa.
+  const token = req.headers.get("asaas-access-token") ?? "";
+  const tokenEsperado = String(process.env.ASAAS_WEBHOOK_TOKEN || "").trim();
+  if (tokenEsperado && token !== tokenEsperado) {
+    return NextResponse.json({ ok: false, error: "invalid_token" }, { status: 401 });
   }
 
-  switch (event.type) {
-    case "checkout.session.completed": {
-      const session = event.data.object as {
-        customer: string;
-        subscription: string;
-        metadata: Record<string, string>;
-      };
-      const orgId = session.metadata?.org_id;
-      const plano = session.metadata?.plano ?? "starter";
-      if (!orgId) break;
+  const body = (await req.json().catch(() => null)) as AsaasWebhookPayload | null;
+  if (!body?.event) {
+    return NextResponse.json({ ok: false, error: "payload_invalido" }, { status: 400 });
+  }
 
-      await supabaseAdmin.from("assinaturas").upsert({
-        org_id:                  orgId,
-        stripe_customer_id:      session.customer,
-        stripe_subscription_id:  session.subscription,
-        plano,
-        status: "ativo",
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "stripe_subscription_id" });
+  const subscriptionId = body.payment?.subscription;
+  if (!subscriptionId) {
+    // Eventos de cobrança avulsa (fora de assinatura) não interessam aqui.
+    return NextResponse.json({ ok: true });
+  }
 
-      await supabaseAdmin.from("organizacoes").update({ plano }).eq("id", orgId);
-      break;
-    }
+  switch (body.event) {
+    case "PAYMENT_CONFIRMED":
+    case "PAYMENT_RECEIVED": {
+      const { data: assinatura } = await supabaseAdmin
+        .from("assinaturas")
+        .select("org_id, plano, forma_pagamento")
+        .eq("asaas_subscription_id", subscriptionId)
+        .maybeSingle();
 
-    case "customer.subscription.updated": {
-      const sub = event.data.object as unknown as {
-        id: string;
-        status: string;
-        items: { data: { price: { id: string } }[] };
-        current_period_start: number;
-        current_period_end: number;
-        cancel_at_period_end: boolean;
-        metadata: Record<string, string>;
-      };
-      const priceId = sub.items.data[0]?.price?.id ?? "";
-      const plano   = PLANO_POR_PRICE[priceId] ?? "starter";
-      const orgId   = sub.metadata?.org_id;
+      if (!assinatura) break;
 
-      const updates = {
-        plano,
-        status:          mapStatus(sub.status),
-        periodo_inicio:  new Date(sub.current_period_start * 1000).toISOString(),
-        periodo_fim:     new Date(sub.current_period_end   * 1000).toISOString(),
-        cancelar_no_fim: sub.cancel_at_period_end,
-        updated_at:      new Date().toISOString(),
-      };
+      const hoje = new Date();
+      const proximoMes = new Date(hoje);
+      proximoMes.setMonth(proximoMes.getMonth() + 1);
 
       await supabaseAdmin
         .from("assinaturas")
-        .update(updates)
-        .eq("stripe_subscription_id", sub.id);
+        .update({
+          status: "ativo",
+          forma_pagamento: body.payment?.billingType ?? assinatura.forma_pagamento,
+          periodo_inicio: hoje.toISOString(),
+          periodo_fim: proximoMes.toISOString(),
+          updated_at: hoje.toISOString(),
+        })
+        .eq("asaas_subscription_id", subscriptionId);
 
-      if (orgId) {
-        await supabaseAdmin.from("organizacoes").update({ plano }).eq("id", orgId);
-      }
+      await supabaseAdmin
+        .from("organizacoes")
+        .update({ plano: assinatura.plano })
+        .eq("id", assinatura.org_id);
       break;
     }
 
-    case "customer.subscription.deleted": {
-      const sub = event.data.object as { id: string; metadata: Record<string, string> };
-      const orgId = sub.metadata?.org_id;
+    case "PAYMENT_OVERDUE": {
+      await supabaseAdmin
+        .from("assinaturas")
+        .update({ status: "inadimplente", updated_at: new Date().toISOString() })
+        .eq("asaas_subscription_id", subscriptionId);
+      break;
+    }
+
+    case "PAYMENT_DELETED":
+    case "PAYMENT_REFUNDED": {
+      const { data: assinatura } = await supabaseAdmin
+        .from("assinaturas")
+        .select("org_id")
+        .eq("asaas_subscription_id", subscriptionId)
+        .maybeSingle();
 
       await supabaseAdmin
         .from("assinaturas")
         .update({ status: "cancelado", updated_at: new Date().toISOString() })
-        .eq("stripe_subscription_id", sub.id);
+        .eq("asaas_subscription_id", subscriptionId);
 
-      if (orgId) {
-        await supabaseAdmin.from("organizacoes").update({ plano: "gratuito" }).eq("id", orgId);
+      if (assinatura?.org_id) {
+        await supabaseAdmin
+          .from("organizacoes")
+          .update({ plano: "gratuito" })
+          .eq("id", assinatura.org_id);
       }
-      break;
-    }
-
-    case "invoice.payment_failed": {
-      const invoice = event.data.object as unknown as { subscription: string };
-      await supabaseAdmin
-        .from("assinaturas")
-        .update({ status: "inadimplente", updated_at: new Date().toISOString() })
-        .eq("stripe_subscription_id", invoice.subscription);
-      break;
-    }
-
-    case "invoice.paid": {
-      const invoice = event.data.object as unknown as { subscription: string };
-      await supabaseAdmin
-        .from("assinaturas")
-        .update({ status: "ativo", updated_at: new Date().toISOString() })
-        .eq("stripe_subscription_id", invoice.subscription);
       break;
     }
   }
 
   return NextResponse.json({ ok: true });
-}
-
-function mapStatus(stripeStatus: string): string {
-  switch (stripeStatus) {
-    case "active":   return "ativo";
-    case "trialing": return "trial";
-    case "past_due": return "inadimplente";
-    case "canceled": return "cancelado";
-    default:         return stripeStatus;
-  }
 }
