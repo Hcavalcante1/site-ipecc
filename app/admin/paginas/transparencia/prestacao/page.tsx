@@ -176,12 +176,6 @@ const styles = {
     fontWeight: typography.fontWeight.bold,
   } as React.CSSProperties,
 
-  grid2: {
-    display: "grid",
-    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    gap: sizes.grid.gap,
-  } as React.CSSProperties,
-
   full: {
     gridColumn: "1 / -1",
   } as React.CSSProperties,

@@ -52,11 +52,6 @@ const styles: Record<string, CSSProperties> = {
     fontSize: "0.84rem",
     fontWeight: 700,
   },
-  grid2: {
-    display: "grid",
-    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    gap: 14,
-  },
   full: {
     gridColumn: "1 / -1",
   },
@@ -117,7 +112,7 @@ export default function ConvenioCard({
         </span>
       </div>
 
-      <div style={styles.grid2}>
+      <div className="admin-grid-2" style={{ gap: 14 }}>
         <div style={styles.fieldWrap}>
           <label style={styles.label}>Referencia do edital publicado</label>
           <AdminInput className={classes.input} value={item.edital_id ?? ""} onChange={(e) => updateConvenio(index, "edital_id", e.target.value)} />

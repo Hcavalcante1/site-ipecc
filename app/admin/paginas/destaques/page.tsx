@@ -166,7 +166,7 @@ export default function DestaquesPage() {
               />
             </label>
 
-            <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" }}>
+            <div className="admin-grid-2" style={{ gap: 10 }}>
               <label style={{ fontSize: ".9rem" }}>
                 Texto do botão:
                 <input

@@ -61,11 +61,6 @@ const styles = {
     fontSize: "0.84rem",
     fontWeight: 700,
   } as CSSProperties,
-  grid2: {
-    display: "grid",
-    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    gap: 14,
-  } as CSSProperties,
   fieldWrap: {
     display: "grid",
     gap: 6,
@@ -160,7 +155,7 @@ export default function PrestacaoCard({
         </div>
       </div>
 
-      <div style={styles.grid2}>
+      <div className="admin-grid-2" style={{ gap: 14 }}>
         <div style={styles.fieldWrap}>
           <label style={styles.label}>Convênio vinculado</label>
           <AdminSelect

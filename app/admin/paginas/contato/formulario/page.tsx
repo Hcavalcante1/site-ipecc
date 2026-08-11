@@ -112,14 +112,7 @@ export default function ContatoMensagensAdminPage() {
       </p>
 
       {/* ================= LAYOUT ================= */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "420px 1fr",
-          gap: 32,
-          alignItems: "stretch",
-        }}
-      >
+      <div className="admin-shell-split--wide">
         {/* ================= INBOX ================= */}
         <aside
           style={{

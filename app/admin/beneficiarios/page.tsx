@@ -406,7 +406,7 @@ export default function BeneficiariosPage() {
               <button type="button" style={s.modalClose} onClick={() => setMostrarForm(false)}>✕</button>
             </div>
 
-            <div style={s.formGrid}>
+            <div className="admin-grid-2" style={{ marginBottom: 20 }}>
               <label style={s.label}>
                 Nome *
                 <input style={s.inputForm} value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} placeholder="Nome completo" />
@@ -482,8 +482,8 @@ export default function BeneficiariosPage() {
         <>
           <p style={s.totalLabel}>{total} beneficiário{total !== 1 ? "s" : ""} — exibindo {lista.length}</p>
 
-          <div style={s.tabela}>
-            <div style={s.tabelaHeader}>
+          <div className="admin-table-grid-wrap" style={s.tabela}>
+            <div style={{ ...s.tabelaHeader, minWidth: 620 }}>
               <span>Nome / CPF</span>
               <span>Programa</span>
               <span>Município / UF</span>
@@ -492,7 +492,7 @@ export default function BeneficiariosPage() {
               <span style={{ textAlign: "right" }}>Ações</span>
             </div>
             {lista.map((b) => (
-              <div key={b.id} style={s.tabelaRow}>
+              <div key={b.id} style={{ ...s.tabelaRow, minWidth: 620 }}>
                 <div>
                   <div style={s.bNome}>{b.nome}</div>
                   {b.cpf && <div style={s.bSub}>{b.cpf}</div>}
@@ -567,12 +567,11 @@ const s: Record<string, React.CSSProperties> = {
   modalHeader:  { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
   modalTitulo:  { margin: 0, fontSize: 17, fontWeight: 800, color: "#f1f5f9" },
   modalClose:   { background: "transparent", border: "none", color: "#64748b", fontSize: 18, cursor: "pointer", lineHeight: 1 },
-  formGrid:     { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 },
   label:        { fontSize: 12, fontWeight: 600, color: "#64748b", display: "flex", flexDirection: "column", gap: 5 },
   inputForm:    { padding: "8px 10px", borderRadius: 8, border: "1px solid rgba(148,163,184,0.35)", background: "rgba(2,6,23,0.7)", color: "#e2e8f0", fontSize: 13 },
   modalFooter:  { display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" },
   totalLabel:   { fontSize: 12, color: "#475569", marginBottom: 10 },
-  tabela:       { background: "rgba(15,23,42,0.7)", border: "1px solid rgba(148,163,184,0.12)", borderRadius: 14, overflow: "hidden" },
+  tabela:       { background: "rgba(15,23,42,0.7)", border: "1px solid rgba(148,163,184,0.12)", borderRadius: 14 },
   tabelaHeader: { display: "grid", gridTemplateColumns: "2fr 1.2fr 1.2fr 0.8fr 0.8fr 0.8fr", gap: 12, padding: "10px 16px", background: "rgba(2,6,23,0.6)", fontSize: 10, fontWeight: 800, color: "#475569", textTransform: "uppercase" as const, letterSpacing: "0.07em" },
   tabelaRow:    { display: "grid", gridTemplateColumns: "2fr 1.2fr 1.2fr 0.8fr 0.8fr 0.8fr", gap: 12, padding: "12px 16px", borderTop: "1px solid rgba(148,163,184,0.08)", alignItems: "center" },
   bNome:        { fontSize: 13, fontWeight: 700, color: "#e2e8f0" },

@@ -159,12 +159,6 @@ const styles = {
     fontWeight: typography.fontWeight.bold,
   } as React.CSSProperties,
 
-  grid2: {
-    display: "grid",
-    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    gap: sizes.grid.gap,
-  } as React.CSSProperties,
-
   full: {
     gridColumn: "1 / -1",
   } as React.CSSProperties,
@@ -537,7 +531,7 @@ return (
             </span>
           </div>
 
-          <div style={styles.grid2}>
+          <div className="admin-grid-2" style={{ gap: sizes.grid.gap }}>
             <div style={styles.fieldWrap}>
               <label style={styles.label}>Referencia do edital publicado</label>
               <AdminInput

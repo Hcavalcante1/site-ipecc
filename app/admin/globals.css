@@ -505,6 +505,51 @@ a.admin-button {
   box-shadow: 0 10px 26px rgba(16, 185, 129, 0.7);
 }
 
+/* ===== Grades fluidas reutilizáveis =====
+   Grids fixos de N colunas (ex.: "1fr 1fr", "280px 1fr") não colapsam
+   sozinhos em telas estreitas — diferente de repeat(auto-fit/auto-fill,
+   minmax(...)), que já reflui nativamente. Estas classes cobrem os
+   padrões de grid fixo usados nas páginas do admin. */
+
+/* Formulário/cartão de 2 colunas (ex.: campos lado a lado) */
+.admin-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Shell com painel fixo + conteúdo (ex.: lista + editor, inbox + leitura) */
+.admin-shell-split {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) 1fr;
+  gap: 12px;
+}
+
+.admin-shell-split--wide {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) 1fr;
+  gap: 32px;
+  align-items: stretch;
+}
+
+/* "Tabela" construída com grid de N colunas fixas (cabeçalho + linhas) */
+.admin-table-grid-wrap {
+  overflow-x: auto;
+}
+
+@media (max-width: 640px) {
+  .admin-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .admin-shell-split,
+  .admin-shell-split--wide {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ===== Responsivo ===== */
 
 @media (max-width: 900px) {

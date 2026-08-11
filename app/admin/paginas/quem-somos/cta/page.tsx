@@ -153,7 +153,7 @@ export default function QuemSomosCtaAdminPage() {
           <label style={{ marginTop: 10 }}>Texto do convite</label>
           <textarea value={conviteTexto} onChange={(e) => setConviteTexto(e.target.value)} style={textAreaStyle} />
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
+          <div className="admin-grid-2" style={{ gap: 12, marginTop: 12 }}>
             <div>
               <label>Texto do botão</label>
               <input value={botaoTexto} onChange={(e) => setBotaoTexto(e.target.value)} style={inputStyle} />

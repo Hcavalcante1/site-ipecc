@@ -153,12 +153,6 @@ const styles = {
     fontWeight: 700,
   } as React.CSSProperties,
 
-  grid2: {
-    display: "grid",
-    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    gap: 14,
-  } as React.CSSProperties,
-
   full: {
     gridColumn: "1 / -1",
   } as React.CSSProperties,
@@ -471,7 +465,7 @@ export default function TransparenciaEditaisAdmin() {
               </span>
             </div>
 
-            <div style={styles.grid2}>
+            <div className="admin-grid-2" style={{ gap: 14 }}>
               <div style={styles.fieldWrap}>
                 <label style={styles.label}>Edital / Chamamento</label>
                 <input style={styles.input} value={item.edital_id ?? ""} onChange={(e) => atualizarCampo(index, "edital_id", e.target.value)} />

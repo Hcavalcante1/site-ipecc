@@ -387,8 +387,8 @@ export default function LgpdAdminPage() {
           {solicitacoesFiltradas.length === 0 ? (
             <p style={sx.empty}>Nenhuma solicitação encontrada com os filtros atuais.</p>
           ) : (
-            <div style={sx.tabela}>
-              <div style={sx.tabelaHeader}>
+            <div className="admin-table-grid-wrap" style={sx.tabela}>
+              <div style={{ ...sx.tabelaHeader, minWidth: 680 }}>
                 <span>Titular</span>
                 <span>Tipo</span>
                 <span>Status</span>
@@ -400,7 +400,7 @@ export default function LgpdAdminPage() {
                 const dias = diasDesde(sol.created_at);
                 const isPendente = sol.status === "pendente" || sol.status === "em_andamento";
                 return (
-                  <div key={sol.id} style={sx.tabelaRow}>
+                  <div key={sol.id} style={{ ...sx.tabelaRow, minWidth: 680 }}>
                     <div>
                       <div style={sx.nome}>{sol.nome}</div>
                       <div style={sx.obs}>{sol.email}</div>
@@ -450,8 +450,8 @@ export default function LgpdAdminPage() {
             ))}
           </div>
 
-          <div style={sx.tabela}>
-            <div style={{ ...sx.tabelaHeader, gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr" }}>
+          <div className="admin-table-grid-wrap" style={sx.tabela}>
+            <div style={{ ...sx.tabelaHeader, gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr", minWidth: 520 }}>
               <span>Essencial</span>
               <span>Analytics</span>
               <span>Marketing</span>
@@ -461,7 +461,7 @@ export default function LgpdAdminPage() {
             {consentimentos.length === 0 ? (
               <p style={sx.empty}>Nenhum consentimento registrado.</p>
             ) : consentimentos.map((c) => (
-              <div key={c.id} style={{ ...sx.tabelaRow, gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr" }}>
+              <div key={c.id} style={{ ...sx.tabelaRow, gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr", minWidth: 520 }}>
                 <Bool v={c.aceito_essencial} />
                 <Bool v={c.aceito_analytics} />
                 <Bool v={c.aceito_marketing} />
@@ -525,7 +525,7 @@ const sx: Record<string, React.CSSProperties> = {
   emailBoxHeader:{ fontSize: 11, fontWeight: 800, color: "#475569", textTransform: "uppercase" as const, marginBottom: 8, letterSpacing: "0.07em" },
   emailPre:     { fontSize: 11, color: "#94a3b8", whiteSpace: "pre-wrap" as const, margin: 0, lineHeight: 1.7, fontFamily: "monospace" },
   btnCopiar:    { marginTop: 10, padding: "5px 12px", borderRadius: 7, border: "1px solid rgba(148,163,184,0.2)", background: "transparent", color: "#64748b", fontSize: 11, fontWeight: 600, cursor: "pointer" },
-  tabela:       { background: "rgba(15,23,42,0.7)", border: "1px solid rgba(148,163,184,0.12)", borderRadius: 14, overflow: "hidden" },
+  tabela:       { background: "rgba(15,23,42,0.7)", border: "1px solid rgba(148,163,184,0.12)", borderRadius: 14 },
   tabelaHeader: { display: "grid", gridTemplateColumns: "2fr 1.5fr 1fr 1fr 0.8fr 0.7fr", gap: 12, padding: "10px 16px", background: "rgba(2,6,23,0.6)", fontSize: 10, fontWeight: 800, color: "#475569", textTransform: "uppercase" as const, letterSpacing: "0.07em" },
   tabelaRow:    { display: "grid", gridTemplateColumns: "2fr 1.5fr 1fr 1fr 0.8fr 0.7fr", gap: 12, padding: "12px 16px", borderTop: "1px solid rgba(148,163,184,0.07)", alignItems: "center" },
   nome:         { fontSize: 13, fontWeight: 700, color: "#e2e8f0" },

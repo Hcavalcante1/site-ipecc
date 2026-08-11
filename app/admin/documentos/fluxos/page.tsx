@@ -211,12 +211,8 @@ export default function FluxosPage() {
         <p>Carregando...</p>
       ) : (
         <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(220px, 280px) 1fr",
-            gap: 12,
-            marginTop: 12,
-          }}
+          className="admin-shell-split"
+          style={{ marginTop: 12 }}
         >
           <div style={{ ...gdCardStyle, marginTop: 0 }}>
             <h2 className="admin-h2" style={{ marginTop: 0 }}>
