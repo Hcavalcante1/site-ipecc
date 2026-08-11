@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { verifyAdminSession } from "@/lib/auth/adminSession";
+import { enviarEmail } from "@/lib/email/mailer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -71,27 +72,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: updErr.message }, { status: 500 });
   }
 
-  // Tentativa de envio por e-mail via Resend
   let email_enviado = false;
   const corpo = corpoEmail(sol.nome as string, sol.tipo as string, resposta?.trim() || "(sem mensagem adicional)");
 
-  const apiKey = String(process.env.RESEND_API_KEY ?? "").trim();
-  const from   = String(process.env.RESEND_FROM ?? "").trim() || "IPECC <onboarding@resend.dev>";
-
-  if (apiKey && status !== "pendente" && sol.email && resposta?.trim()) {
-    try {
-      const { Resend } = await import("resend");
-      const resend = new Resend(apiKey);
-      const { error: emailErr } = await resend.emails.send({
-        from,
-        to:      sol.email as string,
-        subject: `Sua solicitação LGPD — ${TIPO_LABEL[sol.tipo as string] ?? sol.tipo} — IPECC`,
-        text:    corpo,
-      });
-      email_enviado = !emailErr;
-    } catch {
-      // sem-op — e-mail não configurado
-    }
+  if (status !== "pendente" && sol.email && resposta?.trim()) {
+    const mail = await enviarEmail({
+      to: sol.email as string,
+      subject: `Sua solicitação LGPD — ${TIPO_LABEL[sol.tipo as string] ?? sol.tipo} — IPECC`,
+      text: corpo,
+    });
+    email_enviado = mail.ok;
   }
 
   return NextResponse.json({

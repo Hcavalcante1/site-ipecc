@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomInt } from "crypto";
-import { Resend } from "resend";
+import { enviarEmail } from "@/lib/email/mailer";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { GD_STORAGE_BUCKET } from "@/lib/documentos/types";
 import { confirmarSenhaUsuario } from "@/lib/documentos/signing/passwordConfirm";
@@ -35,51 +35,18 @@ function hashNonce(raw: string): string {
   return createHash("sha256").update(raw).digest("hex");
 }
 
-function resolverFrom(): string {
-  const raw =
-    String(process.env.RESEND_FROM || "").trim() ||
-    String(process.env.EMAIL_FROM || "").trim() ||
-    "IPECC <onboarding@resend.dev>";
-  if (/<[^>]+>/.test(raw)) return raw;
-  if (raw.includes("@")) return `IPECC <${raw}>`;
-  return "IPECC <onboarding@resend.dev>";
-}
-
 async function enviarOtpAvancado(to: string, code: string) {
-  const apiKey = String(process.env.RESEND_API_KEY || "").trim();
-  if (!apiKey) {
-    return { ok: false as const, error: "RESEND_API_KEY ausente." };
-  }
-  try {
-    const resend = new Resend(apiKey);
-    const { error } = await resend.emails.send({
-      from: resolverFrom(),
-      to,
-      subject: "[IPECC] Código MFA — Assinatura avançada",
-      text: [
-        "Confirmação MFA para Assinatura Eletrônica Avançada IPECC.",
-        "",
-        `Código: ${code}`,
-        "",
-        "Validade: 5 minutos. Se não foi você, ignore este e-mail.",
-      ].join("\n"),
-    });
-    if (error) {
-      return {
-        ok: false as const,
-        error:
-          typeof error === "object" && error && "message" in error
-            ? String((error as { message?: string }).message)
-            : "Falha ao enviar OTP.",
-      };
-    }
-    return { ok: true as const };
-  } catch (e) {
-    return {
-      ok: false as const,
-      error: e instanceof Error ? e.message : "Falha ao enviar OTP.",
-    };
-  }
+  return enviarEmail({
+    to,
+    subject: "[IPECC] Código MFA — Assinatura avançada",
+    text: [
+      "Confirmação MFA para Assinatura Eletrônica Avançada IPECC.",
+      "",
+      `Código: ${code}`,
+      "",
+      "Validade: 5 minutos. Se não foi você, ignore este e-mail.",
+    ].join("\n"),
+  });
 }
 
 async function ensureSystemKeyRow(): Promise<
@@ -543,7 +510,7 @@ export async function iniciarAutenticacaoAvancada(opts: {
     String(process.env.SIGNATURE_OTP_ALLOW_PANEL_FALLBACK || "")
       .trim()
       .toLowerCase() === "true" ||
-    !String(process.env.RESEND_API_KEY || "").trim() ||
+    (!mail.ok && /não configurado/i.test(mail.error ?? "")) ||
     (process.env.NODE_ENV !== "production" &&
       process.env.VERCEL_ENV !== "production");
 
@@ -555,7 +522,7 @@ export async function iniciarAutenticacaoAvancada(opts: {
     return {
       ok: false,
       error:
-        "Falha ao enviar MFA por e-mail. Configure Resend ou SIGNATURE_OTP_ALLOW_PANEL_FALLBACK=true.",
+        "Falha ao enviar MFA por e-mail. Configure o SMTP (tabela email_config) ou SIGNATURE_OTP_ALLOW_PANEL_FALLBACK=true.",
       status: 503,
     };
   }
@@ -570,7 +537,7 @@ export async function iniciarAutenticacaoAvancada(opts: {
           devCode: code,
           emailWarning:
             mail.error ||
-            "OTP exibido no painel (Resend ausente ou contingência).",
+            "OTP exibido no painel (e-mail ausente ou contingência).",
         }),
   };
 }

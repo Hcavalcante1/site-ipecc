@@ -344,7 +344,7 @@ export default function LgpdAdminPage() {
                 <label style={sx.labelModal}>
                   Resposta ao titular
                   <span style={{ fontSize: 11, color: "#475569", marginLeft: 6, fontWeight: 400 }}>
-                    (será enviada por e-mail se RESEND_API_KEY estiver configurada)
+                    (será enviada por e-mail se o SMTP estiver configurado)
                   </span>
                   <textarea
                     rows={6}

@@ -35,6 +35,14 @@ export async function GET() {
     .select("plano, status, stripe_customer_id")
     .maybeSingle();
 
+  const { data: emailConfigRows } = await supabase
+    .from("email_config")
+    .select("chave, valor");
+  const emailCfg: Record<string, string> = {};
+  for (const row of (emailConfigRows ?? []) as { chave: string; valor: string }[]) {
+    emailCfg[row.chave] = row.valor;
+  }
+
   const ass = assinatura as { plano?: string; status?: string; stripe_customer_id?: string } | null;
 
   const integracoes: Integracao[] = [
@@ -76,20 +84,21 @@ export async function GET() {
       };
     })(),
 
-    // ── Resend (E-mail) ───────────────────────────────────────────────
+    // ── E-mail (SMTP) ────────────────────────────────────────────────
     (() => {
       const campos = [
-        { chave: "RESEND_API_KEY", label: "API Key",        presente: envSet("RESEND_API_KEY") },
-        { chave: "RESEND_FROM",    label: "Endereço FROM",  presente: envSet("RESEND_FROM") },
+        { chave: "smtp_host", label: "Servidor SMTP", presente: Boolean(emailCfg.smtp_host) },
+        { chave: "smtp_user", label: "Usuário/remetente", presente: Boolean(emailCfg.smtp_user) },
+        { chave: "smtp_pass", label: "Senha",          presente: Boolean(emailCfg.smtp_pass) },
       ];
       const todos = campos.every((c) => c.presente);
       const nenhum = campos.every((c) => !c.presente);
       return {
-        id: "resend", nome: "Resend (E-mail)", icone: "📧",
+        id: "email", nome: "E-mail (SMTP)", icone: "📧",
         status: todos ? "ok" : nenhum ? "nao_configurado" : "parcial" as StatusIntegracao,
         campos,
-        doc_url: "https://resend.com",
-        descricao: "Envio de e-mails transacionais: convites, resposta LGPD, OTP de assinatura.",
+        doc_url: null,
+        descricao: `Envio de e-mails transacionais: convites, resposta LGPD, OTP de assinatura. Servidor: ${emailCfg.smtp_host || "—"}.`,
       };
     })(),
 

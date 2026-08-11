@@ -99,7 +99,6 @@
     "react": "18.2.0",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "18.2.0",
-    "resend": "^6.18.1",
     "sharp": "^0.35.3",
     "stripe": "^22.4.0"
   },

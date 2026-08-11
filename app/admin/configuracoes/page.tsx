@@ -204,7 +204,7 @@ export default function ConfiguracoesPage() {
       <div style={s.testeCard}>
         <h2 style={s.testeTitulo}>📧 Testar envio de e-mail</h2>
         <p style={s.testeDesc}>
-          Envia uma mensagem de teste para verificar se o Resend está funcionando.
+          Envia uma mensagem de teste para verificar se o envio de e-mail está funcionando.
           {userEmail && <> Seu e-mail: <strong>{userEmail}</strong></>}
         </p>
         <div style={s.testeRow}>

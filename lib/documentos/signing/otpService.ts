@@ -1,5 +1,5 @@
 import { createHash, randomInt } from "crypto";
-import { Resend } from "resend";
+import { enviarEmail } from "@/lib/email/mailer";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { otpPepper, otpPermitirCodigoNoPainel } from "./constants";
 
@@ -16,67 +16,27 @@ function gerarCodigo6(): string {
   return String(randomInt(0, 1_000_000)).padStart(6, "0");
 }
 
-function resolverRemetenteOtp(): string {
-  const raw =
-    String(process.env.RESEND_FROM || "").trim() ||
-    String(process.env.EMAIL_FROM || "").trim() ||
-    String(process.env.EMAIL_ADMIN || "").trim() ||
-    String(process.env.EMAIL_CONTATO || "").trim() ||
-    "IPECC <onboarding@resend.dev>";
-
-  if (/<[^>]+>/.test(raw)) return raw;
-  if (raw.includes("@")) return `IPECC <${raw}>`;
-  return "IPECC <onboarding@resend.dev>";
-}
-
 async function enviarEmailOtp(opts: {
   to: string;
   code: string;
 }): Promise<{ ok: boolean; error?: string }> {
-  const apiKey = String(process.env.RESEND_API_KEY || "").trim();
-  if (!apiKey) {
+  const result = await enviarEmail({
+    to: opts.to,
+    subject: "[IPECC] Código de assinatura eletrônica",
+    text: [
+      "Você solicitou assinar eletronicamente um documento no IPECC.",
+      "",
+      `Código: ${opts.code}`,
+      "",
+      "Validade: 10 minutos. Se não foi você, ignore este e-mail.",
+    ].join("\n"),
+  });
+  if (!result.ok) {
     console.info(
-      `[assinatura-ipecc] OTP (sem RESEND_API_KEY) para ${opts.to}: ${opts.code}`
+      `[assinatura-ipecc] OTP (e-mail indisponível: ${result.error}) para ${opts.to}: ${opts.code}`
     );
-    return {
-      ok: false,
-      error:
-        "E-mail OTP não configurado (RESEND_API_KEY). Use o código exibido no painel.",
-    };
   }
-
-  const from = resolverRemetenteOtp();
-
-  try {
-    const resend = new Resend(apiKey);
-    const { error } = await resend.emails.send({
-      from,
-      to: opts.to,
-      subject: "[IPECC] Código de assinatura eletrônica",
-      text: [
-        "Você solicitou assinar eletronicamente um documento no IPECC.",
-        "",
-        `Código: ${opts.code}`,
-        "",
-        "Validade: 10 minutos. Se não foi você, ignore este e-mail.",
-      ].join("\n"),
-    });
-    if (error) {
-      return {
-        ok: false,
-        error:
-          typeof error === "object" && error && "message" in error
-            ? String((error as { message?: string }).message)
-            : "Falha ao enviar e-mail OTP.",
-      };
-    }
-    return { ok: true };
-  } catch (e) {
-    return {
-      ok: false,
-      error: e instanceof Error ? e.message : "Falha ao enviar e-mail OTP.",
-    };
-  }
+  return result;
 }
 
 export async function criarEEnviarOtp(opts: {
@@ -90,8 +50,8 @@ export async function criarEEnviarOtp(opts: {
       ok: true;
       challengeId: string;
       /**
-       * Código ecoado no painel admin quando o e-mail falha
-       * (ex.: domínio Resend não verificado) ou não há RESEND_API_KEY.
+       * Código ecoado no painel admin quando o e-mail falha ou o
+       * SMTP (tabela email_config) não está configurado.
        */
       devCode?: string;
       emailWarning?: string;
@@ -178,7 +138,7 @@ export async function criarEEnviarOtp(opts: {
       return {
         ok: false,
         error:
-          "Não foi possível enviar o código OTP por e-mail. Configure o Resend ou defina SIGNATURE_OTP_ALLOW_PANEL_FALLBACK=true (apenas se aceitar o risco operacional).",
+          "Não foi possível enviar o código OTP por e-mail. Configure o SMTP (tabela email_config) ou defina SIGNATURE_OTP_ALLOW_PANEL_FALLBACK=true (apenas se aceitar o risco operacional).",
         status: 503,
       };
     }
