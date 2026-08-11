@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAdminSession } from "@/lib/auth/adminSession";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
+  const auth = await verifyAdminSession();
+  if (auth.ok === false) {
+    return NextResponse.json({ ok: false, error: auth.message }, { status: auth.status });
+  }
+
   const { destinatario } = (await req.json()) as { destinatario?: string };
 
   if (!destinatario?.trim()) {

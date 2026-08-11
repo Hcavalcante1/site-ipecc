@@ -8,6 +8,10 @@ const PRICE_MAP: Record<string, string | undefined> = {
   enterprise:   process.env.STRIPE_PRICE_ENTERPRISE,
 };
 
+// Mesmo fallback usado em lib/auth/useOrgContexto.ts quando o usuário não tem
+// linha em org_membros.
+const IPECC_ORG_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+
 export async function POST(req: NextRequest) {
   if (!process.env.STRIPE_SECRET_KEY) {
     return NextResponse.json({ ok: false, error: "billing_not_configured" }, { status: 503 });
@@ -31,12 +35,31 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
-  const { data: org } = await supabase
-    .from("organizacoes")
-    .select("id, nome")
-    .order("created_at", { ascending: true })
+  // Organizacao do usuario logado (nao a mais antiga do banco -- bug corrigido
+  // em 2026-08-11, ver docs/INCIDENTE-RLS-REPOS-DIVERGENTES-2026-08-11.md).
+  // Mesmo padrao de lib/auth/useOrgContexto.ts: busca via org_membros, com
+  // fallback pra org padrao do IPECC se o usuario nao tiver membership.
+  const { data: membro } = await supabase
+    .from("org_membros")
+    .select("org_id, organizacoes(id, nome)")
+    .eq("user_id", user.id)
+    .eq("ativo", true)
     .limit(1)
     .maybeSingle();
+
+  type OrgRow = { id: string; nome: string };
+  let org: OrgRow | null = membro?.organizacoes
+    ? ((Array.isArray(membro.organizacoes) ? membro.organizacoes[0] : membro.organizacoes) as OrgRow)
+    : null;
+
+  if (!org) {
+    const { data: orgPadrao } = await supabase
+      .from("organizacoes")
+      .select("id, nome")
+      .eq("id", IPECC_ORG_ID)
+      .maybeSingle();
+    org = orgPadrao;
+  }
 
   if (!org) {
     return NextResponse.json({ ok: false, error: "org_not_found" }, { status: 404 });

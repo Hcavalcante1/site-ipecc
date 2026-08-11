@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { verifyAdminSession } from "@/lib/auth/adminSession";
 
 type CheckStatus = "ok" | "aviso" | "erro";
 
@@ -33,6 +34,11 @@ async function checarTabelas(supabase: ReturnType<typeof getSupabaseAdmin>): Pro
 }
 
 export async function GET() {
+  const auth = await verifyAdminSession();
+  if (auth.ok === false) {
+    return NextResponse.json({ ok: false, error: auth.message }, { status: auth.status });
+  }
+
   const checks: Check[] = [];
   const supabase = getSupabaseAdmin();
 

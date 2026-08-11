@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { verifyAdminSession } from "@/lib/auth/adminSession";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,6 +30,11 @@ IPECC — Instituto de Pesquisa, Estudos e Capacitação do Comportamento`.trim(
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await verifyAdminSession();
+  if (auth.ok === false) {
+    return NextResponse.json({ ok: false, error: auth.message }, { status: auth.status });
+  }
+
   const body = await req.json() as {
     id: string;
     status: string;
