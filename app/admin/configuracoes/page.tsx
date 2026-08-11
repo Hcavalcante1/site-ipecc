@@ -49,13 +49,32 @@ export default function ConfiguracoesPage() {
     })();
 
     void (async () => {
-      const { data } = await supabase
-        .from("organizacoes")
-        .select("nome, plano")
-        .order("created_at", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      const d = data as { nome?: string; plano?: string } | null;
+      // Organizacao do usuario logado, nao a mais antiga do banco (bug
+      // real corrigido em 2026-08-11 -- ver
+      // docs/RELATORIO-COMPLETO-GAPS-OPERACIONAIS-2026-08-11.md).
+      const IPECC_ORG_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+      const { data: { user } } = await supabase.auth.getUser();
+      let d: { nome?: string; plano?: string } | null = null;
+      if (user) {
+        const { data: membro } = await supabase
+          .from("org_membros")
+          .select("organizacoes(nome, plano)")
+          .eq("user_id", user.id)
+          .eq("ativo", true)
+          .limit(1)
+          .maybeSingle();
+        d = membro?.organizacoes
+          ? ((Array.isArray(membro.organizacoes) ? membro.organizacoes[0] : membro.organizacoes) as typeof d)
+          : null;
+      }
+      if (!d) {
+        const { data: orgPadrao } = await supabase
+          .from("organizacoes")
+          .select("nome, plano")
+          .eq("id", IPECC_ORG_ID)
+          .maybeSingle();
+        d = orgPadrao as typeof d;
+      }
       if (d) { setOrgNome(d.nome ?? ""); setOrgPlano(d.plano ?? ""); }
     })();
   }, [carregar]);

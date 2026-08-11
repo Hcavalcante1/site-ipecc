@@ -46,12 +46,32 @@ export default function OrganizacaoPage() {
 
   const carregar = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("organizacoes")
-      .select("*")
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
+    // Organizacao do usuario logado, nao a mais antiga do banco (bug real
+    // corrigido em 2026-08-11 -- ver docs/RELATORIO-COMPLETO-GAPS-OPERACIONAIS-2026-08-11.md).
+    const IPECC_ORG_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+    const { data: { user } } = await supabase.auth.getUser();
+    let data: Org | null = null;
+    if (user) {
+      const { data: membro } = await supabase
+        .from("org_membros")
+        .select("organizacoes(*)")
+        .eq("user_id", user.id)
+        .eq("ativo", true)
+        .limit(1)
+        .maybeSingle();
+      const orgDoMembro = membro?.organizacoes
+        ? ((Array.isArray(membro.organizacoes) ? membro.organizacoes[0] : membro.organizacoes) as Org)
+        : null;
+      data = orgDoMembro;
+    }
+    if (!data) {
+      const { data: orgPadrao } = await supabase
+        .from("organizacoes")
+        .select("*")
+        .eq("id", IPECC_ORG_ID)
+        .maybeSingle();
+      data = orgPadrao as Org | null;
+    }
     if (data) {
       const o = data as Org;
       setOrg(o);

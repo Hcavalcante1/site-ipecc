@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { getOrgDoUsuario } from "@/lib/auth/getOrgUsuario";
 
 export async function POST(req: NextRequest) {
   if (!process.env.STRIPE_SECRET_KEY) {
@@ -19,12 +20,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
-  const { data: org } = await supabase
-    .from("organizacoes")
-    .select("id")
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+  // Organizacao do usuario logado, nao a mais antiga do banco (mesmo bug
+  // corrigido em app/api/billing/checkout/route.ts em 2026-08-11).
+  const org = await getOrgDoUsuario(supabase, user.id);
 
   if (!org) {
     return NextResponse.json({ ok: false, error: "org_not_found" }, { status: 404 });
