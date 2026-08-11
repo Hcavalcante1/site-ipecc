@@ -302,9 +302,10 @@ export default function TransparenciaConveniosAdmin() {
           ? data
           : [novoConvenio(processoPadrao(escopo.processoIds))]
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
       console.error("Erro ao carregar convênios:", error);
-      setMsg(`Erro ao carregar convênios: ${error.message}`);
+      setMsg(`Erro ao carregar convênios: ${message}`);
       setConvenios([novoConvenio(processoPadrao(escopo.processoIds))]);
     } finally {
       setLoading(false);
@@ -353,18 +354,18 @@ export default function TransparenciaConveniosAdmin() {
       try {
         await saveConvenio(item);
         setBlockMsg(i, "Bloco salvo com sucesso.");
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
         console.error(error);
-        setMsg(`Erro ao salvar convênios: ${error.message}`);
-        setBlockMsg(i, `Erro ao salvar este bloco: ${error.message}`);
-        triggerToast(`Erro ao salvar: ${error.message}`, "error");
+        setMsg(`Erro ao salvar convênios: ${message}`);
+        setBlockMsg(i, `Erro ao salvar este bloco: ${message}`);
+        triggerToast(`Erro ao salvar: ${message}`, "error");
         return;
       }
     }
 
     await carregar();
     setMsg("Convênios salvos com sucesso.");
-    triggerToast("Convênios salvos com sucesso.", "success");
     triggerToast("Convênios salvos com sucesso.", "success");
   }
 
@@ -383,11 +384,12 @@ export default function TransparenciaConveniosAdmin() {
       setBlockMsg(index, "Bloco salvo com sucesso.");
       setMsg("Convênio salvo com sucesso.");
       triggerToast("Convênio salvo.", "success");
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
       console.error(error);
-      setBlockMsg(index, `Erro ao salvar este bloco: ${error.message}`);
-      setMsg(`Erro ao salvar convênios: ${error.message}`);
-      triggerToast(`Erro ao salvar: ${error.message}`, "error");
+      setBlockMsg(index, `Erro ao salvar este bloco: ${message}`);
+      setMsg(`Erro ao salvar convênios: ${message}`);
+      triggerToast(`Erro ao salvar: ${message}`, "error");
     }
   }
 
@@ -415,11 +417,12 @@ export default function TransparenciaConveniosAdmin() {
       await carregar();
       setMsg("Convênio excluído com sucesso.");
       triggerToast("Convênio excluído.", "success");
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
       console.error(error);
-      setBlockMsg(idx, `Erro ao excluir este bloco: ${error.message}`);
-      setMsg(`Erro ao excluir convênio: ${error.message}`);
-      triggerToast(`Erro ao excluir: ${error.message}`, "error");
+      setBlockMsg(idx, `Erro ao excluir este bloco: ${message}`);
+      setMsg(`Erro ao excluir convênio: ${message}`);
+      triggerToast(`Erro ao excluir: ${message}`, "error");
     }
   }
 

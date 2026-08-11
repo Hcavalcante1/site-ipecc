@@ -84,7 +84,7 @@ export default function ContatoCanaisAdmin() {
 
         setData({
           titulo: db.canais_oficiais.titulo ?? "Canais Oficiais",
-          cards: dbCards.map((card: any) => ({
+          cards: dbCards.map((card: Partial<Card>) => ({
             titulo: card.titulo || "",
             descricao: card.descricao || "",
             itens: Array.isArray(card.itens) ? card.itens : [],
@@ -187,7 +187,7 @@ export default function ContatoCanaisAdmin() {
                 value={item.tipo}
                 onChange={(e) => {
                   const cp = [...data.cards];
-                  cp[ci].itens[ii].tipo = e.target.value as any;
+                  cp[ci].itens[ii].tipo = e.target.value as Item["tipo"];
                   setData({ ...data, cards: cp });
                 }}
               >

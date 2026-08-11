@@ -23,6 +23,7 @@ import {
   Tooltip,
   Legend,
   Filler,
+  type ChartOptions,
 } from "chart.js";
 
 import { Line } from "react-chartjs-2";
@@ -594,7 +595,7 @@ export default function AdminDashboardClient({ userEmail }: Props) {
     ],
   };
 
-  const chartOptions = {
+  const chartOptions: ChartOptions<"line"> = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -775,7 +776,7 @@ export default function AdminDashboardClient({ userEmail }: Props) {
               </div>
               {temAtividade ? (
                 <div style={styles.chartBox}>
-                  <Line data={chartData} options={chartOptions as any} />
+                  <Line data={chartData} options={chartOptions} />
                 </div>
               ) : (
                 <div style={styles.emptyChart}>
@@ -1153,7 +1154,7 @@ const metricTone = {
   },
 };
 
-const styles: any = {
+const styles: Record<string, React.CSSProperties> = {
   wrapper: {
     display: "flex",
     flexDirection: "column",

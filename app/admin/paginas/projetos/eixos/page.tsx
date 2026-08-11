@@ -51,7 +51,7 @@ export default function ProjetosEixosAdminPage() {
     }
   }
 
-  function updateEixo(id: string | undefined, campo: keyof Eixo, valor: any) {
+  function updateEixo<K extends keyof Eixo>(id: string | undefined, campo: K, valor: Eixo[K]) {
     setEixos((prev) =>
       prev.map((e) => (e.id === id ? { ...e, [campo]: valor } : e))
     );

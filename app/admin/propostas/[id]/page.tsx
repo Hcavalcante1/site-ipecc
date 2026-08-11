@@ -35,6 +35,25 @@ type CertidaoTipo = {
   nome: string;
 };
 
+type Proposta = {
+  id: string;
+  nome: string;
+  cnpj: string;
+  email: string;
+  telefone: string;
+  mensagem: string;
+  tipo?: string;
+  status?: string;
+  categoria?: string | null;
+  criado_em?: string | null;
+  edital_id?: string | null;
+  editais?:
+    | { titulo?: string | null; fase_atual?: string | null; tipo?: string | null; processo_id?: string | null }
+    | { titulo?: string | null; fase_atual?: string | null; tipo?: string | null; processo_id?: string | null }[]
+    | null;
+  [key: string]: unknown;
+};
+
 const shellStyle: CSSProperties = {
   padding: adminTokens.spacing.base + adminTokens.spacing.xl,
 };
@@ -85,7 +104,7 @@ export default function Page() {
 
   const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
 
-  const [proposta, setProposta] = useState<any>(null);
+  const [proposta, setProposta] = useState<Proposta | null>(null);
   const [loading, setLoading] = useState(true);
   const [foraEscopo, setForaEscopo] = useState(false);
   const [certidoesEntidade, setCertidoesEntidade] = useState<CertidaoEntidadeLinha[]>(
