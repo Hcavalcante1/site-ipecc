@@ -25,6 +25,7 @@ export default function NoticiasAdmin() {
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState<Filtro>("todas");
   const [excluindoId, setExcluindoId] = useState<string | null>(null);
+  const [pagina, setPagina] = useState(0);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -74,6 +75,10 @@ export default function NoticiasAdmin() {
     return true;
   });
 
+  const POR_PAGINA = 12;
+  const listaPaginada = lista.slice(0, (pagina + 1) * POR_PAGINA);
+  const temMais = lista.length > listaPaginada.length;
+
   return (
     <div style={s.wrap}>
       <div style={s.pageHeader}>
@@ -95,18 +100,22 @@ export default function NoticiasAdmin() {
             { key: "publicadas" as Filtro, label: "Publicadas", valor: stPublicadas, cor: "#86efac" },
             { key: "rascunhos" as Filtro,  label: "Rascunhos",  valor: stRascunhos,  cor: "#fbbf24" },
           ]).map((st) => (
-            <div
+            <button
               key={st.key}
-              onClick={() => setFiltro(filtro === st.key ? "todas" : st.key)}
+              type="button"
+              aria-pressed={filtro === st.key}
+              onClick={() => { setFiltro(filtro === st.key ? "todas" : st.key); setPagina(0); }}
               style={{
                 ...s.statCard,
+                textAlign: "left",
+                cursor: "pointer",
                 border: `1px solid ${filtro === st.key ? "#3b82f6" : "rgba(148,163,184,0.12)"}`,
                 background: filtro === st.key ? "rgba(30,64,175,0.28)" : "rgba(15,23,42,0.85)",
               }}
             >
               <div style={{ ...s.statNum, color: st.cor }}>{st.valor}</div>
               <div style={s.statLabel}>{st.label}</div>
-            </div>
+            </button>
           ))}
         </div>
       )}
@@ -117,7 +126,7 @@ export default function NoticiasAdmin() {
             type="search"
             placeholder="Buscar por título..."
             value={busca}
-            onChange={(e) => setBusca(e.target.value)}
+            onChange={(e) => { setBusca(e.target.value); setPagina(0); }}
             style={s.input}
           />
         </div>
@@ -131,7 +140,7 @@ export default function NoticiasAdmin() {
         </p>
       ) : (
         <div style={s.grid}>
-          {lista.map((n) => (
+          {listaPaginada.map((n) => (
             <div key={n.id} style={s.card}>
               <div style={s.cardTop}>
                 <span style={{ ...s.badge, ...(n.publicado ? s.badgePublicado : s.badgeRascunho) }}>
@@ -159,6 +168,12 @@ export default function NoticiasAdmin() {
           ))}
         </div>
       )}
+
+      {temMais && (
+        <button type="button" style={s.btnCarregarMais} onClick={() => setPagina((p) => p + 1)}>
+          Carregar mais ({lista.length - listaPaginada.length} restantes)
+        </button>
+      )}
     </div>
   );
 }
@@ -174,6 +189,7 @@ const s: Record<string, React.CSSProperties> = {
   statLabel:     { fontSize: 11, color: "#475569", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em" },
   input:         { width: "100%", maxWidth: 340, padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(148,163,184,0.4)", background: "rgba(2,6,23,0.7)", color: "#e5e7eb", fontSize: 13 },
   grid:          { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 14 },
+  btnCarregarMais: { marginTop: 16, padding: "10px 20px", borderRadius: 10, border: "1px solid rgba(148,163,184,0.3)", background: "#1e293b", color: "#e2e8f0", fontSize: 13, fontWeight: 700, cursor: "pointer" },
   card:          { background: "rgba(15,23,42,0.85)", border: "1px solid rgba(148,163,184,0.14)", borderRadius: 16, padding: 18 },
   cardTop:       { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
   cardTitulo:    { display: "block", fontSize: 15, fontWeight: 800, color: "#e2e8f0", marginBottom: 6 },

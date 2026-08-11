@@ -78,6 +78,7 @@ export default function PropostasPage() {
   const buscaReal                       = useRef("");
   const buscaTimer                      = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [filtroStatus, setFiltroStatus] = useState<StatusProposta | "">("");
+  const [pagina, setPagina]             = useState(0);
 
   const { resumo: resumoAnexos, carregando: carregandoAnexos } =
     useResumoAnexosListagem(todas);
@@ -127,10 +128,17 @@ export default function PropostasPage() {
   const aprovadas  = todas.filter((p) => p.status === "aprovado").length;
   const rejeitadas = todas.filter((p) => p.status === "rejeitado").length;
 
+  // ── Paginação client-side ───────────────────────────────────────────────
+
+  const POR_PAGINA = 12;
+  const exibidasPaginadas = exibidas.slice(0, (pagina + 1) * POR_PAGINA);
+  const temMais = exibidas.length > exibidasPaginadas.length;
+
   // ── Busca debounced ─────────────────────────────────────────────────────
 
   function onBuscaChange(v: string) {
     setBusca(v);
+    setPagina(0);
     if (buscaTimer.current) clearTimeout(buscaTimer.current);
     buscaTimer.current = setTimeout(() => { buscaReal.current = v; setBusca(v); }, 300);
   }
@@ -242,7 +250,7 @@ export default function PropostasPage() {
           onChange={(e) => onBuscaChange(e.target.value)}
           style={s.inputFiltro}
         />
-        <select value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value as StatusProposta | "")} style={s.selectFiltro}>
+        <select value={filtroStatus} onChange={(e) => { setFiltroStatus(e.target.value as StatusProposta | ""); setPagina(0); }} style={s.selectFiltro}>
           <option value="">Todos os status</option>
           <option value="pendente">Pendente</option>
           <option value="em_analise">Em análise</option>
@@ -250,7 +258,7 @@ export default function PropostasPage() {
           <option value="rejeitado">Rejeitado</option>
         </select>
         {(busca || filtroStatus) && (
-          <button style={s.btnLimpar} onClick={() => { setBusca(""); buscaReal.current = ""; setFiltroStatus(""); }}>
+          <button style={s.btnLimpar} onClick={() => { setBusca(""); buscaReal.current = ""; setFiltroStatus(""); setPagina(0); }}>
             ✕ Limpar
           </button>
         )}
@@ -264,7 +272,7 @@ export default function PropostasPage() {
         </p>
       ) : (
         <div style={s.grid}>
-          {exibidas.map((p) => {
+          {exibidasPaginadas.map((p) => {
             const edital    = Array.isArray(p.editais) ? p.editais[0] : p.editais;
             const urlEdital = p.edital_id ? getUrlConsultaEditalAdmin(p.edital_id, edital) : null;
             const novaAba   = urlEdital?.startsWith("/editais/");
@@ -357,6 +365,12 @@ export default function PropostasPage() {
           })}
         </div>
       )}
+
+      {temMais && (
+        <button type="button" style={s.btnCarregarMais} onClick={() => setPagina((p) => p + 1)}>
+          Carregar mais ({exibidas.length - exibidasPaginadas.length} restantes)
+        </button>
+      )}
     </div>
   );
 }
@@ -394,6 +408,7 @@ const s: Record<string, React.CSSProperties> = {
   contagem:    { fontSize: 12, color: "#334155", alignSelf: "center" as const },
 
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: 14 },
+  btnCarregarMais: { marginTop: 16, padding: "10px 20px", borderRadius: 10, border: "1px solid rgba(148,163,184,0.3)", background: "#1e293b", color: "#e2e8f0", fontSize: 13, fontWeight: 700, cursor: "pointer" },
   card: { background: "rgba(15,23,42,0.85)", border: "1px solid", borderRadius: 16, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 },
 
   cardTop:  { display: "flex", gap: 10, alignItems: "flex-start" },

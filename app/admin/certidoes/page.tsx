@@ -78,6 +78,8 @@ function labelStatus(status: string) {
   return status.replace(/_/g, " ");
 }
 
+const POR_PAGINA = 50;
+
 function filtrarVersoesCorrentes(lista: Certidao[]): Certidao[] {
   const idsComSucessor = new Set(
     lista
@@ -92,6 +94,7 @@ export default function CertidoesAdminPage() {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [filtro, setFiltro] = useState<"todos" | "vencidas" | "vencendo7">("todos");
+  const [pagina, setPagina] = useState(0);
 
   useEffect(() => {
     carregar();
@@ -163,6 +166,9 @@ export default function CertidoesAdminPage() {
     return linhas;
   }, [linhas, filtro]);
 
+  const linhasPaginadas = linhasFiltradas.slice(0, (pagina + 1) * POR_PAGINA);
+  const temMais = linhasFiltradas.length > linhasPaginadas.length;
+
   return (
     <>
       <h1 className="admin-h1">Certidões e Regularidade Fiscal</h1>
@@ -188,7 +194,7 @@ export default function CertidoesAdminPage() {
             <button
               key={card.key}
               type="button"
-              onClick={() => setFiltro(filtro === card.key && card.key !== "todos" ? "todos" : card.key)}
+              onClick={() => { setFiltro(filtro === card.key && card.key !== "todos" ? "todos" : card.key); setPagina(0); }}
               style={{
                 ...styles.statCard,
                 borderColor: filtro === card.key ? card.color : `${card.color}44`,
@@ -229,7 +235,7 @@ export default function CertidoesAdminPage() {
               </tr>
             </thead>
             <tbody>
-              {linhasFiltradas.map((item) => {
+              {linhasPaginadas.map((item) => {
                 const dias = diasAteValidade(item.validade_ate);
                 return (
                   <tr key={item.id} style={styles.tr}>
@@ -277,6 +283,16 @@ export default function CertidoesAdminPage() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {!loading && !erro && temMais && (
+        <button
+          type="button"
+          onClick={() => setPagina((p) => p + 1)}
+          style={styles.btnCarregarMais}
+        >
+          Carregar mais ({linhasFiltradas.length - linhasPaginadas.length} restantes)
+        </button>
       )}
     </>
   );
@@ -331,6 +347,17 @@ const styles: Record<string, CSSProperties> = {
   tableWrap: {
     marginTop: spacing.md,
     overflowX: "auto",
+  },
+  btnCarregarMais: {
+    marginTop: spacing.md,
+    padding: "10px 20px",
+    borderRadius: 10,
+    border: "1px solid rgba(148,163,184,0.3)",
+    background: "rgba(15,23,42,0.85)",
+    color: colors.text.light,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.bold,
+    cursor: "pointer",
   },
   table: {
     width: "100%",

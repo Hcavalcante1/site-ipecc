@@ -38,10 +38,13 @@ const btnDanger = {
 /* ============================
    PAGE
 ============================ */
+const POR_PAGINA = 30;
+
 export default function ContatoMensagensAdminPage() {
   const [loading, setLoading] = useState(true);
   const [mensagens, setMensagens] = useState<Mensagem[]>([]);
   const [selecionada, setSelecionada] = useState<Mensagem | null>(null);
+  const [pagina, setPagina] = useState(0);
 
   /* ============================
      LOAD
@@ -61,6 +64,7 @@ export default function ContatoMensagensAdminPage() {
     }
 
     setMensagens(data || []);
+    setPagina(0);
     setLoading(false);
   }
 
@@ -93,6 +97,9 @@ export default function ContatoMensagensAdminPage() {
   }
 
   if (loading) return <p>Carregando mensagens…</p>;
+
+  const mensagensPaginadas = mensagens.slice(0, (pagina + 1) * POR_PAGINA);
+  const temMais = mensagens.length > mensagensPaginadas.length;
 
   return (
     <div style={{ padding: 32 }}>
@@ -132,7 +139,7 @@ export default function ContatoMensagensAdminPage() {
             </p>
           )}
 
-          {mensagens.map((m) => {
+          {mensagensPaginadas.map((m) => {
             const ativa = selecionada?.id === m.id;
 
             return (
@@ -180,6 +187,26 @@ export default function ContatoMensagensAdminPage() {
               </div>
             );
           })}
+
+          {temMais && (
+            <button
+              type="button"
+              onClick={() => setPagina((p) => p + 1)}
+              style={{
+                width: "100%",
+                padding: "10px 14px",
+                borderRadius: 10,
+                border: "1px solid #1e293b",
+                background: "#020617",
+                color: "#cbd5e1",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Carregar mais ({mensagens.length - mensagensPaginadas.length} restantes)
+            </button>
+          )}
         </aside>
 
         {/* ================= LEITURA ================= */}
