@@ -81,14 +81,6 @@ export const publicSeoPages: PublicSeoPage[] = [
     priority: 0.9,
   },
   {
-    path: "/portal",
-    title: "Portal IPECC | Instituto Paulista de Esporte, Cultura e Cidadania",
-    description:
-      "Portal publico do IPECC com projetos sociais, editais, propostas, transparencia e canais institucionais.",
-    changeFrequency: "weekly",
-    priority: 0.95,
-  },
-  {
     path: "/quem-somos",
     title: "Quem Somos | IPECC",
     description:

@@ -2,6 +2,7 @@
 
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { resolveMediaPath } from "@/lib/media";
+import Link from "next/link";
 import { PublicHeroRolling } from "@/components/public";
 import PublicWhatsAppCtaLink from "@/components/public/PublicWhatsAppCtaLink";
 import { logPublicFetch } from "@/lib/observability/publicFetchLog";
@@ -108,6 +109,10 @@ export default async function ProjetosPage() {
               </article>
             ))}
           </div>
+
+          <p style={{ marginTop: 20 }}>
+            <Link href="/acoes">Ver panorama completo de ações e iniciativas em andamento →</Link>
+          </p>
         </div>
       </section>
 
