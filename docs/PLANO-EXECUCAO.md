@@ -270,32 +270,34 @@ Tarefas:
 
 ---
 
-## FASE 2 — Performance do banco `[AGUARDANDO APROVAÇÃO — mesma regra da Fase 0]`
+## FASE 2 — Performance do banco `[PARCIAL — 3 de 5 itens aplicados e verificados]`
 
-**Esforço:** 4–5 dias · **Semanas 3–4** · Depende da Fase 0 concluída (feito).
+**Aprovação:** dono autorizou explicitamente ("faça vc mesmo") após inventário de leitura
+apresentado sem nenhuma alteração prévia no banco. Cada item abaixo foi lido, verificado
+e só então aplicado — nenhum lote cego.
 
-Assim como a Fase 0, esta fase altera banco de produção — políticas RLS em dezenas de tabelas.
-A regra do dono ("eu é quem aprovo essas mudanças") vale para qualquer alteração de banco, não só
-a Fase 0. Diferente da Fase 0, aqui o blast radius é maior (70+ políticas) e cada correção precisa
-ser lida e verificada tabela por tabela antes de virar SQL — não é algo para aplicar em lote sem
-esse trabalho de inventário primeiro. Pulei direto para as Fases 3–5 (só código) enquanto isso não
-é aprovado.
+### Aplicado e verificado
 
-273 alertas no linter de performance, 142 relevantes. Nenhum quebra o sistema hoje — todos degradam
-de forma não-linear conforme as tabelas crescem.
+| Alerta | Antes | Depois | O que foi feito |
+|---|---:|---:|---|
+| `auth_rls_initplan` | 70 | **0** | As 70 políticas reescritas via bloco `DO` dinâmico, envolvendo `auth.uid()`/`auth.role()`/`auth.jwt()` em `(select ...)`. Reescrita mecânica — o texto de `qual`/`with_check` foi reaproveitado byte a byte, só embrulhado; conferido policy a policy antes de aplicar (nenhuma tinha wrapping parcial pré-existente, então não há risco de dupla-embrulhagem). Confirmado por linter oficial: 0 restantes. |
+| `duplicate_index` | 1 (linter) / 4 reais | **0** | O linter reportava só 1, mas o inventário achou 4: três cópias soltas de um índice único em `paginas_conteudo` (mantido o que sustenta a constraint real) e um índice simples redundante com um índice único em `transparencia_editais` (mantido o único, que garante a regra de integridade). **Nenhuma tabela, coluna ou linha foi removida — só os índices duplicados.** Verificado antes de aplicar que nenhum dos removidos sustentava constraint. |
+| `unindexed_foreign_keys` | 52 | **0** | Criado 1 índice por FK sem cobertura, via bloco `DO` dinâmico. Mudança puramente aditiva — não altera nenhuma política nem resultado de consulta. |
 
-| Alerta | Qtd. | Ação |
+### Pendente — exige mais cautela, não é lote seguro
+
+| Alerta | Qtd. atual | Por que não foi aplicado ainda |
 |---|---:|---|
-| `auth_rls_initplan` | 70 | Envolver `auth.uid()` em `(select auth.uid())` nas políticas. Sem isso a função reavalia **por linha**. **Maior ganho isolado de toda a auditoria.** |
-| `multiple_permissive_policies` | 71 | Consolidar políticas permissivas sobrepostas por tabela + ação. |
-| `unindexed_foreign_keys` | 52 | Criar índices de cobertura nas FKs. |
-| `unused_index` | 79 | **Revisar antes de remover** — algumas servem rotas ainda pouco acessadas. |
-| `duplicate_index` | 1 | Remoção direta e segura. |
+| `multiple_permissive_policies` | 71 | Consolidar políticas permissivas duplicadas exige ler a lógica de cada par e confirmar que o `OR` resultante preserva exatamente o mesmo acesso — diferente do fix de `auth_rls_initplan`, aqui hà risco real de juntar regras que deveriam ficar separadas. Inventário de leitura ainda não feito. |
+| `unused_index` | 130 (subiu de 78 porque os 52 índices novos da FK começam com zero uso registrado, o que é esperado) | **Não tratar "sem uso registrado" como "pode remover".** Alertado explicitamente pelo dono: o banco tem poucos dias de tráfego real, então baixo uso é normal nesta fase do projeto, não sinal de abandono. Fica pendente até haver volume real de consultas para avaliar com dado de verdade — não com contagem de zero linhas. |
 
-Ordem recomendada: `auth_rls_initplan` → `multiple_permissive_policies` → FKs → índices.
+Incluir também a mitigação de `validar_portal_token` que ficou pendente da Fase 0: rate limiting
+na rota do portal e revisão da entropia do token — ainda não feito.
 
-Incluir aqui também a mitigação de `validar_portal_token` que ficou pendente da Fase 0: rate limiting
-na rota do portal e revisão da entropia do token.
+### Verificação de segurança pós-Fase 2
+
+Linter de segurança rodado de novo depois de cada aplicação: **0 ERROR, mesmos 5 WARN de antes**
+(nenhum novo problema introduzido pelas reescritas de política ou pelos índices novos).
 
 ---
 
