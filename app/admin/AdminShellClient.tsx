@@ -16,6 +16,7 @@ import LogoutButton from "./components/LogoutButton";
 import AdminNavIcon, { type AdminNavIconName } from "./components/AdminNavIcon";
 import { caminhoEhCmsSite } from "./components/RequireAdminModulo";
 import AdminNotificacoes from "@/components/AdminNotificacoes";
+import AdminErrorBoundary from "@/components/AdminErrorBoundary";
 
 const ADMIN_ACTIVE_KEY = "ipecc_admin_active";
 const ADMIN_CLOSED_KEY = "ipecc_admin_closed";
@@ -476,7 +477,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               Peça ao mestre para vincular um processo em <strong>/admin/acessos</strong>.
             </div>
           ) : null}
-          <section className="admin-content-shell">{children}</section>
+          <section className="admin-content-shell"><AdminErrorBoundary>{children}</AdminErrorBoundary></section>
           <footer className="admin-main-footer">
             IPECC | Painel administrativo institucional
           </footer>

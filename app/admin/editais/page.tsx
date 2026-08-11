@@ -73,6 +73,20 @@ function labelFase(valor?: string | null) {
   return FASE_LABELS[valor] || valor.replace(/_/g, " ");
 }
 
+type Edital = {
+  id: string;
+  titulo: string;
+  descricao?: string | null;
+  tipo: string;
+  processo_id?: string | null;
+  periodo?: string | null;
+  status: string;
+  fase_atual?: string | null;
+  created_at: string;
+  arquivo_pdf?: string | null;
+  ativo?: boolean;
+};
+
 type ResumoPropostasEdital = {
   aprovadas: number;
   pendentes: number;
@@ -97,7 +111,8 @@ export default function AdminEditais() {
   const [excluindoId, setExcluindoId] = useState<string | null>(null);
   const [voltandoRascunhoId, setVoltandoRascunhoId] = useState<string | null>(null);
   const [msg, setMsg] = useState("");
-  const [editais, setEditais] = useState<any[]>([]);
+  const [editais, setEditais] = useState<Edital[]>([]);
+  const [paginaEditais, setPaginaEditais] = useState(0);
   const [resumoPropostasPorEdital, setResumoPropostasPorEdital] = useState<
     Record<string, ResumoPropostasEdital>
   >({});
@@ -147,10 +162,10 @@ export default function AdminEditais() {
       return;
     }
 
-    const editaisFiltrados = ((editaisRes.data || []) as any[]).filter((edital) =>
+    const editaisFiltrados = ((editaisRes.data || []) as Edital[]).filter((edital) =>
       registroNoEscopoProcesso(edital.processo_id, escopo.processoIds)
     );
-    const idsVisiveis = new Set(editaisFiltrados.map((e) => e.id as string));
+    const idsVisiveis = new Set(editaisFiltrados.map((e) => e.id));
 
     const resumo: Record<string, ResumoPropostasEdital> = {};
     for (const proposta of propostasRes.data || []) {
@@ -424,6 +439,10 @@ export default function AdminEditais() {
     return true;
   });
 
+  const POR_PAGINA_EDITAIS = 10;
+  const editaisExibidos = editaisFiltrados.slice(0, (paginaEditais + 1) * POR_PAGINA_EDITAIS);
+  const temMaisEditais = editaisFiltrados.length > editaisExibidos.length;
+
   const stTotal    = editais.length;
   const stRascunho = editais.filter((e) => e.fase_atual === "rascunho").length;
   const stAndamento= editais.filter((e) => e.fase_atual !== "rascunho" && e.fase_atual !== "encerrado").length;
@@ -561,11 +580,13 @@ export default function AdminEditais() {
               { label: "Em andamento",valor: stAndamento, cor: "#86efac", key: "andamento" as const },
               { label: "Encerrados",  valor: stEncerrado, cor: "#fca5a5", key: "encerrado" as const },
             ] as const).map((st) => (
-              <div
+              <button
                 key={st.key}
-                onClick={() => setFiltroFase(filtroFase === st.key ? "todas" : st.key)}
+                type="button"
+                aria-pressed={filtroFase === st.key}
+                onClick={() => { setFiltroFase(filtroFase === st.key ? "todas" : st.key); setPaginaEditais(0); }}
                 style={{
-                  flex: "1 1 120px", cursor: "pointer",
+                  flex: "1 1 120px", cursor: "pointer", textAlign: "left",
                   background: filtroFase === st.key ? "rgba(30,64,175,0.28)" : "rgba(15,23,42,0.85)",
                   border: `1px solid ${filtroFase === st.key ? "#3b82f6" : "rgba(148,163,184,0.12)"}`,
                   borderRadius: 14, padding: "12px 16px",
@@ -573,7 +594,7 @@ export default function AdminEditais() {
               >
                 <div style={{ fontSize: 24, fontWeight: 900, lineHeight: 1, marginBottom: 4, color: st.cor }}>{st.valor}</div>
                 <div style={{ fontSize: 11, color: "#475569", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>{st.label}</div>
-              </div>
+              </button>
             ))}
           </div>
 
@@ -582,7 +603,7 @@ export default function AdminEditais() {
               type="search"
               placeholder="Buscar por título..."
               value={buscaEditais}
-              onChange={(e) => setBuscaEditais(e.target.value)}
+              onChange={(e) => { setBuscaEditais(e.target.value); setPaginaEditais(0); }}
               style={{
                 flex: "1 1 200px", padding: "8px 12px", borderRadius: 8,
                 border: "1px solid rgba(148,163,184,0.4)", background: "rgba(2,6,23,0.7)",
@@ -597,7 +618,7 @@ export default function AdminEditais() {
         <p style={{ color: "#64748b", textAlign: "center", marginTop: 16 }}>Nenhum edital corresponde ao filtro.</p>
       )}
 
-      {editaisFiltrados.map((e: any) => (
+      {editaisExibidos.map((e) => (
         <div key={e.id} className="admin-card" style={cardListaStyle}>
           <strong>{e.titulo}</strong>
 
@@ -707,6 +728,17 @@ export default function AdminEditais() {
           </div>
         </div>
       ))}
+
+      {temMaisEditais && (
+        <button
+          type="button"
+          className="admin-button"
+          style={{ marginTop: 16, background: "#334155", color: "#e2e8f0" }}
+          onClick={() => setPaginaEditais((p) => p + 1)}
+        >
+          Carregar mais ({editaisFiltrados.length - editaisExibidos.length} restantes)
+        </button>
+      )}
     </div>
   );
 }
