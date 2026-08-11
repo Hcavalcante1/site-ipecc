@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { PublicHeroRolling } from "@/components/public";
 import PublicWhatsAppHelpLine from "@/components/public/PublicWhatsAppHelpLine";
+import AdminToast, { triggerToast } from "@/components/AdminToast";
 import {
   editalAceitaEnvioProposta,
   isEnvioPropostaModoTeste,
@@ -656,6 +657,26 @@ function UploadItem({
   );
 }
 
+function AvisoErro({ mensagem }: { mensagem: string }) {
+  return (
+    <p
+      role="alert"
+      style={{
+        margin: "0 0 16px",
+        padding: "10px 14px",
+        borderRadius: 10,
+        background: "#fef2f2",
+        border: "1px solid #fecaca",
+        color: "#991b1b",
+        fontSize: 14,
+        fontWeight: 600,
+      }}
+    >
+      {mensagem}
+    </p>
+  );
+}
+
 export default function PropostasPage() {
   return (
     <Suspense fallback={<div className="container" style={{ padding: 24 }}>Carregando formulário...</div>}>
@@ -677,6 +698,20 @@ function PropostasPageClient() {
     Partial<Record<CategoriaDocumento, boolean>>
   >({});
   const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const [camposInvalidos, setCamposInvalidos] = useState<Set<string>>(new Set());
+
+  function limparErroCampo() {
+    if (erro) setErro(null);
+    if (camposInvalidos.size > 0) setCamposInvalidos(new Set());
+  }
+
+  function focar(id: string) {
+    if (typeof document === "undefined") return;
+    requestAnimationFrame(() => {
+      document.getElementById(id)?.focus();
+    });
+  }
 
   const [dados, setDados] = useState({
     nome: "",
@@ -779,6 +814,8 @@ function PropostasPageClient() {
       telefone: "",
       mensagem: "",
     });
+    setErro(null);
+    setCamposInvalidos(new Set());
     setEtapa("dados");
   }
 
@@ -805,14 +842,15 @@ function PropostasPageClient() {
     );
 
     if (obrigatoriosFaltando.length > 0) {
-      alert(
-        `Anexe os documentos obrigatórios antes de continuar:\n• ${obrigatoriosFaltando
+      setErro(
+        `Anexe os documentos obrigatórios antes de continuar: ${obrigatoriosFaltando
           .map((doc) => doc.label)
-          .join("\n• ")}`
+          .join(", ")}.`
       );
       return;
     }
 
+    setErro(null);
     setSecoesSalvasLocal((prev) => ({ ...prev, [categoria]: true }));
     setEtapa(proximaEtapaApos(categoria));
   }
@@ -835,30 +873,43 @@ function PropostasPageClient() {
 
   async function handleEnviarProposta(e: React.FormEvent) {
     e.preventDefault();
+    setErro(null);
+    setCamposInvalidos(new Set());
 
     if (!editalId) {
-      alert("Selecione o edital ou chamamento vinculado antes de enviar.");
+      setErro("Selecione o edital ou chamamento vinculado antes de enviar.");
+      setCamposInvalidos(new Set(["campo-edital"]));
       setEtapa("dados");
+      focar("campo-edital");
       return;
     }
 
     if (!editalSelecionado || !editalAceitaEnvioProposta(editalSelecionado)) {
-      alert(
-        "Este edital nao esta aceitando propostas no momento. Atualize a pagina ou selecione outro edital."
+      setErro(
+        "Este edital não está aceitando propostas no momento. Atualize a página ou selecione outro edital."
       );
+      setCamposInvalidos(new Set(["campo-edital"]));
       setEtapa("dados");
+      focar("campo-edital");
       return;
     }
 
-    if (!dados.nome.trim() || !dados.documento.trim() || !dados.email.trim()) {
-      alert("Preencha os dados da proponente antes de enviar.");
+    const faltando = new Set<string>();
+    if (!dados.nome.trim()) faltando.add("campo-nome");
+    if (!dados.documento.trim()) faltando.add("campo-documento");
+    if (!dados.email.trim()) faltando.add("campo-email");
+
+    if (faltando.size > 0) {
+      setErro("Preencha os dados da proponente antes de enviar.");
+      setCamposInvalidos(faltando);
       setEtapa("dados");
+      focar([...faltando][0]);
       return;
     }
 
     const propostaFile = arquivos["proposta"];
     if (!propostaFile) {
-      alert(
+      setErro(
         isCotacaoPrevia
           ? "Envie a proposta comercial / cotação de preços (PDF)."
           : "Envie o formulário de inscrição / proposta principal (PDF)."
@@ -874,7 +925,7 @@ function PropostasPageClient() {
         .filter((d) => !arquivos[d.key]);
 
       if (obrigatoriosFaltando.length > 0) {
-        alert(
+        setErro(
           `Na cotação prévia, anexe também: ${obrigatoriosFaltando
             .map((d) => d.label)
             .join("; ")}.`
@@ -969,7 +1020,7 @@ function PropostasPageClient() {
         }
       }
 
-      alert("Proposta enviada com sucesso!");
+      triggerToast("Proposta enviada com sucesso!", "success");
       setTipoPessoa("pessoa_juridica");
       setEditalId("");
       limparDocumentosEMensagem();
@@ -977,7 +1028,7 @@ function PropostasPageClient() {
       console.error(err);
       const msg =
         err instanceof Error ? err.message : "Erro ao enviar proposta";
-      alert(msg);
+      triggerToast(msg, "error");
     } finally {
       setEnviando(false);
     }
@@ -1001,7 +1052,10 @@ function PropostasPageClient() {
             <button
               key={item.id}
               type="button"
-              onClick={() => setEtapa(item.id)}
+              onClick={() => {
+                setErro(null);
+                setEtapa(item.id);
+              }}
               style={{
                 padding: "8px 12px",
                 borderRadius: 999,
@@ -1064,6 +1118,7 @@ function PropostasPageClient() {
             Documentos desta seção salvos. Avance para a próxima etapa.
           </p>
         ) : null}
+        {erro && <AvisoErro mensagem={erro} />}
         <div style={{ display: "grid", gap: 14, marginTop: 16 }}>
           {secao.documentos.map((doc) => (
             <UploadItem
@@ -1197,6 +1252,7 @@ function PropostasPageClient() {
 
   return (
     <>
+      <AdminToast />
       <PublicHeroRolling
         bgImage="/media/heroes/propostas/hero.webp"
         title="Enviar Proposta"
@@ -1235,6 +1291,7 @@ function PropostasPageClient() {
                 >
                   Dados da proponente
                 </h2>
+                {erro && <AvisoErro mensagem={erro} />}
                 <div
                   style={{
                     marginBottom: 16,
@@ -1244,15 +1301,30 @@ function PropostasPageClient() {
                     background: "#eff6ff",
                   }}
                 >
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 14 }}>
+                  <label
+                    style={{ display: "block", marginBottom: 6, fontSize: 14 }}
+                    htmlFor="campo-edital"
+                  >
                     Edital ou chamamento vinculado
                   </label>
                   <select
+                    id="campo-edital"
                     value={editalId}
-                    onChange={(e) => setEditalId(e.target.value)}
+                    onChange={(e) => {
+                      limparErroCampo();
+                      setEditalId(e.target.value);
+                    }}
                     disabled={carregandoEditais || editais.length === 0}
                     required
-                    style={{ ...inputStyle, cursor: "pointer", background: "#fff" }}
+                    aria-invalid={camposInvalidos.has("campo-edital")}
+                    style={{
+                      ...inputStyle,
+                      cursor: "pointer",
+                      background: "#fff",
+                      ...(camposInvalidos.has("campo-edital")
+                        ? { border: "1px solid #dc2626" }
+                        : {}),
+                    }}
                   >
                     {carregandoEditais ? (
                       <option value="">Carregando editais...</option>
@@ -1293,36 +1365,60 @@ function PropostasPageClient() {
                 </div>
                 <div className="public-form-grid-2">
                   <input
+                    id="campo-nome"
                     placeholder="Nome da proponente"
                     required
-                    style={inputStyle}
+                    aria-invalid={camposInvalidos.has("campo-nome")}
+                    style={{
+                      ...inputStyle,
+                      ...(camposInvalidos.has("campo-nome")
+                        ? { border: "1px solid #dc2626" }
+                        : {}),
+                    }}
                     value={dados.nome}
-                    onChange={(e) =>
-                      setDados((p) => ({ ...p, nome: e.target.value }))
-                    }
+                    onChange={(e) => {
+                      limparErroCampo();
+                      setDados((p) => ({ ...p, nome: e.target.value }));
+                    }}
                   />
                   <input
+                    id="campo-documento"
                     placeholder={
                       tipoPessoa === "pessoa_fisica" ? "CPF" : "CNPJ"
                     }
                     required
-                    style={inputStyle}
+                    aria-invalid={camposInvalidos.has("campo-documento")}
+                    style={{
+                      ...inputStyle,
+                      ...(camposInvalidos.has("campo-documento")
+                        ? { border: "1px solid #dc2626" }
+                        : {}),
+                    }}
                     value={dados.documento}
-                    onChange={(e) =>
-                      setDados((p) => ({ ...p, documento: e.target.value }))
-                    }
+                    onChange={(e) => {
+                      limparErroCampo();
+                      setDados((p) => ({ ...p, documento: e.target.value }));
+                    }}
                   />
                 </div>
                 <div className="public-form-grid-2">
                   <input
+                    id="campo-email"
                     placeholder="E-mail"
                     required
                     type="email"
-                    style={inputStyle}
+                    aria-invalid={camposInvalidos.has("campo-email")}
+                    style={{
+                      ...inputStyle,
+                      ...(camposInvalidos.has("campo-email")
+                        ? { border: "1px solid #dc2626" }
+                        : {}),
+                    }}
                     value={dados.email}
-                    onChange={(e) =>
-                      setDados((p) => ({ ...p, email: e.target.value }))
-                    }
+                    onChange={(e) => {
+                      limparErroCampo();
+                      setDados((p) => ({ ...p, email: e.target.value }));
+                    }}
                   />
                   <input
                     placeholder="Telefone"
