@@ -144,30 +144,48 @@ estado correto e seguro.
 ⚠️ **Não revogue as 9 funções em bloco.** Rastreei chamador por chamador; três grupos com tratamento
 diferente. Revogar tudo derruba o painel e o portal do financiador.
 
-#### Grupo A — revogar de `anon` **e** `authenticated`
+> ### ⚠️ O `EXECUTE` está concedido a `PUBLIC` — revogar só dos papéis não tem efeito
+>
+> Inspeção do ACL das 9 funções (`pg_proc.proacl`) mostra o mesmo padrão em todas:
+>
+> ```
+> =X/postgres | postgres=X/postgres | anon=X/postgres | authenticated=X/postgres | service_role=X/postgres
+> ```
+>
+> O primeiro elemento, `=X/postgres`, é o **grant a `PUBLIC`** (grantee vazio = PUBLIC).
+> Como `anon` e `authenticated` herdam de `PUBLIC`, um `REVOKE ... FROM anon` deixa o acesso
+> intacto pela herança. **Todo `REVOKE` desta seção precisa incluir `public` na lista.**
 
-Zero referências no código, ou acesso exclusivo por service role:
+#### Grupo A — revogar de `public`, `anon` e `authenticated`
+
+Zero referências no código, ou acesso exclusivo por service role. Verifiquei também que nenhuma
+política RLS e nenhum corpo de função referencia estas cinco — a revogação não quebra dependência interna.
 
 ```sql
-revoke execute on function public.is_admin_perfil(p_user_id uuid)                    from anon, authenticated;
-revoke execute on function public.certidoes_is_current_version(p_certidao_id uuid)   from anon, authenticated;
-revoke execute on function public.atualizar_impacto_home(p_titulo text, p_texto text) from anon, authenticated;
-revoke execute on function public.notify_new_proposta()                              from anon, authenticated;
-revoke execute on function public.diagnostico_tabelas()                              from anon, authenticated;
-revoke execute on function public.diagnostico_rls_status()                           from anon, authenticated;
+revoke execute on function public.is_admin_perfil(p_user_id uuid)                     from public, anon, authenticated;
+revoke execute on function public.certidoes_is_current_version(p_certidao_id uuid)    from public, anon, authenticated;
+revoke execute on function public.atualizar_impacto_home(p_titulo text, p_texto text) from public, anon, authenticated;
+revoke execute on function public.notify_new_proposta()                               from public, anon, authenticated;
+revoke execute on function public.diagnostico_tabelas()                               from public, anon, authenticated;
+revoke execute on function public.diagnostico_rls_status()                            from public, anon, authenticated;
 ```
 
 - `diagnostico_tabelas` / `diagnostico_rls_status` — chamadas só em `app/api/admin/diagnostico/route.ts`, que usa `getSupabaseAdmin()`. Hoje **entregam o mapa do schema a quem não está logado**.
 - `notify_new_proposta` é função de gatilho: dispara dentro do `INSERT`, não precisa de `EXECUTE` para papel nenhum.
 - `certidoes_is_current_version` e `atualizar_impacto_home` — nenhuma referência no repositório.
 
-#### Grupo B — revogar **só** de `anon`, preservar `authenticated`
+#### Grupo B — revogar de `public` e `anon`, **preservar `authenticated`**
 
-O navegador chama estas com a sessão do usuário logado:
+O navegador chama estas com a sessão do usuário logado. O `GRANT` explícito depois do `REVOKE` é
+redundante (o grant nominal a `authenticated` sobrevive à revogação de `PUBLIC`), mas deixa a
+intenção explícita e garante que ninguém seja trancado fora por engano:
 
 ```sql
-revoke execute on function public.is_admin(user_id uuid)             from anon;
-revoke execute on function public.is_admin_ou_perfil(p_user_id uuid) from anon;
+revoke execute on function public.is_admin(user_id uuid)             from public, anon;
+grant  execute on function public.is_admin(user_id uuid)             to   authenticated;
+
+revoke execute on function public.is_admin_ou_perfil(p_user_id uuid) from public, anon;
+grant  execute on function public.is_admin_ou_perfil(p_user_id uuid) to   authenticated;
 ```
 
 Chamadores no browser (client `@/lib/supabaseClient`, papel `authenticated`):
