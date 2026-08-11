@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { triggerToast } from "@/components/AdminToast";
 
 type Org = {
   id: string;
@@ -71,8 +72,10 @@ export default function OrganizacoesPage() {
     setSalvando(false);
     if (error) {
       setMsg(`Erro: ${error.message}`);
+      triggerToast(`Erro: ${error.message}`, "error");
     } else {
       setMsg("Organização criada.");
+      triggerToast("Organização criada.", "success");
       setMostrarForm(false);
       setForm(VAZIO_ORG);
       void carregar();
@@ -80,15 +83,25 @@ export default function OrganizacoesPage() {
   }
 
   async function toggleAtivo(id: string, atual: boolean) {
-    await supabase.from("organizacoes").update({ ativo: !atual }).eq("id", id);
+    const { error } = await supabase.from("organizacoes").update({ ativo: !atual }).eq("id", id);
+    if (error) {
+      triggerToast(`Erro: ${error.message}`, "error");
+    } else {
+      triggerToast(atual ? "Organização desativada." : "Organização ativada.", "success");
+    }
     void carregar();
   }
 
   async function salvarPlano(id: string) {
     const plano = editPlano[id];
     if (!plano) return;
-    await supabase.from("organizacoes").update({ plano }).eq("id", id);
+    const { error } = await supabase.from("organizacoes").update({ plano }).eq("id", id);
     setEditPlano((p) => { const n = { ...p }; delete n[id]; return n; });
+    if (error) {
+      triggerToast(`Erro ao salvar plano: ${error.message}`, "error");
+    } else {
+      triggerToast("Plano atualizado.", "success");
+    }
     void carregar();
   }
 

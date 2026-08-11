@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { triggerToast } from "@/components/AdminToast";
 import Link from "next/link";
 
 type UsageMetric = { label: string; valor: number; limite: number | null; cor: string };
@@ -48,25 +49,18 @@ export default function FaturamentoPage() {
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [billingAtivo, setBillingAtivo] = useState(true);
-  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
   const checkout = searchParams.get("checkout");
 
   useEffect(() => {
     if (checkout === "success") {
-      setToast({ msg: "Assinatura ativada com sucesso!", ok: true });
+      triggerToast("Assinatura ativada com sucesso!", "success");
       router.replace("/admin/faturamento");
     } else if (checkout === "cancelled") {
-      setToast({ msg: "Checkout cancelado.", ok: false });
+      triggerToast("Checkout cancelado.", "error");
       router.replace("/admin/faturamento");
     }
   }, [checkout, router]);
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -131,12 +125,12 @@ export default function FaturamentoPage() {
         window.location.href = json.url;
       } else if (json.error === "billing_not_configured") {
         setBillingAtivo(false);
-        setToast({ msg: "Integração Stripe não configurada ainda. Configure STRIPE_SECRET_KEY no ambiente.", ok: false });
+        triggerToast("Stripe não configurado — adicione STRIPE_SECRET_KEY no Vercel.", "error");
       } else {
-        setToast({ msg: `Erro: ${json.error ?? "desconhecido"}`, ok: false });
+        triggerToast(`Erro: ${json.error ?? "desconhecido"}`, "error");
       }
     } catch {
-      setToast({ msg: "Falha de rede ao iniciar checkout.", ok: false });
+      triggerToast("Falha de rede ao iniciar checkout.", "error");
     } finally {
       setCheckoutLoading(null);
     }
@@ -150,10 +144,10 @@ export default function FaturamentoPage() {
       if (json.ok && json.url) {
         window.location.href = json.url;
       } else {
-        setToast({ msg: `Erro ao abrir portal: ${json.error ?? "desconhecido"}`, ok: false });
+        triggerToast(`Erro ao abrir portal: ${json.error ?? "desconhecido"}`, "error");
       }
     } catch {
-      setToast({ msg: "Falha de rede ao abrir portal.", ok: false });
+      triggerToast("Falha de rede ao abrir portal.", "error");
     } finally {
       setPortalLoading(false);
     }
@@ -170,12 +164,6 @@ export default function FaturamentoPage() {
 
   return (
     <div style={s.wrap}>
-      {toast && (
-        <div style={{ ...s.toastBar, background: toast.ok ? "rgba(22,101,52,0.9)" : "rgba(127,29,29,0.9)", borderColor: toast.ok ? "#166534" : "#7f1d1d" }}>
-          {toast.msg}
-        </div>
-      )}
-
       <div style={s.pageHeader}>
         <div>
           <h1 style={s.titulo}>Faturamento e Uso</h1>
@@ -358,7 +346,6 @@ const s: Record<string, React.CSSProperties> = {
   titulo: { margin: 0, fontSize: 22, fontWeight: 900, color: "#f1f5f9" },
   sub: { margin: "6px 0 0", color: "#94a3b8", fontSize: 13 },
   btnGhost: { padding: "9px 16px", borderRadius: 10, border: "1px solid rgba(148,163,184,0.3)", background: "transparent", color: "#94a3b8", fontWeight: 600, fontSize: 13, textDecoration: "none", display: "inline-block" },
-  toastBar: { position: "fixed" as const, top: 20, right: 20, zIndex: 9999, padding: "12px 20px", borderRadius: 12, border: "1px solid", color: "#fff", fontWeight: 700, fontSize: 13, maxWidth: 380, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" },
   alertBox: { background: "rgba(234,179,8,0.1)", border: "1px solid #a16207", borderRadius: 12, padding: "14px 18px", marginBottom: 20, fontSize: 13, color: "#fde047", lineHeight: 1.6 },
   code: { fontFamily: "monospace", background: "rgba(0,0,0,0.3)", padding: "1px 5px", borderRadius: 4 },
   planoBanner: { background: "rgba(29,78,216,0.12)", border: "1px solid rgba(29,78,216,0.3)", borderRadius: 16, padding: "20px 28px", marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 },
