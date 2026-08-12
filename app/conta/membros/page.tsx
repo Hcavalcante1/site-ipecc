@@ -70,7 +70,19 @@ export default function MembrosPage() {
     if (json.ok) {
       setMsg(json.email_enviado ? "Convite enviado por e-mail." : `Convite criado. Link: ${json.link}`);
       setEmailConvite("");
+      // Reload completo para garantir que convites pendentes atualizem
+      // mesmo que minhaLinha ainda não exista (ex: logo após criar org)
       await carregar();
+      // Busca convites diretamente se carregar() não os carregou
+      const sessaoAtual = await import("@/lib/supabaseClient").then(m => m.supabase.auth.getSession());
+      const tokenAtual = sessaoAtual.data?.session?.access_token;
+      if (tokenAtual && convites.length === 0) {
+        const r2 = await fetch("/api/admin/convites", {
+          headers: { Authorization: `Bearer ${tokenAtual}` },
+        });
+        const j2 = (await r2.json()) as { ok: boolean; data?: Convite[] };
+        if (j2.ok) setConvites(j2.data ?? []);
+      }
     } else {
       setMsg(`Erro: ${json.error ?? "desconhecido"}`);
     }
