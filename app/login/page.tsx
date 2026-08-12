@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { mensagemErroLoginAdmin } from "@/lib/auth/loginAdminMessages";
+import { mensagemErroLogin } from "@/lib/auth/loginAdminMessages";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -27,7 +27,7 @@ export default function LoginPage() {
 
       if (error || !data.session?.access_token) {
         setMsg(
-          mensagemErroLoginAdmin({
+          mensagemErroLogin({
             authErrorMessage: error?.message || null,
           })
         );
@@ -35,6 +35,7 @@ export default function LoginPage() {
         return;
       }
 
+      // Verifica se o usuário tem perfil admin
       const gate = await fetch("/api/admin/session", {
         method: "POST",
         credentials: "include",
@@ -50,10 +51,7 @@ export default function LoginPage() {
       };
 
       if (!gate.ok) {
-        // Sem perfil admin (staff) -- pode ser cliente self-service.
-        // Manda pro painel do cliente em vez de negar acesso; /conta
-        // trata sozinho o caso de usuario sem organizacao ainda (oferece
-        // criar uma). So nega de verdade em erro de sessao (401).
+        // Usuário não é admin — redireciona para painel do cliente
         if (gate.status === 403) {
           window.location.assign("/conta");
           return;
@@ -61,7 +59,7 @@ export default function LoginPage() {
 
         await supabase.auth.signOut().catch(() => null);
         setMsg(
-          mensagemErroLoginAdmin({
+          mensagemErroLogin({
             status: gate.status,
             apiError: body.error || null,
           })
@@ -72,7 +70,6 @@ export default function LoginPage() {
 
       const mods = Array.isArray(body.modulos) ? body.modulos : [];
       if (!body.mestre && mods.length === 0) {
-        // Entra no admin, mas avisa: falta escopo de modulos
         sessionStorage.setItem("ipecc_admin_aviso_sem_escopo", "1");
       } else {
         sessionStorage.removeItem("ipecc_admin_aviso_sem_escopo");
@@ -83,7 +80,7 @@ export default function LoginPage() {
       window.location.assign("/admin");
     } catch (err) {
       setMsg(
-        mensagemErroLoginAdmin({
+        mensagemErroLogin({
           apiError: err instanceof Error ? err.message : "Erro ao autenticar.",
         })
       );
@@ -105,9 +102,8 @@ export default function LoginPage() {
             <p style={styles.brandTag}>
               Instituto Paulista de Esporte, Cultura e Cidadania
             </p>
-            <h1 style={styles.title}>Painel Administrativo</h1>
-            <p style={styles.subtitle}>Acesso restrito ao sistema interno</p>
-            <span style={styles.badge}>Área restrita - acesso autorizado</span>
+            <h1 style={styles.title}>Entrar na sua conta</h1>
+            <p style={styles.subtitle}>Bem-vindo(a) de volta</p>
           </div>
 
           <form onSubmit={handleLogin} style={styles.form}>
@@ -144,12 +140,17 @@ export default function LoginPage() {
 
             {msg && <p style={styles.error}>{msg}</p>}
           </form>
+
+          <p style={styles.cadastroLink}>
+            Não tem conta?{" "}
+            <a href="/cadastro" style={styles.link}>
+              Criar conta
+            </a>
+          </p>
         </div>
 
         <footer style={styles.footer}>
-          <p style={styles.footerLine}>
-            IPECC | Painel administrativo institucional
-          </p>
+          <p style={styles.footerLine}>IPECC | Plataforma institucional</p>
           <p style={styles.footerMeta}>
             CNPJ 05.965.225/0001-04 | {year} IPECC
           </p>
@@ -220,17 +221,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontSize: 13,
     color: "#94a3b8",
   },
-  badge: {
-    display: "inline-block",
-    marginTop: 12,
-    padding: "6px 10px",
-    borderRadius: 999,
-    border: "1px solid rgba(134, 239, 172, 0.28)",
-    background: "rgba(22, 163, 74, 0.12)",
-    color: "#86efac",
-    fontSize: 11,
-    fontWeight: 700,
-  },
   form: {
     display: "flex",
     flexDirection: "column",
@@ -258,6 +248,17 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: "#f87171",
     fontSize: 13,
     textAlign: "center",
+  },
+  cadastroLink: {
+    marginTop: 20,
+    textAlign: "center",
+    fontSize: 13,
+    color: "#94a3b8",
+  },
+  link: {
+    color: "#93c5fd",
+    fontWeight: 700,
+    textDecoration: "none",
   },
   footer: {
     textAlign: "center",
