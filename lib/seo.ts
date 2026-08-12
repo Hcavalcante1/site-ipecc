@@ -74,7 +74,7 @@ export const publicSeoPages: PublicSeoPage[] = [
   },
   {
     path: "/inicio",
-    title: "Inicio | IPECC",
+    title: "Início | IPECC",
     description:
       "Conheca os destaques, projetos, eventos e canais do Instituto Paulista de Esporte, Cultura e Cidadania.",
     changeFrequency: "weekly",
@@ -106,7 +106,7 @@ export const publicSeoPages: PublicSeoPage[] = [
   },
   {
     path: "/noticias",
-    title: "Noticias | IPECC",
+    title: "Notícias | IPECC",
     description:
       "Noticias, comunicados e registros das acoes, projetos e iniciativas do IPECC.",
     changeFrequency: "weekly",
@@ -114,7 +114,7 @@ export const publicSeoPages: PublicSeoPage[] = [
   },
   {
     path: "/transparencia",
-    title: "Transparencia | IPECC",
+    title: "Transparência | IPECC",
     description:
       "Documentos institucionais, convenios, prestacao de contas, editais e informacoes publicas do IPECC.",
     changeFrequency: "monthly",
@@ -149,7 +149,7 @@ export const publicSeoPages: PublicSeoPage[] = [
 export const extraSeoPages: PublicSeoPage[] = [
   {
     path: "/acoes",
-    title: "Acoes | IPECC",
+    title: "Ações | IPECC",
     description: "Acoes e iniciativas publicas realizadas pelo IPECC.",
     changeFrequency: "weekly",
     priority: 0.7,
@@ -200,7 +200,7 @@ export function publicMetadata(path: string): Metadata {
 
   return {
     metadataBase: new URL(SITE_URL),
-    title: page.title,
+    title: { absolute: page.title },
     description: page.description,
     alternates: {
       canonical: url,
