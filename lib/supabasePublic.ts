@@ -15,5 +15,6 @@ export const supabasePublic = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: false,
     autoRefreshToken: false,
+    storageKey: "ipecc-public-anon",  // unique key avoids Multiple GoTrueClient warning
   },
 });
