@@ -173,8 +173,6 @@ export default function PublicSiteShell({ children }: { children: ReactNode }) {
               >
                 Contato
               </a>
-              <a
-              </a>
             </nav>
           </div>
         </div>
