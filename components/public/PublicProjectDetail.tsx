@@ -7,6 +7,7 @@ import PublicWhatsAppHelpLine from "./PublicWhatsAppHelpLine";
 type PublicProjectDetailProps = {
   title: string;
   lead?: string;
+  image?: string;
   children: ReactNode;
 };
 
@@ -14,12 +15,13 @@ type PublicProjectDetailProps = {
 export default function PublicProjectDetail({
   title,
   lead,
+  image,
   children,
 }: PublicProjectDetailProps) {
   return (
     <>
       <PublicHeroRolling
-        bgImage="/media/heroes/projetos/hero.webp"
+        bgImage={image || "/media/heroes/projetos/hero.webp"}
         title={title}
         text={lead}
         ariaLabel={title}
