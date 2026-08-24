@@ -3,7 +3,7 @@ import { assertDownloadAllowed } from "@/lib/downloadAuth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { downloadArquivoProposta } from "@/lib/storage/propostasBucket";
 
-const ALLOWED_BUCKETS = new Set(["docs", "editais", "media", "propostas"]);
+const ALLOWED_BUCKETS = new Set(["docs", "editais", "paginas", "propostas"]);
 
 function isSafeStoragePath(path: string) {
   return (
@@ -154,4 +154,4 @@ export async function GET(
 
     return new Response("Erro interno", { status: 500 });
   }
-}
+    }
