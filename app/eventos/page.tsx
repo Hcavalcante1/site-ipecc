@@ -1,19 +1,22 @@
+import type { Metadata } from "next";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { resolveMediaPath } from "@/lib/media";
 import { PublicHeroRolling } from "@/components/public";
 import WhatsAppLeadTrigger from "@/components/public/WhatsAppLeadTrigger";
 import { logPublicFetch } from "@/lib/observability/publicFetchLog";
+import { publicMetadata } from "@/lib/seo";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-export const fetchCache = "force-no-store";
+export const metadata: Metadata = publicMetadata("/eventos");
+export const revalidate = 120;
 export const runtime = "nodejs";
 
 export default async function EventosPage() {
+  const hoje = new Date().toISOString().split("T")[0];
   const { data: eventos, error } = await supabase
     .from("eventos")
     .select("*")
     .eq("publicado", true)
+    .gte("data_evento", hoje)
     .order("data_evento", { ascending: true });
 
   logPublicFetch({
@@ -39,6 +42,7 @@ export default async function EventosPage() {
             <div className="cards__grid">
               {eventos.map((e: any) => (
                 <article key={e.id} className="card">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={
                       resolveMediaPath(e.imagem_url) ||
@@ -84,4 +88,4 @@ export default async function EventosPage() {
       </section>
     </>
   );
-}
+                    }
