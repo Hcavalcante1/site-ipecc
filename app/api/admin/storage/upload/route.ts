@@ -6,7 +6,7 @@ const ALLOWED_BUCKETS = new Set([
   "docs",
   "editais",
   "propostas",
-  "media",
+  "paginas",
   "gestao-documental",
 ]);
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
@@ -14,7 +14,7 @@ const ALLOWED_EXTENSIONS_BY_BUCKET: Record<string, Set<string>> = {
   docs: new Set(["pdf", "png", "jpg", "jpeg", "webp"]),
   editais: new Set(["pdf"]),
   propostas: new Set(["pdf"]),
-  media: new Set(["png", "jpg", "jpeg", "webp"]),
+  paginas: new Set(["png", "jpg", "jpeg", "webp"]),
   "gestao-documental": new Set([
     "pdf",
     "docx",
@@ -135,4 +135,4 @@ export async function POST(req: Request) {
     const message = e instanceof Error ? e.message : "Erro no envio do arquivo";
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
-}
+    }
