@@ -1,11 +1,10 @@
+import { notFound } from "next/navigation";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { resolveMediaPath } from "@/lib/media";
 import { PublicHeroRolling, PublicPageContent } from "@/components/public";
 import PublicWhatsAppHelpLine from "@/components/public/PublicWhatsAppHelpLine";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-export const fetchCache = "force-no-store";
+export const revalidate = 120;
 
 type Props = {
   params: { id: string };
@@ -19,13 +18,7 @@ export default async function NoticiaPage({ params }: Props) {
     .eq("publicado", true)
     .maybeSingle();
 
-  if (!noticia) {
-    return (
-      <PublicPageContent>
-        <h1>Notícia não encontrada</h1>
-      </PublicPageContent>
-    );
-  }
+  if (!noticia) notFound();
 
   return (
     <>
