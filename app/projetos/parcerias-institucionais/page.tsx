@@ -3,13 +3,15 @@
 import { useEffect, useState } from "react";
 import { supabasePublic as supabase } from "@/lib/supabasePublic";
 import { fetchPaginaConteudo, parsePaginaExtra } from "@/lib/cms/paginasConteudo";
+import { resolveMediaPath } from "@/lib/media";
 import { PublicProjectDetail } from "@/components/public";
 
 export default function ParceriasInstitucionais() {
   const [titulo, setTitulo] = useState("Parcerias Institucionais");
   const [lead, setLead] = useState(
-    "Cooperação técnica com o poder público, escolas, organizações da sociedade civil e iniciativa privada para ampliar o impacto social."
+    "Cooperação técnica com poder público e sociedade civil para ampliar o alcance das ações do IPECC."
   );
+  const [imagem, setImagem] = useState("");
   const [paragrafos, setParagrafos] = useState<string[]>([]);
 
   useEffect(() => {
@@ -18,11 +20,12 @@ export default function ParceriasInstitucionais() {
         supabase,
         "projetos-parcerias-institucionais",
         "corpo",
-        "titulo, texto, extra"
+        "titulo, texto, imagem_url, extra"
       );
       if (data) {
         if (data.titulo) setTitulo(data.titulo);
         if (data.texto) setLead(data.texto);
+        if (data.imagem_url) setImagem(resolveMediaPath(data.imagem_url) || "");
         setParagrafos(parsePaginaExtra<string[]>(data.extra, []));
       }
     }
@@ -30,7 +33,7 @@ export default function ParceriasInstitucionais() {
   }, []);
 
   return (
-    <PublicProjectDetail title={titulo} lead={lead}>
+    <PublicProjectDetail title={titulo} lead={lead} image={imagem || undefined}>
       {paragrafos.map((p, i) => (
         <p key={i}>{p}</p>
       ))}
