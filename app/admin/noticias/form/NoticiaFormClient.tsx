@@ -51,7 +51,8 @@ export default function NoticiaForm() {
       .single();
 
     if (data) {
-      if (!registroNoEscopoProcesso(data.processo_id, escopo.processoIds)) {
+      // Mestre tem acesso a todos os registros, independente do processo
+      if (!escopo.mestre && !registroNoEscopoProcesso(data.processo_id, escopo.processoIds)) {
         setBloqueado(true);
         return;
       }
@@ -74,20 +75,25 @@ export default function NoticiaForm() {
       return;
     }
 
-    if (!processoId) {
+    // Processo é obrigatório apenas para admins não-mestre
+    if (!processoId && !escopo.mestre) {
       setMsg("Selecione o processo (pasta).");
       setLoading(false);
       return;
     }
 
-    const row = {
+    const row: Record<string, unknown> = {
       titulo,
       resumo,
       conteudo,
       imagem_url: imagem,
       publicado,
-      processo_id: processoId,
     };
+
+    // Inclui processo_id apenas se selecionado (mestre pode salvar sem processo)
+    if (processoId) {
+      row.processo_id = processoId;
+    }
 
     const { error } = id
       ? await supabase.from("noticias").update(row).eq("id", id)
@@ -165,14 +171,15 @@ export default function NoticiaForm() {
           />
         </div>
 
+        {/* Processo é opcional para mestre — obrigatório para admins com escopo */}
         <div>
-          <label>Processo (pasta)</label>
+          <label>Processo (pasta){escopo.mestre ? " — opcional" : ""}</label>
           <select
             className="admin-input"
             value={processoId}
             onChange={(e) => setProcessoId(e.target.value)}
           >
-            <option value="">Selecione o processo</option>
+            <option value="">{escopo.mestre ? "Sem processo (institucional)" : "Selecione o processo"}</option>
             {processos.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.titulo}
