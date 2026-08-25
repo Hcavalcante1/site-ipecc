@@ -23,6 +23,10 @@ const msgStyle: CSSProperties = {
   fontWeight: 500,
 };
 
+const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  "https://eohshxaxbsdpxundsley.supabase.co";
+
 export default function EventoForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -44,6 +48,50 @@ export default function EventoForm() {
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const [uploadMsg, setUploadMsg] = useState("");
+
+  async function handleImageUpload(file: File) {
+    setUploadingImg(true);
+    setUploadMsg("");
+
+    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const safeName = file.name
+      .replace(/\.[^.]+$/, "")
+      .replace(/[^a-z0-9]/gi, "-")
+      .toLowerCase()
+      .slice(0, 40);
+    const path = `eventos/${Date.now()}-${safeName}.${ext}`;
+
+    const fd = new FormData();
+    fd.append("bucket", "paginas");
+    fd.append("path", path);
+    fd.append("file", file);
+    fd.append("contentType", file.type);
+
+    try {
+      const res = await fetch("/api/admin/storage/upload", {
+        method: "POST",
+        body: fd,
+      });
+      const json = await res.json();
+
+      if (json.ok && json.data) {
+        const fullPath =
+          json.data.fullPath ||
+          `paginas/${json.data.path || path}`;
+        const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${fullPath}`;
+        setImagem(publicUrl);
+        setUploadMsg("✓ Imagem enviada");
+      } else {
+        setUploadMsg(`Erro: ${json.error || "falha no upload"}`);
+      }
+    } catch {
+      setUploadMsg("Erro ao enviar imagem.");
+    } finally {
+      setUploadingImg(false);
+    }
+  }
 
   async function carregar() {
     const lista = await carregarProcessosDoEscopo();
@@ -59,7 +107,10 @@ export default function EventoForm() {
       .single();
 
     if (data) {
-      if (!registroNoEscopoProcesso(data.processo_id, escopo.processoIds)) {
+      if (
+        !escopo.mestre &&
+        !registroNoEscopoProcesso(data.processo_id, escopo.processoIds)
+      ) {
         setBloqueado(true);
         return;
       }
@@ -85,13 +136,13 @@ export default function EventoForm() {
       return;
     }
 
-    if (!processoId) {
+    if (!processoId && !escopo.mestre) {
       setMsg("Selecione o processo (pasta).");
       setLoading(false);
       return;
     }
 
-    const payload = {
+    const payload: Record<string, unknown> = {
       titulo,
       descricao,
       data_evento: dataEvento || null,
@@ -100,36 +151,26 @@ export default function EventoForm() {
       horario,
       whatsapp,
       publicado,
-      processo_id: processoId,
     };
+
+    if (processoId) {
+      payload.processo_id = processoId;
+    }
 
     if (id) {
       const { error } = await supabase
         .from("eventos")
         .update(payload)
         .eq("id", id);
-
-      if (error) {
-        setMsg("Erro ao salvar: " + error.message);
-        setLoading(false);
-        return;
-      }
+      if (error) { setMsg("Erro ao salvar: " + error.message); setLoading(false); return; }
     } else {
       const { error } = await supabase.from("eventos").insert(payload);
-
-      if (error) {
-        setMsg("Erro ao salvar: " + error.message);
-        setLoading(false);
-        return;
-      }
+      if (error) { setMsg("Erro ao salvar: " + error.message); setLoading(false); return; }
     }
 
     setMsg("Salvo com sucesso!");
     setLoading(false);
-
-    setTimeout(() => {
-      router.push("/admin/eventos");
-    }, 800);
+    setTimeout(() => router.push("/admin/eventos"), 800);
   }
 
   useEffect(() => {
@@ -151,113 +192,112 @@ export default function EventoForm() {
 
   return (
     <>
-      <h1 className="admin-h1">
-        {id ? "Editar evento" : "Novo evento"}
-      </h1>
+      <h1 className="admin-h1">{id ? "Editar evento" : "Novo evento"}</h1>
 
       <div className="admin-form">
         <div>
           <label>Título</label>
-          <input
-            className="admin-input"
-            value={titulo}
-            onChange={(e) => setTitulo(e.target.value)}
-          />
+          <input className="admin-input" value={titulo} onChange={(e) => setTitulo(e.target.value)} />
         </div>
 
         <div>
           <label>Descrição</label>
-          <textarea
-            className="admin-textarea"
-            value={descricao}
-            onChange={(e) => setDescricao(e.target.value)}
-          />
+          <textarea className="admin-textarea" value={descricao} onChange={(e) => setDescricao(e.target.value)} />
         </div>
 
         <div>
           <label>Data do evento</label>
-          <input
-            type="date"
-            className="admin-input"
-            value={dataEvento}
-            onChange={(e) => setDataEvento(e.target.value)}
-          />
+          <input type="date" className="admin-input" value={dataEvento} onChange={(e) => setDataEvento(e.target.value)} />
         </div>
 
         <div>
           <label>Horário</label>
-          <input
-            className="admin-input"
-            value={horario}
-            onChange={(e) => setHorario(e.target.value)}
-          />
+          <input className="admin-input" value={horario} onChange={(e) => setHorario(e.target.value)} />
         </div>
 
         <div>
           <label>Local</label>
-          <input
-            className="admin-input"
-            value={local}
-            onChange={(e) => setLocal(e.target.value)}
-          />
+          <input className="admin-input" value={local} onChange={(e) => setLocal(e.target.value)} />
         </div>
 
         <div>
           <label>WhatsApp (com DDD)</label>
-          <input
-            className="admin-input"
-            value={whatsapp}
-            onChange={(e) => setWhatsapp(e.target.value)}
-          />
+          <input className="admin-input" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
         </div>
 
         <div>
-          <label>Imagem (URL)</label>
+          <label>Imagem</label>
           <input
             className="admin-input"
             value={imagem}
             onChange={(e) => setImagem(e.target.value)}
+            placeholder="URL da imagem (ou envie um arquivo abaixo)"
+            style={{ marginBottom: 8 }}
           />
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <label
+              style={{
+                display: "inline-block",
+                padding: "6px 14px",
+                background: "#2563eb",
+                color: "#fff",
+                borderRadius: 6,
+                cursor: uploadingImg ? "wait" : "pointer",
+                fontSize: 13,
+                fontWeight: 500,
+              }}
+            >
+              {uploadingImg ? "Enviando..." : "Escolher arquivo"}
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                style={{ display: "none" }}
+                disabled={uploadingImg}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void handleImageUpload(file);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+            {uploadMsg && (
+              <span style={{ fontSize: 13, color: uploadMsg.startsWith("Erro") ? "#dc2626" : "#16a34a" }}>
+                {uploadMsg}
+              </span>
+            )}
+          </div>
+          {imagem && (
+            <img
+              src={imagem}
+              alt="preview"
+              style={{ marginTop: 10, maxHeight: 140, maxWidth: "100%", borderRadius: 6, objectFit: "cover", border: "1px solid #e5e7eb" }}
+            />
+          )}
         </div>
 
         <div>
-          <label>Processo (pasta)</label>
-          <select
-            className="admin-input"
-            value={processoId}
-            onChange={(e) => setProcessoId(e.target.value)}
-          >
-            <option value="">Selecione o processo</option>
+          <label>Processo (pasta){escopo.mestre ? " — opcional" : ""}</label>
+          <select className="admin-input" value={processoId} onChange={(e) => setProcessoId(e.target.value)}>
+            <option value="">{escopo.mestre ? "Sem processo (institucional)" : "Selecione o processo"}</option>
             {processos.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.titulo}
-              </option>
+              <option key={p.id} value={p.id}>{p.titulo}</option>
             ))}
           </select>
         </div>
 
         <div style={publicadoRowStyle}>
-          <input
-            type="checkbox"
-            checked={publicado}
-            onChange={(e) => setPublicado(e.target.checked)}
-          />
+          <input type="checkbox" checked={publicado} onChange={(e) => setPublicado(e.target.checked)} />
           <label>Publicado</label>
         </div>
 
         {msg && <p style={msgStyle}>{msg}</p>}
 
         <div className="admin-save-row">
-          <button
-            type="button"
-            onClick={salvar}
-            className="admin-save-button"
-            disabled={loading}
-          >
+          <button type="button" onClick={salvar} className="admin-save-button" disabled={loading}>
             {loading ? "Salvando..." : "Salvar"}
           </button>
         </div>
       </div>
     </>
   );
-}
+        }
