@@ -67,6 +67,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
     async function encerrarSessaoAdmin() {
       sessionStorage.removeItem(ADMIN_ACTIVE_KEY);
+      localStorage.removeItem(ADMIN_CLOSED_KEY);
       await fetch("/api/logout", { method: "POST", keepalive: true }).catch(
         () => null
       );
@@ -96,23 +97,22 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     async function checkAuth() {
       setChecking(true);
       try {
-        if (
-          localStorage.getItem(ADMIN_CLOSED_KEY) === "1" ||
-          sessionStorage.getItem(ADMIN_ACTIVE_KEY) !== "1"
-        ) {
-          await encerrarSessaoAdmin();
-          router.replace("/login");
-          return;
-        }
-
+        // Verifica a sessão Supabase diretamente — não depende de flags de
+        // localStorage/sessionStorage que disparam incorretamente em navegações
+        // SPA (pagehide/beforeunload acionam em qualquer troca de página).
         const {
           data: { user },
         } = await supabase.auth.getUser();
 
         if (!user) {
+          await encerrarSessaoAdmin();
           router.replace("/login");
           return;
         }
+
+        // Sessão válida: restaura as marcações e limpa flag de fechado
+        sessionStorage.setItem(ADMIN_ACTIVE_KEY, "1");
+        localStorage.removeItem(ADMIN_CLOSED_KEY);
 
         if (mounted) {
           setUserEmail(user.email || "");
@@ -193,36 +193,23 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     }
 
     async function renovarEntradaAdmin() {
-      if (sessionStorage.getItem(ADMIN_ACTIVE_KEY) !== "1") return;
       const {
         data: { session },
       } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
       await fetch("/api/admin/session", {
         method: "POST",
         credentials: "include",
-        headers: session?.access_token
-          ? { Authorization: `Bearer ${session.access_token}` }
-          : undefined,
+        headers: { Authorization: `Bearer ${session.access_token}` },
       }).catch(() => null);
     }
 
     void checkAuth();
-    const heartbeat = window.setInterval(renovarEntradaAdmin, 4000);
-
-    function marcarAdminComoFechado() {
-      localStorage.setItem(ADMIN_CLOSED_KEY, "1");
-      sessionStorage.removeItem(ADMIN_ACTIVE_KEY);
-      navigator.sendBeacon?.("/api/logout");
-    }
-
-    window.addEventListener("pagehide", marcarAdminComoFechado);
-    window.addEventListener("beforeunload", marcarAdminComoFechado);
+    const heartbeat = window.setInterval(renovarEntradaAdmin, 30_000);
 
     return () => {
       mounted = false;
       window.clearInterval(heartbeat);
-      window.removeEventListener("pagehide", marcarAdminComoFechado);
-      window.removeEventListener("beforeunload", marcarAdminComoFechado);
     };
   }, [router]);
 
