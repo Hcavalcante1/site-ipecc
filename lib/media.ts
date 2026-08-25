@@ -49,13 +49,12 @@ export function resolveMediaPath(input?: string | null): string {
 
   if (/^https?:\/\//i.test(value) || value.startsWith('data:')) return value;
 
-  if (value.startsWith('/')) return value;
-
   const clean = value.split('?')[0].split('#')[0];
   const parts = clean.split('/').filter(Boolean);
   const basename = parts[parts.length - 1] || clean;
 
   if (legacyMediaMap[basename]) return legacyMediaMap[basename];
+  if (value.startsWith('/')) return value;
 
   if (parts.length >= 2 && STORAGE_BUCKETS.has(parts[0])) {
     const supabaseUrl =
