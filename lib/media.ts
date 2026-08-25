@@ -34,6 +34,14 @@ const legacyMediaMap: Record<string, string> = {
   'oficinas.jpg': '/media/shared/fallbacks/oficinas.jpg',
 };
 
+const STORAGE_BUCKETS = new Set([
+  'paginas',
+  'docs',
+  'editais',
+  'propostas',
+  'gestao-documental',
+]);
+
 export function resolveMediaPath(input?: string | null): string {
   if (!input) return '';
   const value = input.trim();
@@ -41,13 +49,24 @@ export function resolveMediaPath(input?: string | null): string {
 
   if (/^https?:\/\//i.test(value) || value.startsWith('data:')) return value;
 
+  if (value.startsWith('/')) return value;
+
   const clean = value.split('?')[0].split('#')[0];
-  const basename = clean.split('/').filter(Boolean).pop() || clean;
+  const parts = clean.split('/').filter(Boolean);
+  const basename = parts[parts.length - 1] || clean;
 
   if (legacyMediaMap[basename]) return legacyMediaMap[basename];
 
-  if (value.startsWith('/media/')) return value;
-  if (value.startsWith('/')) return value;
+  if (parts.length >= 2 && STORAGE_BUCKETS.has(parts[0])) {
+    const supabaseUrl =
+      typeof process !== 'undefined'
+        ? process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+        : '';
+    if (supabaseUrl) {
+      return supabaseUrl + '/storage/v1/object/public/' + clean;
+    }
+    return '/api/download/' + clean;
+  }
 
-  return `/media/${value}`;
+  return '/media/' + value;
 }
