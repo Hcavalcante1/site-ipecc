@@ -18,6 +18,10 @@ const publicadoRowStyle: CSSProperties = {
   gap: adminTokens.spacing.md,
 };
 
+const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  "https://eohshxaxbsdpxundsley.supabase.co";
+
 export default function NoticiaForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -36,6 +40,50 @@ export default function NoticiaForm() {
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const [uploadMsg, setUploadMsg] = useState("");
+
+  async function handleImageUpload(file: File) {
+    setUploadingImg(true);
+    setUploadMsg("");
+
+    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const safeName = file.name
+      .replace(/\.[^.]+$/, "")
+      .replace(/[^a-z0-9]/gi, "-")
+      .toLowerCase()
+      .slice(0, 40);
+    const path = `noticias/${Date.now()}-${safeName}.${ext}`;
+
+    const fd = new FormData();
+    fd.append("bucket", "paginas");
+    fd.append("path", path);
+    fd.append("file", file);
+    fd.append("contentType", file.type);
+
+    try {
+      const res = await fetch("/api/admin/storage/upload", {
+        method: "POST",
+        body: fd,
+      });
+      const json = await res.json();
+
+      if (json.ok && json.data) {
+        const fullPath =
+          json.data.fullPath ||
+          `paginas/${json.data.path || path}`;
+        const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${fullPath}`;
+        setImagem(publicUrl);
+        setUploadMsg("✓ Imagem enviada");
+      } else {
+        setUploadMsg(`Erro: ${json.error || "falha no upload"}`);
+      }
+    } catch {
+      setUploadMsg("Erro ao enviar imagem.");
+    } finally {
+      setUploadingImg(false);
+    }
+  }
 
   async function carregar() {
     const lista = await carregarProcessosDoEscopo();
@@ -51,8 +99,10 @@ export default function NoticiaForm() {
       .single();
 
     if (data) {
-      // Mestre tem acesso a todos os registros, independente do processo
-      if (!escopo.mestre && !registroNoEscopoProcesso(data.processo_id, escopo.processoIds)) {
+      if (
+        !escopo.mestre &&
+        !registroNoEscopoProcesso(data.processo_id, escopo.processoIds)
+      ) {
         setBloqueado(true);
         return;
       }
@@ -75,7 +125,6 @@ export default function NoticiaForm() {
       return;
     }
 
-    // Processo é obrigatório apenas para admins não-mestre
     if (!processoId && !escopo.mestre) {
       setMsg("Selecione o processo (pasta).");
       setLoading(false);
@@ -90,7 +139,6 @@ export default function NoticiaForm() {
       publicado,
     };
 
-    // Inclui processo_id apenas se selecionado (mestre pode salvar sem processo)
     if (processoId) {
       row.processo_id = processoId;
     }
@@ -123,7 +171,9 @@ export default function NoticiaForm() {
     return (
       <>
         <h1 className="admin-h1">Acesso negado</h1>
-        <p className="admin-subtitle">Notícia fora do seu escopo de processo.</p>
+        <p className="admin-subtitle">
+          Notícia fora do seu escopo de processo.
+        </p>
       </>
     );
   }
@@ -163,23 +213,76 @@ export default function NoticiaForm() {
         </div>
 
         <div>
-          <label>Imagem (URL)</label>
+          <label>Imagem</label>
           <input
             className="admin-input"
             value={imagem}
             onChange={(e) => setImagem(e.target.value)}
+            placeholder="URL da imagem (ou envie um arquivo abaixo)"
+            style={{ marginBottom: 8 }}
           />
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <label
+              style={{
+                display: "inline-block",
+                padding: "6px 14px",
+                background: "#2563eb",
+                color: "#fff",
+                borderRadius: 6,
+                cursor: uploadingImg ? "wait" : "pointer",
+                fontSize: 13,
+                fontWeight: 500,
+              }}
+            >
+              {uploadingImg ? "Enviando..." : "Escolher arquivo"}
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                style={{ display: "none" }}
+                disabled={uploadingImg}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void handleImageUpload(file);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+            {uploadMsg && (
+              <span style={{ fontSize: 13, color: uploadMsg.startsWith("Erro") ? "#dc2626" : "#16a34a" }}>
+                {uploadMsg}
+              </span>
+            )}
+          </div>
+          {imagem && (
+            <img
+              src={imagem}
+              alt="preview"
+              style={{
+                marginTop: 10,
+                maxHeight: 140,
+                maxWidth: "100%",
+                borderRadius: 6,
+                objectFit: "cover",
+                border: "1px solid #e5e7eb",
+              }}
+            />
+          )}
         </div>
 
-        {/* Processo é opcional para mestre — obrigatório para admins com escopo */}
         <div>
-          <label>Processo (pasta){escopo.mestre ? " — opcional" : ""}</label>
+          <label>
+            Processo (pasta){escopo.mestre ? " — opcional" : ""}
+          </label>
           <select
             className="admin-input"
             value={processoId}
             onChange={(e) => setProcessoId(e.target.value)}
           >
-            <option value="">{escopo.mestre ? "Sem processo (institucional)" : "Selecione o processo"}</option>
+            <option value="">
+              {escopo.mestre
+                ? "Sem processo (institucional)"
+                : "Selecione o processo"}
+            </option>
             {processos.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.titulo}
@@ -212,4 +315,4 @@ export default function NoticiaForm() {
       </div>
     </>
   );
-}
+        }
