@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "../../lib/supabaseServer";
 import { resolveMediaPath } from "@/lib/media";
@@ -5,10 +6,10 @@ import { PublicHeroRolling } from "@/components/public";
 import PublicWhatsAppCtaLink from "@/components/public/PublicWhatsAppCtaLink";
 import WhatsAppLeadTrigger from "@/components/public/WhatsAppLeadTrigger";
 import { logPublicFetch } from "@/lib/observability/publicFetchLog";
+import { publicMetadata } from "@/lib/seo";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-export const fetchCache = "force-no-store";
+export const metadata: Metadata = publicMetadata("/inicio");
+export const revalidate = 60;
 
 function normalizePotentialMojibake(value?: string | null) {
   if (!value) return value || "";
@@ -150,7 +151,7 @@ const FALLBACK_CTA: CtaAdmin = {
 
 export default async function InicioPage() {
 
-  const supabase = createClient(); // 🔥 COLOCA ESSA LINHA AQUI
+  const supabase = createClient();
 
   const { data: hero } = await supabase
     .from("paginas_conteudo")
@@ -204,10 +205,12 @@ const { data: noticias } = await supabase
   .order("created_at", { ascending: false })
   .limit(2);
 
+const hoje = new Date().toISOString().split("T")[0];
 const { data: eventos } = await supabase
   .from("eventos")
   .select("*")
   .eq("publicado", true)
+  .gte("data_evento", hoje)
   .order("data_evento", { ascending: true })
   .limit(2);
 
@@ -333,6 +336,7 @@ const { data: eventos } = await supabase
           {cards.slice(0, 3).map((card) => (
             <article className="card" key={card.id}>
               <div className="card__media-wrap">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={card.imagem || "/media/home/cards/projetos.jpg"}
                   alt={`${card.titulo} IPECC`}
@@ -361,6 +365,7 @@ const { data: eventos } = await supabase
           <div className="destaques__grid">
             {destaquesRender.map((item: any) => (
               <article key={item.id}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={resolveMediaPath(item.imagem || item.imagem_url) || "/media/home/destaques/evento-cultural.jpg"}
                   alt={item.titulo}
@@ -389,6 +394,7 @@ const { data: eventos } = await supabase
                   className="public-card"
                 >
                   <div className="public-card__media">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={
                         resolveMediaPath(n.imagem_url) ||
@@ -434,8 +440,19 @@ const { data: eventos } = await supabase
                   horario?: string;
                   local?: string;
                   whatsapp?: string;
+                  imagem_url?: string;
                 }) => (
                   <article key={e.id} className="public-event-card">
+                    {e.imagem_url && (
+                      <div className="public-card__media" style={{ marginBottom: 12, borderRadius: 8, overflow: "hidden" }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={resolveMediaPath(e.imagem_url) || "/media/home/destaques/evento-cultural.jpg"}
+                          alt={e.titulo}
+                          style={{ width: "100%", maxHeight: 180, objectFit: "cover", display: "block" }}
+                        />
+                      </div>
+                    )}
                     <h3 className="public-event-card__title">{e.titulo}</h3>
                     <p className="public-event-card__meta">
                       Data:{" "}
@@ -530,6 +547,7 @@ const { data: eventos } = await supabase
               "O IPECC promove inclusão, cidadania e transformação social por meio de projetos culturais, educacionais e comunitários que fortalecem o vínculo entre sociedade civil e poder público."}
           </p>
           <div className="impacto__imagem">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={resolveMediaPath(impacto?.imagem_url) || "/media/home/impacto/impacto-social.jpg"}
               alt="Impacto social IPECC"
@@ -569,16 +587,11 @@ const { data: eventos } = await supabase
       </section>
 
       {/* ===== SOBRE + CTA FINAL ===== */}
-  ...
-      {/* ===== SOBRE + CTA FINAL ===== */}
-      
-      {/* ===== SOBRE + CTA FINAL ===== */}
       <section className="sobre-cta">
         <div className="container sobre-cta__grid">
           <div className="sobre">
             <h2>Sobre o IPECC </h2>
 
-            {/* 🔥 CORREÇÃO REAL */}
             <div>
               {(sobre?.texto || "")
                 .split("\n")
@@ -602,9 +615,6 @@ const { data: eventos } = await supabase
           </div>
         </div>
       </section>
-
-
-...
     </>
   );
 }
