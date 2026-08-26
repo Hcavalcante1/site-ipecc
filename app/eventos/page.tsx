@@ -80,7 +80,18 @@ export default async function EventosPage() {
                       </WhatsAppLeadTrigger>
                     ) : null}
                   </div>
-                </article>
+                            {e.video_url && (
+              <div style={{ marginTop: 12, borderRadius: 6, overflow: "hidden" }}>
+                <iframe
+                  width="100%"
+                  style={{ aspectRatio: "16/9", border: "none" }}
+                  src={e.video_url}
+                  title="Vídeo do evento"
+                  allowFullScreen
+                />
+              </div>
+            )}
+            </article>
               ))}
             </div>
           )}
