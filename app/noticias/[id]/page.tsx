@@ -55,7 +55,18 @@ export default async function NoticiaPage({ params }: Props) {
               <p key={i}>{linha}</p>
             ))}
         </div>
-      </PublicPageContent>
+                {(noticia as any).video_url && (
+            <div style={{ marginTop: 24, borderRadius: 8, overflow: "hidden" }}>
+              <iframe
+                width="100%"
+                style={{ aspectRatio: "16/9", border: "none" }}
+                src={(noticia as any).video_url}
+                title="Vídeo da notícia"
+                allowFullScreen
+              />
+            </div>
+          )}
+        </PublicPageContent>
     </>
   );
 }
