@@ -8,6 +8,7 @@ type PublicProjectDetailProps = {
   title: string;
   lead?: string;
   image?: string;
+  video?: string;
   children: ReactNode;
 };
 
@@ -16,6 +17,7 @@ export default function PublicProjectDetail({
   title,
   lead,
   image,
+  video,
   children,
 }: PublicProjectDetailProps) {
   return (
@@ -29,6 +31,20 @@ export default function PublicProjectDetail({
       <PublicWhatsAppHelpLine assunto="projetos" />
       <PublicPageContent>
         {children}
+        {video && (
+          <div style={{ marginTop: 24, borderRadius: 8, overflow: "hidden" }}>
+            <iframe
+              width="100%"
+              style={{ aspectRatio: "16/9", border: "none" }}
+              src={video.replace(
+                /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+                "youtube.com/embed/$1"
+              )}
+              title="Vídeo do projeto"
+              allowFullScreen
+            />
+          </div>
+        )}
         <p style={{ marginTop: 24 }}>
           <Link href="/projetos">← Voltar para projetos</Link>
         </p>
