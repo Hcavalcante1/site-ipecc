@@ -12,6 +12,7 @@ export default function OficinasEducacaoCidada() {
     "Formação em direitos, convivência democrática e participação social para jovens, adultos e lideranças comunitárias."
   );
   const [imagem, setImagem] = useState("");
+  const [video, setVideo] = useState("");
   const [paragrafos, setParagrafos] = useState<string[]>([]);
 
   useEffect(() => {
@@ -20,12 +21,13 @@ export default function OficinasEducacaoCidada() {
         supabase,
         "projetos-oficinas-educacao-cidada",
         "corpo",
-        "titulo, texto, imagem_url, extra"
+        "titulo, texto, imagem_url, video_url, extra"
       );
       if (data) {
         if (data.titulo) setTitulo(data.titulo);
         if (data.texto) setLead(data.texto);
         if (data.imagem_url) setImagem(resolveMediaPath(data.imagem_url) || "");
+        if ((data as any).video_url) setVideo((data as any).video_url);
         setParagrafos(parsePaginaExtra<string[]>(data.extra, []));
       }
     }
@@ -33,7 +35,7 @@ export default function OficinasEducacaoCidada() {
   }, []);
 
   return (
-    <PublicProjectDetail title={titulo} lead={lead} image={imagem || undefined}>
+    <PublicProjectDetail title={titulo} lead={lead} image={imagem || undefined} video={video || undefined}>
       {paragrafos.map((p, i) => (
         <p key={i}>{p}</p>
       ))}
