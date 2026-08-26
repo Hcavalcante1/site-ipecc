@@ -60,7 +60,7 @@ export default async function NoticiaPage({ params }: Props) {
               <iframe
                 width="100%"
                 style={{ aspectRatio: "16/9", border: "none" }}
-                src={(noticia as any).video_url}
+                src={(noticia as any).video_url?.replace(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/, 'youtube.com/embed/$1')}
                 title="Vídeo da notícia"
                 allowFullScreen
               />
