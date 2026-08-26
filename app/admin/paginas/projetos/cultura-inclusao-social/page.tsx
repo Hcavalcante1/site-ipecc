@@ -9,6 +9,9 @@ import {
 } from "@/lib/supabaseClient";
 import { parsePaginaExtra } from "@/lib/cms/paginasConteudo";
 
+const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  "https://eohshxaxbsdpxundsley.supabase.co";
 const SLUG = "projetos-cultura-inclusao-social";
 const BLOCO = "corpo";
 
@@ -38,11 +41,46 @@ export default function CulturaInclusaoAdminPage() {
   const [p5, setP5] = useState("");
   const [msg, setMsg] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [imagem, setImagem] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const [uploadMsg, setUploadMsg] = useState("");
   const [loading, setLoading] = useState(true);
 
+  async function handleImageUpload(file: File) {
+    setUploadingImg(true);
+    setUploadMsg("");
+    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const safeName = file.name
+      .replace(/\.[^.]+$/, "")
+      .replace(/[^a-z0-9]/gi, "-")
+      .toLowerCase()
+      .slice(0, 40);
+    const path = `projetos/${Date.now()}-${safeName}.${ext}`;
+    const fd = new FormData();
+    fd.append("bucket", "paginas");
+    fd.append("path", path);
+    fd.append("file", file);
+    fd.append("contentType", file.type);
+    try {
+      const res = await fetch("/api/admin/storage/upload", { method: "POST", body: fd });
+      const json = await res.json();
+      if (json.ok && json.data) {
+        const fullPath = json.data.fullPath || `paginas/${json.data.path || path}`;
+        setImagem(`${SUPABASE_URL}/storage/v1/object/public/${fullPath}`);
+        setUploadMsg("✓ Imagem enviada");
+      } else {
+        setUploadMsg(`Erro: ${json.error || "falha no upload"}`);
+      }
+    } catch {
+      setUploadMsg("Erro ao enviar imagem.");
+    } finally {
+      setUploadingImg(false);
+    }
+  }
   useEffect(() => {
     async function load() {
-      const data = await fetchPaginaConteudo(supabase, SLUG, BLOCO, "titulo, texto, extra");
+      const data = await fetchPaginaConteudo(supabase, SLUG, BLOCO, "titulo, texto, extra, imagem_url, video_url");
       if (data) {
         setTitulo(data.titulo || "");
         setLead(data.texto || "");
@@ -52,6 +90,8 @@ export default function CulturaInclusaoAdminPage() {
         setP3(ps[2] || "");
         setP4(ps[3] || "");
         setP5(ps[4] || "");
+        setImagem(data.imagem_url || "");
+        setVideoUrl((data as any).video_url || "");
       }
       setLoading(false);
     }
@@ -69,7 +109,9 @@ export default function CulturaInclusaoAdminPage() {
         titulo,
         texto: lead,
         extra,
-      });
+        imagem_url: imagem,
+        video_url: videoUrl,
+      } as any);
       setMsg(error ? `Erro: ${error.message}` : "Salvo com sucesso.");
     } finally {
       setSalvando(false);
@@ -108,7 +150,32 @@ export default function CulturaInclusaoAdminPage() {
 
         <label style={{ marginTop: 10 }}>5º parágrafo:</label>
         <textarea value={p5} onChange={(e) => setP5(e.target.value)} style={sTextarea} />
+          <div>
+                      <label style={{ marginTop: 10 }}>Imagem:</label>
+                      <input
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={(e) => { if (e.target.files?.[0]) handleImageUpload(e.target.files[0]); }}
+                                      style={sInput}
+                                    />
+            {uploadingImg && <span>Enviando...</span>}
+            {uploadMsg && <span style={{ marginLeft: 8 }}>{uploadMsg}</span>}
+            {imagem && (
+                    <img
+                                      src={imagem}
+                            alt="preview"
+                            style={{ marginTop: 10, maxHeight: 140, maxWidth: "100%", borderRadius: 6, objectFit: "cover", border: "1px solid #e5e7eb" }}
+                    />
+            )}
+        </div>
 
+        <label style={{ marginTop: 10 }}>URL do Vídeo:</label>
+        <input
+          value={videoUrl}
+          onChange={(e) => setVideoUrl(e.target.value)}
+          style={sInput}
+          placeholder="URL do vídeo (YouTube, Vimeo, etc.) — opcional"
+        />
         <AdminSalvarButton salvando={salvando} onClick={salvar} />
 
         {msg && (
