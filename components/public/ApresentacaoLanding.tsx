@@ -20,6 +20,7 @@ export default async function ApresentacaoLanding() {
     { data: introProjetos },
     { data: eixosData },
     { data: numerosBlock },
+    { data: projectImagens },
     { count: editaisAbertos },
     { count: totalBeneficiarios },
     { count: totalPropostas },
@@ -58,6 +59,12 @@ export default async function ApresentacaoLanding() {
     supabase
       .from("propostas")
       .select("id", { count: "exact", head: true }),
+  
+    supabase
+      .from(`paginas_conteudo`)
+      .select(`pagina_slug, imagem_url`)
+      .in(`pagina_slug`, [`projetos-valer-mais`, `projetos-oficinas-educacao-cidada`, `projetos-cultura-inclusao-social`, `projetos-parcerias-institucionais`])
+      .eq(`bloco`, `corpo`),
   ]);
 
   const heroTexto =
@@ -123,6 +130,12 @@ export default async function ApresentacaoLanding() {
       "transparência",
     ],
   };
+
+  const projectImageMap = {} as Record<string, string>;
+  for (const row of projectImagens ?? []) {
+    const slug = row.pagina_slug.replace("projetos-", "");
+    if (row.imagem_url) projectImageMap[slug] = row.imagem_url;
+  }
 
   return (
     <div className={styles.page}>
@@ -277,7 +290,7 @@ export default async function ApresentacaoLanding() {
               <Link key={p.slug} href={p.href} className={styles.projetoCard}>
                 <div className={styles.projetoMedia}>
                   <Image
-                    src={p.imagem}
+                    src={projectImageMap[p.slug] || p.imagem}
                     alt={p.titulo}
                     width={400}
                     height={260}
