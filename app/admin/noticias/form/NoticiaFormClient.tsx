@@ -42,6 +42,7 @@ export default function NoticiaForm() {
   const [msg, setMsg] = useState("");
   const [uploadingImg, setUploadingImg] = useState(false);
   const [uploadMsg, setUploadMsg] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
 
   async function handleImageUpload(file: File) {
     setUploadingImg(true);
@@ -110,6 +111,7 @@ export default function NoticiaForm() {
       setResumo(data.resumo || "");
       setConteudo(data.conteudo || "");
       setImagem(data.imagem_url || "");
+      setVideoUrl(data.video_url || "");
       setPublicado(data.publicado);
       setProcessoId(data.processo_id || "");
     }
@@ -136,6 +138,7 @@ export default function NoticiaForm() {
       resumo,
       conteudo,
       imagem_url: imagem,
+      video_url: videoUrl,
       publicado,
     };
 
@@ -270,6 +273,16 @@ export default function NoticiaForm() {
         </div>
 
         <div>
+          <label>URL do Vídeo</label>
+          <input
+            className="admin-input"
+            value={videoUrl}
+            onChange={(e) => setVideoUrl(e.target.value)}
+            placeholder="URL do vídeo (YouTube, Vimeo, etc.) — opcional"
+          />
+        </div>
+
+                <div>
           <label>
             Processo (pasta){escopo.mestre ? " — opcional" : ""}
           </label>
