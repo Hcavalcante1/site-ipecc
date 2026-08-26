@@ -85,7 +85,7 @@ export default async function EventosPage() {
                 <iframe
                   width="100%"
                   style={{ aspectRatio: "16/9", border: "none" }}
-                  src={e.video_url}
+                  src={e.video_url?.replace(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/, 'youtube.com/embed/$1')}
                   title="Vídeo do evento"
                   allowFullScreen
                 />
