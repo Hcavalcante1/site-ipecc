@@ -50,6 +50,7 @@ export default function EventoForm() {
   const [msg, setMsg] = useState("");
   const [uploadingImg, setUploadingImg] = useState(false);
   const [uploadMsg, setUploadMsg] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
 
   async function handleImageUpload(file: File) {
     setUploadingImg(true);
@@ -121,6 +122,7 @@ export default function EventoForm() {
       setImagem(data.imagem_url || "");
       setHorario(data.horario || "");
       setWhatsapp(data.whatsapp || "");
+      setVideoUrl(data.video_url || "");
       setPublicado(data.publicado);
       setProcessoId(data.processo_id || "");
     }
@@ -148,6 +150,7 @@ export default function EventoForm() {
       data_evento: dataEvento || null,
       local,
       imagem_url: imagem,
+      video_url: videoUrl,
       horario,
       whatsapp,
       publicado,
@@ -276,6 +279,16 @@ export default function EventoForm() {
         </div>
 
         <div>
+          <label>URL do Vídeo</label>
+          <input
+            className="admin-input"
+            value={videoUrl}
+            onChange={(e) => setVideoUrl(e.target.value)}
+            placeholder="URL do vídeo (YouTube, Vimeo, etc.) — opcional"
+          />
+        </div>
+
+                <div>
           <label>Processo (pasta){escopo.mestre ? " — opcional" : ""}</label>
           <select className="admin-input" value={processoId} onChange={(e) => setProcessoId(e.target.value)}>
             <option value="">{escopo.mestre ? "Sem processo (institucional)" : "Selecione o processo"}</option>
