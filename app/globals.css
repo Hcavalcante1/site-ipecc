@@ -541,7 +541,7 @@ main.page a{
   padding: 22px 0;
 }
 
-.sobre h2{
+.sobre h2, .projetos-eixos h2{
   color: var(--blue-navy);
   font-weight: 800;
   margin-bottom: 10px;
