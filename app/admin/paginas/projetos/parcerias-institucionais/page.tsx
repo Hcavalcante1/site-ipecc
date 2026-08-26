@@ -9,6 +9,10 @@ import {
 } from "@/lib/supabaseClient";
 import { parsePaginaExtra } from "@/lib/cms/paginasConteudo";
 
+const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  "https://eohshxaxbsdpxundsley.supabase.co";
+
 const SLUG = "projetos-parcerias-institucionais";
 const BLOCO = "corpo";
 
@@ -39,10 +43,49 @@ export default function ParceriasAdminPage() {
   const [msg, setMsg] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [imagem, setImagem] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const [uploadMsg, setUploadMsg] = useState("");
+
+  async function handleImageUpload(file: File) {
+    setUploadingImg(true);
+    setUploadMsg("");
+    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const safeName = file.name
+      .replace(/\.[^.]+$/, "")
+      .replace(/[^a-z0-9]/gi, "-")
+      .toLowerCase()
+      .slice(0, 40);
+    const path = `projetos/${Date.now()}-${safeName}.${ext}`;
+    const fd = new FormData();
+    fd.append("bucket", "paginas");
+    fd.append("path", path);
+    fd.append("file", file);
+    fd.append("contentType", file.type);
+    try {
+      const res = await fetch("/api/admin/storage/upload", {
+        method: "POST",
+        body: fd,
+      });
+      const json = await res.json();
+      if (json.ok && json.data) {
+        const fullPath = json.data.fullPath || `paginas/${json.data.path || path}`;
+        setImagem(`${SUPABASE_URL}/storage/v1/object/public/${fullPath}`);
+        setUploadMsg("✓ Imagem enviada");
+      } else {
+        setUploadMsg(`Erro: ${json.error || "falha no upload"}`);
+      }
+    } catch {
+      setUploadMsg("Erro ao enviar imagem.");
+    } finally {
+      setUploadingImg(false);
+    }
+  }
 
   useEffect(() => {
     async function load() {
-      const data = await fetchPaginaConteudo(supabase, SLUG, BLOCO, "titulo, texto, extra");
+      const data = await fetchPaginaConteudo(supabase, SLUG, BLOCO, "titulo, texto, extra, imagem_url, video_url");
       if (data) {
         setTitulo(data.titulo || "");
         setLead(data.texto || "");
@@ -52,6 +95,8 @@ export default function ParceriasAdminPage() {
         setP3(ps[2] || "");
         setP4(ps[3] || "");
         setP5(ps[4] || "");
+        setImagem(data.imagem_url || "");
+        setVideoUrl((data as any).video_url || "");
       }
       setLoading(false);
     }
@@ -109,7 +154,62 @@ export default function ParceriasAdminPage() {
         <label style={{ marginTop: 10 }}>5º parágrafo:</label>
         <textarea value={p5} onChange={(e) => setP5(e.target.value)} style={sTextarea} />
 
-        <AdminSalvarButton salvando={salvando} onClick={salvar} />
+        <label style={{ marginTop: 10 }}>Imagem:</label>
+        <input
+          value={imagem}
+          onChange={(e) => setImagem(e.target.value)}
+          style={{ ...sInput, marginBottom: 8 }}
+          placeholder="URL da imagem (ou envie um arquivo abaixo)"
+        />
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <label
+            style={{
+              display: "inline-block",
+              padding: "6px 14px",
+              background: "#2563eb",
+              color: "#fff",
+              borderRadius: 6,
+              cursor: uploadingImg ? "wait" : "pointer",
+              fontSize: 13,
+              fontWeight: 500,
+            }}
+          >
+            {uploadingImg ? "Enviando..." : "Escolher arquivo"}
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              style={{ display: "none" }}
+              disabled={uploadingImg}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void handleImageUpload(file);
+                e.target.value = "";
+              }}
+            />
+          </label>
+          {uploadMsg && (
+            <span style={{ fontSize: 13, color: uploadMsg.startsWith("Erro") ? "#dc2626" : "#16a34a" }}>
+              {uploadMsg}
+            </span>
+          )}
+        </div>
+        {imagem && (
+          <img
+            src={imagem}
+            alt="preview"
+            style={{ marginTop: 10, maxHeight: 140, maxWidth: "100%", borderRadius: 6, objectFit: "cover", border: "1px solid #e5e7eb" }}
+          />
+        )}
+
+        <label style={{ marginTop: 10 }}>URL do Vídeo:</label>
+        <input
+          value={videoUrl}
+          onChange={(e) => setVideoUrl(e.target.value)}
+          style={sInput}
+          placeholder="URL do vídeo (YouTube, Vimeo, etc.) — opcional"
+        />
+
+                <AdminSalvarButton salvando={salvando} onClick={salvar} />
 
         {msg && (
           <p style={{ marginTop: 10, color: "#bbf7d0", fontSize: ".8rem" }}>{msg}</p>
