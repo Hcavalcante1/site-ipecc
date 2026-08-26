@@ -19,19 +19,19 @@ export default async function ProjetosPage() {
   const hero = await fetchPaginaConteudo(supabase, "projetos", "hero");
   const intro = await fetchPaginaConteudo(supabase, "projetos", "introducao");
 
-  const { data: eixosData } = await supabase
-    .from("paginas_eixos")
-    .select("titulo, texto, imagem_url")
-    .eq("pagina_slug", "projetos")
-    .eq("bloco", "eixos")
-    .order("ordem", { ascending: true });
+  const { data: projetosSubData } = await supabase
+    .from("paginas_conteudo")
+    .select("pagina_slug, titulo, texto, imagem_url")
+    .like("pagina_slug", "projetos-%")
+    .eq("bloco", "corpo")
+    .order("pagina_slug", { ascending: true });
 
-  const eixos = eixosData || [];
+  const projetosSub = projetosSubData || [];
 
   logPublicFetch({
     page: "/projetos",
-    table: "paginas_conteudo+paginas_eixos",
-    count: eixos.length,
+    table: "paginas_conteudo",
+    count: projetosSub.length,
   });
 
   const destaquesData = await fetchPaginaConteudo(supabase, "projetos", "destaques");
@@ -49,15 +49,6 @@ export default async function ProjetosPage() {
 
   const ctaData = await fetchPaginaConteudo(supabase, "projetos", "cta");
   const ctaExtra = parsePaginaExtra<Record<string, unknown>>(ctaData?.extra, {});
-
-  const { data: projetosSubData } = await supabase
-    .from("paginas_conteudo")
-    .select("pagina_slug, titulo, texto, imagem_url")
-    .like("pagina_slug", "projetos-%")
-    .eq("bloco", "corpo")
-    .order("pagina_slug", { ascending: true });
-
-  const projetosSub = projetosSubData || [];
 
   return (
     <>
@@ -91,69 +82,40 @@ export default async function ProjetosPage() {
         </div>
       </section>
 
-      {/* PROJETOS - links para sub-páginas */}
-  {projetosSub.length > 0 && (
-    <section className="projetos-eixos" aria-labelledby="projetos-lista">
-      <div className="container">
-        <h2 id="projetos-lista">Nossos Projetos</h2>
-        <div className="cards__grid">
-          {projetosSub.map((proj: any) => {
-            const slug = proj.pagina_slug.replace(/^projetos-/, "");
-            return (
-              <article className="card" key={proj.pagina_slug}>
-                <img
-                  src={
-                    proj.imagem_url && proj.imagem_url.trim() !== ""
-                      ? resolveMediaPath(proj.imagem_url)
-                      : "/media/heroes/projetos/hero.webp"
-                  }
-                  alt={proj.titulo || "Projeto"}
-                  className="card__img"
-                />
-                <div className="card__body">
-                  <h3 className="card__title">{proj.titulo}</h3>
-                  {proj.texto && <p className="card__text">{proj.texto}</p>}
-                  <Link
-                    href={`/projetos/${slug}`}
-                    style={{ marginTop: 12, display: "inline-block", fontWeight: 600 }}
-                  >
-                    Ver projeto →
-                  </Link>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  )}
-
-  {/* EIXOS */}
-      <section className="projetos-eixos" aria-label="Eixos temáticos">
+      {/* PROJETOS — cards clicáveis com link para página de detalhe */}
+      <section className="projetos-eixos" aria-label="Projetos">
         <div className="container">
           <div className="cards__grid">
-            {eixos.length === 0 && (
-              <p style={{ opacity: 0.6 }}>Nenhum eixo cadastrado.</p>
+            {projetosSub.length === 0 && (
+              <p style={{ opacity: 0.6 }}>Nenhum projeto cadastrado.</p>
             )}
 
-            {eixos.map((eixo, i) => (
-              <article className="card" key={i}>
-                <img
-                  src={
-                    eixo.imagem_url && eixo.imagem_url.trim() !== ""
-                      ? resolveMediaPath(eixo.imagem_url)
-                      : "/media/shared/fallbacks/eixo-default.jpg"
-                  }
-                  alt={eixo.titulo || "Eixo"}
-                  className="card__img"
-                />
-
-                <div className="card__body">
-                  <h3 className="card__title">{eixo.titulo}</h3>
-                  <p className="card__text">{eixo.texto}</p>
-                </div>
-              </article>
-            ))}
+            {projetosSub.map((proj: any) => {
+              const slug = proj.pagina_slug.replace(/^projetos-/, "");
+              return (
+                <Link
+                  href={`/projetos/${slug}`}
+                  key={proj.pagina_slug}
+                  style={{ textDecoration: "none", color: "inherit" }}
+                >
+                  <article className="card">
+                    <img
+                      src={
+                        proj.imagem_url && proj.imagem_url.trim() !== ""
+                          ? resolveMediaPath(proj.imagem_url)
+                          : "/media/heroes/projetos/hero.webp"
+                      }
+                      alt={proj.titulo || "Projeto"}
+                      className="card__img"
+                    />
+                    <div className="card__body">
+                      <h3 className="card__title">{proj.titulo}</h3>
+                      {proj.texto && <p className="card__text">{proj.texto}</p>}
+                    </div>
+                  </article>
+                </Link>
+              );
+            })}
           </div>
 
           <p style={{ marginTop: 20 }}>
