@@ -85,6 +85,7 @@ export default async function ProjetosPage() {
       {/* PROJETOS — cards clicáveis com link para página de detalhe */}
       <section className="projetos-eixos" aria-label="Projetos">
         <div className="container">
+          <h2 id="projetos-lista">Nossos Projetos</h2>
           <div className="cards__grid">
             {projetosSub.length === 0 && (
               <p style={{ opacity: 0.6 }}>Nenhum projeto cadastrado.</p>
