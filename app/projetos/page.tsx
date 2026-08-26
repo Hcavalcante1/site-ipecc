@@ -50,6 +50,15 @@ export default async function ProjetosPage() {
   const ctaData = await fetchPaginaConteudo(supabase, "projetos", "cta");
   const ctaExtra = parsePaginaExtra<Record<string, unknown>>(ctaData?.extra, {});
 
+  const { data: projetosSubData } = await supabase
+    .from("paginas_conteudo")
+    .select("pagina_slug, titulo, texto, imagem_url")
+    .like("pagina_slug", "projetos-%")
+    .eq("bloco", "corpo")
+    .order("pagina_slug", { ascending: true });
+
+  const projetosSub = projetosSubData || [];
+
   return (
     <>
       <PublicHeroRolling
@@ -82,7 +91,44 @@ export default async function ProjetosPage() {
         </div>
       </section>
 
-      {/* EIXOS */}
+      {/* PROJETOS - links para sub-páginas */}
+  {projetosSub.length > 0 && (
+    <section className="projetos-eixos" aria-labelledby="projetos-lista">
+      <div className="container">
+        <h2 id="projetos-lista">Nossos Projetos</h2>
+        <div className="cards__grid">
+          {projetosSub.map((proj: any) => {
+            const slug = proj.pagina_slug.replace(/^projetos-/, "");
+            return (
+              <article className="card" key={proj.pagina_slug}>
+                <img
+                  src={
+                    proj.imagem_url && proj.imagem_url.trim() !== ""
+                      ? resolveMediaPath(proj.imagem_url)
+                      : "/media/heroes/projetos/hero.webp"
+                  }
+                  alt={proj.titulo || "Projeto"}
+                  className="card__img"
+                />
+                <div className="card__body">
+                  <h3 className="card__title">{proj.titulo}</h3>
+                  {proj.texto && <p className="card__text">{proj.texto}</p>}
+                  <Link
+                    href={`/projetos/${slug}`}
+                    style={{ marginTop: 12, display: "inline-block", fontWeight: 600 }}
+                  >
+                    Ver projeto →
+                  </Link>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  )}
+
+  {/* EIXOS */}
       <section className="projetos-eixos" aria-label="Eixos temáticos">
         <div className="container">
           <div className="cards__grid">
