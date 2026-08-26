@@ -30,6 +30,13 @@ export default function PublicProjectDetail({
       />
       <PublicWhatsAppHelpLine assunto="projetos" />
       <PublicPageContent>
+        {image && (
+          <img
+            src={image}
+            alt={title}
+            style={{ width: "100%", maxHeight: 400, objectFit: "cover", borderRadius: 8, marginBottom: 24, display: "block" }}
+          />
+        )}
         {children}
         {video && (
           <div style={{ marginTop: 24, borderRadius: 8, overflow: "hidden" }}>
