@@ -28,6 +28,15 @@ export default async function ProjetosPage() {
 
   const projetosSub = projetosSubData || [];
 
+  const { data: eixosData } = await supabase
+    .from("paginas_eixos")
+    .select("titulo, texto, imagem_url")
+    .eq("pagina_slug", "projetos")
+    .eq("bloco", "eixos")
+    .order("ordem", { ascending: true });
+
+  const eixos = eixosData || [];
+
   logPublicFetch({
     page: "/projetos",
     table: "paginas_conteudo",
@@ -124,6 +133,34 @@ export default async function ProjetosPage() {
           </p>
         </div>
       </section>
+
+      {/* EIXOS */}
+      {eixos.length > 0 && (
+        <section className="projetos-eixos" aria-labelledby="eixos-projetos">
+          <div className="container">
+            <h2 id="eixos-projetos">Eixos de Atuação</h2>
+            <div className="cards__grid">
+              {eixos.map((eixo: any, i: number) => (
+                <article className="card" key={i}>
+                  <img
+                    src={
+                      eixo.imagem_url && eixo.imagem_url.trim() !== ""
+                        ? resolveMediaPath(eixo.imagem_url)
+                        : "/media/shared/fallbacks/eixo-default.jpg"
+                    }
+                    alt={eixo.titulo || "Eixo"}
+                    className="card__img"
+                  />
+                  <div className="card__body">
+                    <h3 className="card__title">{eixo.titulo}</h3>
+                    <p className="card__text">{eixo.texto}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* DESTAQUES */}
       <section className="destaques" aria-labelledby="destaques-projetos">
