@@ -23,7 +23,7 @@ export default function PublicProjectDetail({
   return (
     <>
       <PublicHeroRolling
-        bgImage={image || "/media/heroes/projetos/hero.webp"}
+        bgImage="/media/heroes/projetos/hero.webp"
         title={title}
         text={lead}
         ariaLabel={title}
