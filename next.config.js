@@ -20,6 +20,16 @@ const nextConfig = {
   async redirects() {
     return [
       {
+        source: "/site-ipecc/public/:path*",
+        destination: "/:path*",
+        permanent: true,
+      },
+      {
+        source: "/public/:path*",
+        destination: "/:path*",
+        permanent: true,
+      },
+      {
         source: "/:path*",
         has: [{ type: "host", value: "ipecc.org.br" }],
         destination: "https://www.ipecc.org.br/:path*",
