@@ -75,6 +75,12 @@ const TABELA_MODULO: Partial<Record<string, AdminModulo>> = {
 
 const ALLOWED_FILTER_OPERATORS = new Set(["eq"]);
 const IDENTIFIER_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const UUID_COLUMNS_BY_TABLE: Partial<Record<string, string[]>> = {
+  transparencia_convenios: ["edital_id", "proposta_id", "processo_id"],
+};
 
 type Filter = { column: string; value: unknown };
 
@@ -87,6 +93,28 @@ type Body = {
   single?: boolean;
   upsertOptions?: { onConflict?: string; ignoreDuplicates?: boolean };
 };
+
+function uuidOrNull(value: unknown) {
+  if (typeof value !== "string") return value ?? null;
+  const trimmed = value.trim();
+  return trimmed && UUID_PATTERN.test(trimmed) ? trimmed : null;
+}
+
+function sanitizarPayload(table: string, payload: unknown) {
+  const uuidColumns = UUID_COLUMNS_BY_TABLE[table];
+  if (!uuidColumns?.length || !payload) return payload;
+
+  const sanitizarLinha = (row: unknown) => {
+    if (!row || typeof row !== "object" || Array.isArray(row)) return row;
+    const clean = { ...(row as Record<string, unknown>) };
+    for (const column of uuidColumns) {
+      if (column in clean) clean[column] = uuidOrNull(clean[column]);
+    }
+    return clean;
+  };
+
+  return Array.isArray(payload) ? payload.map(sanitizarLinha) : sanitizarLinha(payload);
+}
 
 async function processoIdDoEdital(
   editalId: string | null | undefined
@@ -355,11 +383,13 @@ export async function POST(req: Request) {
       );
     }
 
+    const payloadSanitizado = sanitizarPayload(table, payload);
+
     const bloqueioEscopo = await bloquearForaDoEscopo(
       auth.contexto,
       table,
       action,
-      payload,
+      payloadSanitizado,
       filters
     );
     if (bloqueioEscopo) {
@@ -394,8 +424,8 @@ export async function POST(req: Request) {
       editalPdfParaRemover = prep.arquivoPdf;
     }
 
-    if (table === "editais" && action === "update" && payload && typeof payload === "object") {
-      const dados = payload as Record<string, unknown>;
+    if (table === "editais" && action === "update" && payloadSanitizado && typeof payloadSanitizado === "object") {
+      const dados = payloadSanitizado as Record<string, unknown>;
       if (dados.fase_atual === "rascunho") {
         const idFilter = filters.find((filter) => filter.column === "id");
         const editalId = idFilter?.value;
@@ -436,19 +466,19 @@ export async function POST(req: Request) {
     let query: any = supabaseAdmin.from(table);
 
     if (action === "insert") {
-      query = query.insert(payload);
+      query = query.insert(payloadSanitizado);
     } else if (action === "update") {
-      query = query.update(payload);
+      query = query.update(payloadSanitizado);
     } else if (action === "delete") {
       query = query.delete();
     } else if (action === "upsert") {
       if (upsertOptions?.onConflict) {
-        query = query.upsert(payload, {
+        query = query.upsert(payloadSanitizado, {
           onConflict: upsertOptions.onConflict,
           ignoreDuplicates: upsertOptions.ignoreDuplicates,
         });
       } else {
-        query = query.upsert(payload);
+        query = query.upsert(payloadSanitizado);
       }
     }
 
@@ -553,8 +583,8 @@ export async function POST(req: Request) {
     }
     if (table === "documentos_publicos") {
       const payloadObj =
-        payload && typeof payload === "object" && !Array.isArray(payload)
-          ? (payload as Record<string, unknown>)
+        payloadSanitizado && typeof payloadSanitizado === "object" && !Array.isArray(payloadSanitizado)
+          ? (payloadSanitizado as Record<string, unknown>)
           : null;
       const editalIdFromPayload =
         typeof payloadObj?.edital_id === "string" ? payloadObj.edital_id : null;

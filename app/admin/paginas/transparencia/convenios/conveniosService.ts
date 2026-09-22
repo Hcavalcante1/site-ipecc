@@ -2,6 +2,14 @@ import { supabase } from "@/lib/supabaseClient";
 import { registroNoEscopoProcesso } from "@/lib/auth/adminEscopo";
 import type { Convenio } from "./types";
 
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function uuidOrNull(value?: string | null) {
+  const trimmed = value?.trim();
+  return trimmed && UUID_PATTERN.test(trimmed) ? trimmed : null;
+}
+
 export async function getConvenios(
   processoIds: string[] | "todos" = "todos"
 ): Promise<Convenio[]> {
@@ -21,9 +29,9 @@ export async function getConvenios(
 
 export async function saveConvenio(convenio: Convenio): Promise<Convenio> {
   const payload = {
-    edital_id: convenio.edital_id || null,
-    proposta_id: convenio.proposta_id || null,
-    processo_id: convenio.processo_id || null,
+    edital_id: uuidOrNull(convenio.edital_id),
+    proposta_id: uuidOrNull(convenio.proposta_id),
+    processo_id: uuidOrNull(convenio.processo_id),
     titulo: convenio.titulo || null,
     numero_instrumento: convenio.numero_instrumento || null,
     tipo_instrumento: convenio.tipo_instrumento || null,
