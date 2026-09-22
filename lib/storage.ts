@@ -3,6 +3,12 @@ export function getDownloadUrl(url?: string | null) {
 
   let clean = url.trim();
 
+  if (!clean || clean.includes("\\")) return "";
+
+  clean = clean.replace(/^\/?site-ipecc\/public\//, "/");
+  clean = clean.replace(/^public\//, "/");
+  clean = clean.replace(/^\/public\//, "/");
+
   if (!clean.includes("/storage/v1/object/")) return clean;
 
   const partes = clean.split("/storage/v1/object/");
@@ -23,6 +29,7 @@ export function isValidFileUrl(url?: string | null) {
   const clean = url.trim();
 
   if (!clean) return false;
+  if (clean.includes("\\")) return false;
   if (clean.startsWith("mailto:")) return false;
   if (clean === "#") return false;
 
