@@ -313,7 +313,11 @@ export async function confirmarAssinaturaIpecc(opts: {
       status: dirigente.status || 403,
     };
   }
-  if (signer?.role_code && dirigente.dirigente.role_code !== signer.role_code) {
+  if (
+    signer?.role_code &&
+    !dirigente.dirigente.admin_mestre &&
+    dirigente.dirigente.role_code !== signer.role_code
+  ) {
     return {
       ok: false,
       error: `Assinatura bloqueada: este documento exige o cargo ${signer.cargo || signer.role_code}.`,

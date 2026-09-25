@@ -7,6 +7,7 @@ export type DirigenteAssinatura = {
   nome: string;
   cargo: string;
   role_code: string | null;
+  admin_mestre?: boolean;
 };
 
 function tabelaAusente(message?: string, code?: string) {
@@ -29,6 +30,56 @@ function slugCargo(cargo: string): string {
     .replace(/^_+|_+$/g, "");
 }
 
+async function buscarAdminMestre(opts: {
+  userId: string;
+  email?: string | null;
+}): Promise<DirigenteAssinatura | null> {
+  const admin = getSupabaseAdmin();
+  const email = normalizarEmail(opts.email);
+
+  const perfilQuery = admin
+    .from("admin_perfis")
+    .select("user_id, email, papel, ativo")
+    .eq("ativo", true)
+    .eq("papel", "mestre")
+    .limit(1);
+
+  const { data: perfis, error } = await (email
+    ? perfilQuery.or(`user_id.eq.${opts.userId},email.eq.${email}`)
+    : perfilQuery.eq("user_id", opts.userId));
+
+  const perfil = perfis?.[0];
+  if (!error && perfil) {
+    const perfilEmail = normalizarEmail(perfil.email) || email || null;
+    return {
+      id: `admin-mestre:${opts.userId}`,
+      user_id: opts.userId,
+      email: perfilEmail,
+      nome: perfilEmail || email || "Administrador mestre",
+      cargo: "Administrador mestre",
+      role_code: "admin_mestre",
+      admin_mestre: true,
+    };
+  }
+
+  const { data: legadoIsAdmin } = await admin.rpc("is_admin", {
+    user_id: opts.userId,
+  });
+  if (legadoIsAdmin) {
+    return {
+      id: `admin-mestre:${opts.userId}`,
+      user_id: opts.userId,
+      email: email || null,
+      nome: email || "Administrador mestre",
+      cargo: "Administrador mestre",
+      role_code: "admin_mestre",
+      admin_mestre: true,
+    };
+  }
+
+  return null;
+}
+
 export async function buscarDirigenteAtivoParaAssinatura(opts: {
   userId: string;
   email?: string | null;
@@ -40,6 +91,14 @@ export async function buscarDirigenteAtivoParaAssinatura(opts: {
   const admin = getSupabaseAdmin();
   const email = normalizarEmail(opts.email);
   const today = new Date().toISOString().slice(0, 10);
+
+  const adminMestre = await buscarAdminMestre({
+    userId: opts.userId,
+    email,
+  });
+  if (adminMestre) {
+    return { ok: true, dirigente: adminMestre };
+  }
 
   const matchParts = [`user_id.eq.${opts.userId}`];
   if (email) matchParts.push(`email.eq.${email}`);
