@@ -11,6 +11,7 @@ import { criarEEnviarOtp, consumirOtp } from "./otpService";
 import { confirmarSenhaUsuario } from "./passwordConfirm";
 import { carimbarPdfAssinatura, validarCpfBasico } from "./pdfStampService";
 import type { StampPlacement } from "./pdfStampService";
+import { buscarDirigenteAtivoParaAssinatura } from "../dirigentesService";
 import {
   gerarCodigoValidacao,
   proximoSerialAssinatura,
@@ -222,7 +223,7 @@ export async function confirmarAssinaturaIpecc(opts: {
 
   const { data: allSigners } = await admin
     .from("gd_signature_signers")
-    .select("id, email, cargo, status, mode, required, sort_order, user_id")
+    .select("id, email, cargo, role_code, status, mode, required, sort_order, user_id")
     .eq("signature_document_id", sig.id)
     .is("deleted_at", null)
     .order("sort_order", { ascending: true });
@@ -300,6 +301,26 @@ export async function confirmarAssinaturaIpecc(opts: {
     };
   }
 
+  const dirigente = await buscarDirigenteAtivoParaAssinatura({
+    userId: opts.userId,
+    email,
+    processoId: doc.processo_id,
+  });
+  if (dirigente.ok === false) {
+    return {
+      ok: false,
+      error: dirigente.error,
+      status: dirigente.status || 403,
+    };
+  }
+  if (signer?.role_code && dirigente.dirigente.role_code !== signer.role_code) {
+    return {
+      ok: false,
+      error: `Assinatura bloqueada: este documento exige o cargo ${signer.cargo || signer.role_code}.`,
+      status: 403,
+    };
+  }
+
   const { data: fileBlob, error: dlErr } = await admin.storage
     .from(GD_STORAGE_BUCKET)
     .download(doc.storage_path);
@@ -320,8 +341,9 @@ export async function confirmarAssinaturaIpecc(opts: {
   const validationCode = gerarCodigoValidacao();
   const serial = await proximoSerialAssinatura(doc.id);
   const nome = String(opts.actorName || "").trim();
+  const nomeFinal = dirigente.dirigente.nome || nome;
   const cpf = String(opts.cpf || "").trim();
-  if (!nome || nome.length < 3) {
+  if (!nomeFinal || nomeFinal.length < 3) {
     return {
       ok: false,
       error: "Informe o nome completo de quem assina.",
@@ -336,7 +358,7 @@ export async function confirmarAssinaturaIpecc(opts: {
     };
   }
   // Evita o legado “admin” vindo do local-part do e-mail
-  if (/^admin$/i.test(nome)) {
+  if (/^admin$/i.test(nomeFinal)) {
     return {
       ok: false,
       error: "Use o nome civil completo, não o login.",
@@ -348,9 +370,9 @@ export async function confirmarAssinaturaIpecc(opts: {
   try {
     stamped = await carimbarPdfAssinatura({
       pdfBytes: originalBuf,
-      nome,
+      nome: nomeFinal,
       cpf,
-      cargo: opts.cargo || signer?.cargo,
+      cargo: dirigente.dirigente.cargo || opts.cargo || signer?.cargo,
       email,
       signedAt,
       timezone,
@@ -441,7 +463,7 @@ export async function confirmarAssinaturaIpecc(opts: {
     signerId: signer?.id || null,
     documentId: doc.id,
     versionId: versionRow?.id || sig.version_id,
-    nome,
+    nome: nomeFinal,
     cpf: opts.cpf,
     email,
     userId: opts.userId,
@@ -455,7 +477,7 @@ export async function confirmarAssinaturaIpecc(opts: {
     otpChallengeId: opts.challengeId,
     validationCode,
     signatureSerial: serial,
-    cargo: opts.cargo || signer?.cargo || null,
+    cargo: dirigente.dirigente.cargo || opts.cargo || signer?.cargo || null,
   });
 
   if (evidence.ok === false) {

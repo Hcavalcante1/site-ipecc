@@ -10,6 +10,7 @@ import {
 } from "./signature/DocumentoProvider";
 import { ipeccConfigurado } from "./signature/IpeccProvider";
 import { notificarEventoDocumental } from "./notificationsService";
+import { buscarDirigenteAtivoParaAssinatura } from "./dirigentesService";
 
 export type SignatureProviderCode = "ipecc" | "documento";
 
@@ -43,6 +44,10 @@ export const SIGNER_SELECT =
 
 export const BATCH_ITEM_SELECT =
   "id, batch_id, document_id, signature_document_id, status, error_message, sort_order, created_by, created_at, updated_at, deleted_at";
+
+type DirigenteResolvido = Awaited<
+  ReturnType<typeof buscarDirigenteAtivoParaAssinatura>
+>;
 
 function tabelaAusente(message?: string, code?: string) {
   return (
@@ -218,6 +223,46 @@ export async function criarAssinaturaDocumento(opts: {
     };
   }
 
+  let signerEmail = String(opts.signerEmail || "").trim().toLowerCase();
+  let signerName = String(opts.signerName || signerEmail || "").trim();
+  let dirigenteAssinante: DirigenteResolvido | null = null;
+
+  if (modo === "eu_assino") {
+    const actor = String(opts.actorEmail || "").trim().toLowerCase();
+    if (!actor || !actor.includes("@")) {
+      return {
+        data: null,
+        error: {
+          message:
+            "Não foi possível identificar o e-mail do usuário logado para assinar no admin.",
+          code: "NO_ACTOR_EMAIL",
+        },
+        signingUrl: null as string | null,
+        embedUrl: null as string | null,
+      };
+    }
+    dirigenteAssinante = await buscarDirigenteAtivoParaAssinatura({
+      userId: opts.userId,
+      email: actor,
+      processoId: opts.processoId,
+    });
+    if (dirigenteAssinante.ok === false) {
+      return {
+        data: null,
+        error: {
+          message: dirigenteAssinante.error,
+          code: dirigenteAssinante.missingTable
+            ? "DIRIGENTES_TABLE_MISSING"
+            : "NOT_DIRIGENTE",
+        },
+        signingUrl: null as string | null,
+        embedUrl: null as string | null,
+      };
+    }
+    signerEmail = dirigenteAssinante.dirigente.email || actor;
+    signerName = dirigenteAssinante.dirigente.nome;
+  }
+
   const provider = await admin
     .from("gd_signature_providers")
     .select("id")
@@ -246,36 +291,22 @@ export async function criarAssinaturaDocumento(opts: {
     };
   }
 
-  let signerEmail = String(opts.signerEmail || "").trim().toLowerCase();
-  let signerName = String(opts.signerName || signerEmail || "").trim();
-
-  if (modo === "eu_assino") {
-    const actor = String(opts.actorEmail || "").trim().toLowerCase();
-    if (!actor || !actor.includes("@")) {
-      return {
-        data,
-        error: {
-          message:
-            "Não foi possível identificar o e-mail do usuário logado para assinar no admin.",
-          code: "NO_ACTOR_EMAIL",
-        },
-        signingUrl: null as string | null,
-        embedUrl: null as string | null,
-      };
-    }
-    signerEmail = actor;
-    signerName =
-      String(opts.signerName || "").trim() ||
-      actor.split("@")[0] ||
-      actor;
-  }
-
   if (signerEmail) {
     await admin.from("gd_signature_signers").insert({
       signature_document_id: data.id,
       document_id: opts.documentId,
       name: signerName || signerEmail,
       email: signerEmail,
+      user_id:
+        dirigenteAssinante?.ok
+          ? dirigenteAssinante.dirigente.user_id || opts.userId
+          : null,
+      cargo: dirigenteAssinante?.ok
+        ? dirigenteAssinante.dirigente.cargo
+        : null,
+      role_code: dirigenteAssinante?.ok
+        ? dirigenteAssinante.dirigente.role_code
+        : null,
       mode: "sequential",
       required: true,
       sort_order: 0,
