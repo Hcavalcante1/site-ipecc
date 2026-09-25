@@ -108,3 +108,12 @@ export function otpPermitirCodigoNoPainel(): boolean {
     process.env.VERCEL_ENV !== "production"
   );
 }
+
+/** Mostrar o OTP na tela autenticada do admin. Pode ser desligado via env. */
+export function otpMostrarCodigoNoPainel(): boolean {
+  const flag = String(process.env.SIGNATURE_OTP_SHOW_IN_PANEL || "")
+    .trim()
+    .toLowerCase();
+  if (flag === "false" || flag === "0") return false;
+  return true;
+}

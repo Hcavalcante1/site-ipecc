@@ -1,7 +1,11 @@
 import { createHash, randomInt } from "crypto";
 import { enviarEmail } from "@/lib/email/mailer";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { otpPepper, otpPermitirCodigoNoPainel } from "./constants";
+import {
+  otpMostrarCodigoNoPainel,
+  otpPepper,
+  otpPermitirCodigoNoPainel,
+} from "./constants";
 
 const OTP_TTL_MS = 10 * 60 * 1000;
 const RESEND_COOLDOWN_MS = 60 * 1000;
@@ -129,9 +133,10 @@ export async function criarEEnviarOtp(opts: {
     };
   }
 
+  const mostrarNoPainel = otpMostrarCodigoNoPainel();
   const mail = await enviarEmailOtp({ to: email, code });
   if (!mail.ok) {
-    if (!otpPermitirCodigoNoPainel()) {
+    if (!mostrarNoPainel && !otpPermitirCodigoNoPainel()) {
       console.warn(
         `[assinatura-ipecc] e-mail OTP falhou (${mail.error}); fallback no painel desabilitado`
       );
@@ -159,6 +164,7 @@ export async function criarEEnviarOtp(opts: {
   return {
     ok: true,
     challengeId: data.id,
+    ...(mostrarNoPainel ? { devCode: code } : {}),
   };
 }
 
