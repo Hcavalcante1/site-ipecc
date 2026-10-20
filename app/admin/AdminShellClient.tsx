@@ -308,6 +308,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             )}
 
             <div className="admin-nav-section-title">Operacao</div>
+            {pode("acessos") && (
+              <Link href="/admin/ava" className={navClass(pathname, "/admin/ava")} onClick={(event) => handleMobileNav(event, "/admin/ava")}>
+                <NavLabel icon="pages">AVA · Formação</NavLabel>
+              </Link>
+            )}
             <Link href="/admin/alertas" className={navClass(pathname, "/admin/alertas")} onClick={(event) => handleMobileNav(event, "/admin/alertas")}>
               <NavLabel icon="logs">Central de Alertas</NavLabel>
             </Link>
