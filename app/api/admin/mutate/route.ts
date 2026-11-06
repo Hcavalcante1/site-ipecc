@@ -6,6 +6,7 @@ import {
   podeAcessarProcesso,
   podeModulo,
   podeModuloNoProcesso,
+  podeModuloNaProposta,
   type AdminModuloEscopado,
   type AdminContexto,
   type AdminModulo,
@@ -229,9 +230,9 @@ async function bloquearForaDoEscopo(
         table,
         row as Record<string, unknown>
       );
-      if (!podeModuloNoProcesso(ctx, modulo as AdminModuloEscopado, processoId)) {
-        return "Processo fora do seu escopo.";
-      }
+      const propostaId = table === "propostas" ? String((row as Record<string, unknown>).id || "") : table === "proposta_anexos" ? String((row as Record<string, unknown>).proposta_id || "") : "";
+      const autorizado = modulo === "propostas" && propostaId ? podeModuloNaProposta(ctx, "propostas", processoId, propostaId) : podeModuloNoProcesso(ctx, modulo as AdminModuloEscopado, processoId);
+      if (!autorizado) return "Processo ou proposta fora do seu escopo.";
     }
   }
 
@@ -244,9 +245,14 @@ async function bloquearForaDoEscopo(
 
     const resolvido = await resolverProcessoIdLinha(table, id);
     if (resolvido.error) return resolvido.error;
-    if (!podeModuloNoProcesso(ctx, modulo as AdminModuloEscopado, resolvido.processoId)) {
-      return "Registro fora do seu escopo de processo.";
+    let propostaId: string | null = null;
+    if (table === "propostas") propostaId = id;
+    if (table === "proposta_anexos") {
+      const { data: anexo } = await supabaseAdmin.from("proposta_anexos").select("proposta_id").eq("id", id).maybeSingle();
+      propostaId = anexo?.proposta_id ?? null;
     }
+    const autorizado = modulo === "propostas" && propostaId ? podeModuloNaProposta(ctx, "propostas", resolvido.processoId, propostaId) : podeModuloNoProcesso(ctx, modulo as AdminModuloEscopado, resolvido.processoId);
+    if (!autorizado) return "Registro fora do seu escopo de processo/proposta.";
 
     if (action === "update" && payload && typeof payload === "object") {
       const row = payload as Record<string, unknown>;

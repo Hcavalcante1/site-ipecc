@@ -5,6 +5,7 @@ import {
   usePropostaAnexosTableEscrita,
 } from "@/lib/documental/propostaAnexosEscrita";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { propostaPermitidaNoModulo } from "@/lib/auth/propostaAccess";
 
 export async function POST(req: Request) {
   const auth = await verifyAdminSession();
@@ -26,6 +27,8 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    if (!(await propostaPermitidaNoModulo(auth.contexto, propostaId))) return NextResponse.json({ ok: false, error: "Proposta fora do seu escopo." }, { status: 403 });
 
     const { data: proposta, error: loadError } = await supabaseAdmin
       .from("propostas")

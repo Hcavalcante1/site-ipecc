@@ -9,6 +9,7 @@ import {
   isMestre,
   modulosPermitidos,
   processoIdsDoEscopo,
+  propostaIdsDoEscopo,
 } from "@/lib/auth/adminEscopo";
 
 const ADMIN_GATE_COOKIE = "ipecc_admin_gate";
@@ -116,6 +117,8 @@ async function contextoPorUserId(
       mod_digital: Boolean(e.mod_digital),
       mod_documentos: Boolean(e.mod_documentos),
     }));
+    const { data: proposalScopes } = await admin.from("admin_proposta_escopos").select("id, proposta_id, processo_id, mod_propostas").eq("user_id", userId);
+    for (const scope of proposalScopes || []) mapped.push({ id: scope.id, processo_id: scope.processo_id, proposta_id: scope.proposta_id, modalidade: null, mod_editais: false, mod_propostas: Boolean(scope.mod_propostas), mod_transparencia: false, mod_noticias: false, mod_eventos: false, mod_projetos: false, mod_digital: false, mod_documentos: false });
 
     return {
       userId,
@@ -149,6 +152,7 @@ function jsonComGate(contexto: AdminContexto) {
     mestre: isMestre(contexto),
     modulos: modulosPermitidos(contexto),
     processoIds: processoIdsDoEscopo(contexto),
+    propostaIds: propostaIdsDoEscopo(contexto),
   });
   res.cookies.set(ADMIN_GATE_COOKIE, "1", {
     httpOnly: true,

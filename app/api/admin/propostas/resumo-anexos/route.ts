@@ -6,6 +6,8 @@ import {
 } from "@/lib/documental/propostaAnexosHibrido";
 import { existeArquivoProposta } from "@/lib/storage/propostasBucket";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { propostaPermitidaNoModulo } from "@/lib/auth/propostaAccess";
+import { extrairPathsAnexoProposta } from "@/lib/documental/propostaPaths";
 
 type PropostaEntrada = { id: string; paths: string[] };
 
@@ -20,7 +22,12 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const propostas = (Array.isArray(body?.propostas) ? body.propostas : []) as PropostaEntrada[];
+    const entrada = (Array.isArray(body?.propostas) ? body.propostas : []) as PropostaEntrada[];
+    const idsRecebidos = [...new Set(entrada.map((p) => String(p.id || "").trim()).filter(Boolean))].slice(0, MAX_PROPOSTAS);
+    const { data: rowsAutorizadas, error: erroLeitura } = idsRecebidos.length ? await supabaseAdmin.from("propostas").select("*").in("id", idsRecebidos) : { data: [], error: null };
+    if (erroLeitura) return NextResponse.json({ ok: false, error: erroLeitura.message }, { status: 500 });
+    const propostas: PropostaEntrada[] = [];
+    for (const row of rowsAutorizadas || []) if (await propostaPermitidaNoModulo(auth.contexto, String(row.id))) propostas.push({ id: String(row.id), paths: extrairPathsAnexoProposta(row as Record<string, unknown>) });
 
     if (propostas.length === 0) {
       return NextResponse.json({ ok: true, resumo: {} });
@@ -74,12 +81,7 @@ export async function POST(req: Request) {
       const id = String(item.id || "").trim();
       if (!id) continue;
 
-      const paths = (
-        pathsHibridoPorId.get(id) ??
-        (Array.isArray(item.paths) ? item.paths : [])
-          .map((p) => String(p || "").trim())
-          .filter(Boolean)
-      ).slice(0, MAX_PATHS_POR_PROPOSTA);
+      const paths = (pathsHibridoPorId.get(id) ?? item.paths).slice(0, MAX_PATHS_POR_PROPOSTA);
 
       if (paths.length === 0) {
         resumo[id] = { total: 0, disponiveis: 0, orfaos: 0 };

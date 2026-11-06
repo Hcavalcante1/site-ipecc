@@ -24,6 +24,7 @@ export type AdminModulo =
 export type AdminEscopo = {
   id: string;
   processo_id: string | null;
+  proposta_id?: string | null;
   modalidade: string | null;
   mod_editais: boolean;
   mod_propostas: boolean;
@@ -128,7 +129,7 @@ export type AdminModuloEscopado = keyof typeof MODULO_FLAG;
 export function processoIdsDoEscopo(ctx: AdminContexto, modulo?: AdminModuloEscopado): string[] | "todos" {
   if (isMestre(ctx)) return "todos";
   const ids = ctx.escopos
-    .filter((e) => modulo ? Boolean(e[MODULO_FLAG[modulo]]) : Object.values(MODULO_FLAG).some((flag) => Boolean(e[flag])))
+    .filter((e) => !e.proposta_id && (modulo ? Boolean(e[MODULO_FLAG[modulo]]) : Object.values(MODULO_FLAG).some((flag) => Boolean(e[flag]))))
     .map((e) => e.processo_id)
     .filter((id): id is string => Boolean(id));
   return Array.from(new Set(ids));
@@ -154,8 +155,25 @@ export function podeModuloNoProcesso(
   if (!processoId) return false;
   const flag = MODULO_FLAG[modulo];
   return ctx.escopos.some(
-    (e) => e.processo_id === processoId && Boolean(e[flag])
+    (e) => !e.proposta_id && e.processo_id === processoId && Boolean(e[flag])
   );
+}
+
+
+export function propostaIdsDoEscopo(ctx: AdminContexto): string[] {
+  if (isMestre(ctx)) return [];
+  return Array.from(new Set(ctx.escopos.filter((e) => e.mod_propostas).map((e) => e.proposta_id).filter((id): id is string => Boolean(id))));
+}
+
+export function podeModuloNaProposta(ctx: AdminContexto, modulo: AdminModuloEscopado, processoId: string | null | undefined, propostaId: string | null | undefined): boolean {
+  if (isMestre(ctx)) return true;
+  if (!processoId || !propostaId) return false;
+  const flag = MODULO_FLAG[modulo];
+  return ctx.escopos.some((e) => Boolean(e[flag]) && e.processo_id === processoId && (!e.proposta_id || e.proposta_id === propostaId));
+}
+
+export function registroNoEscopoProposta(propostaId: string, processoId: string | null | undefined, processoIds: string[] | "todos", propostaIds: string[]): boolean {
+  return processoIds === "todos" || Boolean(processoId && processoIds.includes(processoId)) || propostaIds.includes(propostaId);
 }
 
 /** Listagens admin: mestre vê tudo; demais só itens do processo do escopo. */
