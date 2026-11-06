@@ -27,39 +27,16 @@ export async function getConvenios(
   );
 }
 
-export type PropostaConvenio = {
+export type ProcessoConvenio = {
   id: string;
-  nome: string | null;
-  cnpj: string | null;
-  status: string | null;
-  edital_id: string | null;
-  edital_titulo: string | null;
-  processo_id: string | null;
+  titulo: string;
 };
 
-export async function getPropostasParaConvenio(
-  processoIds: string[] | "todos"
-): Promise<PropostaConvenio[]> {
-  const { data, error } = await supabase
-    .from("propostas")
-    .select("id, nome, cnpj, status, edital_id, editais(titulo, processo_id)")
-    .order("criado_em", { ascending: false });
-  if (error) throw error;
-
-  return (data || []).flatMap((row) => {
-    const edital = Array.isArray(row.editais) ? row.editais[0] : row.editais;
-    const processoId = edital?.processo_id || null;
-    if (row.status !== "aprovado" || !registroNoEscopoProcesso(processoId, processoIds)) return [];
-    return [{
-      id: row.id,
-      nome: row.nome,
-      cnpj: row.cnpj,
-      status: row.status,
-      edital_id: row.edital_id,
-      edital_titulo: edital?.titulo || null,
-      processo_id: processoId,
-    }];
-  });
+export async function getProcessosParaConvenio(): Promise<ProcessoConvenio[]> {
+  const response = await fetch("/api/admin/processos/opcoes", { credentials: "include" });
+  const json = await response.json();
+  if (!response.ok) throw new Error(json.error || "Não foi possível carregar os processos autorizados.");
+  return (json.processos || []) as ProcessoConvenio[];
 }
 
 export async function saveConvenio(convenio: Convenio): Promise<Convenio> {

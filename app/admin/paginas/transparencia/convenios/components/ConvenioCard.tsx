@@ -1,19 +1,19 @@
 import type { CSSProperties } from "react";
 import classes from "../page.module.css";
 import type { Convenio } from "../types";
-import type { PropostaConvenio } from "../conveniosService";
+import type { ProcessoConvenio } from "../conveniosService";
 import { TIPO_INSTRUMENTO_OPTIONS, CATEGORIA_OPTIONS, STATUS_CONVENIO_OPTIONS } from "../constants";
 import { AdminButton, AdminLoadingButton, AdminCard, AdminMessage, AdminInput, AdminTextarea, AdminSelect, AdminFileInput } from "@/components/admin";
 
 type Props = {
   item: Convenio;
-  propostas: PropostaConvenio[];
+  processos: ProcessoConvenio[];
   index: number;
   blockMsgs: Record<number, string>;
   loadingIndex: number | null;
   loadingOperationType: "save" | "delete" | "upload" | null;
   updateConvenio: <K extends keyof Convenio>(index: number, campo: K, valor: Convenio[K]) => void;
-  selecionarProposta: (index: number, propostaId: string) => void;
+  selecionarProcesso: (index: number, processoId: string) => void;
   salvarBloco: (index: number) => Promise<void>;
   excluirBloco: (id?: string, index?: number) => Promise<void>;
 };
@@ -98,13 +98,13 @@ function getMessageType(message: string): "success" | "error" | "info" {
 
 export default function ConvenioCard({
   item,
-  propostas,
+  processos,
   index,
   blockMsgs,
   loadingIndex,
   loadingOperationType,
   updateConvenio,
-  selecionarProposta,
+  selecionarProcesso,
   salvarBloco,
   excluirBloco,
 }: Props) {
@@ -119,16 +119,16 @@ export default function ConvenioCard({
 
       <div className="admin-grid-2" style={{ gap: 14 }}>
         <div style={styles.fieldWrap}>
-          <label style={styles.label}>Proposta aprovada</label>
-          <AdminSelect className={classes.select} value={item.proposta_id ?? ""} onChange={(e) => selecionarProposta(index, e.target.value)}>
-            <option value="">Selecione a proposta</option>
-            {propostas.map((proposta) => (
-              <option key={proposta.id} value={proposta.id}>
-                {proposta.nome || "Proposta sem nome"} · {proposta.edital_titulo || "Sem edital"}
+          <label style={styles.label}>Processo autorizado</label>
+          <AdminSelect className={classes.select} value={item.processo_id ?? ""} onChange={(e) => selecionarProcesso(index, e.target.value)}>
+            <option value="">Selecione o processo</option>
+            {processos.map((processo) => (
+              <option key={processo.id} value={processo.id}>
+                {processo.titulo}
               </option>
             ))}
           </AdminSelect>
-          {item.processo_id ? <small style={{ color: "#cbd5e1" }}>Processo vinculado automaticamente à proposta.</small> : null}
+          {item.processo_id ? <small style={{ color: "#cbd5e1" }}>O acesso ao convênio seguirá o processo selecionado.</small> : null}
         </div>
 
         <div style={styles.fieldWrap}>
