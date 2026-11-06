@@ -39,7 +39,7 @@ export async function GET(req: NextRequest, ctx: Ctx) {
     .eq("id", result.evidence.document_id)
     .maybeSingle();
 
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
   if (!registroNoEscopoProcesso(doc?.processo_id, processoIds)) {
     return NextResponse.json(
       { ok: false, error: "Evidência fora do seu escopo." },

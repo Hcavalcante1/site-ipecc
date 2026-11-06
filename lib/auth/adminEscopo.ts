@@ -123,9 +123,12 @@ export function podeModulo(ctx: AdminContexto, modulo: AdminModulo): boolean {
   return modulosPermitidos(ctx).includes(modulo);
 }
 
-export function processoIdsDoEscopo(ctx: AdminContexto): string[] | "todos" {
+export type AdminModuloEscopado = keyof typeof MODULO_FLAG;
+
+export function processoIdsDoEscopo(ctx: AdminContexto, modulo?: AdminModuloEscopado): string[] | "todos" {
   if (isMestre(ctx)) return "todos";
   const ids = ctx.escopos
+    .filter((e) => modulo ? Boolean(e[MODULO_FLAG[modulo]]) : Object.values(MODULO_FLAG).some((flag) => Boolean(e[flag])))
     .map((e) => e.processo_id)
     .filter((id): id is string => Boolean(id));
   return Array.from(new Set(ids));
@@ -144,7 +147,7 @@ export function podeAcessarProcesso(
 
 export function podeModuloNoProcesso(
   ctx: AdminContexto,
-  modulo: keyof typeof MODULO_FLAG,
+  modulo: AdminModuloEscopado,
   processoId: string | null | undefined
 ): boolean {
   if (isMestre(ctx)) return true;

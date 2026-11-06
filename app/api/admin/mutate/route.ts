@@ -5,6 +5,8 @@ import {
   isMestre,
   podeAcessarProcesso,
   podeModulo,
+  podeModuloNoProcesso,
+  type AdminModuloEscopado,
   type AdminContexto,
   type AdminModulo,
 } from "@/lib/auth/adminEscopo";
@@ -54,6 +56,8 @@ const TABELAS_ESCOPO_INDIRETO = new Set([
   "propostas",
   "proposta_anexos",
   "editais_documentos",
+  "editais_logs",
+  "documentos_publicos",
 ]);
 
 const TABELA_MODULO: Partial<Record<string, AdminModulo>> = {
@@ -70,7 +74,7 @@ const TABELA_MODULO: Partial<Record<string, AdminModulo>> = {
   paginas: "paginas",
   paginas_conteudo: "paginas",
   paginas_eixos: "paginas",
-  documentos_publicos: "paginas",
+  documentos_publicos: "editais",
 };
 
 const ALLOWED_FILTER_OPERATORS = new Set(["eq"]);
@@ -170,9 +174,9 @@ async function resolverProcessoIdLinha(
     return { processoId: await processoIdDaProposta(data?.proposta_id) };
   }
 
-  if (table === "editais_documentos") {
+  if (table === "editais_documentos" || table === "editais_logs" || table === "documentos_publicos") {
     const { data, error } = await supabaseAdmin
-      .from("editais_documentos")
+      .from(table)
       .select("edital_id")
       .eq("id", id)
       .maybeSingle();
@@ -190,7 +194,7 @@ async function processoIdDoPayload(
   if (TABELAS_PROCESSO_ID.has(table)) {
     return (row.processo_id as string | null | undefined) ?? null;
   }
-  if (table === "propostas" || table === "editais_documentos") {
+  if (table === "propostas" || table === "editais_documentos" || table === "editais_logs" || table === "documentos_publicos") {
     return processoIdDoEdital(row.edital_id as string | null | undefined);
   }
   if (table === "proposta_anexos") {
@@ -209,9 +213,8 @@ async function bloquearForaDoEscopo(
   if (isMestre(ctx)) return null;
 
   const modulo = TABELA_MODULO[table];
-  if (modulo && !podeModulo(ctx, modulo)) {
-    return "Módulo não liberado para esta operação.";
-  }
+  if (!modulo) return "Operação disponível somente para o administrador mestre.";
+  if (!podeModulo(ctx, modulo)) return "Módulo não liberado para esta operação.";
 
   const precisaEscopo =
     TABELAS_PROCESSO_ID.has(table) || TABELAS_ESCOPO_INDIRETO.has(table);
@@ -226,7 +229,7 @@ async function bloquearForaDoEscopo(
         table,
         row as Record<string, unknown>
       );
-      if (!podeAcessarProcesso(ctx, processoId)) {
+      if (!podeModuloNoProcesso(ctx, modulo as AdminModuloEscopado, processoId)) {
         return "Processo fora do seu escopo.";
       }
     }
@@ -241,20 +244,20 @@ async function bloquearForaDoEscopo(
 
     const resolvido = await resolverProcessoIdLinha(table, id);
     if (resolvido.error) return resolvido.error;
-    if (!podeAcessarProcesso(ctx, resolvido.processoId)) {
+    if (!podeModuloNoProcesso(ctx, modulo as AdminModuloEscopado, resolvido.processoId)) {
       return "Registro fora do seu escopo de processo.";
     }
 
     if (action === "update" && payload && typeof payload === "object") {
       const row = payload as Record<string, unknown>;
-      if (row.processo_id !== undefined && !podeAcessarProcesso(ctx, row.processo_id as string | null)) {
+      if (row.processo_id !== undefined && !podeModuloNoProcesso(ctx, modulo as AdminModuloEscopado, row.processo_id as string | null)) {
         return "Não é permitido mover registro para outro processo.";
       }
       if (row.edital_id !== undefined) {
         const viaEdital = await processoIdDoEdital(
           row.edital_id as string | null
         );
-        if (!podeAcessarProcesso(ctx, viaEdital)) {
+        if (!podeModuloNoProcesso(ctx, modulo as AdminModuloEscopado, viaEdital)) {
           return "Edital fora do seu escopo de processo.";
         }
       }

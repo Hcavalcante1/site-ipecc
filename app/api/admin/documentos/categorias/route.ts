@@ -45,7 +45,7 @@ export async function GET() {
     );
   }
 
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
   const categories = (data || []).filter((c) =>
     registroNoEscopoProcesso(c.processo_id, processoIds)
   );
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const processoIds = processoIdsDoEscopo(auth.contexto);
+    const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
     let processoId = body.processo_id || null;
     if (processoIds !== "todos") {
       if (!processoId && processoIds.length === 1) processoId = processoIds[0];
@@ -158,7 +158,7 @@ export async function DELETE(req: NextRequest) {
     );
   }
 
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
   if (!registroNoEscopoProcesso(cat.processo_id, processoIds)) {
     return NextResponse.json(
       { ok: false, error: "Categoria fora do seu escopo." },

@@ -41,7 +41,7 @@ export async function GET() {
     );
   }
 
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
   const logs = (data || []).filter(
     (row) =>
       !row.processo_id ||
@@ -56,7 +56,7 @@ export async function DELETE() {
   if (denied || !auth) return denied!;
 
   const admin = getSupabaseAdmin();
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
 
   if (processoIds !== "todos" && processoIds.length === 0) {
     return NextResponse.json({ ok: true });

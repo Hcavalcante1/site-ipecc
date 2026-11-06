@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   if (denied || !auth) return denied!;
 
   const id = req.nextUrl.searchParams.get("id");
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
 
   if (id) {
     const admin = getSupabaseAdmin();
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const processoIds = processoIdsDoEscopo(auth.contexto);
+    const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
     let processoId = body.processo_id || null;
     if (processoIds !== "todos") {
       if (!processoId && processoIds.length === 1) processoId = processoIds[0];
@@ -229,7 +229,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const admin = getSupabaseAdmin();
-    const processoIds = processoIdsDoEscopo(auth.contexto);
+    const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
     const { data: existing } = await admin
       .from("gd_signature_batches")
       .select(BATCH_SELECT)
@@ -332,7 +332,7 @@ export async function DELETE(req: NextRequest) {
   }
 
   const admin = getSupabaseAdmin();
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
   const { data: existing } = await admin
     .from("gd_signature_batches")
     .select("id, processo_id")

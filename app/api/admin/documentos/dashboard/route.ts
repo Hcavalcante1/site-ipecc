@@ -9,7 +9,7 @@ export async function GET(_req: NextRequest) {
   const { denied, auth } = await denyIfSemModuloDocumentos();
   if (denied || !auth) return denied!;
 
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
   const { counts, aviso } = await contarDashboard(processoIds);
 
   return NextResponse.json({

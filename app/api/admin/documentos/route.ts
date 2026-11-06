@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     req.nextUrl.searchParams.get("category_id")?.trim() || "";
   const status = isGdDocumentStatus(statusParam) ? statusParam : undefined;
 
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
   const processoFiltro =
     processoIds === "todos"
       ? undefined
@@ -87,7 +87,7 @@ export async function DELETE(req: NextRequest) {
   }
 
   const admin = getSupabaseAdmin();
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
 
   let docsQuery = admin
     .from("gd_documents")
@@ -203,7 +203,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const processoIds = processoIdsDoEscopo(auth.contexto);
+    const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
     let processoId = body.processo_id || null;
     if (processoIds !== "todos") {
       if (!processoId && processoIds.length === 1) {

@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Filtro de escopo por documento do signatário
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
   if (processoIds === "todos") {
     return NextResponse.json({ ok: true, signers: data || [] });
   }
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
 
     if (body.batch_id) {
       const admin = getSupabaseAdmin();
-      const processoIds = processoIdsDoEscopo(auth.contexto);
+      const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
       const { data: batch } = await admin
         .from("gd_signature_batches")
         .select("id, processo_id")

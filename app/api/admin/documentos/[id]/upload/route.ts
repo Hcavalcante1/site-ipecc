@@ -33,7 +33,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
     );
   }
 
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
   if (!registroNoEscopoProcesso(doc.processo_id, processoIds)) {
     return NextResponse.json(
       { ok: false, error: "Documento fora do seu escopo." },

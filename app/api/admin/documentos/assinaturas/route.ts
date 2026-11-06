@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   if (denied || !auth) return denied!;
 
   const documentId = req.nextUrl.searchParams.get("document_id") || undefined;
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
   const { data, error } = await listarAssinaturas({
     processoIds,
     documentId,

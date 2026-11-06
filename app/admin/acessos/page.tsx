@@ -80,9 +80,9 @@ export default function AdminAcessosPage() {
   const [papel, setPapel] = useState<AdminPapel>("externo");
   const [userIdEscopo, setUserIdEscopo] = useState("");
   const [processoId, setProcessoId] = useState("");
-  const [modEditais, setModEditais] = useState(true);
-  const [modPropostas, setModPropostas] = useState(true);
-  const [modTransparencia, setModTransparencia] = useState(true);
+  const [modEditais, setModEditais] = useState(false);
+  const [modPropostas, setModPropostas] = useState(false);
+  const [modTransparencia, setModTransparencia] = useState(false);
   const [modNoticias, setModNoticias] = useState(false);
   const [modEventos, setModEventos] = useState(false);
   const [modProjetos, setModProjetos] = useState(false);
