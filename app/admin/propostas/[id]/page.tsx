@@ -13,7 +13,7 @@ import {
   isEditalFaseRascunho,
   propostaTemVinculoOficial,
 } from "@/lib/editais/governancaRules";
-import { registroNoEscopoProcesso } from "@/lib/auth/adminEscopo";
+import { registroNoEscopoProposta } from "@/lib/auth/adminEscopo";
 import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
 import {
   btn,
@@ -116,7 +116,7 @@ export default function Page() {
     if (escopo.loading) return;
     void carregarProposta();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, escopo.loading, escopo.processoIds]);
+  }, [id, escopo.loading, escopo.processoIds, escopo.propostaIds]);
 
   async function carregarProposta() {
     if (!id) return;
@@ -136,7 +136,7 @@ export default function Page() {
           | null;
       };
       const edital = Array.isArray(row.editais) ? row.editais[0] : row.editais;
-      if (!registroNoEscopoProcesso(edital?.processo_id, escopo.processoIds)) {
+      if (!registroNoEscopoProposta(String(data[0].id), edital?.processo_id, escopo.processoIds, escopo.propostaIds)) {
         setForaEscopo(true);
         setProposta(null);
       } else {
@@ -162,7 +162,7 @@ export default function Page() {
   } = usePropostaDocumental(proposta, certidoesEntidade);
 
   const { disponiveis: downloadsDisponiveis, orfaos: downloadsOrfaos, verificando: verificandoDownloads } =
-    usePropostaDownloadsVerificados(downloads);
+    usePropostaDownloadsVerificados(downloads, String(id));
 
   useEffect(() => {
     async function carregarCertidoesEntidade() {

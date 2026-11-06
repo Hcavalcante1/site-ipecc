@@ -11,7 +11,7 @@ import {
   getUrlConsultaEditalAdmin,
   propostaTemVinculoOficial,
 } from "@/lib/editais/governancaRules";
-import { registroNoEscopoProcesso } from "@/lib/auth/adminEscopo";
+import { registroNoEscopoProposta } from "@/lib/auth/adminEscopo";
 import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -96,12 +96,12 @@ export default function PropostasPage() {
 
     const lista = ((data ?? []) as Proposta[]).filter((p) => {
       const edital = Array.isArray(p.editais) ? p.editais[0] : p.editais;
-      return registroNoEscopoProcesso(edital?.processo_id, escopo.processoIds);
+      return registroNoEscopoProposta(p.id, edital?.processo_id, escopo.processoIds, escopo.propostaIds);
     });
 
     setTodas(lista);
     setLoading(false);
-  }, [escopo.loading, escopo.processoIds]);
+  }, [escopo.loading, escopo.processoIds, escopo.propostaIds]);
 
   useEffect(() => {
     void carregar();

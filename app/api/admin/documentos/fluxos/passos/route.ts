@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
   if (!registroNoEscopoProcesso(wf.processo_id, processoIds)) {
     return NextResponse.json(
       { ok: false, error: "Fluxo fora do seu escopo." },
@@ -142,7 +142,7 @@ export async function DELETE(req: NextRequest) {
     );
   }
 
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
   if (!registroNoEscopoProcesso(wf.processo_id, processoIds)) {
     return NextResponse.json(
       { ok: false, error: "Fluxo fora do seu escopo." },

@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   if (denied || !auth) return denied!;
 
   const unread = req.nextUrl.searchParams.get("unread") === "1";
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
   const { data, error } = await listarNotificacoes({
     userId: auth.userId,
     processoIds,
@@ -42,7 +42,7 @@ export async function DELETE(_req: NextRequest) {
   const { denied, auth } = await denyIfSemModuloDocumentos();
   if (denied || !auth) return denied!;
 
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
   const { error } = await marcarTodasNotificacoesLidas(auth.userId, processoIds);
   if (error) {
     return NextResponse.json(

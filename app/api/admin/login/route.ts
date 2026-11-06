@@ -141,6 +141,7 @@ export async function POST(req: Request) {
       type EscopoPartial = {
         id: string;
         processo_id: string | null;
+        proposta_id?: string | null;
         modalidade: string | null;
         mod_editais?: boolean;
         mod_propostas?: boolean;
@@ -220,10 +221,13 @@ export async function POST(req: Request) {
               mod_eventos: Boolean(e.mod_eventos),
               mod_projetos: Boolean(e.mod_projetos),
               mod_digital: Boolean(e.mod_digital),
+              proposta_id: e.proposta_id ?? null,
               mod_documentos: Boolean(e.mod_documentos),
             })),
         legadoIsAdmin: Boolean(isAdmin),
       };
+      const { data: proposalScopes } = await supabase.from("admin_proposta_escopos").select("id, proposta_id, processo_id, mod_propostas").eq("user_id", user.id);
+      for (const scope of proposalScopes || []) contexto.escopos.push({ id: scope.id, processo_id: scope.processo_id, proposta_id: scope.proposta_id, modalidade: null, mod_editais: false, mod_propostas: Boolean(scope.mod_propostas), mod_transparencia: false, mod_noticias: false, mod_eventos: false, mod_projetos: false, mod_digital: false, mod_documentos: false });
     } else {
       contexto = {
         userId: user.id,
@@ -241,6 +245,7 @@ export async function POST(req: Request) {
       mestre: isMestre(contexto),
       modulos: modulosPermitidos(contexto),
       processoIds: processoIdsDoEscopo(contexto),
+      propostaIds: contexto.escopos.map((e) => e.proposta_id).filter((id): id is string => Boolean(id)),
       expires_at: signed.session?.expires_at ?? null,
     });
 

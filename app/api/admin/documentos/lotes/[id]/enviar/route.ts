@@ -37,7 +37,7 @@ export async function POST(
     );
   }
 
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
   if (!registroNoEscopoProcesso(batch.processo_id, processoIds)) {
     return NextResponse.json(
       { ok: false, error: "Lote fora do seu escopo." },

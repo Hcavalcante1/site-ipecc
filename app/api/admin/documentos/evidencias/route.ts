@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
   const evidencias = result.evidencias.filter((row) =>
     registroNoEscopoProcesso(row.processo_id, processoIds)
   );

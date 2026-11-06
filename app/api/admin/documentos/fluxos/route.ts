@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   if (denied || !auth) return denied!;
 
   const id = req.nextUrl.searchParams.get("id");
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
 
   if (id) {
     const { data, error } = await obterWorkflow(id);
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const processoIds = processoIdsDoEscopo(auth.contexto);
+    const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
     let processoId = body.processo_id || null;
     if (processoIds !== "todos") {
       if (!processoId && processoIds.length === 1) processoId = processoIds[0];
@@ -215,7 +215,7 @@ export async function PATCH(req: NextRequest) {
     );
   }
 
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
   if (!registroNoEscopoProcesso(existing.processo_id, processoIds)) {
     return NextResponse.json(
       { ok: false, error: "Fluxo fora do seu escopo." },
@@ -291,7 +291,7 @@ export async function DELETE(req: NextRequest) {
     );
   }
 
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
   if (!registroNoEscopoProcesso(existing.processo_id, processoIds)) {
     return NextResponse.json(
       { ok: false, error: "Fluxo fora do seu escopo." },

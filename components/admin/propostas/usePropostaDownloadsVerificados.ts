@@ -12,7 +12,7 @@ export type PropostaDownloadOrfao = {
   path: string;
 };
 
-export function usePropostaDownloadsVerificados(itens: PropostaDownloadItem[]) {
+export function usePropostaDownloadsVerificados(itens: PropostaDownloadItem[], propostaId: string) {
   const [disponiveis, setDisponiveis] = useState<PropostaDownloadItem[]>(itens);
   const [orfaos, setOrfaos] = useState<PropostaDownloadOrfao[]>([]);
   const [verificando, setVerificando] = useState(false);
@@ -36,6 +36,7 @@ export function usePropostaDownloadsVerificados(itens: PropostaDownloadItem[]) {
           credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            proposta_id: propostaId,
             itens: itens.map((item) => ({
               path: item.path,
               label: item.label,
@@ -89,7 +90,7 @@ export function usePropostaDownloadsVerificados(itens: PropostaDownloadItem[]) {
     return () => {
       cancelado = true;
     };
-  }, [itens]);
+  }, [itens, propostaId]);
 
   return { disponiveis, orfaos, verificando };
 }

@@ -42,7 +42,7 @@ export async function GET() {
     );
   }
 
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
   const templates = (data || []).filter((t) =>
     registroNoEscopoProcesso(t.processo_id, processoIds)
   );
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
     const format =
       body.format && isGdTemplateFormat(body.format) ? body.format : "pdf";
 
-    const processoIds = processoIdsDoEscopo(auth.contexto);
+    const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
     let processoId = body.processo_id || null;
     if (processoIds !== "todos") {
       if (!processoId && processoIds.length === 1) processoId = processoIds[0];
@@ -171,7 +171,7 @@ export async function PATCH(req: NextRequest) {
     );
   }
 
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
   if (!registroNoEscopoProcesso(existing.processo_id, processoIds)) {
     return NextResponse.json(
       { ok: false, error: "Modelo fora do seu escopo." },
@@ -265,7 +265,7 @@ export async function DELETE(req: NextRequest) {
     );
   }
 
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
   if (!registroNoEscopoProcesso(existing.processo_id, processoIds)) {
     return NextResponse.json(
       { ok: false, error: "Modelo fora do seu escopo." },

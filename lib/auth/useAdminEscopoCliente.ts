@@ -11,6 +11,7 @@ export type AdminEscopoCliente = {
   papel: string;
   modulos: AdminModulo[];
   processoIds: string[] | "todos";
+  propostaIds: string[];
 };
 
 const INICIAL: AdminEscopoCliente = {
@@ -19,6 +20,7 @@ const INICIAL: AdminEscopoCliente = {
   papel: "mestre",
   modulos: [],
   processoIds: "todos",
+  propostaIds: [],
 };
 
 async function fallbackLegadoIsAdmin(): Promise<AdminEscopoCliente | null> {
@@ -38,6 +40,7 @@ async function fallbackLegadoIsAdmin(): Promise<AdminEscopoCliente | null> {
     papel: "mestre",
     modulos: [...MODULOS_MESTRE],
     processoIds: "todos",
+    propostaIds: [],
   };
 }
 
@@ -69,6 +72,7 @@ export function useAdminEscopoCliente(): AdminEscopoCliente {
               mestre: false,
               modulos: [],
               processoIds: [],
+          propostaIds: [],
             }
           );
           return;
@@ -79,6 +83,7 @@ export function useAdminEscopoCliente(): AdminEscopoCliente {
           papel?: string;
           modulos?: AdminModulo[];
           processoIds?: string[] | "todos";
+          propostaIds?: string[];
           legadoIsAdmin?: boolean;
         };
 
@@ -92,6 +97,7 @@ export function useAdminEscopoCliente(): AdminEscopoCliente {
             : Array.isArray(json.modulos) && json.modulos.length > 0
               ? json.modulos
               : [],
+          propostaIds: Array.isArray(json.propostaIds) ? json.propostaIds : [],
           processoIds:
             json.processoIds === "todos" || Array.isArray(json.processoIds)
               ? json.processoIds

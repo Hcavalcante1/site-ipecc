@@ -115,12 +115,13 @@ async function carregarContexto(
       user_id: userId,
     });
 
+    const { data: proposalScopes } = await supabase.from("admin_proposta_escopos").select("id, proposta_id, processo_id, mod_propostas").eq("user_id", userId);
     return {
       userId,
       email: row.email ?? email ?? null,
       papel: row.papel,
       ativo: true,
-      escopos: (escoposData || []).map((e) => ({
+      escopos: [...(escoposData || []).map((e) => ({
         id: e.id as string,
         processo_id: e.processo_id as string | null,
         modalidade: e.modalidade as string | null,
@@ -132,7 +133,11 @@ async function carregarContexto(
         mod_projetos: Boolean(e.mod_projetos),
         mod_digital: Boolean(e.mod_digital),
         mod_documentos: Boolean(e.mod_documentos),
-      })),
+      })), ...(proposalScopes || []).map((scope) => ({
+        id: scope.id, processo_id: scope.processo_id, proposta_id: scope.proposta_id, modalidade: null,
+        mod_editais: false, mod_propostas: Boolean(scope.mod_propostas), mod_transparencia: false,
+        mod_noticias: false, mod_eventos: false, mod_projetos: false, mod_digital: false, mod_documentos: false,
+      }))],
       // is_admin legado continua contando como mestre (acesso total)
       legadoIsAdmin: Boolean(isAdmin),
     };

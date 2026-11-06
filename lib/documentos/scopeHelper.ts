@@ -65,7 +65,7 @@ export async function carregarDocumentoNoEscopo(
       ),
     };
   }
-  const processoIds = processoIdsDoEscopo(auth.contexto);
+  const processoIds = processoIdsDoEscopo(auth.contexto, "documentos");
   if (!registroNoEscopoProcesso(data.processo_id, processoIds)) {
     return {
       error: NextResponse.json(

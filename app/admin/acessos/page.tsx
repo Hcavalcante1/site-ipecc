@@ -54,6 +54,8 @@ const chipStyle: CSSProperties = {
   marginTop: 4,
 };
 
+type PropostaConvite = { id: string; nome: string; email?: string | null; edital_titulo: string; processo_id: string };
+type ConviteProposta = { id: string; email: string; proposta_id: string; expires_at: string; aceito_em: string | null; created_at: string; propostas?: { nome?: string } | { nome?: string }[] | null };
 type Convite = {
   id: string;
   email: string;
@@ -75,14 +77,20 @@ export default function AdminAcessosPage() {
   const [convitePapel, setConvitePapel] = useState("operador");
   const [enviandoConvite, setEnviandoConvite] = useState(false);
   const [linkCopiado, setLinkCopiado] = useState<string | null>(null);
+  const [propostasConvite, setPropostasConvite] = useState<PropostaConvite[]>([]);
+  const [convitesProposta, setConvitesProposta] = useState<ConviteProposta[]>([]);
+  const [convitePropostaEmail, setConvitePropostaEmail] = useState("");
+  const [convitePropostaId, setConvitePropostaId] = useState("");
+  const [enviandoConviteProposta, setEnviandoConviteProposta] = useState(false);
+  const [moduloConvitePropostas, setModuloConvitePropostas] = useState(false);
 
   const [email, setEmail] = useState("");
   const [papel, setPapel] = useState<AdminPapel>("externo");
   const [userIdEscopo, setUserIdEscopo] = useState("");
   const [processoId, setProcessoId] = useState("");
-  const [modEditais, setModEditais] = useState(true);
-  const [modPropostas, setModPropostas] = useState(true);
-  const [modTransparencia, setModTransparencia] = useState(true);
+  const [modEditais, setModEditais] = useState(false);
+  const [modPropostas, setModPropostas] = useState(false);
+  const [modTransparencia, setModTransparencia] = useState(false);
   const [modNoticias, setModNoticias] = useState(false);
   const [modEventos, setModEventos] = useState(false);
   const [modProjetos, setModProjetos] = useState(false);
@@ -256,6 +264,32 @@ export default function AdminAcessosPage() {
 
   useEffect(() => { void carregarConvites(); }, []);
 
+  async function carregarConvitesProposta() {
+    const res = await fetch("/api/admin/acessos/convites-propostas", { credentials: "include" });
+    const json = await res.json();
+    if (!res.ok) { if (json.error && !/does not exist|schema cache/i.test(json.error)) triggerToast(json.error, "error"); return; }
+    setPropostasConvite(json.propostas || []); setConvitesProposta(json.convites || []);
+  }
+
+  useEffect(() => { void carregarConvitesProposta(); }, []);
+
+  async function enviarConviteProposta() {
+    if (!convitePropostaEmail.trim() || !convitePropostaId || !moduloConvitePropostas) { triggerToast("Informe o e-mail, selecione a proposta e marque o módulo.", "error"); return; }
+    setEnviandoConviteProposta(true);
+    const res = await fetch("/api/admin/acessos/convites-propostas", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: convitePropostaEmail.trim(), proposta_id: convitePropostaId, modulos: moduloConvitePropostas ? ["propostas"] : [] }) });
+    const json = await res.json(); setEnviandoConviteProposta(false);
+    if (!res.ok) { triggerToast(json.error || "Não foi possível criar o convite.", "error"); return; }
+    setConvitePropostaEmail("");
+    if (json.link) { await navigator.clipboard.writeText(json.link).catch(() => null); setLinkCopiado(json.link); setTimeout(() => setLinkCopiado(null), 5000); }
+    triggerToast(json.email_enviado ? "Convite da proposta enviado por e-mail." : "Convite criado e link copiado; e-mail não enviado.", "success");
+    void carregarConvitesProposta();
+  }
+
+  async function revogarConviteProposta(id: string) {
+    const res = await fetch(`/api/admin/acessos/convites-propostas?id=${encodeURIComponent(id)}`, { method: "DELETE", credentials: "include" });
+    const json = await res.json(); if (!res.ok) { triggerToast(json.error || "Erro ao revogar convite.", "error"); return; }
+    triggerToast(json.acesso_removido ? "Acesso à proposta removido." : "Convite da proposta revogado.", "success"); void carregarConvitesProposta();
+  }
   async function enviarConvite() {
     if (!conviteEmail.trim()) { triggerToast("Informe o e-mail.", "error"); return; }
     setEnviandoConvite(true);
@@ -511,6 +545,22 @@ export default function AdminAcessosPage() {
         )}
       </section>
 
+      <section className="admin-card" style={{ marginTop: 20 }}>
+        <h2 className="admin-h2">Convite de acesso a uma proposta</h2>
+        <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 16px" }}>O convidado verá somente a proposta selecionada. Neste fluxo, o módulo disponível é Propostas. O convite expira em 7 dias e exige login com o e-mail convidado.</p>
+        <label>E-mail do convidado</label>
+        <input value={convitePropostaEmail} onChange={(e) => setConvitePropostaEmail(e.target.value)} placeholder="email@exemplo.com" />
+        <label>Proposta</label>
+        <select value={convitePropostaId} onChange={(e) => setConvitePropostaId(e.target.value)}>
+          <option value="">Selecione uma proposta</option>
+          {propostasConvite.map((p) => <option key={p.id} value={p.id}>{p.nome} · {p.edital_titulo}</option>)}
+        </select>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, margin: "12px 0" }}><input type="checkbox" checked={moduloConvitePropostas} onChange={(e) => setModuloConvitePropostas(e.target.checked)} /> Propostas</label>
+        <button type="button" className="admin-button" onClick={() => void enviarConviteProposta()} disabled={enviandoConviteProposta || !moduloConvitePropostas}>{enviandoConviteProposta ? "Enviando..." : "Enviar convite da proposta"}</button>
+        <div style={{ marginTop: 18, display: "grid", gap: 8 }}>
+          {convitesProposta.map((c) => { const p = propostasConvite.find((row) => row.id === c.proposta_id); return <div key={c.id} style={{ border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, padding: 10, display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}><span>{c.email} · {p?.nome || "Proposta"} · {c.aceito_em ? "aceito" : new Date(c.expires_at) < new Date() ? "expirado" : "pendente"}</span><button type="button" className="admin-button" onClick={() => void revogarConviteProposta(c.id)}>{c.aceito_em ? "Remover acesso" : "Revogar convite"}</button></div>; })}
+        </div>
+      </section>
       <section className="admin-card" style={{ marginTop: 20 }}>
         <h2 className="admin-h2">Convites de colaboração</h2>
         <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 16px" }}>
