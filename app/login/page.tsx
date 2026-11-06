@@ -53,7 +53,15 @@ export default function LoginPage() {
       if (!gate.ok) {
         // Usuário não é admin — redireciona para painel do cliente
         if (gate.status === 403) {
-          window.location.assign("/conta");
+          const requestedRedirect = new URLSearchParams(window.location.search).get("redirect") || "";
+          let safeRedirect = "";
+          if (requestedRedirect) {
+            try {
+              const parsed = new URL(requestedRedirect, window.location.origin);
+              if (parsed.origin === window.location.origin) safeRedirect = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+            } catch { /* Ignora destino inválido e usa o painel padrão. */ }
+          }
+          window.location.assign(safeRedirect || "/conta");
           return;
         }
 
@@ -77,7 +85,15 @@ export default function LoginPage() {
 
       localStorage.removeItem("ipecc_admin_closed");
       sessionStorage.setItem("ipecc_admin_active", "1");
-      window.location.assign("/admin");
+      const requestedRedirect = new URLSearchParams(window.location.search).get("redirect") || "";
+      let safeRedirect = "";
+      if (requestedRedirect) {
+        try {
+          const parsed = new URL(requestedRedirect, window.location.origin);
+          if (parsed.origin === window.location.origin) safeRedirect = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+        } catch { /* Ignora destino inválido e usa o painel padrão. */ }
+      }
+      window.location.assign(safeRedirect || "/admin");
     } catch (err) {
       setMsg(
         mensagemErroLogin({

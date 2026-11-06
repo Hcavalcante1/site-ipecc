@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -12,7 +12,23 @@ export default function CadastroPage() {
   const [password, setPassword] = useState("");
   const [estado, setEstado] = useState<Estado>("form");
   const [msg, setMsg] = useState("");
+  const [redirect, setRedirect] = useState("");
   const year = new Date().getFullYear();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const requestedRedirect = params.get("redirect") || "";
+    if (requestedRedirect) {
+      try {
+        const parsed = new URL(requestedRedirect, window.location.origin);
+        if (parsed.origin === window.location.origin) {
+          setRedirect(`${parsed.pathname}${parsed.search}${parsed.hash}`);
+        }
+      } catch { /* Ignora destino inválido. */ }
+    }
+    const invitedEmail = params.get("email");
+    if (invitedEmail) setEmail(invitedEmail);
+  }, []);
 
   async function handleCadastro(e: React.FormEvent) {
     e.preventDefault();
@@ -28,6 +44,9 @@ export default function CadastroPage() {
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
+      options: redirect
+        ? { emailRedirectTo: `${window.location.origin}${redirect}` }
+        : undefined,
     });
 
     if (error || !data.user) {
@@ -45,7 +64,7 @@ export default function CadastroPage() {
       return;
     }
 
-    router.push("/conta");
+    router.push(redirect || "/conta");
   }
 
   return (
@@ -64,8 +83,9 @@ export default function CadastroPage() {
               <p style={styles.confirmTitle}>Confira seu e-mail</p>
               <p style={styles.confirmTexto}>
                 Enviamos um link de confirmação para <strong>{email}</strong>. Clique no
-                link, faça login e você poderá criar sua organização no painel.
+                link para confirmar seu e-mail{redirect ? " e voltar ao convite para aceitar o acesso" : ", depois entre para continuar"}.
               </p>
+              <a href={redirect || "/login"} style={styles.link}>{redirect ? "Voltar ao convite" : "Ir para entrar"}</a>
             </div>
           ) : (
             <form onSubmit={handleCadastro} style={styles.form}>
