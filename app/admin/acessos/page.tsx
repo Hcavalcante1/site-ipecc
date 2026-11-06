@@ -73,9 +73,6 @@ export default function AdminAcessosPage() {
   const [msg, setMsg] = useState("");
 
   const [convites, setConvites] = useState<Convite[]>([]);
-  const [conviteEmail, setConviteEmail] = useState("");
-  const [convitePapel, setConvitePapel] = useState("operador");
-  const [enviandoConvite, setEnviandoConvite] = useState(false);
   const [linkCopiado, setLinkCopiado] = useState<string | null>(null);
   const [propostasConvite, setPropostasConvite] = useState<PropostaConvite[]>([]);
   const [convitesProposta, setConvitesProposta] = useState<ConviteProposta[]>([]);
@@ -290,38 +287,6 @@ export default function AdminAcessosPage() {
     const json = await res.json(); if (!res.ok) { triggerToast(json.error || "Erro ao revogar convite.", "error"); return; }
     triggerToast(json.acesso_removido ? "Acesso à proposta removido." : "Convite da proposta revogado.", "success"); void carregarConvitesProposta();
   }
-  async function enviarConvite() {
-    if (!conviteEmail.trim()) { triggerToast("Informe o e-mail.", "error"); return; }
-    setEnviandoConvite(true);
-    const headers = { ...(await getAuthHeader()), "Content-Type": "application/json" };
-    const res = await fetch("/api/admin/convites", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ email: conviteEmail.trim(), papel: convitePapel }),
-    });
-    const json = (await res.json()) as { ok: boolean; link?: string; email_enviado?: boolean; error?: string };
-    setEnviandoConvite(false);
-    if (!json.ok) {
-      const msgs: Record<string, string> = {
-        convite_ja_pendente: "Já existe um convite pendente para este e-mail.",
-        email_invalido: "E-mail inválido.",
-      };
-      triggerToast(msgs[json.error ?? ""] ?? `Erro: ${json.error}`, "error");
-      return;
-    }
-    setConviteEmail("");
-    if (json.link) {
-      await navigator.clipboard.writeText(json.link).catch(() => null);
-      setLinkCopiado(json.link);
-      setTimeout(() => setLinkCopiado(null), 4000);
-    }
-    triggerToast(
-      json.email_enviado ? "Convite enviado por e-mail!" : "Convite criado. Link copiado (e-mail não configurado).",
-      "success"
-    );
-    void carregarConvites();
-  }
-
   async function revogarConvite(id: string) {
     const headers = { ...(await getAuthHeader()), "Content-Type": "application/json" };
     const res = await fetch("/api/admin/convites", {
@@ -387,6 +352,37 @@ export default function AdminAcessosPage() {
           <strong>Aviso:</strong> {msg}
         </div>
       )}
+
+      <section id="convite-proposta" className="admin-card" style={{ marginTop: 20 }}>
+        <h2 className="admin-h2">Convidar acesso a uma proposta</h2>
+        <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 16px" }}>
+          Informe o e-mail, escolha a proposta e marque os módulos antes de enviar. O convidado cria a própria conta e senha pelo link; não precisa ser cadastrado manualmente no Supabase. O acesso fica limitado à proposta selecionada.
+        </p>
+        <label>E-mail do convidado</label>
+        <input value={convitePropostaEmail} onChange={(e) => setConvitePropostaEmail(e.target.value)} placeholder="email@exemplo.com" />
+        <label>Proposta</label>
+        <select value={convitePropostaId} onChange={(e) => setConvitePropostaId(e.target.value)}>
+          <option value="">Selecione uma proposta</option>
+          {propostasConvite.map((p) => <option key={p.id} value={p.id}>{p.nome} · {p.edital_titulo}</option>)}
+        </select>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, margin: "12px 0" }}>
+          <input type="checkbox" checked={moduloConvitePropostas} onChange={(e) => setModuloConvitePropostas(e.target.checked)} />
+          Propostas
+        </label>
+        <button type="button" className="admin-button" onClick={() => void enviarConviteProposta()} disabled={enviandoConviteProposta || !moduloConvitePropostas}>
+          {enviandoConviteProposta ? "Enviando..." : "Enviar convite"}
+        </button>
+        {linkCopiado && <p style={{ fontSize: 12, color: "#86efac", overflowWrap: "anywhere" }}>Link do convite: {linkCopiado}</p>}
+        {convitesProposta.length > 0 && <div style={{ marginTop: 18, display: "grid", gap: 8 }}>
+          <strong>Convites desta ficha</strong>
+          {convitesProposta.map((c) => { const p = propostasConvite.find((row) => row.id === c.proposta_id); return <div key={c.id} style={{ border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, padding: 10, display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}><span>{c.email} · {p?.nome || "Proposta"} · {c.aceito_em ? "aceito" : new Date(c.expires_at) < new Date() ? "expirado" : "pendente"}</span><button type="button" className="admin-button" onClick={() => void revogarConviteProposta(c.id)}>{c.aceito_em ? "Remover acesso" : "Revogar convite"}</button></div>; })}
+        </div>}
+      </section>
+
+      <details style={{ marginTop: 20 }}>
+        <summary style={{ cursor: "pointer", color: "#cbd5e1", fontWeight: 700, padding: "12px 0" }}>
+          Gerenciar contas e acessos existentes
+        </summary>
 
       <section className="admin-card" style={{ marginTop: 20 }}>
         <h2 className="admin-h2">1) Perfil de conta já existente</h2>
@@ -551,60 +547,11 @@ export default function AdminAcessosPage() {
         )}
       </section>
 
-      <section id="convite-proposta" className="admin-card" style={{ marginTop: 20 }}>
-        <h2 className="admin-h2">Convite de acesso a uma proposta</h2>
-        <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 16px" }}>O convidado verá somente a proposta selecionada. Neste fluxo, o módulo disponível é Propostas. O convite expira em 7 dias e exige o mesmo e-mail. Se ainda não tiver conta, a pessoa poderá criá-la pelo link e definir a própria senha; não é necessário cadastrá-la manualmente no Supabase.</p>
-        <label>E-mail do convidado</label>
-        <input value={convitePropostaEmail} onChange={(e) => setConvitePropostaEmail(e.target.value)} placeholder="email@exemplo.com" />
-        <label>Proposta</label>
-        <select value={convitePropostaId} onChange={(e) => setConvitePropostaId(e.target.value)}>
-          <option value="">Selecione uma proposta</option>
-          {propostasConvite.map((p) => <option key={p.id} value={p.id}>{p.nome} · {p.edital_titulo}</option>)}
-        </select>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, margin: "12px 0" }}><input type="checkbox" checked={moduloConvitePropostas} onChange={(e) => setModuloConvitePropostas(e.target.checked)} /> Propostas</label>
-        <button type="button" className="admin-button" onClick={() => void enviarConviteProposta()} disabled={enviandoConviteProposta || !moduloConvitePropostas}>{enviandoConviteProposta ? "Enviando..." : "Enviar convite da proposta"}</button>
-        <div style={{ marginTop: 18, display: "grid", gap: 8 }}>
-          {convitesProposta.map((c) => { const p = propostasConvite.find((row) => row.id === c.proposta_id); return <div key={c.id} style={{ border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, padding: 10, display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}><span>{c.email} · {p?.nome || "Proposta"} · {c.aceito_em ? "aceito" : new Date(c.expires_at) < new Date() ? "expirado" : "pendente"}</span><button type="button" className="admin-button" onClick={() => void revogarConviteProposta(c.id)}>{c.aceito_em ? "Remover acesso" : "Revogar convite"}</button></div>; })}
-        </div>
-      </section>
       <section className="admin-card" style={{ marginTop: 20 }}>
         <h2 className="admin-h2">Convites de colaboração</h2>
         <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 16px" }}>
-          Convide pessoas por e-mail. Elas receberão um link para aceitar e entrarão como membros da organização.
+          Histórico de convites gerais já enviados. Para novos acessos com módulos e proposta definidos, use a ficha única acima.
         </p>
-
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
-          <input
-            value={conviteEmail}
-            onChange={(e) => setConviteEmail(e.target.value)}
-            placeholder="email@exemplo.com"
-            style={{ flex: "1 1 220px" }}
-            onKeyDown={(e) => { if (e.key === "Enter") void enviarConvite(); }}
-          />
-          <select
-            value={convitePapel}
-            onChange={(e) => setConvitePapel(e.target.value)}
-            style={{ minWidth: 120 }}
-          >
-            <option value="operador">Operador</option>
-            <option value="coordenador">Coordenador</option>
-            <option value="externo">Externo</option>
-          </select>
-          <button
-            type="button"
-            className="admin-button"
-            onClick={() => void enviarConvite()}
-            disabled={enviandoConvite}
-          >
-            {enviandoConvite ? "Enviando..." : "Convidar"}
-          </button>
-        </div>
-
-        {linkCopiado && (
-          <div style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(22,101,52,0.2)", border: "1px solid #166534", fontSize: 12, color: "#86efac", marginBottom: 12, wordBreak: "break-all" as const }}>
-            Link copiado: {linkCopiado}
-          </div>
-        )}
 
         {convites.length === 0 ? (
           <p style={{ fontSize: 13, color: "#475569" }}>Nenhum convite enviado ainda.</p>
@@ -708,6 +655,7 @@ export default function AdminAcessosPage() {
           </div>
         )}
       </section>
+      </details>
     </div>
   );
 }
