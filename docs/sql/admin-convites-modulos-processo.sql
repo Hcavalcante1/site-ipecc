@@ -31,7 +31,7 @@ create or replace function public.aceitar_convite_admin_modulos(
 )
 returns uuid
 language plpgsql
-security definer
+security invoker
 set search_path = public
 as $$
 declare
