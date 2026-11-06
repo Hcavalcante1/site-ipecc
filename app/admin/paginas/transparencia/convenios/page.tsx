@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { Convenio } from "./types";
 import { confirmAction, isConfirmModalReady } from "@/components/AdminConfirmModal";
 import { TIPO_INSTRUMENTO_OPTIONS, CATEGORIA_OPTIONS, STATUS_CONVENIO_OPTIONS } from "./constants";
-import { getConvenios, saveConvenio, deleteConvenio } from "./conveniosService";
+import { getConvenios, getPropostasParaConvenio, saveConvenio, deleteConvenio, type PropostaConvenio } from "./conveniosService";
 import classes from "./page.module.css";
 import ConvenioCard from "./components/ConvenioCard";
 import { AdminButton, AdminLoadingButton, AdminMessage, AdminSectionHeader, spacing, borderRadius, shadows, sizes, typography } from "@/components/admin";
@@ -286,6 +286,7 @@ export default function TransparenciaConveniosAdmin() {
   const [msg, setMsg] = useState("");
   const [blockMsgs, setBlockMsgs] = useState<Record<number, string>>({});
   const [convenios, setConvenios] = useState<Convenio[]>([]);
+  const [propostas, setPropostas] = useState<PropostaConvenio[]>([]);
 
   useEffect(() => {
     if (escopo.loading) return;
@@ -296,7 +297,11 @@ export default function TransparenciaConveniosAdmin() {
   async function carregar() {
     setLoading(true);
     try {
-      const data = await getConvenios(escopo.processoIds);
+      const [data, propostasData] = await Promise.all([
+        getConvenios(escopo.processoIds),
+        getPropostasParaConvenio(escopo.processoIds),
+      ]);
+      setPropostas(propostasData);
       setConvenios(
         data && data.length > 0
           ? data
@@ -324,10 +329,22 @@ export default function TransparenciaConveniosAdmin() {
     });
   }
 
+  function selecionarProposta(index: number, propostaId: string) {
+    const proposta = propostas.find((item) => item.id === propostaId);
+    setConvenios((prev) => prev.map((item, i) => i !== index ? item : {
+      ...item,
+      proposta_id: proposta?.id || null,
+      edital_id: proposta?.edital_id || null,
+      processo_id: proposta?.processo_id || null,
+      contratado: proposta?.nome || item.contratado,
+      cnpj: proposta?.cnpj || item.cnpj,
+    }));
+  }
+
   function adicionarBloco() {
     setConvenios((prev) => [
       ...prev,
-      novoConvenio(processoPadrao(escopo.processoIds)),
+      novoConvenio(),
     ]);
     setMsg("Novo bloco de convênio adicionado.");
   }
@@ -343,6 +360,11 @@ export default function TransparenciaConveniosAdmin() {
 
     for (let i = 0; i < convenios.length; i++) {
       const item = comProcessoDoEscopo(convenios[i]);
+      if (!item.id && !item.proposta_id) {
+        setMsg("Vincule cada novo convênio a uma proposta aprovada.");
+        setBlockMsg(i, "Selecione a proposta aprovada deste convênio.");
+        return;
+      }
       if (
         escopo.processoIds !== "todos" &&
         !item.processo_id
@@ -372,6 +394,11 @@ export default function TransparenciaConveniosAdmin() {
   async function salvarBloco(index: number) {
     const item = comProcessoDoEscopo(convenios[index]);
     setBlockMsg(index, "Salvando este bloco...");
+
+    if (!item.id && !item.proposta_id) {
+      setBlockMsg(index, "Selecione a proposta aprovada deste convênio.");
+      return;
+    }
 
     if (escopo.processoIds !== "todos" && !item.processo_id) {
       setBlockMsg(index, "Processo obrigatório para o seu login.");
@@ -469,11 +496,15 @@ export default function TransparenciaConveniosAdmin() {
           <ConvenioCard
             key={item.id ?? `novo-${index}`}
             item={item}
+            propostas={propostas.filter((proposta) =>
+              !convenios.some((other, otherIndex) => otherIndex !== index && other.proposta_id === proposta.id)
+            )}
             index={index}
             blockMsgs={blockMsgs}
             loadingIndex={null}
             loadingOperationType={null}
             updateConvenio={atualizarCampo}
+            selecionarProposta={selecionarProposta}
             salvarBloco={salvarBloco}
             excluirBloco={excluirBloco}
           />
