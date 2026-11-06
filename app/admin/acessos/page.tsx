@@ -54,8 +54,8 @@ const chipStyle: CSSProperties = {
   marginTop: 4,
 };
 
-type PropostaConvite = { id: string; nome: string; email?: string | null; edital_titulo: string; processo_id: string };
-type ConviteProposta = { id: string; email: string; proposta_id: string; expires_at: string; aceito_em: string | null; created_at: string; propostas?: { nome?: string } | { nome?: string }[] | null };
+type ProcessoConvite = { id: string; titulo: string; tipo?: string | null; status: string };
+type ConviteModulo = { id: string; email: string; processo_id: string; proposta_id: null; mod_editais: boolean; mod_propostas: boolean; mod_transparencia: boolean; mod_noticias: boolean; mod_eventos: boolean; mod_projetos: boolean; mod_digital: boolean; mod_documentos: boolean; expires_at: string; aceito_em: string | null; created_at: string };
 type Convite = {
   id: string;
   email: string;
@@ -74,12 +74,12 @@ export default function AdminAcessosPage() {
 
   const [convites, setConvites] = useState<Convite[]>([]);
   const [linkCopiado, setLinkCopiado] = useState<string | null>(null);
-  const [propostasConvite, setPropostasConvite] = useState<PropostaConvite[]>([]);
-  const [convitesProposta, setConvitesProposta] = useState<ConviteProposta[]>([]);
-  const [convitePropostaEmail, setConvitePropostaEmail] = useState("");
-  const [convitePropostaId, setConvitePropostaId] = useState("");
-  const [enviandoConviteProposta, setEnviandoConviteProposta] = useState(false);
-  const [moduloConvitePropostas, setModuloConvitePropostas] = useState(false);
+  const [processosConvite, setProcessosConvite] = useState<ProcessoConvite[]>([]);
+  const [convitesModulo, setConvitesModulo] = useState<ConviteModulo[]>([]);
+  const [conviteEmail, setConviteEmail] = useState("");
+  const [conviteProcessoId, setConviteProcessoId] = useState("");
+  const [enviandoConvite, setEnviandoConvite] = useState(false);
+  const [modulosConvite, setModulosConvite] = useState<string[]>([]);
 
   const [email, setEmail] = useState("");
   const [papel, setPapel] = useState<AdminPapel>("externo");
@@ -261,31 +261,31 @@ export default function AdminAcessosPage() {
 
   useEffect(() => { void carregarConvites(); }, []);
 
-  async function carregarConvitesProposta() {
-    const res = await fetch("/api/admin/acessos/convites-propostas", { credentials: "include" });
+  async function carregarConvitesModulo() {
+    const res = await fetch("/api/admin/acessos/convites-modulos", { credentials: "include" });
     const json = await res.json();
     if (!res.ok) { if (json.error && !/does not exist|schema cache/i.test(json.error)) triggerToast(json.error, "error"); return; }
-    setPropostasConvite(json.propostas || []); setConvitesProposta(json.convites || []);
+    setProcessosConvite(json.processos || []); setConvitesModulo(json.convites || []);
   }
 
-  useEffect(() => { void carregarConvitesProposta(); }, []);
+  useEffect(() => { void carregarConvitesModulo(); }, []);
 
-  async function enviarConviteProposta() {
-    if (!convitePropostaEmail.trim() || !convitePropostaId || !moduloConvitePropostas) { triggerToast("Informe o e-mail, selecione a proposta e marque o módulo.", "error"); return; }
-    setEnviandoConviteProposta(true);
-    const res = await fetch("/api/admin/acessos/convites-propostas", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: convitePropostaEmail.trim(), proposta_id: convitePropostaId, modulos: moduloConvitePropostas ? ["propostas"] : [] }) });
-    const json = await res.json(); setEnviandoConviteProposta(false);
+  async function enviarConviteModulo() {
+    if (!conviteEmail.trim() || !conviteProcessoId || !modulosConvite.length) { triggerToast("Informe o e-mail, selecione o processo e marque ao menos um módulo.", "error"); return; }
+    setEnviandoConvite(true);
+    const res = await fetch("/api/admin/acessos/convites-modulos", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: conviteEmail.trim(), processo_id: conviteProcessoId, modulos: modulosConvite }) });
+    const json = await res.json(); setEnviandoConvite(false);
     if (!res.ok) { triggerToast(json.error || "Não foi possível criar o convite.", "error"); return; }
-    setConvitePropostaEmail("");
+    setConviteEmail("");
     if (json.link) { await navigator.clipboard.writeText(json.link).catch(() => null); setLinkCopiado(json.link); setTimeout(() => setLinkCopiado(null), 5000); }
-    triggerToast(json.email_enviado ? "Convite da proposta enviado por e-mail." : "Convite criado e link copiado; e-mail não enviado.", "success");
-    void carregarConvitesProposta();
+    triggerToast(json.email_enviado ? "Convite enviado por e-mail." : "Convite criado e link copiado; e-mail não enviado.", "success");
+    void carregarConvitesModulo();
   }
 
-  async function revogarConviteProposta(id: string) {
-    const res = await fetch(`/api/admin/acessos/convites-propostas?id=${encodeURIComponent(id)}`, { method: "DELETE", credentials: "include" });
+  async function revogarConviteModulo(id: string) {
+    const res = await fetch(`/api/admin/acessos/convites-modulos?id=${encodeURIComponent(id)}`, { method: "DELETE", credentials: "include" });
     const json = await res.json(); if (!res.ok) { triggerToast(json.error || "Erro ao revogar convite.", "error"); return; }
-    triggerToast(json.acesso_removido ? "Acesso à proposta removido." : "Convite da proposta revogado.", "success"); void carregarConvitesProposta();
+    triggerToast(json.acesso_removido ? "Acesso ao processo removido." : "Convite revogado.", "success"); void carregarConvitesModulo();
   }
   async function revogarConvite(id: string) {
     const headers = { ...(await getAuthHeader()), "Content-Type": "application/json" };
@@ -312,9 +312,7 @@ export default function AdminAcessosPage() {
         <div>
           <h1 className="admin-h1">Acessos</h1>
           <p style={{ marginTop: 8, maxWidth: 760 }}>
-            Gerencie perfis e escopos de contas existentes. Para dar acesso a uma proposta
-            a alguém que ainda não tem conta, use o convite abaixo: a própria pessoa cria
-            o login e define a senha pelo link recebido.
+            Gerencie perfis e escopos de contas existentes. Para convidar alguém que ainda não tem conta, escolha o processo e os módulos no formulário abaixo; a própria pessoa cria o login e define a senha pelo link recebido.
           </p>
         </div>
         <Link className="admin-button" href="/admin/processos">
@@ -327,7 +325,7 @@ export default function AdminAcessosPage() {
           {[
             { label: "Total perfis", value: perfis.length, color: "#93c5fd" },
             { label: "Ativos", value: perfis.filter((p) => p.ativo).length, color: "#86efac" },
-            { label: "Convites pendentes", value: convites.filter((c) => !c.aceito_em).length, color: "#fde047" },
+            { label: "Convites pendentes", value: convites.filter((c) => !c.aceito_em).length + convitesModulo.filter((c) => !c.aceito_em).length, color: "#fde047" },
             { label: "Escopos vinculados", value: escopos.length, color: "#c4b5fd" },
           ].map((card) => (
             <div
@@ -353,29 +351,34 @@ export default function AdminAcessosPage() {
         </div>
       )}
 
-      <section id="convite-proposta" className="admin-card" style={{ marginTop: 20 }}>
-        <h2 className="admin-h2">Convidar acesso a uma proposta</h2>
+      <section id="convite-modulos" className="admin-card" style={{ marginTop: 20 }}>
+        <h2 className="admin-h2">Convidar para um processo</h2>
         <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 16px" }}>
-          Informe o e-mail, escolha a proposta e marque os módulos antes de enviar. O convidado cria a própria conta e senha pelo link; não precisa ser cadastrado manualmente no Supabase. O acesso fica limitado à proposta selecionada.
+          Informe o e-mail, escolha o processo e marque os módulos que você quer liberar. O convidado cria a própria conta e senha pelo link; o acesso fica limitado aos módulos selecionados dentro deste processo.
         </p>
         <label>E-mail do convidado</label>
-        <input value={convitePropostaEmail} onChange={(e) => setConvitePropostaEmail(e.target.value)} placeholder="email@exemplo.com" />
-        <label>Proposta</label>
-        <select value={convitePropostaId} onChange={(e) => setConvitePropostaId(e.target.value)}>
-          <option value="">Selecione uma proposta</option>
-          {propostasConvite.map((p) => <option key={p.id} value={p.id}>{p.nome} · {p.edital_titulo}</option>)}
+        <input value={conviteEmail} onChange={(e) => setConviteEmail(e.target.value)} placeholder="email@exemplo.com" />
+        <label>Processo</label>
+        <select value={conviteProcessoId} onChange={(e) => setConviteProcessoId(e.target.value)}>
+          <option value="">Selecione um processo</option>
+          {processosConvite.map((p) => <option key={p.id} value={p.id}>{p.titulo} ({p.status})</option>)}
         </select>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, margin: "12px 0" }}>
-          <input type="checkbox" checked={moduloConvitePropostas} onChange={(e) => setModuloConvitePropostas(e.target.checked)} />
-          Propostas
-        </label>
-        <button type="button" className="admin-button" onClick={() => void enviarConviteProposta()} disabled={enviandoConviteProposta || !moduloConvitePropostas}>
-          {enviandoConviteProposta ? "Enviando..." : "Enviar convite"}
+        <label>Módulos liberados neste processo</label>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 16, margin: "10px 0 14px" }}>
+          {([{ id: "editais", label: "Editais" }, { id: "propostas", label: "Propostas" }, { id: "transparencia", label: "Transparência" }, { id: "noticias", label: "Notícias" }, { id: "eventos", label: "Eventos" }, { id: "projetos", label: "Projetos" }, { id: "digital", label: "Digital" }, { id: "documentos", label: "Documentos" }] as const).map((modulo) => (
+            <label key={modulo.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input type="checkbox" checked={modulosConvite.includes(modulo.id)} onChange={(e) => setModulosConvite((atual) => e.target.checked ? [...atual, modulo.id] : atual.filter((item) => item !== modulo.id))} />
+              {modulo.label}
+            </label>
+          ))}
+        </div>
+        <button type="button" className="admin-button" onClick={() => void enviarConviteModulo()} disabled={enviandoConvite || !modulosConvite.length || !conviteProcessoId}>
+          {enviandoConvite ? "Enviando..." : "Enviar convite"}
         </button>
         {linkCopiado && <p style={{ fontSize: 12, color: "#86efac", overflowWrap: "anywhere" }}>Link do convite: {linkCopiado}</p>}
-        {convitesProposta.length > 0 && <div style={{ marginTop: 18, display: "grid", gap: 8 }}>
+        {convitesModulo.length > 0 && <div style={{ marginTop: 18, display: "grid", gap: 8 }}>
           <strong>Convites desta ficha</strong>
-          {convitesProposta.map((c) => { const p = propostasConvite.find((row) => row.id === c.proposta_id); return <div key={c.id} style={{ border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, padding: 10, display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}><span>{c.email} · {p?.nome || "Proposta"} · {c.aceito_em ? "aceito" : new Date(c.expires_at) < new Date() ? "expirado" : "pendente"}</span><button type="button" className="admin-button" onClick={() => void revogarConviteProposta(c.id)}>{c.aceito_em ? "Remover acesso" : "Revogar convite"}</button></div>; })}
+          {convitesModulo.map((c) => { const processo = processosConvite.find((row) => row.id === c.processo_id); const nomes = [{ id: "mod_editais", label: "Editais" }, { id: "mod_propostas", label: "Propostas" }, { id: "mod_transparencia", label: "Transparência" }, { id: "mod_noticias", label: "Notícias" }, { id: "mod_eventos", label: "Eventos" }, { id: "mod_projetos", label: "Projetos" }, { id: "mod_digital", label: "Digital" }, { id: "mod_documentos", label: "Documentos" }].filter((m) => c[m.id as keyof ConviteModulo]).map((m) => m.label).join(", "); return <div key={c.id} style={{ border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, padding: 10, display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}><span>{c.email} · {processo?.titulo || "Processo"} · {nomes} · {c.aceito_em ? "aceito" : new Date(c.expires_at) < new Date() ? "expirado" : "pendente"}</span><button type="button" className="admin-button" onClick={() => void revogarConviteModulo(c.id)}>{c.aceito_em ? "Remover acesso" : "Revogar convite"}</button></div>; })}
         </div>}
       </section>
 
@@ -387,9 +390,8 @@ export default function AdminAcessosPage() {
       <section className="admin-card" style={{ marginTop: 20 }}>
         <h2 className="admin-h2">1) Perfil de conta já existente</h2>
         <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 16px" }}>
-          Este formulário só vincula contas já criadas no Supabase Auth. Para convidar alguém
-          sem conta para uma proposta e permitir que essa pessoa escolha a própria senha, use{" "}
-          <a href="#convite-proposta" style={{ color: "#93c5fd" }}>Convite de acesso a uma proposta</a>.
+          Este formulário só vincula contas já criadas no Supabase Auth. Para convidar alguém sem conta e escolher processo e módulos antes do envio, use{" "}
+          <a href="#convite-modulos" style={{ color: "#93c5fd" }}>Convite por processo e módulos</a>.
         </p>
         <label>E-mail do usuário (autenticação)</label>
         <input
@@ -550,7 +552,7 @@ export default function AdminAcessosPage() {
       <section className="admin-card" style={{ marginTop: 20 }}>
         <h2 className="admin-h2">Convites de colaboração</h2>
         <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 16px" }}>
-          Histórico de convites gerais já enviados. Para novos acessos com módulos e proposta definidos, use a ficha única acima.
+          Histórico de convites gerais já enviados. Para novos acessos por processo, com os módulos escolhidos antes do envio, use a ficha única acima.
         </p>
 
         {convites.length === 0 ? (
