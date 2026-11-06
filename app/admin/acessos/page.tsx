@@ -347,8 +347,9 @@ export default function AdminAcessosPage() {
         <div>
           <h1 className="admin-h1">Acessos</h1>
           <p style={{ marginTop: 8, maxWidth: 760 }}>
-            Vincule logins (ja criados no Supabase Auth) a papeis e processos.
-            Mestre ve tudo; operador/externo so o escopo liberado.
+            Gerencie perfis e escopos de contas existentes. Para dar acesso a uma proposta
+            a alguém que ainda não tem conta, use o convite abaixo: a própria pessoa cria
+            o login e define a senha pelo link recebido.
           </p>
         </div>
         <Link className="admin-button" href="/admin/processos">
@@ -388,7 +389,12 @@ export default function AdminAcessosPage() {
       )}
 
       <section className="admin-card" style={{ marginTop: 20 }}>
-        <h2 className="admin-h2">1) Adicionar / atualizar perfil</h2>
+        <h2 className="admin-h2">1) Perfil de conta já existente</h2>
+        <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 16px" }}>
+          Este formulário só vincula contas já criadas no Supabase Auth. Para convidar alguém
+          sem conta para uma proposta e permitir que essa pessoa escolha a própria senha, use{" "}
+          <a href="#convite-proposta" style={{ color: "#93c5fd" }}>Convite de acesso a uma proposta</a>.
+        </p>
         <label>E-mail do usuário (autenticação)</label>
         <input
           value={email}
@@ -545,9 +551,9 @@ export default function AdminAcessosPage() {
         )}
       </section>
 
-      <section className="admin-card" style={{ marginTop: 20 }}>
+      <section id="convite-proposta" className="admin-card" style={{ marginTop: 20 }}>
         <h2 className="admin-h2">Convite de acesso a uma proposta</h2>
-        <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 16px" }}>O convidado verá somente a proposta selecionada. Neste fluxo, o módulo disponível é Propostas. O convite expira em 7 dias e exige login com o e-mail convidado.</p>
+        <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 16px" }}>O convidado verá somente a proposta selecionada. Neste fluxo, o módulo disponível é Propostas. O convite expira em 7 dias e exige o mesmo e-mail. Se ainda não tiver conta, a pessoa poderá criá-la pelo link e definir a própria senha; não é necessário cadastrá-la manualmente no Supabase.</p>
         <label>E-mail do convidado</label>
         <input value={convitePropostaEmail} onChange={(e) => setConvitePropostaEmail(e.target.value)} placeholder="email@exemplo.com" />
         <label>Proposta</label>
