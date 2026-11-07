@@ -4,9 +4,9 @@ import { requireMestreSession } from "@/lib/auth/adminSession";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { enviarEmail } from "@/lib/email/mailer";
 
-const MODULOS = ["editais", "propostas", "transparencia", "noticias", "eventos", "projetos", "digital", "documentos"] as const;
+const MODULOS = ["editais", "transparencia", "noticias", "eventos", "projetos", "digital", "documentos"] as const;
 type Modulo = (typeof MODULOS)[number];
-const LABEL: Record<Modulo, string> = { editais: "Editais", propostas: "Propostas", transparencia: "Transparência", noticias: "Notícias", eventos: "Eventos", projetos: "Projetos", digital: "Digital", documentos: "Documentos" };
+const LABEL: Record<Modulo, string> = { editais: "Editais", transparencia: "Transparência", noticias: "Notícias", eventos: "Eventos", projetos: "Projetos", digital: "Digital", documentos: "Documentos" };
 const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch] || ch);
 
 export async function GET() {

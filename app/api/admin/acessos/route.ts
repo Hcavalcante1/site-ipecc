@@ -181,7 +181,7 @@ export async function POST(req: Request) {
         processo_id: body.processo_id,
         modalidade: body.modalidade || null,
         mod_editais: Boolean(m.editais),
-        mod_propostas: Boolean(m.propostas),
+        mod_propostas: false,
         mod_transparencia: Boolean(m.transparencia),
         mod_noticias: Boolean(m.noticias),
         mod_eventos: Boolean(m.eventos),

@@ -109,6 +109,12 @@ export async function POST(req: Request) {
 
     switch (body.acao) {
       case "convenio_de_proposta": {
+        if (!isMestre(ctx)) {
+          return NextResponse.json(
+            { ok: false, error: "Apenas o administrador mestre pode acessar propostas do site principal." },
+            { status: 403 }
+          );
+        }
         if (!body.propostaId) {
           return NextResponse.json(
             { ok: false, error: "Identificador da proposta é obrigatório." },
