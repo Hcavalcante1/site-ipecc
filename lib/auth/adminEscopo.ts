@@ -109,9 +109,7 @@ export function modulosPermitidos(ctx: AdminContexto): AdminModulo[] {
     if (escopo.mod_transparencia) set.add("transparencia");
     if (escopo.mod_noticias) set.add("noticias");
     if (escopo.mod_eventos) set.add("eventos");
-    if (escopo.mod_projetos) {
-      set.add("projetos");
-    }
+    if (escopo.mod_projetos) set.add("projetos");
     if (escopo.mod_digital) set.add("digital");
     if (escopo.mod_documentos) set.add("documentos");
   }
@@ -159,16 +157,17 @@ export function podeModuloNoProcesso(
   );
 }
 
-
 export function propostaIdsDoEscopo(_ctx: AdminContexto): string[] {
   return [];
 }
 
-export function podeModuloNaProposta(ctx: AdminContexto, modulo: AdminModuloEscopado, processoId: string | null | undefined, propostaId: string | null | undefined): boolean {
-  if (isMestre(ctx)) return true;
-  return false;
-  const flag = MODULO_FLAG[modulo];
-  return ctx.escopos.some((e) => Boolean(e[flag]) && e.processo_id === processoId && (!e.proposta_id || e.proposta_id === propostaId));
+export function podeModuloNaProposta(
+  ctx: AdminContexto,
+  _modulo: AdminModuloEscopado,
+  _processoId: string | null | undefined,
+  _propostaId: string | null | undefined
+): boolean {
+  return isMestre(ctx);
 }
 
 export function registroNoEscopoProposta(propostaId: string, processoId: string | null | undefined, processoIds: string[] | "todos", propostaIds: string[]): boolean {
