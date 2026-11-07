@@ -4,9 +4,9 @@ import { requireMestreSession } from "@/lib/auth/adminSession";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { enviarEmail } from "@/lib/email/mailer";
 
-const MODULOS = ["editais", "transparencia", "noticias", "eventos", "digital", "documentos"] as const;
+const MODULOS = ["editais", "transparencia", "noticias", "eventos", "digital"] as const
 type Modulo = (typeof MODULOS)[number];
-const LABEL: Record<Modulo, string> = { editais: "Editais", transparencia: "Transparência", noticias: "Notícias", eventos: "Eventos", digital: "Digital", documentos: "Documentos" };
+const LABEL: Record<Modulo, string> = { editais: "Editais", transparencia: "Transparência", noticias: "Notícias", eventos: "Eventos", digital: "Digital" };
 const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch] || ch);
 
 export async function GET() {
@@ -18,7 +18,7 @@ export async function GET() {
     admin.from("admin_convites_propostas").select("id, email, processo_id, proposta_id, mod_editais, mod_propostas, mod_transparencia, mod_noticias, mod_eventos, mod_projetos, mod_digital, mod_documentos, expires_at, aceito_em, created_at").is("proposta_id", null).order("created_at", { ascending: false }).limit(50),
   ]);
   if (processosError || convitesError) return NextResponse.json({ ok: false, error: processosError?.message || convitesError?.message }, { status: 500 });
-  return NextResponse.json({ ok: true, processos: processos || [], convites: (convites || []).map((c) => ({ ...c, mod_projetos: false })) });
+  return NextResponse.json({ ok: true, processos: processos || [], convites: (convites || []).map((c) => ({ ...c, mod_projetos: false, mod_documentos: false })) });
 }
 
 export async function POST(req: NextRequest) {
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   if (pending) return NextResponse.json({ ok: false, error: "Já existe convite pendente para este e-mail e processo." }, { status: 409 });
   const token = randomBytes(32).toString("hex");
   const flags = Object.fromEntries(MODULOS.map((modulo) => [`mod_${modulo}`, selected.includes(modulo)]));
-  const { error } = await admin.from("admin_convites_propostas").insert({ token, email, proposta_id: null, processo_id: processoId, ...flags, mod_projetos: false, criado_por: auth.userId });
+  const { error } = await admin.from("admin_convites_propostas").insert({ token, email, proposta_id: null, processo_id: processoId, ...flags, mod_projetos: false, mod_documentos: false, criado_por: auth.userId });
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   const base = String(process.env.NEXT_PUBLIC_SITE_URL || "https://ipecc.org.br").replace(/\/$/, "");
   const link = `${base}/convite/acesso/${token}`;
