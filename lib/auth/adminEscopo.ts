@@ -106,7 +106,6 @@ export function modulosPermitidos(ctx: AdminContexto): AdminModulo[] {
   const set = new Set<AdminModulo>();
   for (const escopo of ctx.escopos) {
     if (escopo.mod_editais) set.add("editais");
-    if (escopo.mod_propostas) set.add("propostas");
     if (escopo.mod_transparencia) set.add("transparencia");
     if (escopo.mod_noticias) set.add("noticias");
     if (escopo.mod_eventos) set.add("eventos");
@@ -152,6 +151,7 @@ export function podeModuloNoProcesso(
   processoId: string | null | undefined
 ): boolean {
   if (isMestre(ctx)) return true;
+  if (modulo === "propostas") return false;
   if (!processoId) return false;
   const flag = MODULO_FLAG[modulo];
   return ctx.escopos.some(
@@ -160,14 +160,13 @@ export function podeModuloNoProcesso(
 }
 
 
-export function propostaIdsDoEscopo(ctx: AdminContexto): string[] {
-  if (isMestre(ctx)) return [];
-  return Array.from(new Set(ctx.escopos.filter((e) => e.mod_propostas).map((e) => e.proposta_id).filter((id): id is string => Boolean(id))));
+export function propostaIdsDoEscopo(_ctx: AdminContexto): string[] {
+  return [];
 }
 
 export function podeModuloNaProposta(ctx: AdminContexto, modulo: AdminModuloEscopado, processoId: string | null | undefined, propostaId: string | null | undefined): boolean {
   if (isMestre(ctx)) return true;
-  if (!processoId || !propostaId) return false;
+  return false;
   const flag = MODULO_FLAG[modulo];
   return ctx.escopos.some((e) => Boolean(e[flag]) && e.processo_id === processoId && (!e.proposta_id || e.proposta_id === propostaId));
 }
