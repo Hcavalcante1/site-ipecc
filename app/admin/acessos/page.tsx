@@ -86,7 +86,6 @@ export default function AdminAcessosPage() {
   const [userIdEscopo, setUserIdEscopo] = useState("");
   const [processoId, setProcessoId] = useState("");
   const [modEditais, setModEditais] = useState(false);
-  const [modPropostas, setModPropostas] = useState(false);
   const [modTransparencia, setModTransparencia] = useState(false);
   const [modNoticias, setModNoticias] = useState(false);
   const [modEventos, setModEventos] = useState(false);
@@ -208,7 +207,7 @@ export default function AdminAcessosPage() {
         processo_id: processoId,
         modulos: {
           editais: modEditais,
-          propostas: modPropostas,
+          propostas: false,
           transparencia: modTransparencia,
           noticias: modNoticias,
           eventos: modEventos,
@@ -365,7 +364,7 @@ export default function AdminAcessosPage() {
         </select>
         <label>Módulos liberados neste processo</label>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 16, margin: "10px 0 14px" }}>
-          {([{ id: "editais", label: "Editais" }, { id: "propostas", label: "Propostas" }, { id: "transparencia", label: "Transparência" }, { id: "noticias", label: "Notícias" }, { id: "eventos", label: "Eventos" }, { id: "projetos", label: "Projetos" }, { id: "digital", label: "Digital" }, { id: "documentos", label: "Documentos" }] as const).map((modulo) => (
+          {([{ id: "editais", label: "Editais" }, { id: "transparencia", label: "Transparência" }, { id: "noticias", label: "Notícias" }, { id: "eventos", label: "Eventos" }, { id: "projetos", label: "Projetos" }, { id: "digital", label: "Digital" }, { id: "documentos", label: "Documentos" }] as const).map((modulo) => (
             <label key={modulo.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <input type="checkbox" checked={modulosConvite.includes(modulo.id)} onChange={(e) => setModulosConvite((atual) => e.target.checked ? [...atual, modulo.id] : atual.filter((item) => item !== modulo.id))} />
               {modulo.label}
@@ -458,14 +457,6 @@ export default function AdminAcessosPage() {
           <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <input
               type="checkbox"
-              checked={modPropostas}
-              onChange={(e) => setModPropostas(e.target.checked)}
-            />
-            Propostas
-          </label>
-          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input
-              type="checkbox"
               checked={modTransparencia}
               onChange={(e) => setModTransparencia(e.target.checked)}
             />
@@ -514,8 +505,8 @@ export default function AdminAcessosPage() {
         </div>
         <p style={{ fontSize: 13, opacity: 0.85 }}>
           Marque somente os módulos deste processo. Digital libera a fila de
-          redes. Documentos libera a Gestão Documental. CMS do site IPECC
-          permanece com o mestre.
+          redes. Documentos libera a Gestão Documental. As propostas enviadas
+          pelo site principal são exclusivas do administrador mestre.
         </p>
         <button type="button" className="admin-button" onClick={criarEscopo}>
           Vincular escopo
