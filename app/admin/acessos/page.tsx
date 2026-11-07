@@ -90,7 +90,6 @@ export default function AdminAcessosPage() {
   const [modNoticias, setModNoticias] = useState(false);
   const [modEventos, setModEventos] = useState(false);
   const [modDigital, setModDigital] = useState(false);
-  const [modDocumentos, setModDocumentos] = useState(false);
 
   async function carregar(preferUserId?: string) {
     setLoading(true);
@@ -212,7 +211,7 @@ export default function AdminAcessosPage() {
           eventos: modEventos,
           projetos: false,
           digital: modDigital,
-          documentos: modDocumentos,
+          documentos: false,
         },
       }),
     });
@@ -363,7 +362,7 @@ export default function AdminAcessosPage() {
         </select>
         <label>Módulos liberados neste processo</label>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 16, margin: "10px 0 14px" }}>
-          {([{ id: "editais", label: "Editais" }, { id: "transparencia", label: "Transparência" }, { id: "noticias", label: "Notícias" }, { id: "eventos", label: "Eventos" }, { id: "digital", label: "Digital" }, { id: "documentos", label: "Documentos" }] as const).map((modulo) => (
+          {([{ id: "editais", label: "Editais" }, { id: "transparencia", label: "Transparência" }, { id: "noticias", label: "Notícias" }, { id: "eventos", label: "Eventos" }, { id: "digital", label: "Digital" }] as const).map((modulo) => (
             <label key={modulo.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <input type="checkbox" checked={modulosConvite.includes(modulo.id)} onChange={(e) => setModulosConvite((atual) => e.target.checked ? [...atual, modulo.id] : atual.filter((item) => item !== modulo.id))} />
               {modulo.label}
@@ -376,7 +375,7 @@ export default function AdminAcessosPage() {
         {linkCopiado && <p style={{ fontSize: 12, color: "#86efac", overflowWrap: "anywhere" }}>Link do convite: {linkCopiado}</p>}
         {convitesModulo.length > 0 && <div style={{ marginTop: 18, display: "grid", gap: 8 }}>
           <strong>Convites desta ficha</strong>
-          {convitesModulo.map((c) => { const processo = processosConvite.find((row) => row.id === c.processo_id); const nomes = [{ id: "mod_editais", label: "Editais" }, { id: "mod_propostas", label: "Propostas" }, { id: "mod_transparencia", label: "Transparência" }, { id: "mod_noticias", label: "Notícias" }, { id: "mod_eventos", label: "Eventos" }, { id: "mod_digital", label: "Digital" }, { id: "mod_documentos", label: "Documentos" }].filter((m) => c[m.id as keyof ConviteModulo]).map((m) => m.label).join(", "); return <div key={c.id} style={{ border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, padding: 10, display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}><span>{c.email} · {processo?.titulo || "Processo"} · {nomes} · {c.aceito_em ? "aceito" : new Date(c.expires_at) < new Date() ? "expirado" : "pendente"}</span><button type="button" className="admin-button" onClick={() => void revogarConviteModulo(c.id)}>{c.aceito_em ? "Remover acesso" : "Revogar convite"}</button></div>; })}
+          {convitesModulo.map((c) => { const processo = processosConvite.find((row) => row.id === c.processo_id); const nomes = [{ id: "mod_editais", label: "Editais" }, { id: "mod_propostas", label: "Propostas" }, { id: "mod_transparencia", label: "Transparência" }, { id: "mod_noticias", label: "Notícias" }, { id: "mod_eventos", label: "Eventos" }, { id: "mod_digital", label: "Digital" }].filter((m) => c[m.id as keyof ConviteModulo]).map((m) => m.label).join(", "); return <div key={c.id} style={{ border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, padding: 10, display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}><span>{c.email} · {processo?.titulo || "Processo"} · {nomes} · {c.aceito_em ? "aceito" : new Date(c.expires_at) < new Date() ? "expirado" : "pendente"}</span><button type="button" className="admin-button" onClick={() => void revogarConviteModulo(c.id)}>{c.aceito_em ? "Remover acesso" : "Revogar convite"}</button></div>; })}
         </div>}
       </section>
 
@@ -485,18 +484,10 @@ export default function AdminAcessosPage() {
             />
             Digital
           </label>
-          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input
-              type="checkbox"
-              checked={modDocumentos}
-              onChange={(e) => setModDocumentos(e.target.checked)}
-            />
-            Documentos
-          </label>
         </div>
         <p style={{ fontSize: 13, opacity: 0.85 }}>
           Marque somente os módulos deste processo. Digital libera a fila de
-          redes. Documentos libera a Gestão Documental. As propostas enviadas
+          redes. As propostas enviadas
           pelo site principal, assim como o conteúdo de Projetos do site, são exclusivos do administrador mestre.
         </p>
         <button type="button" className="admin-button" onClick={criarEscopo}>
