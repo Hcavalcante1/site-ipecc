@@ -16,7 +16,7 @@ async function carregarConvite(token: string) {
     editalTitulo = edital?.titulo || "—";
   }
   const { data: processo } = await admin.from("processos_contratacao").select("titulo").eq("id", invite.processo_id).maybeSingle();
-  return { ...invite, proposta_nome: propostaNome, edital_titulo: editalTitulo, processo_titulo: processo?.titulo || "Processo" };
+  return { ...invite, mod_documentos: false, proposta_nome: propostaNome, edital_titulo: editalTitulo, processo_titulo: processo?.titulo || "Processo" };
 }
 
 export async function GET(req: NextRequest) {
