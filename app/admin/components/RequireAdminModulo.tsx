@@ -6,8 +6,8 @@ import type { AdminModulo } from "@/lib/auth/adminEscopo";
 import { useAdminEscopoCliente } from "@/lib/auth/useAdminEscopoCliente";
 
 /**
- * Site institucional = so mestre / modulo paginas.
- * Processo = editais, propostas, transparencia (ciclo), projetos do processo.
+ * Conteudo global do site institucional exige mestre / modulo paginas.
+ * Apenas o ciclo de transparencia tem rotas de processo nesta arvore.
  */
 export function caminhoEhCmsSite(pathname: string): boolean {
   if (!pathname.startsWith("/admin/paginas")) return false;
@@ -18,15 +18,8 @@ export function caminhoEhCmsSite(pathname: string): boolean {
   if (pathname.startsWith("/admin/paginas/transparencia/editais")) return false;
   if (pathname.startsWith("/admin/paginas/transparencia/prestacao")) return false;
 
-  // Projetos vinculados ao processo
-  if (pathname.startsWith("/admin/paginas/projetos")) return false;
-
   // Todo o resto sob /admin/paginas e CMS institucional
   return true;
-}
-
-export function caminhoEhProjetosProcesso(pathname: string): boolean {
-  return pathname.startsWith("/admin/paginas/projetos");
 }
 
 export function caminhoEhTransparenciaCiclo(pathname: string): boolean {
@@ -60,9 +53,6 @@ export default function RequireAdminModulo({ children, modulo }: Props) {
     }
 
     // Guard generico para arvore /admin/paginas
-    if (caminhoEhProjetosProcesso(pathname)) {
-      return mods.has("projetos") || mods.has("paginas");
-    }
     if (caminhoEhTransparenciaCiclo(pathname)) {
       return mods.has("transparencia") || mods.has("paginas");
     }

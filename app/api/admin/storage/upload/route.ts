@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { verifyAdminSession } from "@/lib/auth/adminSession";
+import { isMestre } from "@/lib/auth/adminEscopo";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 const ALLOWED_BUCKETS = new Set([
@@ -80,6 +81,13 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { ok: false, error: `Repositório não permitido: ${bucket}` },
         { status: 400 }
+      );
+    }
+
+    if (bucket === "paginas" && !isMestre(auth.contexto)) {
+      return NextResponse.json(
+        { ok: false, error: "Somente o administrador mestre pode alterar arquivos do site institucional." },
+        { status: 403 }
       );
     }
 

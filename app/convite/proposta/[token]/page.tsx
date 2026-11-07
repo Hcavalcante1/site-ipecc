@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
 type Invite = { email: string; proposta_nome: string | null; edital_titulo: string | null; processo_titulo: string; expires_at: string; aceito_em: string | null; mod_editais: boolean; mod_propostas: boolean; mod_transparencia: boolean; mod_noticias: boolean; mod_eventos: boolean; mod_projetos: boolean; mod_digital: boolean; mod_documentos: boolean };
-const MODULOS = [{ id: "mod_editais", label: "Editais" }, { id: "mod_propostas", label: "Propostas" }, { id: "mod_transparencia", label: "Transparência" }, { id: "mod_noticias", label: "Notícias" }, { id: "mod_eventos", label: "Eventos" }, { id: "mod_projetos", label: "Projetos" }, { id: "mod_digital", label: "Digital" }, { id: "mod_documentos", label: "Documentos" }] as const;
+const MODULOS = [{ id: "mod_editais", label: "Editais" }, { id: "mod_propostas", label: "Propostas" }, { id: "mod_transparencia", label: "Transparência" }, { id: "mod_noticias", label: "Notícias" }, { id: "mod_eventos", label: "Eventos" }, { id: "mod_digital", label: "Digital" }, { id: "mod_documentos", label: "Documentos" }] as const;
 export default function AceitarConvitePropostaPage() {
   const { token } = useParams<{ token: string }>();
   const router = useRouter();
