@@ -80,7 +80,7 @@ export async function GET() {
     return NextResponse.json({
       ok: true,
       perfis: perfis || [],
-      escopos: escopos || [],
+      escopos: (escopos || []).map((e) => ({ ...e, mod_documentos: false })),
       processos: processos || [],
       ...(avisos.length ? { aviso: avisos.join(" ") } : {}),
     });
@@ -187,7 +187,7 @@ export async function POST(req: Request) {
         mod_eventos: Boolean(m.eventos),
         mod_projetos: false,
         mod_digital: Boolean(m.digital),
-        mod_documentos: Boolean(m.documentos),
+        mod_documentos: false,
       };
 
       let { error } = await admin.from("admin_escopos").insert(payload);

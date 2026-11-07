@@ -84,9 +84,9 @@ export async function POST(req: Request) {
       );
     }
 
-    if (bucket === "paginas" && !isMestre(auth.contexto)) {
+    if ((bucket === "paginas" || bucket === "gestao-documental") && !isMestre(auth.contexto)) {
       return NextResponse.json(
-        { ok: false, error: "Somente o administrador mestre pode alterar arquivos do site institucional." },
+        { ok: false, error: "Somente o administrador mestre pode alterar arquivos institucionais ou da Gestão Documental." },
         { status: 403 }
       );
     }

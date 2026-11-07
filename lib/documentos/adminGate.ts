@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { verifyAdminSession } from "@/lib/auth/adminSession";
-import { podeModulo } from "@/lib/auth/adminEscopo";
+import { isMestre } from "@/lib/auth/adminEscopo";
 
-/** Bloqueia se a sessão não tiver o módulo Documentos (mestre ou escopo). */
+/** Gestão Documental é exclusiva do administrador mestre. */
 export async function denyIfSemModuloDocumentos() {
   const auth = await verifyAdminSession();
   if (auth.ok === false) {
@@ -14,13 +14,13 @@ export async function denyIfSemModuloDocumentos() {
       auth: null as null,
     };
   }
-  if (!podeModulo(auth.contexto, "documentos")) {
+  if (!isMestre(auth.contexto)) {
     return {
       denied: NextResponse.json(
         {
           ok: false,
           error:
-            "Sem permissão para o módulo Gestão Documental. Peça ao mestre para marcar Documentos em /admin/acessos.",
+            "A Gestão Documental é exclusiva do administrador mestre.",
         },
         { status: 403 }
       ),
