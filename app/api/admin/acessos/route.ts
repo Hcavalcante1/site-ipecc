@@ -185,7 +185,7 @@ export async function POST(req: Request) {
         mod_transparencia: Boolean(m.transparencia),
         mod_noticias: Boolean(m.noticias),
         mod_eventos: Boolean(m.eventos),
-        mod_projetos: Boolean(m.projetos),
+        mod_projetos: false,
         mod_digital: Boolean(m.digital),
         mod_documentos: Boolean(m.documentos),
       };
