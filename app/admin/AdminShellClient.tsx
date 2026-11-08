@@ -62,7 +62,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const fluxoConvite = pathname === "/admin/cadastro" || pathname === "/admin/login" || pathname.startsWith("/admin/convite/acesso/");
+
   useEffect(() => {
+    if (fluxoConvite) return;
     let mounted = true;
 
     async function encerrarSessaoAdmin() {
@@ -211,7 +214,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       mounted = false;
       window.clearInterval(heartbeat);
     };
-  }, [router]);
+  }, [router, pathname, fluxoConvite]);
 
   function handleMobileNav(event: MouseEvent<HTMLAnchorElement>, href: string) {
     if (window.innerWidth > 900) return;
@@ -219,6 +222,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     setMenuOpen(false);
     router.push(href);
   }
+
+  if (fluxoConvite) return <>{children}</>;
 
   return (
     <div className="admin-body">
