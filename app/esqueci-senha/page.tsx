@@ -30,7 +30,7 @@ export default function EsqueciSenhaPage() {
     setMensagem("");
     setStatus("enviando");
 
-    const destino = `/redefinir-senha${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ""}`;
+    const destino = `/redefinir-senha?recovery=1${nextPath ? `&next=${encodeURIComponent(nextPath)}` : ""}`;
     const callback = new URL("/auth/callback", window.location.origin);
     callback.searchParams.set("next", destino);
 
