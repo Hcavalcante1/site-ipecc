@@ -280,7 +280,7 @@ export default function AdminAcessosPage() {
   }
 
   async function enviarRecuperacaoSenha(email: string) {
-    const redirectTo = new URL("/admin/auth/callback", window.location.origin);
+    const redirectTo = new URL("/admin/auth/callback", "https://www.ipecc.org.br");
     redirectTo.searchParams.set("next", "/admin/redefinir-senha?recovery=1");
     const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: redirectTo.toString() });
     if (error) {

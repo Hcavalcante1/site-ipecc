@@ -9,17 +9,20 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
+  const [msgKind, setMsgKind] = useState<"error" | "success">("error");
   const year = new Date().getFullYear();
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("senha") === "atualizada") {
       setMsg("Senha redefinida. Entre com a nova senha.");
+      setMsgKind("success");
     }
   }, []);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setMsg("");
+    setMsgKind("error");
     setLoading(true);
 
     try {
@@ -113,6 +116,7 @@ export default function LoginPage() {
   async function handleRecuperacao() {
     const emailTrim = email.trim();
     if (!emailTrim) {
+      setMsgKind("error");
       setMsg("Informe seu e-mail para receber o link de recuperação.");
       return;
     }
@@ -131,16 +135,25 @@ export default function LoginPage() {
         }
       } catch { /* Ignora destino inválido. */ }
     }
-    const recoveryUrl = new URL("/admin/redefinir-senha", window.location.origin);
-    recoveryUrl.searchParams.set("recovery", "1");
-    for (const [key, value] of redirectParams) recoveryUrl.searchParams.set(key, value);
-    const { error } = await supabase.auth.resetPasswordForEmail(emailTrim, {
-      redirectTo: recoveryUrl.toString(),
-    });
-    setMsg(error
-      ? "Não foi possível iniciar a recuperação. Tente novamente ou contate o administrador."
-      : "Se o e-mail estiver ativo, enviaremos um link para redefinir a senha.");
-    setLoading(false);
+    const recoveryPage = new URL("/admin/redefinir-senha", "https://www.ipecc.org.br");
+    recoveryPage.searchParams.set("recovery", "1");
+    for (const [key, value] of redirectParams) recoveryPage.searchParams.set(key, value);
+    const recoveryUrl = new URL("/admin/auth/callback", "https://www.ipecc.org.br");
+    recoveryUrl.searchParams.set("next", `${recoveryPage.pathname}${recoveryPage.search}`);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(emailTrim, {
+        redirectTo: recoveryUrl.toString(),
+      });
+      setMsgKind(error ? "error" : "success");
+      setMsg(error
+        ? "Não foi possível iniciar a recuperação. Tente novamente ou contate o administrador."
+        : "Se o e-mail estiver ativo, enviaremos um link para redefinir a senha.");
+    } catch {
+      setMsgKind("error");
+      setMsg("Não foi possível iniciar a recuperação. Verifique sua conexão e tente novamente.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -193,7 +206,7 @@ export default function LoginPage() {
               {loading ? "Entrando..." : "Entrar"}
             </button>
 
-            {msg && <p style={styles.error}>{msg}</p>}
+            {msg && <p style={msgKind === "success" ? styles.success : styles.error}>{msg}</p>}
           </form>
 
           <p style={styles.cadastroLink}>
@@ -304,6 +317,11 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   error: {
     color: "#f87171",
+    fontSize: 13,
+    textAlign: "center",
+  },
+  success: {
+    color: "#86efac",
     fontSize: 13,
     textAlign: "center",
   },
