@@ -87,7 +87,7 @@ export function useAdminEscopoCliente(): AdminEscopoCliente {
           legadoIsAdmin?: boolean;
         };
 
-        const mestre = Boolean(json.mestre || json.legadoIsAdmin);
+        const mestre = Boolean(json.mestre || json.legadoIsAdmin || json.papel === "mestre");
         setEstado({
           loading: false,
           mestre,
