@@ -527,6 +527,16 @@ export default function AdminAcessosPage() {
                 <p style={{ margin: "6px 0 0" }}>
                   Papel: {p.papel} · {p.ativo ? "ativo" : "inativo"}
                 </p>
+                {p.ativo && p.email && (
+                  <button
+                    type="button"
+                    className="admin-button"
+                    style={{ marginTop: 10 }}
+                    onClick={() => void enviarRecuperacaoSenha(p.email!)}
+                  >
+                    Enviar recuperação de senha
+                  </button>
+                )}
               </div>
             ))}
           </div>
