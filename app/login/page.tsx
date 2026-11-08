@@ -110,6 +110,39 @@ export default function LoginPage() {
     }
   }
 
+  async function handleRecuperacao() {
+    const emailTrim = email.trim();
+    if (!emailTrim) {
+      setMsg("Informe seu e-mail para receber o link de recuperação.");
+      return;
+    }
+    setMsg("");
+    setLoading(true);
+    const redirectParams = new URLSearchParams();
+    const requestedRedirect = new URLSearchParams(window.location.search).get("redirect") || "";
+    if (!requestedRedirect) {
+      redirectParams.set("redirect", "/conta");
+    }
+    if (requestedRedirect) {
+      try {
+        const parsed = new URL(requestedRedirect, window.location.origin);
+        if (parsed.origin === window.location.origin) {
+          redirectParams.set("redirect", `${parsed.pathname}${parsed.search}${parsed.hash}`);
+        }
+      } catch { /* Ignora destino inválido. */ }
+    }
+    const recoveryUrl = new URL("/admin/redefinir-senha", window.location.origin);
+    recoveryUrl.searchParams.set("recovery", "1");
+    for (const [key, value] of redirectParams) recoveryUrl.searchParams.set(key, value);
+    const { error } = await supabase.auth.resetPasswordForEmail(emailTrim, {
+      redirectTo: recoveryUrl.toString(),
+    });
+    setMsg(error
+      ? "Não foi possível iniciar a recuperação. Tente novamente ou contate o administrador."
+      : "Se o e-mail estiver ativo, enviaremos um link para redefinir a senha.");
+    setLoading(false);
+  }
+
   return (
     <div style={styles.wrapper}>
       <div style={styles.shell}>
@@ -164,9 +197,12 @@ export default function LoginPage() {
           </form>
 
           <p style={styles.cadastroLink}>
-            Não tem conta?{" "}
-            <a href="/cadastro" style={styles.link}>
-              Criar conta
+            <a
+              href="#recuperar-senha"
+              style={styles.link}
+              onClick={(event) => { event.preventDefault(); void handleRecuperacao(); }}
+            >
+              Esqueci minha senha
             </a>
           </p>
         </div>

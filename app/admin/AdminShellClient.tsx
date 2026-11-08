@@ -44,7 +44,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   // Menu aparece imediatamente; a sessão só ajusta os módulos depois
   const [checking, setChecking] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [modulos, setModulos] = useState<AdminModulo[]>([...MODULOS_MESTRE]);
+  const [modulos, setModulos] = useState<AdminModulo[]>([]);
   const [userEmail, setUserEmail] = useState("");
 
   const [avisoSemEscopo, setAvisoSemEscopo] = useState(false);
@@ -53,6 +53,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     const set = new Set(modulos);
     return (m: AdminModulo) => set.has(m);
   }, [modulos]);
+  const mostraOperacao = ["propostas", "acessos", "transparencia", "certidoes", "whatsapp", "digital", "documentos", "logs"].some((modulo) => pode(modulo as AdminModulo));
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -171,9 +172,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             return;
           }
 
-          // Perfil ok mas session falhou: mantém menu para não ficar em branco
+          // Falha ao carregar permissões: negar módulos até uma validação bem-sucedida.
           if (mounted) {
-            setModulos([...MODULOS_MESTRE]);
+            setModulos([]);
+            setAvisoSemEscopo(true);
           }
           return;
         }
@@ -188,7 +190,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       } catch (err) {
         console.error("Falha ao verificar sessão admin:", err);
         if (mounted) {
-          setModulos((prev) => (prev.length > 0 ? prev : [...MODULOS_MESTRE]));
+          setModulos([]);
+          setAvisoSemEscopo(true);
         }
       } finally {
         if (mounted) setChecking(false);
@@ -312,25 +315,31 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               </Link>
             )}
 
-            <div className="admin-nav-section-title">Operacao</div>
-            <Link href="/admin/alertas" className={navClass(pathname, "/admin/alertas")} onClick={(event) => handleMobileNav(event, "/admin/alertas")}>
-              <NavLabel icon="logs">Central de Alertas</NavLabel>
-            </Link>
+            {mostraOperacao && <div className="admin-nav-section-title">Operacao</div>}
+            {pode("logs") && (
+              <Link href="/admin/alertas" className={navClass(pathname, "/admin/alertas")} onClick={(event) => handleMobileNav(event, "/admin/alertas")}>
+                <NavLabel icon="logs">Central de Alertas</NavLabel>
+              </Link>
+            )}
             {pode("propostas") && (
               <Link href="/admin/propostas" className={navClass(pathname, "/admin/propostas")} onClick={(event) => handleMobileNav(event, "/admin/propostas")}>
                 <NavLabel icon="propostas">Propostas</NavLabel>
               </Link>
             )}
-            <Link href="/admin/beneficiarios" className={navClass(pathname, "/admin/beneficiarios")} onClick={(event) => handleMobileNav(event, "/admin/beneficiarios")}>
-              <NavLabel icon="acessos">Beneficiários</NavLabel>
-            </Link>
-            <Link
-              href="/admin/relatorios"
-              className={navClass(pathname, "/admin/relatorios")}
-              onClick={(event) => handleMobileNav(event, "/admin/relatorios")}
-            >
-              <NavLabel icon="logs">Relatórios</NavLabel>
-            </Link>
+            {pode("acessos") && (
+              <Link href="/admin/beneficiarios" className={navClass(pathname, "/admin/beneficiarios")} onClick={(event) => handleMobileNav(event, "/admin/beneficiarios")}>
+                <NavLabel icon="acessos">Beneficiários</NavLabel>
+              </Link>
+            )}
+            {pode("acessos") && (
+              <Link
+                href="/admin/relatorios"
+                className={navClass(pathname, "/admin/relatorios")}
+                onClick={(event) => handleMobileNav(event, "/admin/relatorios")}
+              >
+                <NavLabel icon="logs">Relatórios</NavLabel>
+              </Link>
+            )}
             {pode("transparencia") && (
               <Link
                 href="/admin/paginas/transparencia"
@@ -357,23 +366,24 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 <NavLabel icon="digital">Digital</NavLabel>
               </Link>
             )}
-            {/* Sempre visível após login — o gate fino fica no layout do módulo */}
-            <Link
-              href="/admin/documentos/dashboard"
-              className={navClass(pathname, "/admin/documentos")}
-              onClick={(event) =>
-                handleMobileNav(event, "/admin/documentos/dashboard")
-              }
-            >
-              <NavLabel icon="documentos">Gestão Documental</NavLabel>
-            </Link>
-            <Link
-              href="/admin/diagnostico"
-              className={navClass(pathname, "/admin/diagnostico")}
-              onClick={(event) => handleMobileNav(event, "/admin/diagnostico")}
-            >
-              <NavLabel icon="digital">Diagnóstico</NavLabel>
-            </Link>
+            {pode("documentos") && (
+              <Link
+                href="/admin/documentos/dashboard"
+                className={navClass(pathname, "/admin/documentos")}
+                onClick={(event) => handleMobileNav(event, "/admin/documentos/dashboard")}
+              >
+                <NavLabel icon="documentos">Gestão Documental</NavLabel>
+              </Link>
+            )}
+            {pode("acessos") && (
+              <Link
+                href="/admin/diagnostico"
+                className={navClass(pathname, "/admin/diagnostico")}
+                onClick={(event) => handleMobileNav(event, "/admin/diagnostico")}
+              >
+                <NavLabel icon="digital">Diagnóstico</NavLabel>
+              </Link>
+            )}
             {pode("logs") && (
               <Link href="/admin/logs" className={navClass(pathname, "/admin/logs")} onClick={(event) => handleMobileNav(event, "/admin/logs")}>
                 <NavLabel icon="logs">Registros</NavLabel>

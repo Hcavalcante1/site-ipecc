@@ -46,7 +46,11 @@ export default function AdminRedefinirSenhaPage() {
     const { error } = await supabase.auth.updateUser({ password: senha });
     setSalvando(false);
     if (error) { setMensagem("Não foi possível atualizar a senha. Peça uma nova recuperação ao administrador."); return; }
-    router.replace("/admin");
+    const requestedRedirect = new URLSearchParams(window.location.search).get("redirect") || "/admin";
+    const destino = requestedRedirect.startsWith("/") && !requestedRedirect.startsWith("//")
+      ? requestedRedirect
+      : "/admin";
+    router.replace(destino);
   }
 
   return (
