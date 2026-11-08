@@ -37,6 +37,8 @@ export default function EditarEdital() {
   );
   const [processoId, setProcessoId] = useState("");
   const [processos, setProcessos] = useState<ProcessoOpcao[]>([]);
+  const [arquivoPdf, setArquivoPdf] = useState("");
+  const [removendoPdf, setRemovendoPdf] = useState(false);
   const [bloqueado, setBloqueado] = useState(false);
 
   const [loading, setLoading] = useState(true);
@@ -69,6 +71,7 @@ export default function EditarEdital() {
         setFaseAtual(data.fase_atual || "rascunho");
         setStatus(data.status || "em_breve");
         setProcessoId(data.processo_id || "");
+        setArquivoPdf(data.arquivo_pdf || "");
       }
 
       setLoading(false);
@@ -160,6 +163,53 @@ export default function EditarEdital() {
       triggerToast("Erro inesperado ao atualizar edital.", "error");
     } finally {
       setSalvando(false);
+    }
+  }
+
+  async function removerPdfAntigo() {
+    if (!id || !arquivoPdf) return;
+    const confirmado = window.confirm(
+      "Remover permanentemente o PDF antigo vinculado a este edital? O documento atualizado publicado na Transparência será mantido."
+    );
+    if (!confirmado) return;
+
+    setRemovendoPdf(true);
+    setMsg("");
+    try {
+      const res = await fetch("/api/admin/mutate", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          table: "editais",
+          action: "update",
+          payload: { arquivo_pdf: null },
+          filters: [{ column: "id", value: id }],
+          select: "id",
+          single: true,
+        }),
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+        warning?: string;
+      };
+      if (!res.ok || !json.ok) {
+        const erro = json.error || "Erro ao remover o PDF antigo.";
+        setMsg(erro);
+        triggerToast(erro, "error");
+        return;
+      }
+      setArquivoPdf("");
+      const sucesso = json.warning || "PDF antigo removido do edital.";
+      setMsg(sucesso);
+      triggerToast(sucesso, json.warning ? "error" : "success");
+    } catch (error) {
+      console.error(error);
+      setMsg("Erro inesperado ao remover o PDF antigo.");
+      triggerToast("Erro inesperado ao remover o PDF antigo.", "error");
+    } finally {
+      setRemovendoPdf(false);
     }
   }
 
@@ -283,6 +333,21 @@ export default function EditarEdital() {
           <option value="aberto">Aberto (testes em /propostas se Rascunho)</option>
           <option value="encerrado">Encerrado</option>
         </select>
+
+        {arquivoPdf && (
+          <div style={{ marginTop: 18, padding: 14, border: "1px solid rgba(248,113,113,0.35)", borderRadius: 12 }}>
+            <label>PDF antigo vinculado ao edital</label>
+            <p style={{ margin: "6px 0 12px", color: "#cbd5e1", overflowWrap: "anywhere" }}>{arquivoPdf}</p>
+            <button
+              type="button"
+              className="admin-button"
+              onClick={removerPdfAntigo}
+              disabled={removendoPdf}
+            >
+              {removendoPdf ? "Removendo…" : "Remover PDF antigo"}
+            </button>
+          </div>
+        )}
 
         {msg && <p>{msg}</p>}
 

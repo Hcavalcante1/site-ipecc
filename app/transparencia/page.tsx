@@ -1213,7 +1213,7 @@ export default async function TransparenciaPage() {
                           <MetaChipGovernanca
                             label="Documentos"
                             value={`${
-                              grupo.documentos.length +
+                              grupo.documentos.length ||
                               (resolveEditalDownloadUrl(
                                 grupo.edital?.arquivo_pdf
                               )
