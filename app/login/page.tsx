@@ -164,10 +164,6 @@ export default function LoginPage() {
           </form>
 
           <p style={styles.cadastroLink}>
-            <a href="/esqueci-senha" style={styles.link}>Esqueci minha senha</a>
-          </p>
-
-          <p style={styles.cadastroLink}>
             Não tem conta?{" "}
             <a href="/cadastro" style={styles.link}>
               Criar conta
