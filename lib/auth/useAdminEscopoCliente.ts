@@ -98,12 +98,11 @@ export function useAdminEscopoCliente(): AdminEscopoCliente {
               ? json.modulos
               : [],
           propostaIds: Array.isArray(json.propostaIds) ? json.propostaIds : [],
-          processoIds:
-            json.processoIds === "todos" || Array.isArray(json.processoIds)
+          processoIds: mestre
+            ? "todos"
+            : json.processoIds === "todos" || Array.isArray(json.processoIds)
               ? json.processoIds
-              : mestre
-                ? "todos"
-                : [],
+              : [],
         });
       } catch {
         if (!ativo) return;
