@@ -370,6 +370,8 @@ export async function POST(req: Request) {
     const { table, action, payload, filters = [], select, single, upsertOptions } = body;
 
     let editalPdfParaRemover: string | null = null;
+    let editalPdfAntigoParaRemover: string | null = null;
+    let warning: string | null = null;
     let revertingToRascunho: { editalId: string; faseAnterior: string } | null = null;
 
     // no debug logs
@@ -467,6 +469,34 @@ export async function POST(req: Request) {
               faseAnterior: normalizarFaseEdital(atual.fase_atual),
             };
           }
+        }
+      }
+    }
+
+    if (
+      table === "editais" &&
+      action === "update" &&
+      payloadSanitizado &&
+      typeof payloadSanitizado === "object" &&
+      !Array.isArray(payloadSanitizado) &&
+      Object.prototype.hasOwnProperty.call(payloadSanitizado, "arquivo_pdf") &&
+      (payloadSanitizado as Record<string, unknown>).arquivo_pdf == null
+    ) {
+      const id = filters.find((filter) => filter.column === "id")?.value;
+      if (typeof id === "string" && id.trim()) {
+        const { data: atual, error: leituraErro } = await supabaseAdmin
+          .from("editais")
+          .select("arquivo_pdf")
+          .eq("id", id)
+          .maybeSingle();
+        if (leituraErro) {
+          return NextResponse.json({ ok: false, error: leituraErro.message }, { status: 500 });
+        }
+        const caminho = String(atual?.arquivo_pdf || "").trim();
+        if (caminho && !/^https?:\/\//i.test(caminho) && !caminho.startsWith("/") && !caminho.split("/").includes("..")) {
+          editalPdfAntigoParaRemover = caminho;
+        } else if (caminho) {
+          warning = "O vínculo foi removido, mas o arquivo externo não pode ser apagado pelo armazenamento do edital.";
         }
       }
     }
@@ -572,6 +602,15 @@ export async function POST(req: Request) {
       }
     }
 
+    if (action === "update" && table === "editais" && editalPdfAntigoParaRemover) {
+      const { error: storageError } = await supabaseAdmin.storage
+        .from("editais")
+        .remove([editalPdfAntigoParaRemover]);
+      if (storageError) {
+        warning = "O vínculo foi removido, mas não foi possível apagar o arquivo antigo do armazenamento.";
+      }
+    }
+
     if (revertingToRascunho) {
       await supabaseAdmin.from("editais_logs").insert({
         edital_id: revertingToRascunho.editalId,
@@ -612,6 +651,7 @@ export async function POST(req: Request) {
       ok: true,
       data: result.data,
       count: result.count ?? null,
+      ...(warning ? { warning } : {}),
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Erro na mutação admin";
