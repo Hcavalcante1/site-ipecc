@@ -22,7 +22,9 @@ export default function AceitarConvitePropostaPage() {
     if (new Date(row.expires_at) < new Date()) { setStatus("Este convite expirou."); return; }
     setInvite(row);
     const { data: { user } } = await supabase.auth.getUser();
-    setStatus(user ? "pronto" : "login");
+    const emailConfere = (user?.email || "").trim().toLowerCase() === row.email.trim().toLowerCase();
+    setStatus(emailConfere ? "pronto" : "login");
+    if (user && !emailConfere) setError(`Este navegador está conectado como ${user.email}. Para continuar com o e-mail do convite, crie a conta convidada.`);
   })(); }, [token]);
   async function accept() {
     setBusy(true); setError("");
@@ -33,8 +35,22 @@ export default function AceitarConvitePropostaPage() {
     if (!res.ok) { setError(json.error === "email_nao_corresponde" ? "Entre com o mesmo e-mail que recebeu o convite." : json.error || "Não foi possível aceitar o convite."); return; }
     setStatus("Convite aceito. Redirecionando..."); setTimeout(() => router.replace(json.proposta_id ? `/admin/propostas/${json.proposta_id}` : "/admin"), 1200);
   }
+  async function startSignup() {
+    setBusy(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user && (user.email || "").trim().toLowerCase() !== (invite?.email || "").trim().toLowerCase()) {
+      const { error: signOutError } = await supabase.auth.signOut();
+      if (signOutError) {
+        setError("Não foi possível trocar a conta neste navegador. Saia da sessão atual e abra novamente o link do convite.");
+        setBusy(false);
+        return;
+      }
+    }
+    router.push(cadastroUrl);
+  }
+
   const invitePath = `/convite/acesso/${encodeURIComponent(token)}`;
   const redirectParam = encodeURIComponent(invitePath);
   const cadastroUrl = `/cadastro?redirect=${redirectParam}&email=${encodeURIComponent(invite?.email || "")}`;
-  return <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#0f172a", color: "#e2e8f0", fontFamily: "system-ui", padding: 24 }}><section style={{ width: "100%", maxWidth: 520, padding: 32, borderRadius: 18, background: "#111c30", border: "1px solid #334155" }}><h1 style={{ marginTop: 0 }}>Convite de acesso ao IPECC</h1>{invite && <div style={{ lineHeight: 1.9 }}>{invite.proposta_nome ? <><p><b>Proposta:</b> {invite.proposta_nome}</p><p><b>Edital:</b> {invite.edital_titulo}</p></> : <p><b>Processo:</b> {invite.processo_titulo}</p>}<p><b>Módulos liberados:</b> {MODULOS.filter((modulo) => invite[modulo.id]).map((modulo) => modulo.label).join(", ") || "—"}</p><p><b>Enviado para:</b> {invite.email}</p><p><b>Expira em:</b> {new Date(invite.expires_at).toLocaleDateString("pt-BR")}</p></div>}<p>{status === "pronto" ? invite?.proposta_nome ? "Confirme para habilitar o acesso a esta proposta." : "Confirme para ativar os módulos liberados para este processo." : status === "login" ? `Entre com ${invite?.email} para aceitar. Se ainda não tem conta, crie uma senha para esse e-mail.` : status}</p>{error && <p style={{ color: "#fca5a5" }}>{error}</p>}{status === "login" ? <div style={{ display: "grid", gap: 12 }}><button onClick={() => router.push(`/login?redirect=${redirectParam}`)}>Entrar para aceitar</button><a href={cadastroUrl} style={{ color: "#93c5fd" }}>Criar conta e definir senha</a></div> : status === "pronto" ? <button disabled={busy} onClick={() => void accept()}>{busy ? "Aceitando..." : "Aceitar convite"}</button> : null}</section></main>;
+  return <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#0f172a", color: "#e2e8f0", fontFamily: "system-ui", padding: 24 }}><section style={{ width: "100%", maxWidth: 520, padding: 32, borderRadius: 18, background: "#111c30", border: "1px solid #334155" }}><h1 style={{ marginTop: 0 }}>Convite de acesso ao IPECC</h1>{invite && <div style={{ lineHeight: 1.9 }}>{invite.proposta_nome ? <><p><b>Proposta:</b> {invite.proposta_nome}</p><p><b>Edital:</b> {invite.edital_titulo}</p></> : <p><b>Processo:</b> {invite.processo_titulo}</p>}<p><b>Módulos liberados:</b> {MODULOS.filter((modulo) => invite[modulo.id]).map((modulo) => modulo.label).join(", ") || "—"}</p><p><b>Enviado para:</b> {invite.email}</p><p><b>Expira em:</b> {new Date(invite.expires_at).toLocaleDateString("pt-BR")}</p></div>}<p>{status === "pronto" ? invite?.proposta_nome ? "Confirme para habilitar o acesso a esta proposta." : "Confirme para ativar os módulos liberados para este processo." : status === "login" ? `Entre com ${invite?.email} para aceitar. Se ainda não tem conta, crie uma senha para esse e-mail.` : status}</p>{error && <p style={{ color: "#fca5a5" }}>{error}</p>}{status === "login" ? <div style={{ display: "grid", gap: 12 }}><button onClick={() => router.push(`/login?redirect=${redirectParam}`)}>Entrar para aceitar</button><a href={cadastroUrl} onClick={(event) => { event.preventDefault(); void startSignup(); }} style={{ color: "#93c5fd" }}>{busy ? "Preparando cadastro..." : "Criar conta e definir senha"}</a></div> : status === "pronto" ? <button disabled={busy} onClick={() => void accept()}>{busy ? "Aceitando..." : "Aceitar convite"}</button> : null}</section></main>;
 }
