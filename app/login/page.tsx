@@ -4,13 +4,34 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { mensagemErroLogin } from "@/lib/auth/loginAdminMessages";
 
+function segundosAteReenvio(error: { status?: number; code?: string; message?: string }) {
+  const mensagem = error.message || "";
+  const limiteAtingido =
+    error.status === 429 ||
+    error.code === "over_email_send_rate_limit" ||
+    /only request this after|rate.?limit/i.test(mensagem);
+
+  if (!limiteAtingido) return 0;
+
+  const esperaInformada = mensagem.match(/only request this after\s+(\d+)\s+seconds?/i);
+  return Math.max(1, Math.min(180, Number(esperaInformada?.[1] || 30)));
+}
+
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
-  const [msgKind, setMsgKind] = useState<"error" | "success">("error");
+  const [recovering, setRecovering] = useState(false);
+  const [msgKind, setMsgKind] = useState<"error" | "success" | "warning">("error");
+  const [recoveryCooldownUntil, setRecoveryCooldownUntil] = useState(0);
+  const [recoveryCooldownSeconds, setRecoveryCooldownSeconds] = useState(0);
+  const [recoveryCooldownEmail, setRecoveryCooldownEmail] = useState("");
   const year = new Date().getFullYear();
+  const cooldownAtivo =
+    recoveryCooldownSeconds > 0 &&
+    email.trim().toLowerCase() === recoveryCooldownEmail;
+  const recuperacaoBloqueada = loading || cooldownAtivo;
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("senha") === "atualizada") {
@@ -18,6 +39,20 @@ export default function LoginPage() {
       setMsgKind("success");
     }
   }, []);
+
+  useEffect(() => {
+    if (!recoveryCooldownUntil) return;
+
+    const atualizarEspera = () => {
+      const segundos = Math.max(0, Math.ceil((recoveryCooldownUntil - Date.now()) / 1000));
+      setRecoveryCooldownSeconds(segundos);
+      if (segundos === 0) setRecoveryCooldownUntil(0);
+    };
+
+    atualizarEspera();
+    const timer = window.setInterval(atualizarEspera, 1000);
+    return () => window.clearInterval(timer);
+  }, [recoveryCooldownUntil]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -114,14 +149,22 @@ export default function LoginPage() {
   }
 
   async function handleRecuperacao() {
+    if (loading) return;
+
     const emailTrim = email.trim();
     if (!emailTrim) {
       setMsgKind("error");
       setMsg("Informe seu e-mail para receber o link de recuperação.");
       return;
     }
+    if (recoveryCooldownSeconds > 0 && emailTrim.toLowerCase() === recoveryCooldownEmail) {
+      setMsgKind("warning");
+      setMsg("Aguarde " + recoveryCooldownSeconds + " segundos antes de solicitar outro link.");
+      return;
+    }
     setMsg("");
     setLoading(true);
+    setRecovering(true);
     const redirectParams = new URLSearchParams();
     const requestedRedirect = new URLSearchParams(window.location.search).get("redirect") || "";
     if (!requestedRedirect) {
@@ -144,15 +187,34 @@ export default function LoginPage() {
       const { error } = await supabase.auth.resetPasswordForEmail(emailTrim, {
         redirectTo: recoveryUrl.toString(),
       });
-      setMsgKind(error ? "error" : "success");
-      setMsg(error
-        ? "Não foi possível iniciar a recuperação. Tente novamente ou contate o administrador."
-        : "Se o e-mail estiver ativo, enviaremos um link para redefinir a senha.");
+      if (error) {
+        const segundos = segundosAteReenvio(error);
+        if (segundos > 0) {
+          setRecoveryCooldownEmail(emailTrim.toLowerCase());
+          setRecoveryCooldownSeconds(segundos);
+          setRecoveryCooldownUntil(Date.now() + segundos * 1000);
+          setMsgKind("warning");
+          setMsg("O sistema limitou os reenvios. Aguarde " + segundos + " segundos e tente novamente. Se já solicitou há pouco, confira seu e-mail.");
+          return;
+        }
+
+        setMsgKind("error");
+        setMsg("Não foi possível iniciar a recuperação. Tente novamente ou contate o administrador.");
+        return;
+      }
+
+      const espera = 30;
+      setRecoveryCooldownEmail(emailTrim.toLowerCase());
+      setRecoveryCooldownSeconds(espera);
+      setRecoveryCooldownUntil(Date.now() + espera * 1000);
+      setMsgKind("success");
+      setMsg("Se o e-mail estiver ativo, enviaremos um link. Aguarde 30 segundos antes de solicitar outro.");
     } catch {
       setMsgKind("error");
       setMsg("Não foi possível iniciar a recuperação. Verifique sua conexão e tente novamente.");
     } finally {
       setLoading(false);
+      setRecovering(false);
     }
   }
 
@@ -203,19 +265,36 @@ export default function LoginPage() {
                 opacity: loading ? 0.7 : 1,
               }}
             >
-              {loading ? "Entrando..." : "Entrar"}
+              {loading ? (recovering ? "Enviando link..." : "Entrando...") : "Entrar"}
             </button>
 
-            {msg && <p style={msgKind === "success" ? styles.success : styles.error}>{msg}</p>}
+            {msg && (
+              <p style={msgKind === "success" ? styles.success : msgKind === "warning" ? styles.warning : styles.error}>
+                {msg}
+              </p>
+            )}
           </form>
 
           <p style={styles.cadastroLink}>
             <a
               href="#recuperar-senha"
-              style={styles.link}
-              onClick={(event) => { event.preventDefault(); void handleRecuperacao(); }}
+              aria-disabled={recuperacaoBloqueada}
+              style={{
+                ...styles.link,
+                opacity: recuperacaoBloqueada ? 0.6 : 1,
+                pointerEvents: recuperacaoBloqueada ? "none" : "auto",
+                cursor: recuperacaoBloqueada ? "default" : "pointer",
+              }}
+              onClick={(event) => {
+                event.preventDefault();
+                if (!recuperacaoBloqueada) void handleRecuperacao();
+              }}
             >
-              Esqueci minha senha
+              {recovering
+                ? "Enviando link..."
+                : cooldownAtivo
+                  ? "Aguarde " + recoveryCooldownSeconds + "s para reenviar"
+                  : "Esqueci minha senha"}
             </a>
           </p>
         </div>
@@ -322,6 +401,11 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   success: {
     color: "#86efac",
+    fontSize: 13,
+    textAlign: "center",
+  },
+  warning: {
+    color: "#fbbf24",
     fontSize: 13,
     textAlign: "center",
   },
