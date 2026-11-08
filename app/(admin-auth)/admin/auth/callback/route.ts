@@ -18,7 +18,17 @@ export async function GET(request: NextRequest) {
   if (code) {
     const supabase = createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(new URL(next, url.origin));
+    if (!error) {
+      const response = NextResponse.redirect(new URL(next, url.origin));
+      response.cookies.set("ipecc_admin_gate", "1", {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        maxAge: 300,
+      });
+      return response;
+    }
   }
   const destinoErro = new URL("/admin/redefinir-senha", url.origin);
   destinoErro.searchParams.set("auth_error", "callback");
