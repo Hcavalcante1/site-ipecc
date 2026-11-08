@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
   // Convites de acesso devem sempre apontar para o domínio oficial do IPECC. A variável global
   // NEXT_PUBLIC_SITE_URL pode ser configurada para outros serviços e não é confiável para esse fluxo.
   const base = "https://www.ipecc.org.br";
-  const link = `${base}/convite/acesso/${token}`;
+  const link = `${base}/admin/convite/acesso/${token}`;
   const labels = selected.map((modulo) => LABEL[modulo as Modulo]);
   const emailResult = await enviarEmail({ to: email, subject: "Convite de acesso ao IPECC", html: `<div style="font-family:sans-serif;max-width:540px;margin:auto;padding:32px"><h2>Convite de acesso</h2><p>Você foi convidado para acessar módulos do processo <strong>${escapeHtml(processo.titulo)}</strong>.</p><p><strong>Módulos liberados:</strong> ${labels.map(escapeHtml).join(", ")}</p><p><a href="${link}">Aceitar convite</a></p><p>O convite expira em 7 dias e só pode ser aceito com este e-mail.</p></div>` });
   return NextResponse.json({ ok: true, link, email_enviado: emailResult.ok });
