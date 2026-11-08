@@ -65,7 +65,7 @@ export default function CadastroPage() {
       return;
     }
 
-    router.push(redirect || "/conta");
+    router.push(redirect || "/admin");
   }
 
   return (
