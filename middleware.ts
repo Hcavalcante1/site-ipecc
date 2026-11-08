@@ -7,9 +7,15 @@ const ADMIN_GATE_COOKIE = "ipecc_admin_gate";
 export async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
   const isAdminPath = pathname.startsWith("/admin");
-  // O link de recuperação só libera estas duas rotas públicas do admin.
-  // A troca de senha exige a sessão temporária validada pelo token do Supabase.
-  if (pathname === "/admin/redefinir-senha" || pathname === "/admin/auth/callback") {
+  // Rotas de recuperação e onboarding do convite: a API valida token, e-mail e escopo.
+  // O layout do admin também remove o menu e não abre sessão administrativa nessas telas.
+  if (
+    pathname === "/admin/redefinir-senha" ||
+    pathname === "/admin/auth/callback" ||
+    pathname === "/admin/cadastro" ||
+    pathname === "/admin/login" ||
+    pathname.startsWith("/admin/convite/acesso/")
+  ) {
     return NextResponse.next();
   }
 
