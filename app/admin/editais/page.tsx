@@ -127,21 +127,44 @@ export default function AdminEditais() {
   }, [escopo.loading, escopo.processoIds]);
 
   async function carregarProcessos() {
-    const { data, error } = await supabase
-      .from("processos_contratacao")
-      .select("id, titulo")
-      .eq("status", "ativo")
-      .order("titulo", { ascending: true });
+    let lista: { id: string; titulo: string }[] = [];
 
-    if (error) {
-      setProcessos([]);
-      return;
+    if (escopo.mestre) {
+      const res = await fetch("/api/admin/processos", {
+        credentials: "include",
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setProcessos([]);
+        return;
+      }
+      lista = ((json.processos || []) as {
+        id: string;
+        titulo: string;
+        status: string;
+      }[])
+        .filter((processo) => processo.status === "ativo")
+        .map(({ id, titulo }) => ({ id, titulo }))
+        .sort((a, b) => a.titulo.localeCompare(b.titulo, "pt-BR"));
+    } else {
+      const { data, error } = await supabase
+        .from("processos_contratacao")
+        .select("id, titulo")
+        .eq("status", "ativo")
+        .order("titulo", { ascending: true });
+
+      if (error) {
+        setProcessos([]);
+        return;
+      }
+      lista = (data || []) as { id: string; titulo: string }[];
+      if (escopo.processoIds !== "todos") {
+        lista = lista.filter((processo) =>
+          escopo.processoIds.includes(processo.id)
+        );
+      }
     }
 
-    let lista = (data || []) as { id: string; titulo: string }[];
-    if (escopo.processoIds !== "todos") {
-      lista = lista.filter((p) => escopo.processoIds.includes(p.id));
-    }
     setProcessos(lista);
     if (lista.length === 1) {
       setProcessoId(lista[0].id);
