@@ -35,29 +35,28 @@ export default function RedefinirSenhaPage() {
       return;
     }
 
+    const recoveryFlow = params.get("recovery") === "1";
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-    if (hashParams.get("type") === "recovery") {
-      window.sessionStorage.setItem(FLAG_RECUPERACAO, "1");
-    }
+    const recoveryHash = hashParams.get("type") === "recovery";
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY" && session) {
-        window.sessionStorage.setItem(FLAG_RECUPERACAO, "1");
         setAutorizado(true);
         setMensagem("");
         return;
       }
-      if (session && window.sessionStorage.getItem(FLAG_RECUPERACAO) === "1") {
+      if (session && (recoveryFlow || recoveryHash)) {
         setAutorizado(true);
         setMensagem("");
       }
     });
 
     void supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session && window.sessionStorage.getItem(FLAG_RECUPERACAO) === "1") {
+      if (session && (recoveryFlow || recoveryHash)) {
         setAutorizado(true);
         setMensagem("");
       } else {
+        window.sessionStorage.removeItem(FLAG_RECUPERACAO);
         setMensagem("Abra o link de redefinição enviado por e-mail. Se ele expirou, solicite outro.");
       }
     });
