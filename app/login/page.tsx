@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { mensagemErroLogin } from "@/lib/auth/loginAdminMessages";
 
@@ -10,6 +10,12 @@ export default function LoginPage() {
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const year = new Date().getFullYear();
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("senha") === "atualizada") {
+      setMsg("Senha redefinida. Entre com a nova senha.");
+    }
+  }, []);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();

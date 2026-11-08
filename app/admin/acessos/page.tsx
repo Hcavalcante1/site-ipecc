@@ -279,6 +279,17 @@ export default function AdminAcessosPage() {
     void carregarConvitesModulo();
   }
 
+  async function enviarRecuperacaoSenha(email: string) {
+    const redirectTo = new URL("/admin/auth/callback", window.location.origin);
+    redirectTo.searchParams.set("next", "/admin/redefinir-senha?recovery=1");
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: redirectTo.toString() });
+    if (error) {
+      triggerToast("Não foi possível enviar a recuperação de senha.", "error");
+      return;
+    }
+    triggerToast("Se há uma conta ativa para este e-mail, o link de recuperação foi enviado.", "success");
+  }
+
   async function revogarConviteModulo(id: string) {
     const res = await fetch(`/api/admin/acessos/convites-modulos?id=${encodeURIComponent(id)}`, { method: "DELETE", credentials: "include" });
     const json = await res.json(); if (!res.ok) { triggerToast(json.error || "Erro ao revogar convite.", "error"); return; }
@@ -375,7 +386,7 @@ export default function AdminAcessosPage() {
         {linkCopiado && <p style={{ fontSize: 12, color: "#86efac", overflowWrap: "anywhere" }}>Link do convite: {linkCopiado}</p>}
         {convitesModulo.length > 0 && <div style={{ marginTop: 18, display: "grid", gap: 8 }}>
           <strong>Convites desta ficha</strong>
-          {convitesModulo.map((c) => { const processo = processosConvite.find((row) => row.id === c.processo_id); const nomes = [{ id: "mod_editais", label: "Editais" }, { id: "mod_propostas", label: "Propostas" }, { id: "mod_transparencia", label: "Transparência" }, { id: "mod_noticias", label: "Notícias" }, { id: "mod_eventos", label: "Eventos" }, { id: "mod_digital", label: "Digital" }].filter((m) => c[m.id as keyof ConviteModulo]).map((m) => m.label).join(", "); return <div key={c.id} style={{ border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, padding: 10, display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}><span>{c.email} · {processo?.titulo || "Processo"} · {nomes} · {c.aceito_em ? "aceito" : new Date(c.expires_at) < new Date() ? "expirado" : "pendente"}</span><button type="button" className="admin-button" onClick={() => void revogarConviteModulo(c.id)}>{c.aceito_em ? "Remover acesso" : "Revogar convite"}</button></div>; })}
+          {convitesModulo.map((c) => { const processo = processosConvite.find((row) => row.id === c.processo_id); const nomes = [{ id: "mod_editais", label: "Editais" }, { id: "mod_propostas", label: "Propostas" }, { id: "mod_transparencia", label: "Transparência" }, { id: "mod_noticias", label: "Notícias" }, { id: "mod_eventos", label: "Eventos" }, { id: "mod_digital", label: "Digital" }].filter((m) => c[m.id as keyof ConviteModulo]).map((m) => m.label).join(", "); return <div key={c.id} style={{ border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, padding: 10, display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}><span>{c.email} · {processo?.titulo || "Processo"} · {nomes} · {c.aceito_em ? "aceito" : new Date(c.expires_at) < new Date() ? "expirado" : "pendente"}</span>{c.aceito_em && <button type="button" className="admin-button" onClick={() => void enviarRecuperacaoSenha(c.email)}>Enviar recuperação de senha</button>}<button type="button" className="admin-button" onClick={() => void revogarConviteModulo(c.id)}>{c.aceito_em ? "Remover acesso" : "Revogar convite"}</button></div>; })}
         </div>}
       </section>
 
