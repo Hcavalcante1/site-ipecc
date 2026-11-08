@@ -123,6 +123,9 @@ export default function CadastroPage() {
               <p style={styles.loginLink}>
                 Já tem conta? <a href="/login" style={styles.link}>Entrar</a>
               </p>
+              <p style={styles.loginLink}>
+                <a href={`/esqueci-senha?email=${encodeURIComponent(email)}${redirect ? `&redirect=${encodeURIComponent(redirect)}` : ""}`} style={styles.link}>Esqueci minha senha</a>
+              </p>
             </form>
           )}
         </div>
