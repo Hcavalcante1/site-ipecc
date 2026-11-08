@@ -41,12 +41,13 @@ export default function CadastroPage() {
 
     setEstado("enviando");
 
+    const callback = new URL("/auth/callback", window.location.origin);
+    callback.searchParams.set("next", redirect || "/conta");
+
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
-      options: redirect
-        ? { emailRedirectTo: `${window.location.origin}${redirect}` }
-        : undefined,
+      options: { emailRedirectTo: callback.toString() },
     });
 
     if (error || !data.user) {
