@@ -39,7 +39,9 @@ export async function POST(req: NextRequest) {
   const flags = Object.fromEntries(MODULOS.map((modulo) => [`mod_${modulo}`, selected.includes(modulo)]));
   const { error } = await admin.from("admin_convites_propostas").insert({ token, email, proposta_id: null, processo_id: processoId, ...flags, mod_projetos: false, mod_documentos: false, criado_por: auth.userId });
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
-  const base = String(process.env.NEXT_PUBLIC_SITE_URL || "https://ipecc.org.br").replace(/\/$/, "");
+  // Convites de acesso devem sempre apontar para o domínio oficial do IPECC. A variável global
+  // NEXT_PUBLIC_SITE_URL pode ser configurada para outros serviços e não é confiável para esse fluxo.
+  const base = "https://www.ipecc.org.br";
   const link = `${base}/convite/acesso/${token}`;
   const labels = selected.map((modulo) => LABEL[modulo as Modulo]);
   const emailResult = await enviarEmail({ to: email, subject: "Convite de acesso ao IPECC", html: `<div style="font-family:sans-serif;max-width:540px;margin:auto;padding:32px"><h2>Convite de acesso</h2><p>Você foi convidado para acessar módulos do processo <strong>${escapeHtml(processo.titulo)}</strong>.</p><p><strong>Módulos liberados:</strong> ${labels.map(escapeHtml).join(", ")}</p><p><a href="${link}">Aceitar convite</a></p><p>O convite expira em 7 dias e só pode ser aceito com este e-mail.</p></div>` });
