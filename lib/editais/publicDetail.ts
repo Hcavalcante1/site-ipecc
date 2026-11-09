@@ -231,10 +231,22 @@ export function labelTipoDocumentoEdital(value?: string | null) {
 
 export function getDocumentoPublicoDownloadUrl(url?: string | null) {
   const clean = normalizarTextoEdital(url);
-  if (!clean) return "";
+  if (!isValidFileUrl(clean)) return "";
   if (clean.startsWith("/api/download/")) return clean;
-  if (isValidFileUrl(clean)) return getDownloadUrl(clean);
-  return `/api/download/docs/${clean.replace(/^\/+/, "")}`;
+
+  const resolved = getDownloadUrl(clean);
+  if (resolved.startsWith("/api/download/")) return resolved;
+  if (/^https?:\/\//i.test(resolved) || resolved.startsWith("/docs/")) {
+    return resolved;
+  }
+
+  const storagePath = resolved
+    .replace(/^\/editais\/(?=governanca-editais\/)/, "")
+    .replace(/^\/+/, "");
+  return `/api/download/docs/${storagePath
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/")}`;
 }
 
 export function podeEnviarProposta(
