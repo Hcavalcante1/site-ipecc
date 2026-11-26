@@ -330,7 +330,8 @@ function getAtosAdministrativos(block?: BlocoConteudo | null): AtoAdministrativo
       typeof row.titulo === "string" &&
       typeof row.categoria === "string" &&
       typeof row.arquivo === "string" &&
-      row.arquivo.startsWith("atos-administrativos/")
+      (row.arquivo.startsWith("atos-administrativos/") ||
+        /^governanca-editais\/[0-9a-f-]{36}\/[a-zA-Z0-9._-]+\.pdf$/i.test(row.arquivo))
     )
     .sort((a, b) =>
       String(b.data || b.publicado_em || b.criado_em).localeCompare(

@@ -38,6 +38,11 @@ type FormState = {
   criado_em: string;
 };
 
+type DocumentoExistente = {
+  titulo: string;
+  arquivo: string;
+};
+
 const EMPTY_FORM: FormState = {
   id: "",
   titulo: "",
@@ -71,6 +76,7 @@ function arquivoHref(path: string) {
 
 export default function AtosAdministrativosAdminPage() {
   const [atos, setAtos] = useState<Ato[]>([]);
+  const [documentosExistentes, setDocumentosExistentes] = useState<DocumentoExistente[]>([]);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [arquivoNovo, setArquivoNovo] = useState<File | null>(null);
   const [carregando, setCarregando] = useState(true);
@@ -87,6 +93,7 @@ export default function AtosAdministrativosAdminPage() {
       const json = await response.json();
       if (!response.ok || !json.ok) throw new Error(json.error || "Falha ao carregar o mural.");
       setAtos(Array.isArray(json.atos) ? json.atos : []);
+      setDocumentosExistentes(Array.isArray(json.documentosExistentes) ? json.documentosExistentes : []);
       setErro("");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Falha ao carregar o mural.";
@@ -261,7 +268,29 @@ export default function AtosAdministrativosAdminPage() {
         <textarea id="ato-resumo" rows={3} maxLength={3000} value={form.resumo} onChange={(event) => setForm({ ...form, resumo: event.target.value })} />
 
         <label htmlFor="ato-arquivo">Documento assinado (PDF)</label>
-        <input id="ato-arquivo" type="file" accept="application/pdf,.pdf" onChange={(event) => setArquivoNovo(event.target.files?.[0] || null)} />
+        <input id="ato-arquivo" type="file" accept="application/pdf,.pdf" onChange={(event) => {
+          const file = event.target.files?.[0] || null;
+          setArquivoNovo(file);
+          if (file) setForm((current) => ({ ...current, arquivo: "" }));
+        }} />
+        {documentosExistentes.length > 0 && (
+          <>
+            <label htmlFor="ato-arquivo-existente">Ou vincule um PDF já publicado em Editais</label>
+            <select
+              id="ato-arquivo-existente"
+              value={arquivoNovo ? "" : form.arquivo}
+              onChange={(event) => {
+                setArquivoNovo(null);
+                setForm((current) => ({ ...current, arquivo: event.target.value }));
+              }}
+            >
+              <option value="">Selecione um documento existente</option>
+              {documentosExistentes.map((documento) => (
+                <option key={documento.arquivo} value={documento.arquivo}>{documento.titulo}</option>
+              ))}
+            </select>
+          </>
+        )}
         {form.arquivo && !arquivoNovo && <p>PDF atual: <a href={arquivoHref(form.arquivo)} target="_blank" rel="noreferrer">Abrir documento</a></p>}
 
         <label style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 16 }}>
