@@ -40,6 +40,16 @@ export const fetchCache = "force-no-store";
 
 type LinkItem = { label: string; url: string };
 type CardGrupo = { titulo: string; links: LinkItem[] };
+type AtoAdministrativoPublico = {
+  id: string;
+  titulo: string;
+  categoria: string;
+  resumo: string;
+  arquivo: string;
+  data: string | null;
+  publicado_em: string | null;
+  criado_em: string;
+};
 
 type BlocoConteudo = {
   bloco: string;
@@ -306,6 +316,41 @@ function getGrupoExtra(block?: BlocoConteudo | null, key = "grupos"): CardGrupo[
       typeof item.titulo === "string" &&
       Array.isArray(item.links)
   );
+}
+
+function getAtosAdministrativos(block?: BlocoConteudo | null): AtoAdministrativoPublico[] {
+  const rows = block?.extra?.atos;
+  if (!Array.isArray(rows)) return [];
+  return rows
+    .filter((row): row is AtoAdministrativoPublico =>
+      !!row &&
+      typeof row === "object" &&
+      row.publicado === true &&
+      typeof row.id === "string" &&
+      typeof row.titulo === "string" &&
+      typeof row.categoria === "string" &&
+      typeof row.arquivo === "string" &&
+      row.arquivo.startsWith("atos-administrativos/")
+    )
+    .sort((a, b) =>
+      String(b.data || b.publicado_em || b.criado_em).localeCompare(
+        String(a.data || a.publicado_em || a.criado_em)
+      )
+    );
+}
+
+function arquivoAtoUrl(path: string) {
+  return `/api/download/public/docs/${path.split("/").map(encodeURIComponent).join("/")}`;
+}
+
+function formatarDataAto(value?: string | null) {
+  if (!value) return "";
+  const dateOnly = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const date = dateOnly
+    ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
+    : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("pt-BR").format(date);
 }
 
 function getLinksExtra(block?: BlocoConteudo | null, key = "links"): LinkItem[] {
@@ -771,6 +816,8 @@ export default async function TransparenciaPage() {
   const heroBlock = getBlock(blocos, "hero");
   const compromissosBlock = getBlock(blocos, "compromissos");
   const docsBlock = getBlock(blocos, "docs_institucionais");
+  const atosBlock = getBlock(blocos, "atos_administrativos");
+  const atosAdministrativos = getAtosAdministrativos(atosBlock);
   const prestacaoBlock = getBlock(blocos, "prestacao_contas");
   const lgpdBlock = getBlock(blocos, "lgpd_integridade");
   const ctaBlock = getBlock(blocos, "cta_docs");
@@ -956,6 +1003,33 @@ export default async function TransparenciaPage() {
               </article>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="sobre" aria-labelledby="atos-administrativos">
+        <div className="container">
+          <h2 id="atos-administrativos">Atos Administrativos da Entidade</h2>
+          <p>Convocações, atas e demais atos oficiais publicados pelo IPECC.</p>
+          {atosAdministrativos.length === 0 ? (
+            <p>Nenhum ato administrativo publicado no momento.</p>
+          ) : (
+            <div className="cards__grid" style={{ marginTop: 16 }}>
+              {atosAdministrativos.map((ato) => (
+                <article className="card" key={ato.id}>
+                  <div className="card__body">
+                    <p style={{ margin: "0 0 8px", color: "#166534", fontWeight: 700 }}>
+                      {ato.categoria}{ato.data ? ` · ${formatarDataAto(ato.data)}` : ""}
+                    </p>
+                    <h3 className="card__title">{ato.titulo}</h3>
+                    {ato.resumo && <p>{ato.resumo}</p>}
+                    <a className="card__link" href={arquivoAtoUrl(ato.arquivo)} target="_blank" rel="noopener noreferrer">
+                      Abrir documento oficial (PDF)
+                    </a>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
