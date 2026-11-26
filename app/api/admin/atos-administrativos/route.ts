@@ -33,9 +33,13 @@ type Ato = {
 };
 
 function isSafeActFile(value: unknown): value is string {
-  if (typeof value !== "string" || !value.startsWith(STORAGE_PREFIX)) return false;
-  const name = value.slice(STORAGE_PREFIX.length);
-  return /^[a-zA-Z0-9._-]+\.pdf$/i.test(name) && !name.includes("..");
+  if (typeof value !== "string" || value.length > 300 || value.includes("..") || value.startsWith("/")) return false;
+  if (value.startsWith(STORAGE_PREFIX)) {
+    const name = value.slice(STORAGE_PREFIX.length);
+    return /^[a-zA-Z0-9._-]+\.pdf$/i.test(name);
+  }
+
+  return /^governanca-editais\/[0-9a-f-]{36}\/[a-zA-Z0-9._-]+\.pdf$/i.test(value);
 }
 
 function normalizarAtos(value: unknown, anteriores: Ato[] = []): Ato[] | null {
@@ -95,11 +99,30 @@ async function lerAtos(): Promise<Ato[]> {
   return parsePaginaExtra<{ atos?: Ato[] }>(row?.extra, {}).atos || [];
 }
 
+async function lerDocumentosExistentes() {
+  const { data, error } = await supabaseAdmin
+    .from("documentos_publicos")
+    .select("titulo,arquivo_url,publicado")
+    .eq("publicado", true)
+    .order("publicado_em", { ascending: false, nullsFirst: false })
+    .limit(200);
+
+  if (error) throw new Error(error.message);
+  const arquivos = (data || [])
+    .filter((row) => isSafeActFile(row.arquivo_url) && String(row.arquivo_url).startsWith("governanca-editais/"))
+    .map((row) => ({
+      titulo: String(row.titulo || "PDF publicado em Editais"),
+      arquivo: String(row.arquivo_url),
+    }));
+  return [...new Map(arquivos.map((row) => [row.arquivo, row])).values()];
+}
+
 export async function GET() {
   const gate = await requireMaster();
   if (gate.response) return gate.response;
   try {
-    return NextResponse.json({ ok: true, atos: await lerAtos() }, { headers: { "Cache-Control": "no-store" } });
+    const [atos, documentosExistentes] = await Promise.all([lerAtos(), lerDocumentosExistentes()]);
+    return NextResponse.json({ ok: true, atos, documentosExistentes }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível carregar os atos.";
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
@@ -131,7 +154,7 @@ export async function POST(req: NextRequest) {
 
     const retainedFiles = new Set(atos.map((ato) => ato.arquivo).filter(Boolean));
     const removedFiles = [...new Set(anteriores.map((ato) => ato.arquivo).filter(Boolean))]
-      .filter((path) => !retainedFiles.has(path));
+      .filter((path) => path.startsWith(STORAGE_PREFIX) && !retainedFiles.has(path));
     let warning: string | undefined;
     if (removedFiles.length) {
       const { error: removeError } = await supabaseAdmin.storage.from("docs").remove(removedFiles);
@@ -150,7 +173,7 @@ export async function DELETE(req: NextRequest) {
   const gate = await requireMaster();
   if (gate.response) return gate.response;
   const path = req.nextUrl.searchParams.get("arquivo") || "";
-  if (!isSafeActFile(path)) {
+  if (!path.startsWith(STORAGE_PREFIX) || !isSafeActFile(path)) {
     return NextResponse.json({ ok: false, error: "Arquivo de ato inválido." }, { status: 400 });
   }
   const { error } = await supabaseAdmin.storage.from("docs").remove([path]);
