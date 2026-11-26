@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { FormEvent } from "react";
 import { confirmAction } from "@/components/AdminConfirmModal";
 import { triggerToast } from "@/components/AdminToast";
 
@@ -135,8 +134,7 @@ export default function AtosAdministrativosAdminPage() {
     }).catch(() => null);
   }
 
-  async function salvar(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function salvar() {
     setErro("");
     if (!form.titulo.trim()) return setErro("Informe o título do ato.");
     if (form.publicado && !arquivoNovo && !form.arquivo) {
@@ -203,6 +201,7 @@ export default function AtosAdministrativosAdminPage() {
       if (arquivoEnviado) await removerUpload(arquivoEnviado);
       const message = error instanceof Error ? error.message : "Falha ao salvar o ato.";
       setErro(message);
+      triggerToast(message, "error");
     } finally {
       setSalvando(false);
     }
@@ -257,7 +256,7 @@ export default function AtosAdministrativosAdminPage() {
         Este mural não cria edital nem processo de propostas.
       </p>
 
-      <form className="admin-card" onSubmit={salvar}>
+      <section className="admin-card">
         <h2 className="admin-h2">{form.id ? "Editar ato" : "Cadastrar ato"}</h2>
         <label htmlFor="ato-titulo">Título</label>
         <input id="ato-titulo" value={form.titulo} maxLength={240} onChange={(event) => setForm({ ...form, titulo: event.target.value })} required />
@@ -306,10 +305,10 @@ export default function AtosAdministrativosAdminPage() {
 
         {erro && <p role="alert" style={{ color: "#fca5a5" }}>{erro}</p>}
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 16 }}>
-          <button className="admin-button" type="submit" disabled={salvando}>{salvando ? "Salvando…" : form.publicado ? "Salvar e publicar" : "Salvar rascunho"}</button>
+          <button className="admin-button" type="button" onClick={() => void salvar()} disabled={salvando}>{salvando ? "Salvando…" : form.publicado ? "Salvar e publicar" : "Salvar rascunho"}</button>
           {form.id && <button className="admin-button" type="button" onClick={() => { setForm(EMPTY_FORM); setArquivoNovo(null); }}>Cancelar edição</button>}
         </div>
-      </form>
+      </section>
 
       <section className="admin-card" style={{ marginTop: 20 }}>
         <h2 className="admin-h2">Atos cadastrados</h2>
