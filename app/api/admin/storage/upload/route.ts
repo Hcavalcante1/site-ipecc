@@ -91,6 +91,17 @@ export async function POST(req: Request) {
       );
     }
 
+    if (
+      bucket === "docs" &&
+      path.startsWith("atos-administrativos/") &&
+      !isMestre(auth.contexto)
+    ) {
+      return NextResponse.json(
+        { ok: false, error: "Somente o administrador mestre pode publicar arquivos de atos institucionais." },
+        { status: 403 }
+      );
+    }
+
     if (!isSafeStoragePath(path)) {
       return NextResponse.json(
         { ok: false, error: "Caminho de envio inválido" },
