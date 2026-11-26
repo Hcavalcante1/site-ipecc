@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminSession } from "@/lib/auth/adminSession";
 import { isMestre } from "@/lib/auth/adminEscopo";
-import { fetchPaginaConteudo, parsePaginaExtra, upsertPaginaConteudoDb } from "@/lib/cms/paginasConteudo";
+import { fetchPaginaConteudo, parsePaginaExtra } from "@/lib/cms/paginasConteudo";
 import { revalidatePaginaPublica } from "@/lib/cms/revalidatePaginas";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -99,6 +99,32 @@ async function lerAtos(): Promise<Ato[]> {
   return parsePaginaExtra<{ atos?: Ato[] }>(row?.extra, {}).atos || [];
 }
 
+async function salvarAtos(atos: Ato[]) {
+  const payload = {
+    pagina_slug: CMS_PAGE,
+    bloco: CMS_BLOCK,
+    titulo: "Atos Administrativos da Entidade",
+    texto: "Publicações oficiais da entidade.",
+    extra: { atos },
+    updated_at: new Date().toISOString(),
+  };
+
+  // Segue o fluxo comum do Admin: atualiza o bloco existente e só insere
+  // quando ainda não existe. A autorização continua validada nesta API.
+  const updated = await supabaseAdmin
+    .from("paginas_conteudo")
+    .update(payload)
+    .eq("pagina_slug", CMS_PAGE)
+    .eq("bloco", CMS_BLOCK)
+    .select("id");
+
+  if (updated.error) return { error: updated.error };
+  if (Array.isArray(updated.data) && updated.data.length > 0) return { error: null };
+
+  const inserted = await supabaseAdmin.from("paginas_conteudo").insert(payload);
+  return { error: inserted.error };
+}
+
 async function lerDocumentosExistentes() {
   const { data, error } = await supabaseAdmin
     .from("documentos_publicos")
@@ -141,13 +167,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Confira os dados dos atos. Toda publicação precisa ter título, categoria e PDF." }, { status: 400 });
     }
 
-    const { error } = await upsertPaginaConteudoDb(supabaseAdmin, {
-      pagina_slug: CMS_PAGE,
-      bloco: CMS_BLOCK,
-      titulo: "Atos Administrativos da Entidade",
-      texto: "Publicações oficiais da entidade.",
-      extra: { atos },
-    });
+    const { error } = await salvarAtos(atos);
     if (error) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
