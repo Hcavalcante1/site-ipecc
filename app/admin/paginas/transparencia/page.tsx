@@ -94,6 +94,14 @@ export default function TransparenciaAdminIndex() {
             />
           </>
         )}
+
+        {escopo.mestre && (
+          <AdminHubCard
+            titulo="Atos administrativos da entidade"
+            descricao="Cadastre, publique ou retire convocações, atas, resoluções, portarias e outros atos oficiais."
+            href="/admin/paginas/transparencia/atos"
+          />
+        )}
       </div>
     </AdminPaginasHubLayout>
   );
