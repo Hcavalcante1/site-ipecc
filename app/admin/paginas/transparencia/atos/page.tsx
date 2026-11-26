@@ -74,6 +74,13 @@ function arquivoHref(path: string) {
   return `/api/download/public/docs/${path.split("/").map(encodeURIComponent).join("/")}`;
 }
 
+function novoIdAto() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `ato-${Date.now()}-${Math.random().toString(36).slice(2, 14)}`;
+}
+
 export default function AtosAdministrativosAdminPage() {
   const [atos, setAtos] = useState<Ato[]>([]);
   const [documentosExistentes, setDocumentosExistentes] = useState<DocumentoExistente[]>([]);
@@ -94,7 +101,6 @@ export default function AtosAdministrativosAdminPage() {
       if (!response.ok || !json.ok) throw new Error(json.error || "Falha ao carregar o mural.");
       setAtos(Array.isArray(json.atos) ? json.atos : []);
       setDocumentosExistentes(Array.isArray(json.documentosExistentes) ? json.documentosExistentes : []);
-      setErro("");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Falha ao carregar o mural.";
       setErro(message);
@@ -165,7 +171,7 @@ export default function AtosAdministrativosAdminPage() {
       }
 
       const ato: Ato = {
-        id: form.id || crypto.randomUUID(),
+        id: form.id || novoIdAto(),
         titulo: form.titulo.trim(),
         categoria: form.categoria,
         resumo: form.resumo.trim(),
